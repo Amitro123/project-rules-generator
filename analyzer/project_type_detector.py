@@ -8,16 +8,13 @@ import re
 def _detect_project_type_cached(
     project_name: str,
     tech_stack: Tuple[str, ...],  # Tuple for hashability
-    readme_hash: int,  # Hash of README content for cache invalidation
+    readme_content: str,
     project_path: str
 ) -> Dict[str, Any]:
     """
     Internal cached detection logic.
     """
     scores = _initialize_scores()
-    
-    # Load README content from hash (not cached directly to save memory)
-    readme_content = _load_readme_content(project_path)
     
     # Run detection algorithms
     _detect_agent_signals(scores, tech_stack, readme_content)
@@ -41,7 +38,7 @@ def detect_project_type(project_data: Dict[str, Any], project_path: str) -> Dict
     return _detect_project_type_cached(
         project_name=project_data['name'],
         tech_stack=tuple(project_data.get('tech_stack', [])),  # Convert to tuple for hashing
-        readme_hash=hash(project_data.get('raw_readme', '')),
+        readme_content=project_data.get('raw_readme', '').lower(),
         project_path=str(project_path)
     )
 
@@ -224,17 +221,3 @@ def _calculate_final_scores(scores: Dict[str, float]) -> Dict[str, Any]:
     }
 
 
-def _load_readme_content(project_path: str) -> str:
-    """Load README content (helper for caching)."""
-    try:
-        return Path(project_path, 'README.md').read_text(encoding='utf-8').lower()
-    except:
-        # Try finding case insensitive
-        try:
-            # Find any readme
-            readmes = list(Path(project_path).glob('README.md')) or list(Path(project_path).glob('readme.md'))
-            if readmes:
-                return readmes[0].read_text(encoding='utf-8').lower()
-        except:
-            pass
-        return ""

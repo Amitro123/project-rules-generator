@@ -95,3 +95,14 @@ class VercelSkillsImporter(SkillImporter):
             usage_example=content,
             source="vercel-agent-skills"
         )
+
+
+def get_importer_for_path(pack_path: Path) -> SkillImporter:
+    """
+    Determine the appropriate importer for a given pack path.
+    """
+    # Simple heuristic: if it has SKILL.md files inside, it's Vercel style
+    if list(pack_path.glob("**/SKILL.md")):
+         return VercelSkillsImporter()
+    else:
+         return AgentRulesImporter()
