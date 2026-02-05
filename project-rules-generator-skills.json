@@ -38,7 +38,8 @@
       "input": null,
       "output": "Quality report with suggestions",
       "usage": "analyze-code src/",
-      "params": {}
+      "params": {},
+      "source": "project"
     },
     {
       "name": "refactor-module",
@@ -55,7 +56,8 @@
       "input": "Module path",
       "output": "Refactored code + diff",
       "usage": null,
-      "params": {}
+      "params": {},
+      "source": "project"
     },
     {
       "name": "test-coverage",
@@ -74,7 +76,8 @@
       "input": null,
       "output": null,
       "usage": "pytest --cov=src --cov-report=term\n",
-      "params": {}
+      "params": {},
+      "source": "project"
     },
     {
       "name": "fastapi-security-auditor",
@@ -94,7 +97,8 @@
       "input": null,
       "output": null,
       "usage": null,
-      "params": {}
+      "params": {},
+      "source": "project"
     },
     {
       "name": "react-expert",
@@ -121,7 +125,8 @@
           "Prop drilling issues",
           "Component composition"
         ]
-      }
+      },
+      "source": "project"
     },
     {
       "name": "model-performance-analyzer",
@@ -138,7 +143,8 @@
       "input": null,
       "output": null,
       "usage": null,
-      "params": {}
+      "params": {},
+      "source": "project"
     },
     {
       "name": "data-pipeline-optimizer",
@@ -154,7 +160,8 @@
       "input": null,
       "output": "Profiling report + optimization suggestions",
       "usage": null,
-      "params": {}
+      "params": {},
+      "source": "project"
     },
     {
       "name": "video-processing-optimizer",
@@ -180,7 +187,8 @@
           "Frame sampling strategy",
           "Parallel processing opportunities"
         ]
-      }
+      },
+      "source": "project"
     },
     {
       "name": "broadcast-segmentation-analyzer",
@@ -203,7 +211,8 @@
           "Segment duration distribution",
           "Visual/audio change correlation"
         ]
-      }
+      },
+      "source": "project"
     },
     {
       "name": "embedding-quality-tester",
@@ -220,7 +229,8 @@
       "input": null,
       "output": "Comparison report + recommendations",
       "usage": null,
-      "params": {}
+      "params": {},
+      "source": "project"
     },
     {
       "name": "agent-architecture-analyzer",
@@ -243,7 +253,8 @@
       "input": null,
       "output": "Architecture review with diagrams if helpful",
       "usage": null,
-      "params": {}
+      "params": {},
+      "source": "project"
     },
     {
       "name": "prompt-improver",
@@ -266,7 +277,8 @@
       "input": null,
       "output": null,
       "usage": null,
-      "params": {}
+      "params": {},
+      "source": "project"
     }
   ]
 }

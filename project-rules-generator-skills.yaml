@@ -33,6 +33,7 @@ skills:
   output: Quality report with suggestions
   usage: analyze-code src/
   params: {}
+  source: project
 - name: refactor-module
   description: Refactor following project rules.
   category: core
@@ -47,6 +48,7 @@ skills:
   output: Refactored code + diff
   usage: null
   params: {}
+  source: project
 - name: test-coverage
   description: Run tests and generate coverage.
   category: core
@@ -64,6 +66,7 @@ skills:
 
     '
   params: {}
+  source: project
 - name: fastapi-security-auditor
   description: Check FastAPI endpoints for common security issues.
   category: tech
@@ -80,6 +83,7 @@ skills:
   output: null
   usage: null
   params: {}
+  source: project
 - name: react-expert
   description: Analyze and refactor React components using best practices.
   category: tech
@@ -101,6 +105,7 @@ skills:
     - Hook dependency arrays
     - Prop drilling issues
     - Component composition
+  source: project
 - name: model-performance-analyzer
   description: Analyze model metrics and suggest improvements.
   category: ml_pipeline
@@ -115,6 +120,7 @@ skills:
   output: null
   usage: null
   params: {}
+  source: project
 - name: data-pipeline-optimizer
   description: Optimize data loading and preprocessing.
   category: ml_pipeline
@@ -128,6 +134,7 @@ skills:
   output: Profiling report + optimization suggestions
   usage: null
   params: {}
+  source: project
 - name: video-processing-optimizer
   description: Analyze and optimize video processing pipelines.
   category: ml_pipeline
@@ -148,6 +155,7 @@ skills:
     - ffmpeg parameters (codec, quality, threading)
     - Frame sampling strategy
     - Parallel processing opportunities
+  source: project
 - name: broadcast-segmentation-analyzer
   description: Evaluate scene segmentation quality.
   category: ml_pipeline
@@ -166,6 +174,7 @@ skills:
     - Boundary precision/recall
     - Segment duration distribution
     - Visual/audio change correlation
+  source: project
 - name: embedding-quality-tester
   description: Test and compare embedding models for search.
   category: ml_pipeline
@@ -180,6 +189,7 @@ skills:
   output: Comparison report + recommendations
   usage: null
   params: {}
+  source: project
 - name: agent-architecture-analyzer
   description: Analyze agent architecture and suggest improvements.
   category: agent
@@ -198,6 +208,7 @@ skills:
   output: Architecture review with diagrams if helpful
   usage: null
   params: {}
+  source: project
 - name: prompt-improver
   description: Improve system prompts and agent instructions.
   category: agent
@@ -216,3 +227,4 @@ skills:
   output: null
   usage: null
   params: {}
+  source: project
