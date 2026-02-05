@@ -27,7 +27,7 @@ class TestCLI:
             '--no-commit'
         ])
         
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Exit code {result.exit_code}.\nOutput:\n{result.output}\nException: {result.exception}"
         assert 'Generated files' in result.output
         assert 'sample-project-rules.md' in result.output
         assert 'sample-project-skills.md' in result.output

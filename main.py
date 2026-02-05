@@ -14,26 +14,30 @@ except ImportError:
 from analyzer.readme_parser import parse_readme
 from generator.rules_generator import generate_rules
 from generator.skills_generator import generate_skills
-from utils.file_ops import save_markdown
-from utils.git_ops import commit_files, is_git_repo
-from utils.exceptions import (
+from generator.skills_generator import generate_skills
+from prg_utils.file_ops import save_markdown
+from prg_utils.git_ops import commit_files, is_git_repo
+from prg_utils.exceptions import (
     ProjectRulesGeneratorError,
     READMENotFoundError,
     InvalidREADMEError,
     DetectionFailedError
 )
+from pydantic import ValidationError
+from prg_utils.config_schema import validate_config
+from prg_utils.logger import setup_logging
 
 
 def load_config():
     """Load configuration from config.yaml."""
     config_path = Path(__file__).parent / 'config.yaml'
+    raw_config = {}
     if config_path.exists():
-        return yaml.safe_load(config_path.read_text())
-    return {
-        'llm': {'enabled': False},
-        'git': {'auto_commit': True, 'commit_message': 'Auto-generated rules and skills'},
-        'generation': {'verbose': True}
-    }
+        raw_config = yaml.safe_load(config_path.read_text()) or {}
+    
+    # Validate and fill defaults
+    config_model = validate_config(raw_config)
+    return config_model.model_dump()
 
 
 from generator.pack_manager import load_external_packs
@@ -60,8 +64,11 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
     project_path = Path(project_path).resolve()
     
     if verbose:
+        setup_logging(verbose=True)
         click.echo(f"Project Rules Generator v0.1.0")
         click.echo(f"Target: {project_path}")
+    else:
+        setup_logging(verbose=False)
     
     try:
         # Load config
@@ -190,6 +197,10 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
     except InvalidREADMEError as e:
         click.echo(f"❌ Error: {e}", err=True)
         click.echo("💡 Tip: README should have at least a title and description.")
+        sys.exit(1)
+
+    except ValidationError as e:
+        click.echo(f"❌ Configuration Error: {e}", err=True)
         sys.exit(1)
         
     except ProjectRulesGeneratorError as e:

@@ -1,12 +1,36 @@
 import json
 import yaml
-from typing import List
+from typing import List, Dict, Type
 from .types import SkillFile
 
 class SkillRenderer:
     def render(self, skill_file: SkillFile) -> str:
         raise NotImplementedError
 
+# Registry for renderers
+_RENDERER_REGISTRY: Dict[str, Type[SkillRenderer]] = {}
+
+def register_renderer(format_name: str):
+    """Decorator to register a skill renderer"""
+    def decorator(cls: Type[SkillRenderer]):
+        _RENDERER_REGISTRY[format_name] = cls
+        return cls
+    return decorator
+
+def get_renderer(format_name: str) -> SkillRenderer:
+    """Get a renderer instance for the specified format"""
+    renderer_cls = _RENDERER_REGISTRY.get(format_name.lower())
+    if not renderer_cls:
+        # Fallback to markdown if unknown, or raise error. 
+        # Given the previous logic was "else markdown", let's default to markdown but log a warning if we had logging.
+        # For now, explicit definitions are better.
+        # But to be safe and match previous behavior of "else -> markdown":
+        if 'markdown' in _RENDERER_REGISTRY:
+             return _RENDERER_REGISTRY['markdown']()
+        raise ValueError(f"No renderer found for format: {format_name}")
+    return renderer_cls()
+
+@register_renderer('markdown')
 class MarkdownSkillRenderer(SkillRenderer):
     def render(self, skill_file: SkillFile) -> str:
         content = f"""---
@@ -108,6 +132,7 @@ Read this file before working on the project.
 """
         return content.format(project=skill_file.project_name)
 
+@register_renderer('json')
 class JsonSkillRenderer(SkillRenderer):
     def render(self, skill_file: SkillFile) -> str:
         data = {
@@ -122,6 +147,7 @@ class JsonSkillRenderer(SkillRenderer):
         }
         return json.dumps(data, indent=2)
 
+@register_renderer('yaml')
 class YamlSkillRenderer(SkillRenderer):
     def render(self, skill_file: SkillFile) -> str:
         data = {

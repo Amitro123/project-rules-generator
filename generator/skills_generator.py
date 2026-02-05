@@ -4,7 +4,7 @@ from pathlib import Path
 from analyzer.project_type_detector import detect_project_type_from_data
 from .types import Skill, SkillFile, SkillPack
 from .skill_templates import load_skill_template, get_tech_skills, get_core_skills
-from .renderers import MarkdownSkillRenderer, JsonSkillRenderer, YamlSkillRenderer
+from .renderers import get_renderer
 
 def generate_skills(project_data: Dict[str, Any], config: Dict[str, Any], project_path: Union[str, Path] = '.', format: str = 'markdown', external_packs: List[SkillPack] = None) -> str:
     """Generate intelligent, project-specific skills
@@ -91,9 +91,4 @@ def generate_skills(project_data: Dict[str, Any], config: Dict[str, Any], projec
     )
     
     # Render
-    if format == 'json':
-        return JsonSkillRenderer().render(skill_file)
-    elif format == 'yaml':
-        return YamlSkillRenderer().render(skill_file)
-    else:
-        return MarkdownSkillRenderer().render(skill_file)
+    return get_renderer(format).render(skill_file)

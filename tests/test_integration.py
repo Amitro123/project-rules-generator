@@ -42,7 +42,7 @@ Install and run.
         result = runner.invoke(main, [str(project_dir), '--no-commit', '--verbose'])
         
         # Check success
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Exit code {result.exit_code}.\nOutput:\n{result.output}\nException: {result.exception}"
         assert 'Generated files' in result.output
         assert 'Done!' in result.output
         

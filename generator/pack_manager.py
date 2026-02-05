@@ -1,8 +1,10 @@
+import logging
 from pathlib import Path
 from typing import List, Optional, Dict, Any
-import click
 from .types import SkillPack
 from .importers import get_importer_for_path
+
+logger = logging.getLogger(__name__)
 
 def load_external_packs(
     include_packs: List[str],
@@ -23,8 +25,7 @@ def load_external_packs(
     if not packs_to_load:
         return external_packs
 
-    if verbose:
-        click.echo("\nLoading external packs...")
+    logger.info("Loading external packs...")
 
     # Resolver logic
     for pack_ref in packs_to_load:
@@ -49,15 +50,12 @@ def load_external_packs(
                 pack = importer.import_skills(pack_path)
                 if pack and pack.skills:
                     external_packs.append(pack)
-                    if verbose:
-                        click.echo(f"   + Loaded {pack.name} ({len(pack.skills)} skills)")
+                    logger.info(f"Loaded {pack.name} ({len(pack.skills)} skills)")
                 else:
-                     if verbose:
-                        click.echo(f"   ! Warn: No skills found in {pack_ref}")
+                     logger.warning(f"No skills found in {pack_ref}")
             except Exception as e:
-                click.echo(f"   x Failed to load {pack_ref}: {e}", err=True)
+                logger.error(f"Failed to load {pack_ref}: {e}")
         else:
-            if verbose:
-                click.echo(f"   ! Warn: Pack not found: {pack_ref}")
+            logger.warning(f"Pack not found: {pack_ref}")
 
     return external_packs
