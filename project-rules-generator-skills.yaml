@@ -1,0 +1,218 @@
+meta:
+  project: project-rules-generator
+  type: ml_pipeline
+  confidence: 1.0
+  tech_stack:
+  - python
+  - fastapi
+  - react
+  - pytorch
+  - gemini
+  - openai
+  - anthropic
+  - claude
+  - ffmpeg
+  - click
+  - argparse
+  version: '1.0'
+skills:
+- name: analyze-code
+  description: Parse and analyze codebase for quality issues.
+  category: core
+  triggers:
+  - analyze code
+  - check quality
+  - lint
+  tools:
+  - read
+  - search
+  - exec
+  when_to_use: []
+  avoid_if: []
+  input: null
+  output: Quality report with suggestions
+  usage: analyze-code src/
+  params: {}
+- name: refactor-module
+  description: Refactor following project rules.
+  category: core
+  triggers:
+  - refactor
+  - clean up code
+  - improve structure
+  tools: []
+  when_to_use: []
+  avoid_if: []
+  input: Module path
+  output: Refactored code + diff
+  usage: null
+  params: {}
+- name: test-coverage
+  description: Run tests and generate coverage.
+  category: core
+  triggers:
+  - check coverage
+  - run tests
+  tools:
+  - exec
+  - pytest
+  when_to_use: []
+  avoid_if: []
+  input: null
+  output: null
+  usage: 'pytest --cov=src --cov-report=term
+
+    '
+  params: {}
+- name: fastapi-security-auditor
+  description: Check FastAPI endpoints for common security issues.
+  category: tech
+  triggers:
+  - audit api
+  - check security
+  tools: []
+  when_to_use:
+  - Adding new authenticated endpoints
+  - Reviewing dependency injection
+  - Pydantic model validation
+  avoid_if: []
+  input: null
+  output: null
+  usage: null
+  params: {}
+- name: react-expert
+  description: Analyze and refactor React components using best practices.
+  category: tech
+  triggers:
+  - analyze react
+  - check components
+  - optimize render
+  tools: []
+  when_to_use:
+  - Complex state management logic
+  - Performance optimization (memoization)
+  - Component reusability analysis
+  avoid_if: []
+  input: null
+  output: null
+  usage: null
+  params:
+    checks:
+    - Hook dependency arrays
+    - Prop drilling issues
+    - Component composition
+- name: model-performance-analyzer
+  description: Analyze model metrics and suggest improvements.
+  category: ml_pipeline
+  triggers: []
+  tools: []
+  when_to_use:
+  - Training plateaus
+  - Inference too slow
+  - Poor generalization
+  avoid_if: []
+  input: null
+  output: null
+  usage: null
+  params: {}
+- name: data-pipeline-optimizer
+  description: Optimize data loading and preprocessing.
+  category: ml_pipeline
+  triggers: []
+  tools: []
+  when_to_use:
+  - Training bottlenecked by data
+  - Memory issues
+  avoid_if: []
+  input: null
+  output: Profiling report + optimization suggestions
+  usage: null
+  params: {}
+- name: video-processing-optimizer
+  description: Analyze and optimize video processing pipelines.
+  category: ml_pipeline
+  triggers: []
+  tools:
+  - ffmpeg
+  - profiler
+  when_to_use:
+  - Slow frame extraction
+  - High memory usage during processing
+  - Batch processing bottlenecks
+  avoid_if: []
+  input: null
+  output: null
+  usage: null
+  params:
+    checks:
+    - ffmpeg parameters (codec, quality, threading)
+    - Frame sampling strategy
+    - Parallel processing opportunities
+- name: broadcast-segmentation-analyzer
+  description: Evaluate scene segmentation quality.
+  category: ml_pipeline
+  triggers: []
+  tools: []
+  when_to_use:
+  - Segments too short/long
+  - Missing scene boundaries
+  - False positive splits
+  avoid_if: []
+  input: null
+  output: null
+  usage: null
+  params:
+    metrics:
+    - Boundary precision/recall
+    - Segment duration distribution
+    - Visual/audio change correlation
+- name: embedding-quality-tester
+  description: Test and compare embedding models for search.
+  category: ml_pipeline
+  triggers: []
+  tools: []
+  when_to_use:
+  - Evaluating new embedding models
+  - Search quality issues
+  - Need domain-specific embeddings
+  avoid_if: []
+  input: null
+  output: Comparison report + recommendations
+  usage: null
+  params: {}
+- name: agent-architecture-analyzer
+  description: Analyze agent architecture and suggest improvements.
+  category: agent
+  triggers:
+  - analyze agent
+  - check architecture
+  tools:
+  - read
+  - search
+  when_to_use:
+  - Complex multi-agent workflows
+  - Debugging agent loops
+  - Planning new agent capabilities
+  avoid_if: []
+  input: null
+  output: Architecture review with diagrams if helpful
+  usage: null
+  params: {}
+- name: prompt-improver
+  description: Improve system prompts and agent instructions.
+  category: agent
+  triggers:
+  - improve prompt
+  - fix hallucination
+  tools:
+  - read
+  - exec
+  when_to_use:
+  - Agent failing to follow instructions
+  - Hallucinations
+  - Inconsistent formatting
+  avoid_if: []
+  input: null
+  output: null
+  usage: null
+  params: {}
