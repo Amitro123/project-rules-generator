@@ -163,6 +163,26 @@ Improve system prompts and agent instructions.
 - Hallucinations
 - Inconsistent formatting
 
+## ADDITIONAL: VERCEL SKILL
+
+### test_pack
+Imported skill: test_pack
+
+> *Source: vercel-agent-skills*
+
+**Usage:**
+```bash
+---
+name: external-skill
+description: A skill from an external pack
+triggers:
+  - use external
+---
+
+This is an external skill.
+
+```
+
 ## USAGE
 
 ### In IDE Agent (Claude/Gemini/Cursor/Antigravity)
