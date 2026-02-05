@@ -1,0 +1,15 @@
+skills:
+  - name: cli-usability-auditor
+    description: Audit CLI help messages and argument parsing.
+    category: cli_tool
+    when_to_use:
+      - Adding new commands
+      - Inconsistent argument styling
+      - Missing help text
+    
+  - name: command-structure-improver
+    description: Suggest better command hierarchy.
+    category: cli_tool
+    when_to_use:
+      - Too many top-level commands
+      - Confusing command names

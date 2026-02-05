@@ -16,3 +16,7 @@ generation:
   verbose: true
   max_feature_count: 5
   max_description_length: 200
+
+packs:
+  enabled: true
+  sources: [] # Default sources to load (e.g., paths or known aliases)

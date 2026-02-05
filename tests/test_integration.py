@@ -64,7 +64,7 @@ Install and run.
         skills_content = skills_file.read_text()
         assert 'project: my-test-project' in skills_content
         assert '## CORE SKILLS' in skills_content
-        assert 'python-expert' in skills_content
+        assert 'cli-usability-auditor' in skills_content
     
     def test_flow_with_different_tech_stacks(self, tmp_path):
         """Test with various tech stack combinations."""

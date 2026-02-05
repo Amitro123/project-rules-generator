@@ -1,0 +1,52 @@
+skills:
+  - name: model-performance-analyzer
+    description: Analyze model metrics and suggest improvements.
+    category: ml_pipeline
+    when_to_use:
+      - Training plateaus
+      - Inference too slow
+      - Poor generalization
+
+  - name: data-pipeline-optimizer
+    description: Optimize data loading and preprocessing.
+    category: ml_pipeline
+    when_to_use:
+      - Training bottlenecked by data
+      - Memory issues
+    output_desc: Profiling report + optimization suggestions
+
+  - name: video-processing-optimizer
+    description: Analyze and optimize video processing pipelines.
+    category: ml_pipeline
+    when_to_use:
+      - Slow frame extraction
+      - High memory usage during processing
+      - Batch processing bottlenecks
+    params:
+       checks:
+        - ffmpeg parameters (codec, quality, threading)
+        - Frame sampling strategy
+        - Parallel processing opportunities
+    tools: [ffmpeg, profiler]
+
+  - name: broadcast-segmentation-analyzer
+    description: Evaluate scene segmentation quality.
+    category: ml_pipeline
+    when_to_use:
+      - Segments too short/long
+      - Missing scene boundaries
+      - False positive splits
+    params:
+      metrics:
+        - Boundary precision/recall
+        - Segment duration distribution
+        - Visual/audio change correlation
+
+  - name: embedding-quality-tester
+    description: Test and compare embedding models for search.
+    category: ml_pipeline
+    when_to_use:
+      - Evaluating new embedding models
+      - Search quality issues
+      - Need domain-specific embeddings
+    output_desc: Comparison report + recommendations

@@ -1,0 +1,21 @@
+skills:
+  - name: agent-architecture-analyzer
+    description: Analyze agent architecture and suggest improvements.
+    category: agent
+    tools: [read, search]
+    triggers: [analyze agent, check architecture]
+    when_to_use:
+      - Complex multi-agent workflows
+      - Debugging agent loops
+      - Planning new agent capabilities
+    output_desc: Architecture review with diagrams if helpful
+
+  - name: prompt-improver
+    description: Improve system prompts and agent instructions.
+    category: agent
+    tools: [read, exec]
+    triggers: [improve prompt, fix hallucination]
+    when_to_use:
+      - Agent failing to follow instructions
+      - Hallucinations
+      - Inconsistent formatting

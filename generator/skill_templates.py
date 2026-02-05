@@ -1,104 +1,61 @@
-"""Template management with lazy loading"""
+"""Template management with structured data"""
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Any
+import yaml
 from functools import lru_cache
+from .types import Skill
 
-# Tech specific templates remain in code as they are small snippets
-TECH_SPECIFIC_SKILLS = {
-    'react': """
-### react-expert
-Analyze and refactor React components using best practices.
-
-**When to use:**
-- Complex state management logic
-- Performance optimization (memoization)
-- Component reusability analysis
-
-**Checks:**
-- Hook dependency arrays
-- Prop drilling issues
-- Component composition
-""",
-    'vue': """
-### vue-expert
-Analyze Vue 2/3 components and Composition API usage.
-
-**When to use:**
-- Refactoring Options API to Composition API
-- Reactivity debugging
-- Store (Pinia/Vuex) optimization
-""",
-    'fastapi': """
-### fastapi-security-auditor
-Check FastAPI endpoints for common security issues.
-
-**When to use:**
-- Adding new authenticated endpoints
-- Reviewing dependency injection
-- Pydantic model validation
-""",
-    'docker': """
-### docker-optimizer
-Optimize Dockerfile and compose configurations.
-
-**When to use:**
-- Slow build times
-- Large image sizes
-- Container security scanning
-"""
-}
-
-# Base location for external markdown templates
+# Base location for external templates
 TEMPLATE_DIR = Path(__file__).parent.parent / 'templates' / 'skills'
 
 @lru_cache(maxsize=10)
-def load_skill_template(project_type: str) -> str:
+def load_skill_template(project_type: str) -> List[Skill]:
     """
-    Load skill template from file (cached).
+    Load skill template from YAML file (cached).
     
     Args:
-        project_type: One of: agent, ml_pipeline, web_app, cli_tool, library, generator
+        project_type: Template name (e.g., agent, ml_pipeline, react)
         
     Returns:
-        Template content as string
-        
-    Raises:
-        FileNotFoundError: If template doesn't exist
+        List of Skill objects
     """
     if not TEMPLATE_DIR.exists():
-        # Fallback if directory structure differs (e.g. running from different root)
-        # Try finding it relative to this file
+        # Fallback if directory structure differs
         local_template_dir = Path(__file__).parent.parent / 'templates' / 'skills'
         if local_template_dir.exists():
-            template_path = local_template_dir / f"{project_type}.md"
+            template_path = local_template_dir / f"{project_type}.yaml"
         else:
-             raise FileNotFoundError(f"Template directory not found at {TEMPLATE_DIR}")
+             # Try legacy markdown location just in case, or fail gracefully
+             return []
     else:
-        template_path = TEMPLATE_DIR / f"{project_type}.md"
+        template_path = TEMPLATE_DIR / f"{project_type}.yaml"
     
     if not template_path.exists():
-        # Return empty string or default fallback instead of crashing hard?
-        # For now, let's return empty but log warning if we had logging
-        return "" 
+        return []
     
-    return template_path.read_text(encoding='utf-8')
+    try:
+        content = yaml.safe_load(template_path.read_text(encoding='utf-8'))
+        skills = []
+        if content and 'skills' in content:
+            for s_data in content['skills']:
+                skills.append(Skill(**s_data))
+        return skills
+    except Exception as e:
+        print(f"Error loading template {project_type}: {e}")
+        return []
 
+def get_tech_skills(tech_stack: List[str]) -> List[Skill]:
+    """Get skills for specific technologies."""
+    skills = []
+    # Tech skills are now also stored in YAML templates in the same dir
+    for tech in tech_stack:
+        tech_skills = load_skill_template(tech)
+        if tech_skills:
+            for s in tech_skills:
+                s.category = 'tech' # Ensure category is set
+                skills.append(s)
+    return skills
 
-def get_all_available_templates() -> Dict[str, str]:
-    """Get all available template types."""
-    if not TEMPLATE_DIR.exists():
-        return {}
-    
-    return {
-        path.stem: load_skill_template(path.stem)
-        for path in TEMPLATE_DIR.glob('*.md')
-    }
-
-class SkillTemplates:
-    """Wrapper class for skills to maintain backwards compatibility if needed"""
-    @staticmethod
-    def get(project_type: str, default: str = "") -> str:
-        content = load_skill_template(project_type)
-        return content if content else default
-
-SKILL_TEMPLATES = SkillTemplates()
+def get_core_skills() -> List[Skill]:
+    """Get core generic skills."""
+    return load_skill_template('core')

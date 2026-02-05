@@ -41,7 +41,7 @@ class TestCLI:
         result = runner.invoke(main, [str(empty_dir)])
         
         assert result.exit_code == 1
-        assert 'ERROR' in result.output
+        assert 'Error: No README.md found' in result.output
         assert 'No README.md' in result.output
     
     def test_cli_default_path(self, tmp_path):
@@ -76,7 +76,7 @@ class TestCLI:
         result = runner.invoke(main, ['--version'])
         
         assert result.exit_code == 0
-        assert '1.0.0' in result.output
+        assert '0.1.0' in result.output
     
     def test_cli_help(self):
         """Test --help output."""

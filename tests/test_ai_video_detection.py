@@ -38,7 +38,7 @@ def test_medialens_detection():
     content = generate_skills(mock_data, {}, '.')
     
     # Must have specific skills
-    assert "prompt-optimizer" in content or "video-analysis-expert" in content
+    assert "prompt-improver" in content or "model-performance-analyzer" in content
     assert "fastapi-security-auditor" in content # Tech specific
     
     # Must NOT have generator skills

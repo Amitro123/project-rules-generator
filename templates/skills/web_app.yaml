@@ -1,0 +1,17 @@
+skills:
+  - name: component-structure-analyzer
+    description: Analyze frontend component hierarchy and state.
+    category: web_app
+    triggers: [analyze components, check frontend]
+    when_to_use:
+      - Deeply nested props (prop drilling)
+      - Complex state management
+      - Large bundle sizes
+    
+  - name: responsive-design-checker
+    description: Check for responsive design issues.
+    category: web_app
+    triggers: [check mobile, fix responsive]
+    when_to_use:
+      - Layout breaks on mobile
+      - CSS framework misuse

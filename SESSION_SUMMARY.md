@@ -2,20 +2,31 @@
 Date: 2026-02-05
 
 ## Built
-- **Intelligent Project Detection**: Implemented `analyzer/project_type_detector.py` to classify projects.
-- **Dynamic Skills Engine**: 
-  - Added `TECH_SPECIFIC_SKILLS` support (React, Vue, FastAPI, Docker).
-  - Added specialized **AI Agent** & **Video Pipeline** skills.
-  - Implemented logic to prioritize AI detection over Web App for tools like "MediaLens".
-- **Workflow**: Created `.agent/workflows/generate-project-docs.md` for one-click generation.
-- **Clean Workspace**: Migrated project to `C:\Users\USER\.gemini\antigravity\scratch\project-rules-generator`.
+- **Refactored Generator Core**:
+  - Implemented `Skill` dataclass for structured data handling.
+  - Separated logic into `MarkdownSkillRenderer`, `JsonSkillRenderer`, and `YamlSkillRenderer`.
+- **Structured Templates**:
+  - Migrated from unstructured Markdown to structured YAML templates in `templates/skills/`.
+  - Added schema-compliant fields: `triggers`, `tools`, `when_to_use`, `avoid_if`, `input`, `output`.
+- **Multi-Format Export**:
+  - Added `--export-json` and `--export-yaml` CLI flags.
+  - Updated `README.md` with integration examples.
+- **External Skill Packs**:
+  - Implement `extensions/importers.py` to ingest skills from `agent-rules` (.mdc) and `vercel-agent-skills` (SKILL.md).
+  - Added `--include-pack` and `--external-packs-dir` to CLI for merging external knowledge.
+  - Updated generator to merge and deduplicate skills from multiple sources.
 
 ## Verified
-- `tests/test_detector.py`: Correctly identifies project types.
-- `tests/test_tech_skills.py`: Verifies dynamic injection of React/Docker/FastAPI skills.
-- `tests/test_ai_video_detection.py`: Verifies sophisticated MediaLens-AI scenarios.
-- **Reflective Test**: Ran generator on itself, correctly produced `generator` skills + `react-expert`.
+- **Automated Tests**:
+  - Added `tests/test_skills_structure.py` to verify JSON/YAML output.
+  - Added `tests/test_importers.py` for external pack parsing.
+  - Added `tests/test_pack_integration.py` for merging logic.
+- **Dogfooding**:
+  - Ran `python main.py . --export-json --export-yaml` on the repo itself.
+  - Verified `project-rules-generator-skills.json` match checks.
+- **Legacy Tests**:
+  - Confirmed existing detector tests still pass.
 
 ## Decisions
-- **AI Priority**: Explicitly downgrading `web_app` confidence when strong AI signals are present prevents misclassification of AI agents as simple web servers.
-- **Tie-Breaking**: Boosted LLM provider scores to ensure "Agent" wins over generic "ML Pipeline" for semantic search tools.
+- **YAML Templates**: Chose YAML for templates over JSON for better readability when manually editing triggers/descriptions.
+- **Renderer Pattern**: Decided to use a Strategy pattern for Renderers to easily add new formats (e.g., TOML) in the future.

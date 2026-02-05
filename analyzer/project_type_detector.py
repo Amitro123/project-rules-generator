@@ -5,25 +5,14 @@ from functools import lru_cache
 import re
 
 @lru_cache(maxsize=128)
-def detect_project_type(
+def _detect_project_type_cached(
     project_name: str,
     tech_stack: Tuple[str, ...],  # Tuple for hashability
     readme_hash: int,  # Hash of README content for cache invalidation
     project_path: str
 ) -> Dict[str, Any]:
     """
-    Detect project type from metadata.
-    
-    Cached for performance - same inputs return cached result.
-    
-    Args:
-        project_name: Normalized project name
-        tech_stack: Tuple of detected technologies
-        readme_hash: Hash of README content for cache invalidation
-        project_path: Path to project directory
-        
-    Returns:
-        Dict with: primary_type, secondary_types, confidence, all_scores
+    Internal cached detection logic.
     """
     scores = _initialize_scores()
     
@@ -42,6 +31,22 @@ def detect_project_type(
     _apply_hybrid_penalties(scores)
     
     return _calculate_final_scores(scores)
+
+
+def detect_project_type(project_data: Dict[str, Any], project_path: str) -> Dict[str, Any]:
+    """
+    Detect project type from metadata.
+    Public interface compatible with original signature.
+    """
+    return _detect_project_type_cached(
+        project_name=project_data['name'],
+        tech_stack=tuple(project_data.get('tech_stack', [])),  # Convert to tuple for hashing
+        readme_hash=hash(project_data.get('raw_readme', '')),
+        project_path=str(project_path)
+    )
+
+# Alias for compatibility if needed elsewhere
+detect_project_type_from_data = detect_project_type
 
 
 def _initialize_scores() -> Dict[str, float]:
@@ -226,29 +231,10 @@ def _load_readme_content(project_path: str) -> str:
     except:
         # Try finding case insensitive
         try:
-             # Find any readme
-             readmes = list(Path(project_path).glob('README.md')) or list(Path(project_path).glob('readme.md'))
-             if readmes:
-                 return readmes[0].read_text(encoding='utf-8').lower()
+            # Find any readme
+            readmes = list(Path(project_path).glob('README.md')) or list(Path(project_path).glob('readme.md'))
+            if readmes:
+                return readmes[0].read_text(encoding='utf-8').lower()
         except:
             pass
         return ""
-
-
-# Public wrapper that handles caching conversion
-def detect_project_type_from_data(project_data: Dict[str, Any], project_path: str) -> Dict[str, Any]:
-    """
-    Public interface for project type detection.
-    Converts project_data to cacheable format.
-    
-    Backwards compatibility wrapper for detect_project_type call signature.
-    In original code: detect_project_type(project_data, project_path)
-    We rename our cached function to _detect_project_type_cached and expose 
-    detect_project_type as this wrapper to minimize breaking changes.
-    """
-    return detect_project_type(
-        project_name=project_data['name'],
-        tech_stack=tuple(project_data.get('tech_stack', [])),  # Convert to tuple for hashing
-        readme_hash=hash(project_data.get('raw_readme', '')),
-        project_path=str(project_path)
-    )

@@ -1,0 +1,9 @@
+skills:
+  - name: vue-expert
+    description: Analyze Vue 2/3 components and Composition API usage.
+    category: tech
+    triggers: [analyze vue, check components]
+    when_to_use:
+      - Refactoring Options API to Composition API
+      - Reactivity debugging
+      - Store (Pinia/Vuex) optimization

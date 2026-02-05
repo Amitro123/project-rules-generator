@@ -1,0 +1,9 @@
+skills:
+  - name: fastapi-security-auditor
+    description: Check FastAPI endpoints for common security issues.
+    category: tech
+    triggers: [audit api, check security]
+    when_to_use:
+      - Adding new authenticated endpoints
+      - Reviewing dependency injection
+      - Pydantic model validation

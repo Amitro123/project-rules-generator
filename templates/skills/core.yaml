@@ -1,0 +1,23 @@
+skills:
+  - name: analyze-code
+    description: Parse and analyze codebase for quality issues.
+    category: core
+    tools: [read, search, exec]
+    triggers: [analyze code, check quality, lint]
+    usage_example: "analyze-code src/"
+    output_desc: Quality report with suggestions
+
+  - name: refactor-module
+    description: Refactor following project rules.
+    category: core
+    input_desc: Module path
+    output_desc: Refactored code + diff
+    triggers: [refactor, clean up code, improve structure]
+
+  - name: test-coverage
+    description: Run tests and generate coverage.
+    category: core
+    tools: [exec, pytest]
+    usage_example: |
+      pytest --cov=src --cov-report=term
+    triggers: [check coverage, run tests]

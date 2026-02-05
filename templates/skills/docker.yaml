@@ -1,0 +1,9 @@
+skills:
+  - name: docker-optimizer
+    description: Optimize Dockerfile and compose configurations.
+    category: tech
+    triggers: [optimize docker, check container]
+    when_to_use:
+      - Slow build times
+      - Large image sizes
+      - Container security scanning

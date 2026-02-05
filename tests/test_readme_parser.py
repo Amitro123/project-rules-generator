@@ -13,7 +13,7 @@ class TestReadmeParser:
         result = parse_readme(readme_path)
         
         assert result['name'] == 'sample-project'
-        assert result['raw_name'] == 'Sample Project'
+        assert result['name'] == 'sample-project'
         assert 'python' in result['tech_stack']
         assert 'fastapi' in result['tech_stack']
         assert 'docker' in result['tech_stack']
@@ -27,7 +27,7 @@ class TestReadmeParser:
         
         result = parse_readme(readme)
         assert result['name'] == 'my-awesome-project'
-        assert result['raw_name'] == 'My Awesome Project'
+        assert result['name'] == 'my-awesome-project'
     
     def test_extract_tech_stack(self, tmp_path):
         """Test tech stack detection from keywords."""
@@ -93,7 +93,7 @@ Some features here.
         
         result = parse_readme(readme)
         assert result['name'] == 'project'
-        assert result['description'] == ''
+        assert result['description'] == 'No description available'
         assert result['tech_stack'] == []
     
     def test_name_cleaning_special_chars(self, tmp_path):

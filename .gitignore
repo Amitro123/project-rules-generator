@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv/
+build/
+dist/
+*.egg-info/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS/IDE
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+*.swp
+
+# Project Generated Artifacts (unless explicit examples)
+*-skills.md
+*-skills.json
+*-skills.yaml
+*-rules.md
+!tests/test_samples/sample-project/sample-project-skills.md
+!tests/test_samples/sample-project/sample-project-rules.md

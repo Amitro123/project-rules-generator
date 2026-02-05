@@ -36,33 +36,86 @@ def load_config():
     }
 
 
+from generator.importers import AgentRulesImporter, VercelSkillsImporter, SkillPack
+
 @click.command()
 @click.argument('project_path', type=click.Path(exists=True, file_okay=False), default='.')
 @click.option('--scan-all', is_flag=True, help='Scan all subdirectories for projects')
 @click.option('--commit/--no-commit', default=True, help='Auto-commit to git')
 @click.option('--interactive', '-i', is_flag=True, help='Interactive prompts')
 @click.option('--verbose/--quiet', default=True, help='Verbose output')
-@click.version_option(version='1.0.0')
-def main(project_path, scan_all, commit, interactive, verbose):
+@click.option('--export-json', is_flag=True, help='Export skills as JSON')
+@click.option('--export-yaml', is_flag=True, help='Export skills as YAML')
+@click.option('--include-pack', multiple=True, help='Include external skill pack (name or path)')
+@click.option('--external-packs-dir', type=click.Path(exists=True, file_okay=False), help='Directory containing external packs')
+@click.version_option(version='0.1.0')
+def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, include_pack, external_packs_dir):
     """Generate rules.md and skills.md from README.md
     
     Examples:
     \b
-        python main.py .                    # Generate for current directory
-        python main.py /path/to/project     # Generate for specific project
-        python main.py . --interactive      # Confirm before generating
-        python main.py . --no-commit        # Generate but don't commit
+        python main.py . --export-json
+        python main.py . --include-pack agent-rules
     """
     project_path = Path(project_path).resolve()
     
     if verbose:
-        click.echo(f"Project Rules Generator v1.0")
+        click.echo(f"Project Rules Generator v0.1.0")
         click.echo(f"Target: {project_path}")
     
     try:
         # Load config
         config = load_config()
         
+        # Load External Packs
+        external_packs = []
+        if include_pack or (config.get('packs') and config['packs'].get('enabled')):
+            if verbose:
+                click.echo("\nLoading external packs...")
+            
+            # Combine CLI packs and config packs
+            packs_to_load = list(include_pack)
+            if config.get('packs') and config['packs'].get('sources'):
+                 packs_to_load.extend(config['packs']['sources'])
+
+            # Resolver logic
+            for pack_ref in packs_to_load:
+                pack_path = None
+                importer = None
+                
+                # Check if it's a known alias or local path
+                # 1. Try as direct path
+                path_obj = Path(pack_ref)
+                if path_obj.exists():
+                    pack_path = path_obj
+                # 2. Try in external_packs_dir if provided
+                elif external_packs_dir:
+                    p = Path(external_packs_dir) / pack_ref
+                    if p.exists():
+                        pack_path = p
+                
+                # Determine importer based on content/structure
+                if pack_path:
+                    # Simple heuristic: if it has SKILL.md files inside, it's Vercel style
+                    # If it has .mdc files, it's Agent Rules style.
+                    # Defaulting to AgentRules for now as it handles generic MD too.
+                    if list(pack_path.glob("**/SKILL.md")):
+                         importer = VercelSkillsImporter()
+                    else:
+                         importer = AgentRulesImporter()
+                         
+                    try:
+                        pack = importer.import_skills(pack_path)
+                        if pack and pack.skills:
+                            external_packs.append(pack)
+                            if verbose:
+                                click.echo(f"   + Loaded {pack.name} ({len(pack.skills)} skills)")
+                        else:
+                             if verbose:
+                                click.echo(f"   ! Warn: No skills found in {pack_ref}")
+                    except Exception as e:
+                        click.echo(f"   x Failed to load {pack_ref}: {e}", err=True)
+
         # Find README
         readme_path = project_path / 'README.md'
         if not readme_path.exists():
@@ -102,13 +155,16 @@ def main(project_path, scan_all, commit, interactive, verbose):
         if verbose:
             click.echo(f"\nGenerating files...")
         
+        generated_files = []
+        
         with tqdm(total=3, disable=not verbose, desc="Build") as pbar:
              pbar.set_description("Generating Rules")
              rules_content = generate_rules(project_data, config)
              pbar.update(1)
              
              pbar.set_description("Generating Skills")
-             skills_content = generate_skills(project_data, config, project_path)
+             # Markdown generation (Default)
+             skills_content = generate_skills(project_data, config, project_path, format='markdown', external_packs=external_packs)
              pbar.update(1)
              
              pbar.set_description("Saving Artifacts")
@@ -118,11 +174,26 @@ def main(project_path, scan_all, commit, interactive, verbose):
              
              save_markdown(rules_path, rules_content)
              save_markdown(skills_path, skills_content)
+             generated_files.extend([rules_path, skills_path])
+
+             # Handle exports
+             if export_json:
+                 json_content = generate_skills(project_data, config, project_path, format='json', external_packs=external_packs)
+                 json_path = project_path / f"{project_name}-skills.json"
+                 json_path.write_text(json_content, encoding='utf-8')
+                 generated_files.append(json_path)
+
+             if export_yaml:
+                 yaml_content = generate_skills(project_data, config, project_path, format='yaml', external_packs=external_packs)
+                 yaml_path = project_path / f"{project_name}-skills.yaml"
+                 yaml_path.write_text(yaml_content, encoding='utf-8')
+                 generated_files.append(yaml_path)
+
              pbar.update(1)
         
         click.echo(f"\nGenerated files:")
-        click.echo(f"   {rules_path}")
-        click.echo(f"   {skills_path}")
+        for f in generated_files:
+            click.echo(f"   {f}")
         
         # Git commit
         if commit:
@@ -135,7 +206,7 @@ def main(project_path, scan_all, commit, interactive, verbose):
                 
                 try:
                     result = commit_files(
-                        [rules_path, skills_path], 
+                        generated_files, 
                         commit_msg, 
                         project_path,
                         user_name,

@@ -1,0 +1,14 @@
+skills:
+  - name: react-expert
+    description: Analyze and refactor React components using best practices.
+    category: tech
+    triggers: [analyze react, check components, optimize render]
+    when_to_use:
+      - Complex state management logic
+      - Performance optimization (memoization)
+      - Component reusability analysis
+    params:
+      checks:
+        - Hook dependency arrays
+        - Prop drilling issues
+        - Component composition

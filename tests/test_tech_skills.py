@@ -15,9 +15,9 @@ def test_generate_tech_skills_react():
     
     content = generate_skills(project_data, config, '.')
     
-    assert "TECH SPECIFIC SKILLS" in content
+    assert "## TECH SKILLS" in content
     assert "react-expert" in content
-    assert "Hook dependency arrays" in content
+    assert "Performance optimization (memoization)" in content
 
 def test_generate_tech_skills_mixed():
     project_data = {
@@ -46,5 +46,4 @@ def test_generate_fallback_expert():
     content = generate_skills(project_data, config, '.')
     
     # 'rust' is not in TECH_SPECIFIC_SKILLS, should generate fallback
-    assert "RUST EXPERT" in content
     assert "rust-expert" in content

@@ -1,19 +1,23 @@
-"""Generate project-specific skills based on detected type"""
-from typing import Dict, Any, Union
+"""Generate project-specific skills based on structured data"""
+from typing import Dict, Any, Union, List
 from pathlib import Path
-from .skill_templates import load_skill_template, TECH_SPECIFIC_SKILLS
 from analyzer.project_type_detector import detect_project_type_from_data
+from .types import Skill, SkillFile, SkillPack
+from .skill_templates import load_skill_template, get_tech_skills, get_core_skills
+from .renderers import MarkdownSkillRenderer, JsonSkillRenderer, YamlSkillRenderer
 
-def generate_skills(project_data: Dict[str, Any], config: Dict[str, Any], project_path: Union[str, Path] = '.') -> str:
+def generate_skills(project_data: Dict[str, Any], config: Dict[str, Any], project_path: Union[str, Path] = '.', format: str = 'markdown', external_packs: List[SkillPack] = None) -> str:
     """Generate intelligent, project-specific skills
     
     Args:
         project_data: Parsed project data
         config: Configuration dict
         project_path: Path to project root
+        format: Output format ('markdown', 'json', 'yaml')
+        external_packs: Optional list of external skill packs to merge
         
     Returns:
-        Markdown content for skills file
+        Rendered skills content
     """
     
     # Detect project type
@@ -22,114 +26,74 @@ def generate_skills(project_data: Dict[str, Any], config: Dict[str, Any], projec
     secondary_types = type_info['secondary_types']
     
     project_name = project_data['name']
-    tech = ', '.join(project_data['tech_stack'][:3]) if project_data['tech_stack'] else 'general'
+    tech = project_data.get('tech_stack', [])
     description = project_data.get('description', '')
     
-    # Start with frontmatter
-    content = f"""---
-project: {project_name}
-purpose: Agent skills for this project
-type: agent-skills
-detected_type: {primary_type}
-confidence: {type_info['confidence']:.2f}
----
-
-## PROJECT CONTEXT
-- **Type**: {primary_type.replace('_', ' ').title()}
-- **Tech Stack**: {tech}
-- **Domain**: {description[:100]}...
-
-"""
+    all_skills = []
     
-    # Add core generic skills (keep 3 most useful)
-    content += """## CORE SKILLS
-
-### analyze-code
-Parse and analyze codebase for quality issues.
-
-**Tools:** read, search, exec
-
-**Usage:**
-```bash
-analyze-code src/
-```
-Output: Quality report with suggestions
-
-### refactor-module
-Refactor following project rules.
-
-**Input:** Module path
-**Output:** Refactored code + diff
-
-### test-coverage
-Run tests and generate coverage.
-
-**Tools:** exec pytest
-
-**Usage:**
-```bash
-pytest --cov=src --cov-report=term
-```
-"""
-
-    # Add TECH STACK SPECIFIC SKILLS (Dynamic)
-    tech_skills_added = False
+    # 1. Add Core Skills
+    core_skills = get_core_skills()
+    all_skills.extend(core_skills)
     
-    # Check for direct matches in TECH_SPECIFIC_SKILLS
-    for tech_item in project_data.get('tech_stack', []):
-        if tech_item in TECH_SPECIFIC_SKILLS:
-            if not tech_skills_added:
-                content += "\n## TECH SPECIFIC SKILLS\n"
-                tech_skills_added = True
-            content += TECH_SPECIFIC_SKILLS[tech_item]
-
-    # If no specific template found, but we strictly need something for the primary tech
-    if not tech_skills_added and project_data.get('tech_stack'):
-        primary_tech = project_data['tech_stack'][0]
-        content += f"\n## {primary_tech.upper()} EXPERT\n"
-        content += f"\n### {primary_tech}-expert\n"
-        content += f"Expert in {primary_tech} projects, patterns, and best practices.\n\n"
-        content += f"**When to use:**\n"
-        content += f"- Complex {primary_tech} specific implementation\n"
-        content += f"- Debugging {primary_tech} errors\n"
-
-    # Add PRIMARY type-specific skills
-    content += f"\n## {primary_type.upper().replace('_', ' ')} SKILLS\n\n"
-    content += load_skill_template(primary_type)
-
-    # Add SECONDARY type skills if confidence > 0.3
-    for sec_type in secondary_types[:1]:  # Only add top secondary
-        # SKIP if secondary is 'generator' - that's only for the generator itself!
+    # 2. Add Tech Specific Skills
+    tech_skills = get_tech_skills(tech)
+    all_skills.extend(tech_skills)
+    
+    # 3. Add Primary Type Skills
+    type_skills = load_skill_template(primary_type)
+    for s in type_skills:
+        s.category = primary_type # Ensure correct category
+    all_skills.extend(type_skills)
+    
+    # 4. Add Secondary Type Skills (Top 1)
+    for sec_type in secondary_types[:1]:
         if sec_type == 'generator':
             continue
-        
-        content += f"\n## ADDITIONAL: {sec_type.upper().replace('_', ' ')}\n\n"
-        # Add 1-2 most relevant skills from secondary template
-        template = load_skill_template(sec_type)
-        if template:
-            # Simple heuristic to extract first skill: split by ### and take the second element (first skill)
-            parts = template.split('###')
-            if len(parts) > 1:
-                content += '###' + parts[1]
+        sec_skills = load_skill_template(sec_type)
+        if sec_skills:
+            # Add top 2 skills only to avoid bloat
+            for s in sec_skills[:2]:
+                s.category = sec_type
+                all_skills.extend([s])
 
-    # Usage section
-    content += f"""
-## USAGE
+    # 5. Merge External Packs
+    if external_packs:
+        existing_names = {s.name for s in all_skills}
+        for pack in external_packs:
+            for skill in pack.skills:
+                # Deduplicate: Only add if name doesn't exist (prefer project skills)
+                if skill.name not in existing_names:
+                    all_skills.append(skill)
+                    existing_names.add(skill.name)
 
-### In IDE Agent (Claude/Gemini/Cursor/Antigravity)
-Load skills from {project_name}-skills.md
+    # Fallback if no specific skills found for tech
+    if not tech_skills and not type_skills and tech:
+        primary_tech = tech[0]
+        # Dynamically create a generic expert skill if we have no templates
+        all_skills.append(Skill(
+            name=f"{primary_tech}-expert",
+            description=f"Expert in {primary_tech} projects, patterns, and best practices.",
+            category="tech",
+            when_to_use=[
+                f"Complex {primary_tech} specific implementation",
+                f"Debugging {primary_tech} errors"
+            ]
+        ))
 
-### In OpenClaw
-```bash
-/skills load {project_name}-skills.md
-```
-
-### Manual Reference
-Read this file before working on the project.
-
----
-Generated by project-rules-generator v1.0
-Detected as: {primary_type} (confidence: {type_info['confidence']:.2f})
-"""
-
-    return content
+    # Create SkillFile object
+    skill_file = SkillFile(
+        project_name=project_name,
+        project_type=primary_type,
+        skills=all_skills,
+        confidence=type_info['confidence'],
+        tech_stack=tech,
+        description=description
+    )
+    
+    # Render
+    if format == 'json':
+        return JsonSkillRenderer().render(skill_file)
+    elif format == 'yaml':
+        return YamlSkillRenderer().render(skill_file)
+    else:
+        return MarkdownSkillRenderer().render(skill_file)

@@ -4,6 +4,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-Passing-green.svg)](tests/)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](config.yaml)
 
 ## 🎯 What It Does
 
@@ -30,7 +31,7 @@ No more generic "analyze code" - get skills like:
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/project-rules-generator
+git clone https://github.com/Amitro123/project-rules-generator
 cd project-rules-generator
 pip install -r requirements.txt
 ```
@@ -46,6 +47,9 @@ python main.py /path/to/your-project
 
 # Interactive mode (confirms findings before generating)
 python main.py . --interactive
+
+# Import skills from external packs (Agent Rules + Vercel Skills)
+python main.py . --include-pack agent-rules --external-packs-dir ../external-packs
 ```
 
 ### Example Output
@@ -136,6 +140,64 @@ Reference the generated files as context for any AI agent.
 | **DevLens-AI** | `cli_tool` | `command-analyzer`, `code-quality-auditor` |
 | **Project-Rules-Gen** | `generator` | `readme-deep-analyzer`, `template-optimizer`, `self-improve` |
 
+## 📦 External Packs
+
+You can mix in skills from other repositories like [agent-rules](https://github.com/steipete/agent-rules) or [vercel-agent-skills](https://github.com/vercel-labs/agent-skills).
+
+### Supported Formats
+- **Agent Rules** (`.mdc` / `.md`): Parsed from generic markdown or Cursor rules.
+- **Vercel Skills** (`SKILL.md`): Parsed from Vercel's directory structure.
+
+### Usage
+1. Clone the rules repo(s):
+   ```bash
+   git clone https://github.com/steipete/agent-rules ../agent-rules
+   git clone https://github.com/vercel-labs/agent-skills ../vercel-skills
+   ```
+2. Generate, including the packs:
+   ```bash
+   # Include specific pack from a directory
+   python main.py . --include-pack agent-rules --external-packs-dir ..
+   
+   # You can mix multiple packs
+   python main.py . --include-pack agent-rules --include-pack vercel-skills --external-packs-dir ..
+   ```
+
+## 🔌 Integrations & Formats
+
+The generated skills align with emerging standards for AI agent interoperability:
+
+- **Markdown (`.md`)**: Optimized for direct context loading in LLMs (Claude, Gemini, ChatGPT).
+    - Now includes *Source* attribution for imported skills.
+- **JSON (`.json`)**: Structured format for programmatic integration with agent frameworks.
+- **YAML (`.yaml`)**: Human-readable structured format, compatible with **Vercel Agent Skills** concepts.
+
+### Export Options
+
+```bash
+# Generate purely as data for your own tools
+python main.py . --export-json --export-yaml
+```
+
+**Example JSON Output:**
+```json
+{
+  "meta": {
+    "project": "medialens-ai",
+    "type": "ml_pipeline",
+    "version": "1.0"
+  },
+  "skills": [
+    {
+      "name": "video-processing-optimizer",
+      "category": "ml_pipeline",
+      "tools": ["ffmpeg", "profiler"],
+      "usage": "analyze input.mp4"
+    }
+  ]
+}
+```
+
 ## 🛠️ Advanced Usage
 
 **Batch Processing**
@@ -157,6 +219,15 @@ python main.py . --llm-analyze
 3. Run tests: `pytest`
 4. Commit: `git commit -m "feat: add amazing feature"`
 5. Push and open PR
+
+## 🔄 Changelog
+
+### v0.1.0
+- Initial release
+- Intelligent project type detection
+- Custom skill generation for Agents, ML, Web, CLI
+- External skill pack support
+- Markdown, JSON, YAML export
 
 ## 📄 License
 

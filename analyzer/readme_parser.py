@@ -53,21 +53,23 @@ def _extract_project_name(content: str, path: Path) -> str:
     return path.parent.name.lower().replace(' ', '-')
 
 
+TECH_KEYWORDS = [
+    'python', 'fastapi', 'flask', 'django', 'react', 'vue', 'angular',
+    'typescript', 'javascript', 'node', 'express',
+    'pytorch', 'tensorflow', 'sklearn', 'transformers',
+    'docker', 'kubernetes', 'redis', 'postgres', 'mongodb',
+    'gemini', 'openai', 'anthropic', 'claude', 'gpt', 'langchain',
+    'ffmpeg', 'opencv', 'pillow', 'moviepy',
+    'click', 'argparse', 'typer', 'fire',
+    'terraform', 'helm', 'aws', 'gcp', 'azure'
+]
+
+
 def _extract_tech_stack(content: str) -> List[str]:
     """Extract technologies from README content."""
-    tech_keywords = [
-        'python', 'fastapi', 'flask', 'django', 'react', 'vue', 'angular',
-        'typescript', 'javascript', 'node', 'express',
-        'pytorch', 'tensorflow', 'sklearn', 'transformers',
-        'docker', 'kubernetes', 'redis', 'postgres', 'mongodb',
-        'gemini', 'openai', 'anthropic', 'claude', 'gpt', 'langchain',
-        'ffmpeg', 'opencv', 'pillow', 'moviepy',
-        'click', 'argparse', 'typer', 'fire',
-        'terraform', 'helm', 'aws', 'gcp', 'azure'
-    ]
     
     content_lower = content.lower()
-    found = [tech for tech in tech_keywords if re.search(rf'\b{re.escape(tech)}\b', content_lower)]
+    found = [tech for tech in TECH_KEYWORDS if re.search(rf'\b{re.escape(tech)}\b', content_lower)]
     
     # Remove duplicates, preserve order
     return list(dict.fromkeys(found))
