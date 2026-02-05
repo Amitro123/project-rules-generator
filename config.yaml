@@ -1,0 +1,18 @@
+llm:
+  enabled: false
+  api_key: ""
+  provider: "anthropic"  # or "gemini"
+  model: "claude-3-5-sonnet-20241022"  # or "gemini-1.5-flash"
+
+git:
+  auto_commit: true
+  commit_message: "Auto-generated rules and skills"
+  commit_user_name: "Project Rules Generator"
+  commit_user_email: "rules@generator.local"
+
+generation:
+  output_format: "markdown"
+  include_examples: true
+  verbose: true
+  max_feature_count: 5
+  max_description_length: 200

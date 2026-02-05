@@ -1,0 +1,12 @@
+structure:
+  frontmatter:
+    - project
+    - purpose
+  sections:
+    - CORE SKILLS
+    - PROJECT-SPECIFIC SKILLS
+    - USAGE
+    
+placeholders:
+  domain: '{{domain}}'
+  project_name: '{{project_name}}'

@@ -1,0 +1,17 @@
+structure:
+  frontmatter:
+    - project
+    - purpose
+    - version
+  sections:
+    - CONTEXT
+    - DO (must follow)
+    - DON'T
+    - PRIORITIES
+    - WORKFLOWS
+    
+placeholders:
+  description: '{{description}}'
+  tech_stack: '{{tech_stack}}'
+  features: '{{features}}'
+  project_name: '{{project_name}}'
