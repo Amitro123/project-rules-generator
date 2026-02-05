@@ -34,16 +34,19 @@ def test_generate_tech_skills_mixed():
     assert "react-expert" in content
     assert "docker-optimizer" in content
 
-def test_generate_fallback_expert():
+def test_generate_fallback_expert(tmp_path):
+    # Use a name that triggers 'generator' type (which has no default skills yet)
+    # to ensure we hit the fallback path.
+    # Also use tmp_path to avoid detecting 'cli_tool' from the repo itself.
     project_data = {
-        'name': 'rust-app',
+        'name': 'rust-generator',
         'tech_stack': ['rust'],
         'features': [],
         'description': 'Rust app'
     }
     config = {}
     
-    content = generate_skills(project_data, config, '.')
+    content = generate_skills(project_data, config, str(tmp_path))
     
     # 'rust' is not in TECH_SPECIFIC_SKILLS, should generate fallback
     assert "rust-expert" in content

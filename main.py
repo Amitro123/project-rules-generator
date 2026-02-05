@@ -36,7 +36,7 @@ def load_config():
     }
 
 
-from generator.importers import AgentRulesImporter, VercelSkillsImporter, SkillPack
+from generator.pack_manager import load_external_packs
 
 @click.command()
 @click.argument('project_path', type=click.Path(exists=True, file_okay=False), default='.')
@@ -70,51 +70,12 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
         # Load External Packs
         external_packs = []
         if include_pack or (config.get('packs') and config['packs'].get('enabled')):
-            if verbose:
-                click.echo("\nLoading external packs...")
-            
-            # Combine CLI packs and config packs
-            packs_to_load = list(include_pack)
-            if config.get('packs') and config['packs'].get('sources'):
-                 packs_to_load.extend(config['packs']['sources'])
-
-            # Resolver logic
-            for pack_ref in packs_to_load:
-                pack_path = None
-                importer = None
-                
-                # Check if it's a known alias or local path
-                # 1. Try as direct path
-                path_obj = Path(pack_ref)
-                if path_obj.exists():
-                    pack_path = path_obj
-                # 2. Try in external_packs_dir if provided
-                elif external_packs_dir:
-                    p = Path(external_packs_dir) / pack_ref
-                    if p.exists():
-                        pack_path = p
-                
-                # Determine importer based on content/structure
-                if pack_path:
-                    # Simple heuristic: if it has SKILL.md files inside, it's Vercel style
-                    # If it has .mdc files, it's Agent Rules style.
-                    # Defaulting to AgentRules for now as it handles generic MD too.
-                    if list(pack_path.glob("**/SKILL.md")):
-                         importer = VercelSkillsImporter()
-                    else:
-                         importer = AgentRulesImporter()
-                         
-                    try:
-                        pack = importer.import_skills(pack_path)
-                        if pack and pack.skills:
-                            external_packs.append(pack)
-                            if verbose:
-                                click.echo(f"   + Loaded {pack.name} ({len(pack.skills)} skills)")
-                        else:
-                             if verbose:
-                                click.echo(f"   ! Warn: No skills found in {pack_ref}")
-                    except Exception as e:
-                        click.echo(f"   x Failed to load {pack_ref}: {e}", err=True)
+            external_packs = load_external_packs(
+                include_packs=include_pack,
+                config_packs=config.get('packs'),
+                external_packs_dir=external_packs_dir,
+                verbose=verbose
+            )
 
         # Find README
         readme_path = project_path / 'README.md'
