@@ -1,0 +1,20 @@
+name: react-expert
+version: 1.0.0
+description: React best practices
+category: tech_frontend
+
+# Matching criteria
+matches:
+  tech_stack: [react, nextjs]
+  confidence: 0.8
+
+# Skill content
+skill:
+  triggers: [analyze components, check hooks]
+  tools: [read]
+  when_to_use:
+    - Performance issues
+    - Re-rendering bugs
+  checks:
+    - Ensure hooks rules are followed
+    - Check key props in lists

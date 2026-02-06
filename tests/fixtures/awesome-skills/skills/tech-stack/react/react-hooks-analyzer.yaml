@@ -1,0 +1,18 @@
+name: react-hooks-analyzer
+version: 1.0.0
+description: Analyze React hooks usage
+category: tech_frontend
+
+# Matching criteria
+matches:
+  tech_stack: [react]
+  confidence: 0.85
+
+# Skill content
+skill:
+  triggers: [check hooks, lint react]
+  tools: [read]
+  when_to_use:
+    - Debugging useEffect
+  checks:
+    - Verify dependency arrays

@@ -57,6 +57,9 @@ version: {skill_file.version}
             
         # Define category order
         cat_order = ['core', 'tech', skill_file.project_type, 'agent', 'general']
+        # Deduplicate while preserving order
+        cat_order = list(dict.fromkeys(cat_order))
+        
         # Add any other categories found
         for cat in skills_by_cat:
             if cat not in cat_order:

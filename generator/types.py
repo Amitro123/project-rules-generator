@@ -2,6 +2,14 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 
 @dataclass
+class SkillNeed:
+    type: str  # 'tech', 'pattern', 'file', 'domain'
+    name: str  # e.g., 'fastapi', 'dockerfile', 'video_processing'
+    confidence: float
+    context: Dict[str, Any] = field(default_factory=dict)
+    priority: str = 'normal'  # 'critical', 'normal', 'optional'
+
+@dataclass
 class Skill:
     name: str
     description: str
@@ -16,6 +24,13 @@ class Skill:
     source: str = "project"  # project, agent-rules, vercel-agent-skills, etc.
     params: Dict[str, Any] = field(default_factory=dict)
     
+    # Adaptation metadata
+    adaptability: Dict[str, Any] = field(default_factory=dict)
+    original_name: Optional[str] = None
+    adapted_for: Optional[str] = None
+    adapted_fields: List[str] = field(default_factory=list)
+    confidence: float = 1.0
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for export."""
         return {
@@ -29,8 +44,11 @@ class Skill:
             "input": self.input_desc,
             "output": self.output_desc,
             "usage": self.usage_example,
-            "params": getattr(self, "params", {}), # Safe access for debugging
-            "source": getattr(self, "source", "unknown")
+            "params": getattr(self, "params", {}), 
+            "source": getattr(self, "source", "unknown"),
+            "original_name": self.original_name,
+            "adapted_for": self.adapted_for,
+            "confidence": self.confidence
         }
 
 @dataclass

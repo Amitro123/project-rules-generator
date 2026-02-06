@@ -44,6 +44,26 @@ def load_skill_template(project_type: str) -> List[Skill]:
         print(f"Error loading template {project_type}: {e}")
         return []
 
+def load_skill_from_yaml(file_path: Path) -> List[Skill]:
+    """Load skills from a specific YAML file."""
+    if not file_path.exists():
+        return []
+    
+    try:
+        content = yaml.safe_load(file_path.read_text(encoding='utf-8'))
+        skills = []
+        # Support both list of skills and dict with 'skills' key
+        if isinstance(content, list):
+             for s_data in content:
+                 skills.append(Skill(**s_data))
+        elif isinstance(content, dict) and 'skills' in content:
+            for s_data in content['skills']:
+                skills.append(Skill(**s_data))
+        return skills
+    except Exception as e:
+        print(f"Error loading skills from {file_path}: {e}")
+        return []
+
 def get_tech_skills(tech_stack: List[str]) -> List[Skill]:
     """Get skills for specific technologies."""
     skills = []

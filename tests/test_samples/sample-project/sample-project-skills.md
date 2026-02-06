@@ -17,6 +17,8 @@ version: 1.0
 ### analyze-code
 Parse and analyze codebase for quality issues.
 
+> *Source: builtin*
+
 **Tools:** read, search, exec
 
 **Triggers:**
@@ -34,6 +36,8 @@ analyze-code src/
 ### refactor-module
 Refactor following project rules.
 
+> *Source: builtin*
+
 **Triggers:**
 - refactor
 - clean up code
@@ -44,6 +48,8 @@ Refactor following project rules.
 
 ### test-coverage
 Run tests and generate coverage.
+
+> *Source: builtin*
 
 **Tools:** exec, pytest
 
@@ -62,6 +68,8 @@ pytest --cov=src --cov-report=term
 ### fastapi-security-auditor
 Check FastAPI endpoints for common security issues.
 
+> *Source: builtin*
+
 **Triggers:**
 - audit api
 - check security
@@ -73,6 +81,8 @@ Check FastAPI endpoints for common security issues.
 
 ### docker-optimizer
 Optimize Dockerfile and compose configurations.
+
+> *Source: builtin*
 
 **Triggers:**
 - optimize docker
@@ -88,6 +98,8 @@ Optimize Dockerfile and compose configurations.
 ### component-structure-analyzer
 Analyze frontend component hierarchy and state.
 
+> *Source: builtin*
+
 **Triggers:**
 - analyze components
 - check frontend
@@ -99,6 +111,8 @@ Analyze frontend component hierarchy and state.
 
 ### responsive-design-checker
 Check for responsive design issues.
+
+> *Source: builtin*
 
 **Triggers:**
 - check mobile

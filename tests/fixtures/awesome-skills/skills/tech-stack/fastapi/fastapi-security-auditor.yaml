@@ -1,0 +1,21 @@
+name: fastapi-security-auditor
+version: 1.0.0
+description: Security audit for FastAPI
+category: tech_security
+
+# Matching criteria
+matches:
+  tech_stack: [fastapi, starlette]
+  files: [main.py, app.py]
+  confidence: 0.9
+
+# Skill content
+skill:
+  triggers: [audit api, check security]
+  tools: [read, bandit]
+  when_to_use:
+    - High security requirements
+    - FDA compliance
+  checks:
+    - Check for SQL injection protection
+    - Verify CORS settings

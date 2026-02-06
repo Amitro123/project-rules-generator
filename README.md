@@ -25,6 +25,209 @@ No more generic "analyze code" - get skills like:
 - 📊 **High Confidence** - Multi-signal detection with confidence scores
 - ⚙️ **Configurable** - YAML config for LLM enhancement, git settings
 - 🧪 **Tested** - Unit tests + verified on real projects
+- 🎯 **Smart Skill Orchestration** - Combines skills from built-in, awesome-agent-skills, and your learned library
+- 🔄 **Skill Reuse** - Save and reuse adapted skills across projects
+- 🏆 **Conflict Resolution** - Intelligent priority system (learned > awesome > built-in)
+
+## 🎯 Smart Skill Orchestration
+
+The tool discovers and combines skills from multiple sources, creating a comprehensive skill set tailored to your project:
+
+### Skill Sources
+
+1. **Built-in Skills** - Core skills for all projects (code analysis, refactoring, testing)
+2. **Awesome Agent Skills** - Community-curated skills from external repositories
+3. **Learned Skills** - Skills you've created or adapted in previous projects
+
+### How It Works
+
+```text
+Analyze Project
+├─ Tech stack (FastAPI, React, PyTorch...)
+├─ File structure (Dockerfile, requirements.txt...)
+└─ Project type (ML Pipeline, Web App, Agent...)
+
+Discover Skills
+├─ Built-in: templates/skills/
+├─ Awesome: ~/awesome-agent-skills/
+└─ Learned: ~/.project-rules-generator/learned_skills/
+
+Match & Rank
+└─ Score each skill based on relevance to your project
+
+Resolve Conflicts
+└─ Priority: Learned > Awesome > Built-in
+
+Adapt & Output
+└─ Fill project-specific context and generate skills.md
+```
+
+### Priority Resolution
+
+When the same skill exists in multiple sources:
+- **Learned skills** win (your customized version)
+- **Awesome skills** override built-in (community best practices)
+- **Built-in skills** serve as fallback
+
+**Example:**
+`fastapi-security-auditor` exists in:
+1. Built-in (generic)
+2. **Awesome** (community best practices) ← **This wins!**
+
+## 📊 How It Works - Complete Flow
+
+Here's what happens when you run `python main.py /path/to/project`:
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ USER RUNS: python main.py /path/to/my-fastapi-project           │
+└─────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 1: PROJECT ANALYSIS                                       │
+├─────────────────────────────────────────────────────────────────┤
+│ ✓ Parse README.md → name, description, features                 │
+│ ✓ Detect tech stack → python, fastapi, docker                   │
+│ ✓ Analyze file structure → requirements.txt, Dockerfile         │
+│ ✓ Detect project type → web_app (confidence: 0.85)              │
+└─────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 2: GENERATE PROJECT NEEDS                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Based on analysis, create list of needs:                        │
+│ - Need: "core skills"       (priority: critical)                │
+│ - Need: "fastapi expert"    (priority: normal)                  │
+│ - Need: "docker optimizer"  (priority: normal)                  │
+│ - Need: "web_app patterns"  (priority: normal)                  │
+└─────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 3: SKILL DISCOVERY (from all sources)                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │
+│  │   BUILTIN    │    │   AWESOME    │    │   LEARNED    │       │
+│  │ Priority: 1  │    │ Priority: 2  │    │ Priority: 3  │       │
+│  └──────────────┘    └──────────────┘    └──────────────┘       │
+│         │                   │                   │               │
+│         ▼                   ▼                   ▼               │
+│ - analyze-code     - fastapi-security  - (empty on          │
+│ - refactor-module     -auditor            first run)            │
+│ - test-coverage    - react-expert                               │
+│ - fastapi-basic                                                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 4: MATCHING & SCORING                                     │
+├─────────────────────────────────────────────────────────────────┤
+│ Match skills to project needs:                                  │
+│                                                                 │
+│ Need: "fastapi expert"                                          │
+│  ├─ fastapi-basic (builtin)              → score: 0.6           │
+│  └─ fastapi-security-auditor (awesome)   → score: 0.9  ✓        │
+│                                                                 │
+│ Need: "core skills"                                             │
+│  ├─ analyze-code (builtin)               → score: 1.0  ✓        │
+│  ├─ refactor-module (builtin)            → score: 1.0  ✓        │
+│  └─ test-coverage (builtin)              → score: 1.0  ✓        │
+└─────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 5: CONFLICT RESOLUTION                                    │
+├─────────────────────────────────────────────────────────────────┤
+│ If same skill exists in multiple sources, pick highest priority │
+│                                                                 │
+│ Example conflict: "fastapi-security-auditor"                    │
+│  ├─ Found in BUILTIN (priority: 1)                              │
+│  └─ Found in AWESOME (priority: 2) → AWESOME WINS! ✓            │
+│                                                                 │
+│ If exists in LEARNED (priority: 3) → LEARNED ALWAYS WINS!       │
+└─────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 6: ADAPTATION (optional)                                  │
+├─────────────────────────────────────────────────────────────────┤
+│ Fill project-specific placeholders:                             │
+│ - {project_name}  → "my-fastapi-project"                        │
+│ - {tech_stack}    → "python, fastapi, docker"                   │
+│ - {api_endpoints} → detected from code                          │
+└─────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 7: GENERATE OUTPUT                                        │
+├─────────────────────────────────────────────────────────────────┤
+│ Create files:                                                   │
+│ ✓ my-fastapi-project-rules.md                                   │
+│ ✓ my-fastapi-project-skills.md ← Skills grouped by source       │
+│    ├─ ## CORE SKILLS (builtin)                                  │
+│    ├─ ## WEB APP SKILLS (builtin)                               │
+│    └─ ## TECH SECURITY (awesome-skills) ← Community skills!     │
+│                                                                 │
+│ Optional: Export JSON/YAML if --export-json/--export-yaml       │
+└─────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 8: SAVE TO LEARNED (if --save-learned)                    │
+├─────────────────────────────────────────────────────────────────┤
+│ Save newly generated or highly-scored skills to:                │
+│ ~/.project-rules-generator/learned_skills/                      │
+│                                                                 │
+│ These will be available for reuse in future projects!           │
+└─────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ DONE! ✨                                                        │
+│ → Load skills in your IDE agent                                 │
+│ → Or use with OpenClaw: /skills load my-fastapi-skills.md       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Priority Resolution Example
+
+Visual example of how conflicts are resolved:
+
+**Skill:** `fastapi-security-auditor`
+
+```text
+┌─────────────┐        ┌─────────────┐        ┌─────────────┐
+│   BUILTIN   │        │   AWESOME   │        │   LEARNED   │
+│ Priority: 1 │   VS   │ Priority: 2 │   VS   │ Priority: 3 │
+│  (generic)  │        │ (community) │        │ (your own)  │
+└─────────────┘        └─────────────┘        └─────────────┘
+       │                      │                      │
+       │                      │                      │
+       └───────────────────────┼───────────────────────┘
+                               ▼
+                        ┌─────────────────┐
+                        │  LEARNED WINS!  │
+                        │(Highest Priority) │
+                        └─────────────────┘
+```
+
+If **LEARNED** doesn't exist:
+```text
+┌─────────────┐        ┌─────────────┐
+│   BUILTIN   │   VS   │   AWESOME   │
+│ Priority: 1 │        │ Priority: 2 │
+└─────────────┘        └─────────────┘
+       │                      │
+       └───────────────────────┘
+                               ▼
+                        ┌──────────────┐
+                        │ AWESOME WINS!│
+                        └──────────────┘
+```
 
 ## 🚀 Quick Start
 
@@ -35,6 +238,23 @@ git clone https://github.com/Amitro123/project-rules-generator
 cd project-rules-generator
 pip install -r requirements.txt
 ```
+
+### Optional: Enable Awesome Agent Skills
+
+To use community-curated skills:
+
+1. Clone the awesome-agent-skills repository:
+   ```bash
+   git clone https://github.com/awesome-agent-skills/awesome-agent-skills ~/awesome-agent-skills
+   ```
+
+2. Update `config.yaml`:
+   ```yaml
+   skill_sources:
+     awesome:
+       enabled: true
+       path: "~/awesome-agent-skills"
+   ```
 
 ### Basic Usage
 
@@ -47,9 +267,64 @@ python main.py /path/to/your-project
 
 # Interactive mode (confirms findings before generating)
 python main.py . --interactive
+```
 
-# Import skills from external packs (Agent Rules + Vercel Skills)
-python main.py . --include-pack agent-rules --external-packs-dir ../external-packs
+### Advanced Options
+
+```bash
+# Save newly generated skills to your learned library
+python main.py /path/to/project --save-learned
+
+# Use only specific skill sources
+python main.py /path/to/project --source builtin
+python main.py /path/to/project --source awesome
+python main.py /path/to/project --source learned
+
+# Export in multiple formats
+python main.py /path/to/project --export-json --export-yaml
+```
+
+## 📚 Skill Library Management
+
+### Learned Skills Directory
+
+Your customized skills are stored in:
+```text
+~/.project-rules-generator/
+└── learned_skills/
+    ├── video-pipeline-reviewer.yaml
+    ├── gemini-api-reviewer.yaml
+    └── custom-skill.yaml
+```
+
+### Viewing Your Library
+
+```bash
+# List all learned skills
+ls ~/.project-rules-generator/learned_skills/
+
+# View a specific skill
+cat ~/.project-rules-generator/learned_skills/video-pipeline-reviewer.yaml
+```
+
+### Editing Skills
+
+Skills are stored as YAML - edit them directly:
+
+```bash
+code ~/.project-rules-generator/learned_skills/video-pipeline-reviewer.yaml
+```
+
+Changes take effect immediately on the next run.
+
+### Sharing Skills
+
+Share your best skills with the community:
+
+```bash
+# Copy skill to a shared repository
+cp ~/.project-rules-generator/learned_skills/my-awesome-skill.yaml \
+   ~/awesome-agent-skills/skills/custom/
 ```
 
 ### Example Output
@@ -162,6 +437,7 @@ You can mix in skills from other repositories like [agent-rules](https://github.
    # You can mix multiple packs
    python main.py . --include-pack agent-rules --include-pack vercel-skills --external-packs-dir ..
    ```
+   
 
 ## 🔌 Integrations & Formats
 
