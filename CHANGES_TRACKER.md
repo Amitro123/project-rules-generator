@@ -16,6 +16,8 @@ Date: 2026-02-05
 - `README.md`: [MOD] Added specific documentation for new formats and packs.
 - `main.py`: [FIX] Improved `tqdm` fallback to support context manager protocol.
 - `requirements.txt`: [MOD] Added `tqdm` dependency.
+- `.gitignore`: [MOD] Removed redundant pycache entries.
+- `Git`: [DEL] Removed accidentally tracked `__pycache__` files from repo.
 
 ## Verification
 - **Test Suite**: `pytest tests/test_skills_structure.py` passed.
