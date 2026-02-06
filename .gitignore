@@ -31,3 +31,6 @@ Thumbs.db
 *-rules.md
 !tests/test_samples/sample-project/sample-project-skills.md
 !tests/test_samples/sample-project/sample-project-rules.md
+SESSION_SUMMARY.md
+CHANGES_TRACKER.md
+AMIT_CODING_PREFERENCES.md

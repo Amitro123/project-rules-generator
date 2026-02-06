@@ -109,3 +109,27 @@ Some features here.
         assert len(TECH_KEYWORDS) > 0
         assert 'python' in TECH_KEYWORDS
         assert 'docker' in TECH_KEYWORDS
+
+    def test_extract_tech_stack_ignores_examples(self, tmp_path):
+        """Test that tech extraction ignores Examples sections."""
+        readme = tmp_path / "README.md"
+        readme.write_text("""# Project
+Uses Python.
+        
+## Examples
+        
+Here is how to use ffmpeg and opencv in your own project.
+        
+## Supported Types
+        
+| Type | Tech |
+|---|---|
+| ML | PyTorch |
+""")
+        
+        result = parse_readme(readme)
+        assert 'python' in result['tech_stack']
+        # These should FAIL until we fix the parser
+        assert 'ffmpeg' not in result['tech_stack'], "ffmpeg should be ignored in Examples"
+        assert 'opencv' not in result['tech_stack'], "opencv should be ignored in Examples"
+        assert 'pytorch' not in result['tech_stack'], "pytorch should be ignored in Supported Types"

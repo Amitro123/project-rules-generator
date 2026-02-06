@@ -7,9 +7,25 @@ import click
 try:
     from tqdm import tqdm
 except ImportError:
-    # Fallback to a dummy tqdm
-    def tqdm(iterable=None, *args, **kwargs):
-        return iterable if iterable else []
+    # Fallback to a dummy tqdm that supports context manager
+    class tqdm:
+        def __init__(self, iterable=None, *args, **kwargs):
+            self.iterable = iterable or []
+        
+        def __iter__(self):
+            return iter(self.iterable)
+            
+        def __enter__(self):
+            return self
+            
+        def __exit__(self, *args):
+            pass
+            
+        def update(self, *args):
+            pass
+            
+        def set_description(self, *args):
+            pass
 
 from analyzer.readme_parser import parse_readme
 from generator.rules_generator import generate_rules

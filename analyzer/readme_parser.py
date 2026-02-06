@@ -68,7 +68,16 @@ TECH_KEYWORDS = [
 def _extract_tech_stack(content: str) -> List[str]:
     """Extract technologies from README content."""
     
-    content_lower = content.lower()
+    # Remove sections that typically contain examples or comparisons to avoid false positives
+    # Matches headers containing keywords and all content until the next header
+    ignore_pattern = r'(?m)^\s*#+\s*.*(?:Example|Sample|Supported|Comparison).*$(?:\n(?!^\s*#+).*)*'
+    content_cleaned = re.sub(ignore_pattern, '', content)
+    
+    # Also strip code blocks to avoid matching tools in examples/config
+    # This also helps avoid matching 'ffmpeg' in the JSON example
+    content_cleaned = re.sub(r'```[\s\S]*?```', '', content_cleaned)
+
+    content_lower = content_cleaned.lower()
     found = [tech for tech in TECH_KEYWORDS if re.search(rf'\b{re.escape(tech)}\b', content_lower)]
     
     # Remove duplicates, preserve order

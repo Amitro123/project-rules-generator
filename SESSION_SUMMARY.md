@@ -30,3 +30,11 @@ Date: 2026-02-05
 ## Decisions
 - **YAML Templates**: Chose YAML for templates over JSON for better readability when manually editing triggers/descriptions.
 - **Renderer Pattern**: Decided to use a Strategy pattern for Renderers to easily add new formats (e.g., TOML) in the future.
+
+## Fixed
+- **CI Failures**:
+  - Fixed `TypeError` in `main.py` when `tqdm` is missing.
+  - Replaced dummy function with a class implementing `__enter__`/`__exit__`.
+  - Verified with full test suite (51 tests passed).
+- **Dependencies**:
+  - Added `tqdm` to `requirements.txt` to ensure progress bars appear in production/CI.

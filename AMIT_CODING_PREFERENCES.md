@@ -11,3 +11,5 @@ Learned:
 - **Testing**: pytest coverage required. Update tests when templates change.
 - **Docs**: README must be kept in sync.
 - **Generator**: Dynamic fallbacks are good, but specific templates take precedence.
+- **Robust Imports**: When using optional dependencies like `tqdm`, ensure fallbacks implement the full interface (e.g., context manager protocol) to avoid crash in CI/minimal environments.
+- **Cleanup**: Always ensure `__pycache__` is ignored and deleted. Use `clean.ps1` helper.

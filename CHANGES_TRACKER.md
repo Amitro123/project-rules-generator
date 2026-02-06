@@ -14,6 +14,8 @@ Date: 2026-02-05
 - `tests/test_importers.py`: [NEW] Tests for external packs.
 - `tests/test_pack_integration.py`: [NEW] Tests for pack merging.
 - `README.md`: [MOD] Added specific documentation for new formats and packs.
+- `main.py`: [FIX] Improved `tqdm` fallback to support context manager protocol.
+- `requirements.txt`: [MOD] Added `tqdm` dependency.
 
 ## Verification
 - **Test Suite**: `pytest tests/test_skills_structure.py` passed.
