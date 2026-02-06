@@ -1,9 +1,12 @@
 from pathlib import Path
 from typing import List, Dict, Any
 import os
+import logging
 from ..types import Skill, SkillNeed
 from .base import SkillSource
 from ..skill_templates import load_skill_from_yaml
+
+logger = logging.getLogger("project_rules_generator")
 
 class LearnedSkillsSource(SkillSource):
     """Source that loads skills from the user's learned skills directory."""
@@ -23,9 +26,8 @@ class LearnedSkillsSource(SkillSource):
         if self.enabled and not self.learned_path.exists():
             try:
                 self.learned_path.mkdir(parents=True, exist_ok=True)
-                # We can't print easily here without verbose flag, but orchestrator might handle logging
             except Exception as e:
-                pass # logging.warning(f"Could not create learned skills dir: {e}")
+                logger.warning(f"Could not create learned skills dir: {e}")
 
     @property
     def name(self) -> str:
@@ -39,23 +41,24 @@ class LearnedSkillsSource(SkillSource):
             return len(order) - order.index('learned')
         return 100 # Default high priority
 
-    def discover(self, needs: List[SkillNeed]) -> List[Skill]:
+    def _scan_skills(self) -> List[Skill]:
         if not self.enabled or not self.learned_path.exists():
             return []
 
-        found_skills = []
-        
-        # Load all learned skills
-        # Assuming learned skills are stored as individual YAMLs or grouped
-        all_learned = []
+        all_skills = []
         for yaml_file in self.learned_path.glob('*.yaml'):
             try:
                 skills = load_skill_from_yaml(yaml_file)
                 for s in skills:
                     s.source = "learned"
-                    all_learned.append(s)
-            except Exception:
-                pass
+                    all_skills.append(s)
+            except Exception as e:
+                logger.warning(f"Failed to load learned skill {yaml_file}: {e}")
+        return all_skills
+
+    def discover(self, needs: List[SkillNeed]) -> List[Skill]:
+        found_skills = []
+        all_learned = self._scan_skills()
 
         # Match needs
         for need in needs:
@@ -74,6 +77,9 @@ class LearnedSkillsSource(SkillSource):
                      found_skills.append(skill)
 
         return found_skills
+
+    def list_skills(self) -> List[Skill]:
+        return self._scan_skills()
         
     def save_skill(self, skill: Skill):
         """Save a new skill to the learned library."""
@@ -102,4 +108,4 @@ class LearnedSkillsSource(SkillSource):
                 yaml.dump([data], f, sort_keys=False)
                 
         except Exception as e:
-            print(f"Failed to save skill {skill.name}: {e}")
+            logger.error(f"Failed to save skill {skill.name}: {e}")

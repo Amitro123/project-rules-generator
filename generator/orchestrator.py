@@ -1,7 +1,10 @@
+import logging
 from typing import List, Dict, Any
 from .types import Skill, SkillNeed
 from .sources.base import SkillSource
 from analyzer.needs import ProjectNeedsAnalyzer
+
+logger = logging.getLogger("project_rules_generator")
 
 class SkillOrchestrator:
     """
@@ -52,6 +55,16 @@ class SkillOrchestrator:
         # 5. Generation (TODO: Future phase)
         
         return adapted_skills
+
+    def list_all_skills(self) -> List[Skill]:
+        """List all available skills from all sources."""
+        all_skills = []
+        for source in self.sources:
+            try:
+                all_skills.extend(source.list_skills())
+            except Exception as e:
+                logger.error(f"Error listing skills from {source.name}: {e}")
+        return all_skills
     
     def _discover_skills(self, needs: List[SkillNeed]) -> List[Skill]:
         """Query all sources for skills."""
@@ -62,7 +75,7 @@ class SkillOrchestrator:
                 all_skills.extend(found)
             except Exception as e:
                 # Log error but continue
-                print(f"Error discovering from {source.name}: {e}")
+                logger.error(f"Error discovering from {source.name}: {e}")
         return all_skills
         
     def _match_skills(self, candidates: List[Skill]) -> List[Skill]:
@@ -81,6 +94,7 @@ class SkillOrchestrator:
                 unique_skills[skill.name] = skill
             else:
                 # Debug logging
+                logger.debug(f"Skipping duplicate skill {skill.name} from lower priority source")
                 pass
                 
         return list(unique_skills.values())

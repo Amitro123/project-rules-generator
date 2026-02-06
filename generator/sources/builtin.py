@@ -4,6 +4,9 @@ from ..types import Skill, SkillNeed
 from .base import SkillSource
 from ..skill_templates import load_skill_from_yaml
 import os
+import logging
+
+logger = logging.getLogger("project_rules_generator")
 
 class BuiltinSkillsSource(SkillSource):
     """Source that loads skills from the project's templates directory."""
@@ -41,6 +44,21 @@ class BuiltinSkillsSource(SkillSource):
             return len(order) - order.index('builtin')
         return 0 # Default low priority
 
+    def _scan_skills(self) -> List[Skill]:
+        if not self.templates_path.exists():
+            return []
+
+        all_skills = []
+        for yaml_file in self.templates_path.glob('*.yaml'):
+            try:
+                skills = load_skill_from_yaml(yaml_file)
+                for s in skills:
+                    s.source = "builtin" # tag source
+                    all_skills.append(s)
+            except Exception as e:
+                logger.warning(f"Failed to load builtin skill {yaml_file}: {e}")
+        return all_skills
+
     def discover(self, needs: List[SkillNeed]) -> List[Skill]:
         """
         Scan templates for skills that match the needs.
@@ -49,22 +67,8 @@ class BuiltinSkillsSource(SkillSource):
         2. Load them all (caching opportunity here).
         3. Simple name matching: if need.name in skill.name or keyword match.
         """
-        if not self.templates_path.exists():
-            return []
-
         found_skills = []
-        
-        # Load all available builtin skills
-        all_builtins = []
-        for yaml_file in self.templates_path.glob('*.yaml'):
-            try:
-                skills = load_skill_from_yaml(yaml_file)
-                for s in skills:
-                    s.source = "builtin" # tag source
-                    all_builtins.append(s)
-            except Exception as e:
-                # Log error
-                pass
+        all_builtins = self._scan_skills()
 
         # Match needs
         for need in needs:
@@ -86,3 +90,6 @@ class BuiltinSkillsSource(SkillSource):
                      continue
 
         return found_skills
+
+    def list_skills(self) -> List[Skill]:
+        return self._scan_skills()
