@@ -32,3 +32,7 @@ class SkillSource(ABC):
     def priority(self) -> int:
         """Priority of the source (higher wins conflicts)."""
         pass
+
+    def list_skills(self) -> List[Skill]:
+        """List all available skills from this source."""
+        return []

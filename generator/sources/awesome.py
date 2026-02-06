@@ -1,9 +1,12 @@
 from pathlib import Path
 from typing import List, Dict, Any
 import os
+import logging
 import yaml
 from ..types import Skill, SkillNeed
 from .base import SkillSource
+
+logger = logging.getLogger("project_rules_generator")
 
 class AwesomeSkillsSource(SkillSource):
     """
@@ -27,7 +30,7 @@ class AwesomeSkillsSource(SkillSource):
         
         if not self.path.exists():
             # In a real app we might log warning, here we just disable
-            print(f"Awesome skills path not found: {self.path}")
+            logger.warning(f"Awesome skills path not found: {self.path}")
             return
             
         self.enabled = cfg.get('enabled', False)
@@ -67,7 +70,7 @@ class AwesomeSkillsSource(SkillSource):
                         s.source = "awesome-skills"
                         self.skills[s.name] = s
             except Exception as e:
-                print(f"Failed to load {yaml_file}: {e}")
+                logger.warning(f"Failed to load {yaml_file}: {e}")
 
     def _parse_awesome_skill(self, data: Dict[str, Any]) -> Skill:
         """Parse the specific awesome-skills format into a Skill object."""
@@ -145,3 +148,8 @@ class AwesomeSkillsSource(SkillSource):
                 score = max(score, 0.7)
         
         return score
+
+    def list_skills(self) -> List[Skill]:
+        if not self.enabled:
+            return []
+        return list(self.skills.values())
