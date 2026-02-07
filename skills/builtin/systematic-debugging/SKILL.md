@@ -1,59 +1,50 @@
 # Skill: Systematic Debugging
 
 ## Purpose
-Find root cause of bugs through 4-phase structured process.
+Find root cause of bugs through 5-phase structured process.
 
 ## Auto-Trigger
 - User reports: "bug", "error", "not working", "failing test"
 - CI/CD failure
 - Exception in logs
 
-## 4-Phase Process
+## 5-Phase Process
 
 ### Phase 1: Reproduce
 1. Get exact steps to reproduce
 2. Identify expected vs actual behavior
 3. Create minimal failing test
 4. Verify reproduction consistently
-
 **Output**: Failing test that isolates the bug
 
-### Phase 2: Root Cause Tracing
-Use techniques:
+### Phase 2: Locate
+Use techniques to find *where* it breaks:
+- **Binary Search**: Comment out half the code
+- **Trace Backwards**: From error to source
+- **Instrumentation**: Log state before/after suspected lines
+**Output**: Exact line causing bug
 
-**A. Binary Search**
-- Comment out half the code
-- Does bug still occur?
-- Narrow down to specific lines
+### Phase 3: Analyze
+Understand *why* it breaks:
+- Check assumptions
+- Verify data types
+- Review recent changes
+**Output**: Root cause explanation
 
-**B. Trace Backwards**
-- Start from error point
-- Follow data flow backwards
-- Find where expectation breaks
+### Phase 4: Fix
+1. **Immediate Fix**: Correct the logic
+2. **Defense in Depth**: Add input validation/guards
+3. **Monitoring**: Add logging if needed
+**Output**: Committed fix
 
-**C. Add Instrumentation**
-```python
-logger.debug(f"State before: {state}")
-problematic_function()
-logger.debug(f"State after: {state}")
-```
-**Output**: Exact line/condition causing bug
-
-### Phase 3: Defense in Depth
-Don't just fix the symptom:
-- **Immediate Fix**: Prevent crash
-- **Validation**: Add input checks
-- **Monitoring**: Add logging/metrics
-- **Prevention**: Add tests for edge cases
-
-### Phase 4: Verification
-- Failing test now passes
-- All other tests still pass
-- Manual verification in UI/CLI
-- Check logs for warnings
+### Phase 5: Verify
+1. Failing test now passes
+2. All other tests still pass (regression check)
+3. Manual verification
+**Output**: Verified green build
 
 ## Anti-Patterns
 ❌ Guessing without reproducing
 ❌ Fixing symptoms without finding root cause
-❌ Not adding tests for the bug
+❌ precise line not identified
 ❌ Declaring "fixed" without verification

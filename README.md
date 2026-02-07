@@ -276,6 +276,21 @@ python main.py /path/to/your-project
 python main.py . --interactive
 ```
 
+### 🔧 Skill Management (CLI)
+
+Manage your skills directly from the terminal:
+
+```bash
+# List all available skills (builtin, awesome, learned)
+python main.py --list-skills
+
+# Create a new learned skill from a template
+python main.py --create-skill my-new-skill
+
+# Create a skill based on an existing README (extracts context)
+python main.py --create-skill specialized-workflow --from-readme ./docs/workflow.md
+```
+
 ### Advanced Options
 
 ```bash
