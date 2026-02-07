@@ -54,7 +54,8 @@ def test_create_skill_sanitization(temp_skills_dir, mock_manager):
         result = runner.invoke(main, ['--create-skill', 'bad name!'])
         # It should sanitize 'bad name!' to 'badname' and succeed
         assert result.exit_code == 0
-        assert "Created new skill 'bad name!'" in result.output or "badname" in result.output
+        # We now expect the sanitized name in the output
+        assert "Created new skill 'badname'" in result.output
 
         skill_path = temp_skills_dir / "learned" / "badname" / "SKILL.md"
         assert skill_path.exists()
@@ -87,10 +88,11 @@ def test_cli_respects_project_path(tmp_path):
 
     runner = CliRunner()
     with patch("main.SkillsManager") as MockClass:
-        # Need to make sure MockClass returns a mock that has list_skills returning a dict
-        MockClass.return_value.list_skills.return_value = {}
+        # Mocking list_skills to return a structure that won't cause main.py to crash on sum()
+        MockClass.return_value.list_skills.return_value = {'builtin': ['skill1']}
         
-        runner.invoke(main, [str(target_dir), '--list-skills'])
+        result = runner.invoke(main, [str(target_dir), '--list-skills'])
 
+        assert result.exit_code == 0
         expected_path = target_dir.resolve() / "skills"
         MockClass.assert_called_with(base_path=expected_path)

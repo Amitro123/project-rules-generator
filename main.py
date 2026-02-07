@@ -1,5 +1,9 @@
 """CLI orchestrator for project rules and skills generator."""
 import sys
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
 from pathlib import Path
 import yaml
 import click
@@ -124,7 +128,7 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
             manager = SkillsManager(base_path=skills_dir)
             try:
                 path = manager.create_skill(create_skill, from_readme=from_readme)
-                click.echo(f"✨ Created new skill '{create_skill}' in {path}")
+                click.echo(f"✨ Created new skill '{path.name}' in {path}")
             except Exception as e:
                 click.echo(f"❌ Failed to create skill: {e}", err=True)
                 sys.exit(1)

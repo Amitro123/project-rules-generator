@@ -240,40 +240,40 @@ If **LEARNED** doesn't exist:
 
 ### Installation
 
-```bash
-git clone https://github.com/Amitro123/project-rules-generator
-cd project-rules-generator
-pip install -r requirements.txt
-```
-
-### Optional: Enable Awesome Agent Skills
-
-To use community-curated skills:
-
-1. Clone the awesome-agent-skills repository:
+1. Clone the repository:
    ```bash
-   git clone https://github.com/awesome-agent-skills/awesome-agent-skills ~/awesome-agent-skills
+   git clone https://github.com/Amitro123/project-rules-generator
+   cd project-rules-generator
    ```
 
-2. Update `config.yaml`:
-   ```yaml
-   skill_sources:
-     awesome:
-       enabled: true
-       path: "~/awesome-agent-skills"
+2. Install the package in editable mode:
+   ```bash
+   pip install -e .
    ```
 
 ### Basic Usage
 
+After installation, you can run the generator from any directory:
+
+```bash
+project-rules-generator [OPTIONS] [PROJECT_PATH]
+```
+
+Or for development (if not installed):
+```bash
+python main.py [OPTIONS] [PROJECT_PATH]
+```
+
+Examples:
 ```bash
 # Generate for current directory
-python main.py .
+project-rules-generator .
 
 # Generate for a specific project
-python main.py /path/to/your-project
+project-rules-generator /path/to/your-project
 
-# Interactive mode (confirms findings before generating)
-python main.py . --interactive
+# Interactive mode
+project-rules-generator . --interactive
 ```
 
 ### 🔧 Skill Management (CLI)
