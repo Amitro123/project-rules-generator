@@ -33,3 +33,6 @@ project-rules-generator = "main:main"
 [tool.setuptools]
 py-modules = ["main", "project_rules_generator"]
 packages = ["generator", "analyzer", "prg_utils"]
+
+[tool.setuptools.package-data]
+generator = ["skills/**/*"]
