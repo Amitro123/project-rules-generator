@@ -54,20 +54,85 @@ class SkillsManager:
     def create_skill(self, name: str, from_readme: Optional[str] = None) -> Path:
         """Create a new learned skill."""
         # Sanitize name
-        clean_name = re.sub(r'[^a-zA-Z0-9_\-]', '', name)
-        if not clean_name:
+        safe_name = re.sub(r'[^a-z0-9-]', '', name.lower().replace(' ', '-'))
+        if not safe_name:
             raise ValueError("Invalid skill name provided.")
 
-        target_dir = self.learned_path / clean_name
+        target_dir = self.learned_path / safe_name
         if target_dir.exists():
-            raise FileExistsError(f"Skill '{clean_name}' already exists.")
+            raise FileExistsError(f"Skill '{safe_name}' already exists.")
 
         target_dir.mkdir(parents=True, exist_ok=True)
         skill_file = target_dir / "SKILL.md"
 
-        # Default Template
-        title = clean_name.replace('-', ' ').title()
-        content = f"""# Skill: {title}
+        content = ""
+        if from_readme:
+            readme_path = Path(from_readme)
+            if readme_path.exists():
+                try:
+                    from analyzer.readme_parser import (
+                        extract_purpose, extract_tech_stack, 
+                        extract_auto_triggers, extract_process_steps, 
+                        extract_anti_patterns
+                    )
+                    
+                    readme_content = readme_path.read_text(encoding='utf-8', errors='replace')
+                    
+                    purpose = extract_purpose(readme_content)
+                    tech = extract_tech_stack(readme_content)
+                    triggers = extract_auto_triggers(readme_content, safe_name)
+                    steps = extract_process_steps(readme_content)
+                    anti_patterns = extract_anti_patterns(readme_content, tech)
+                    
+                    # Build skill content
+                    title = safe_name.replace('-', ' ').title()
+                    content = f"# Skill: {title}\n\n"
+                    content += f"## Purpose\n{purpose}\n\n"
+                    
+                    content += "## Auto-Trigger\n"
+                    content += "\n".join(['- ' + t for t in triggers]) + "\n\n"
+                    
+                    content += "## Process\n\n"
+                    step_count = 1
+                    for step in steps:
+                        if step.strip().startswith('```'):
+                            content += f"{step}\n\n"
+                        else:
+                            # Clean existing numbering
+                            clean_step = re.sub(r'^\d+\.\s*', '', step)
+                            content += f"### {step_count}. {clean_step}\n\n"
+                            step_count += 1
+                            
+                    content += "## Output\n[Describe what artifacts or state changes result from following this skill]\n\n"
+                    
+                    content += "## Anti-Patterns\n"
+                    for ap in anti_patterns:
+                        content += f"❌ {ap}\n"
+                        
+                    if tech:
+                        content += f"\n## Tech Stack\n{', '.join(tech)}\n"
+                        
+                    content += f"\n## Context (from {readme_path.name})\n\n{readme_content}\n"
+
+                except Exception as e:
+                    print(f"[!] Warning: Smart parsing failed ({e}). Falling back to template.")
+                    # Fallthrough to template + context
+                    pass
+            else:
+                 print(f"[!] Warning: README {from_readme} not found.")
+
+        # Fallback / Default Template if content not generated
+        if not content:
+            if from_readme and Path(from_readme).exists():
+                 # Valid readme but parsing failed or was skipped
+                 readme_path = Path(from_readme)
+                 readme_content = readme_path.read_text(encoding='utf-8', errors='replace')
+                 additional_context = f"\n\n## Context (from {readme_path.name})\n\n{readme_content}\n"
+            else:
+                 additional_context = ""
+
+            title = safe_name.replace('-', ' ').title()
+            content = f"""# Skill: {title}
 
 ## Purpose
 [One sentence: what problem does this solve]
@@ -84,18 +149,7 @@ class SkillsManager:
 ## Anti-Patterns
 [x] [What NOT to do]
 """
-
-        if from_readme:
-            readme_path = Path(from_readme)
-            if readme_path.exists():
-                readme_content = readme_path.read_text(encoding='utf-8', errors='replace')
-                content += f"\n\n## Context (from {readme_path.name})\n\n{readme_content}\n"
-            else:
-                 # We raise here so the caller can warn the user, or we can just log/print.
-                 # For now, let's include a warning in the file itself/log.
-                 # Raising might abort creation, which is maybe not desired if just the context is missing.
-                 # But keeping consistent with previous logic:
-                 print(f"[!] Warning: README {from_readme} not found.")
+            content += additional_context
 
         skill_file.write_text(content, encoding='utf-8')
         return target_dir

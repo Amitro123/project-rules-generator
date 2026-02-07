@@ -29,12 +29,44 @@ def parse_readme(readme_path: Union[str, Path]) -> Dict[str, Any]:
     
     return {
         'name': _extract_project_name(content, path),
-        'tech_stack': _extract_tech_stack(content),
+        'tech_stack': extract_tech_stack(content),
         'features': _extract_features(content),
         'description': _extract_description(content),
+        'installation': _extract_section(content, ['installation', 'setup', 'getting started']),
+        'usage': _extract_section(content, ['usage', 'how to run', 'quick start']),
+        'troubleshooting': _extract_section(content, ['troubleshooting', 'faq', 'common issues', 'gotchas']),
         'raw_readme': content,
         'readme_path': str(path)
     }
+
+
+def _extract_section(content: str, keywords: List[str]) -> str:
+    """Extract content of a section matching keywords."""
+    keyword_pattern = '|'.join(keywords)
+    # Match ## Header (allowing for emojis/decoration)
+    # e.g. "## 🚀 Installation" or "## Installation 📦"
+    header_pattern = re.compile(
+        rf'(?m)^(#+)\s*(?:[^a-zA-Z0-9\n]*)\s*(?:{keyword_pattern})\s*(?:[^a-zA-Z0-9\n]*)$', 
+        re.IGNORECASE
+    )
+    
+    match = header_pattern.search(content)
+    if not match:
+        return ""
+        
+    start_pos = match.end()
+    level = len(match.group(1))
+    
+    # Find next header of same or higher level (fewer #s)
+    # e.g. if we found ## Install, stop at ## Usage or # Title, but consume ### Sub-step
+    next_header_pattern = re.compile(
+        rf'(?m)^#{{1,{level}}}\s+'
+    )
+    
+    next_match = next_header_pattern.search(content, start_pos)
+    end_pos = next_match.start() if next_match else len(content)
+    
+    return content[start_pos:end_pos].strip()
 
 
 def _extract_project_name(content: str, path: Path) -> str:
@@ -59,13 +91,13 @@ TECH_KEYWORDS = [
     'pytorch', 'tensorflow', 'sklearn', 'transformers',
     'docker', 'kubernetes', 'redis', 'postgres', 'mongodb',
     'gemini', 'openai', 'anthropic', 'claude', 'gpt', 'langchain',
-    'ffmpeg', 'opencv', 'pillow', 'moviepy',
+    'ffmpeg', 'opencv', 'pillow', 'moviepy', 'whisper',
     'click', 'argparse', 'typer', 'fire',
     'terraform', 'helm', 'aws', 'gcp', 'azure'
 ]
 
 
-def _extract_tech_stack(content: str) -> List[str]:
+def extract_tech_stack(content: str) -> List[str]:
     """Extract technologies from README content."""
     
     # Remove sections that typically contain examples or comparisons to avoid false positives
@@ -82,6 +114,96 @@ def _extract_tech_stack(content: str) -> List[str]:
     
     # Remove duplicates, preserve order
     return list(dict.fromkeys(found))
+
+
+def extract_purpose(readme: str) -> str:
+    """Extract project purpose/description from README."""
+    # Look for first paragraph after title
+    lines = readme.split('\n')
+    for i, line in enumerate(lines):
+        if line.startswith('# ') and i + 1 < len(lines):
+            # Get first non-empty line after title
+            for j in range(i + 1, min(i + 5, len(lines))):
+                if lines[j].strip() and not lines[j].startswith('#'):
+                    return lines[j].strip().rstrip('.')
+    return "Solve project-specific workflow challenges"
+
+
+def extract_auto_triggers(readme: str, skill_name: str) -> List[str]:
+    """Generate auto-trigger suggestions."""
+    triggers = []
+    
+    # From skill name
+    name_words = skill_name.replace('-', ' ').split()
+    quoted_words = [f'"{w}"' for w in name_words]
+    triggers.append(f"User mentions: {', '.join(quoted_words)}")
+    
+    # From tech stack
+    tech = extract_tech_stack(readme)
+    if 'ffmpeg' in tech:
+        triggers.append("FFmpeg operations needed")
+    if any(t in tech for t in ['react', 'typescript', 'node']):
+        triggers.append("Working in frontend code: *.tsx, *.jsx, *.ts")
+    if 'python' in tech:
+        triggers.append("Working in backend code: *.py")
+    
+    # File patterns from README
+    if re.search(r'\*\.(mp4|avi|mov)', readme):
+        triggers.append("Working with video files: *.mp4, *.avi, *.mov")
+    
+    return triggers
+
+
+def extract_process_steps(readme: str) -> List[str]:
+    """Extract installation/quickstart steps from README."""
+    steps = []
+    in_quickstart = False
+    
+    lines = readme.split('\n')
+    for i, line in enumerate(lines):
+        # Find Quick Start section
+        if re.search(r'## .*(quick start|installation|setup)', line, re.IGNORECASE):
+            in_quickstart = True
+            continue
+        
+        if in_quickstart:
+            # Stop at next ## section
+            if line.startswith('## ') and not line.startswith('### '):
+                break
+            
+            # Collect numbered steps or commands
+            if re.match(r'^\d+\.', line.strip()):
+                steps.append(line.strip())
+            elif line.strip().startswith('```'):
+                # Include code blocks
+                code_block = []
+                for j in range(i, len(lines)):
+                    code_block.append(lines[j])
+                    if j > i and lines[j].strip().startswith('```'):
+                        break
+                steps.append('\n'.join(code_block))
+    
+    return steps[:10]  # Limit to 10 steps
+
+
+def extract_anti_patterns(readme: str, tech: List[str]) -> List[str]:
+    """Generate anti-patterns based on tech stack."""
+    anti_patterns = []
+    
+    if 'ffmpeg' in tech:
+        anti_patterns.append("Running without FFmpeg installed → Check first: `ffmpeg -version`")
+    if 'redis' in tech:
+        anti_patterns.append("Processing without Redis for queue management")
+    if any(t in tech for t in ['whisper', 'gemini']):
+        anti_patterns.append("Ignoring API rate limits")
+    if 'docker' in tech:
+        anti_patterns.append("Not using Docker for consistent environment")
+    
+    # Generic
+    anti_patterns.append("Not testing before deployment")
+    anti_patterns.append("Skipping error handling")
+    
+    return anti_patterns
 
 
 def _extract_features(content: str, max_features: int = 10) -> List[str]:

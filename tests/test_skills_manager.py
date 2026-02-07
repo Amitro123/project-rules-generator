@@ -65,23 +65,31 @@ def test_create_skill(temp_skills_dir, mock_manager):
         skill_path = temp_skills_dir / "learned" / "new-skill" / "SKILL.md"
         assert skill_path.exists()
         # Assert updated template format
-        assert "# Skill: New Skill" in skill_path.read_text()
+        assert "# Skill: New Skill" in skill_path.read_text(encoding='utf-8')
 
 def test_create_skill_sanitization(temp_skills_dir, mock_manager):
     runner = CliRunner()
     with patch("main.SkillsManager", side_effect=mock_manager):
         result = runner.invoke(main, ['--create-skill', 'bad name!'])
-        # It should sanitize 'bad name!' to 'badname' and succeed
+        # It should sanitize 'bad name!' to 'bad-name' and succeed
         assert result.exit_code == 0
         # We now expect the sanitized name in the output
-        assert "Created new skill 'badname'" in result.output
+        assert "Created new skill 'bad-name'" in result.output
 
-        skill_path = temp_skills_dir / "learned" / "badname" / "SKILL.md"
+        skill_path = temp_skills_dir / "learned" / "bad-name" / "SKILL.md"
         assert skill_path.exists()
 
 def test_create_skill_from_readme(temp_skills_dir, mock_manager, tmp_path):
     readme = tmp_path / "README.md"
-    readme.write_text("Project Description")
+    readme.write_text("""# Test Project
+Description of test project.
+
+## Installation
+1. Run install command.
+
+## Quick Start
+1. Run usage command.
+""", encoding='utf-8')
 
     runner = CliRunner()
     with patch("main.SkillsManager", side_effect=mock_manager):
@@ -90,8 +98,18 @@ def test_create_skill_from_readme(temp_skills_dir, mock_manager, tmp_path):
 
         skill_path = temp_skills_dir / "learned" / "readme-skill" / "SKILL.md"
         assert skill_path.exists()
-        # Assert updated context format
-        assert "## Context (from README.md)" in skill_path.read_text()
+        content = skill_path.read_text(encoding='utf-8')
+        
+        # Assert smart filling
+        assert "Description of test project" in content  # Purpose
+        assert "Run install command" in content          # Process (Installation)
+        assert "Run usage command" in content            # Process (Usage/Quick Start)
+        
+        # Anti-Patterns (generic ones should be there even if tech stack is empty)
+        assert "❌ Not testing before deployment" in content
+        
+        # Context
+        assert "## Context (from README.md)" in content
 
 def test_create_duplicate_skill(temp_skills_dir, mock_manager):
     runner = CliRunner()
