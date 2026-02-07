@@ -7,6 +7,11 @@ if sys.platform == 'win32':
 from pathlib import Path
 import yaml
 import click
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if present
+load_dotenv()
 
 try:
     from tqdm import tqdm
@@ -95,8 +100,9 @@ from generator.skills_manager import SkillsManager
 @click.option('--output', type=click.Path(), default='.clinerules', help='Output file (unified rules + skills)')
 @click.option('--with-skills', is_flag=True, default=True, help='Include skills in output')
 @click.option('--auto-generate-skills', is_flag=True, help='Auto-detect and generate skills (requires --ai)')
+@click.option('--api-key', help='Gemini API Key (overrides GEMINI_API_KEY env var)')
 @click.version_option(version='0.1.0')
-def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills):
+def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key):
     """Generate rules.md and skills.md from README.md
     
     Examples:
@@ -113,6 +119,10 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
     else:
         setup_logging(verbose=False)
     
+    # Handle API Key
+    if api_key:
+        os.environ['GEMINI_API_KEY'] = api_key
+
     try:
         # Load config
         config = load_config()

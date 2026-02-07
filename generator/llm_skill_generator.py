@@ -34,13 +34,16 @@ class LLMSkillGenerator:
     def generate_skill(self, skill_name: str, context: Dict) -> str:
         """Generate complete skill from project context."""
         prompt = self._build_prompt(skill_name, context)
-        
+        return self.generate_content(prompt, max_tokens=2000)
+
+    def generate_content(self, prompt: str, max_tokens: int = 2000) -> str:
+        """Generate content from prompt using the configured model."""
         try:
             response = self.model.generate_content(
                 prompt,
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.7,
-                    max_output_tokens=2000,
+                    max_output_tokens=max_tokens,
                 )
             )
             return response.text

@@ -214,8 +214,8 @@ class SkillsManager:
                 content = skill_data['content']
                 
                 # Extract Auto-Trigger section
-                # Match content between "## Auto-Trigger" and next "## " section
-                match = re.search(r'## Auto-Trigger\n(.*?)\n## ', content, re.DOTALL)
+                # Match content between "## Auto-Trigger" and next "## " section or end of file
+                match = re.search(r'## Auto-Trigger\n(.*?)(?:\n## |\Z)', content, re.DOTALL)
                 if match:
                     trigger_text = match.group(1)
                     conditions = [
