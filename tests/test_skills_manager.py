@@ -23,9 +23,28 @@ def temp_skills_dir(tmp_path):
 def mock_manager(temp_skills_dir):
     def side_effect(*args, **kwargs):
         # Allow any args, return manager pointing to temp dir for functional tests
-        # We ignore the path passed by main.py in functional tests to keep setup simple
-        return SkillsManager(base_path=temp_skills_dir)
+        # We override learned_path to use our temp dir instead of user home
+        manager = SkillsManager(base_path=temp_skills_dir)
+        manager.learned_path = temp_skills_dir / "learned"
+        return manager
     return side_effect
+
+# ... (omitted parts)
+
+def test_cli_respects_project_path(tmp_path):
+    target_dir = tmp_path / "target_project"
+    target_dir.mkdir()
+
+    runner = CliRunner()
+    with patch("main.SkillsManager") as MockClass:
+        # Mocking list_skills to return a structure that won't cause main.py to crash on sum()
+        MockClass.return_value.list_skills.return_value = {'builtin': ['skill1']}
+        
+        result = runner.invoke(main, [str(target_dir), '--list-skills'])
+
+        assert result.exit_code == 0
+        # Main no longer passes project specific path for skills location (uses default global)
+        MockClass.assert_called_with()
 
 def test_list_skills(temp_skills_dir, mock_manager):
     runner = CliRunner()
@@ -94,5 +113,5 @@ def test_cli_respects_project_path(tmp_path):
         result = runner.invoke(main, [str(target_dir), '--list-skills'])
 
         assert result.exit_code == 0
-        expected_path = target_dir.resolve() / "skills"
-        MockClass.assert_called_with(base_path=expected_path)
+        # Main no longer passes project specific path for skills location (uses default global)
+        MockClass.assert_called_with()

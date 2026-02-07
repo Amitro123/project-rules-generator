@@ -125,7 +125,7 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
         skills_dir = project_path / "skills"
         
         if create_skill:
-            manager = SkillsManager(base_path=skills_dir)
+            manager = SkillsManager()
             try:
                 path = manager.create_skill(create_skill, from_readme=from_readme)
                 click.echo(f"✨ Created new skill '{path.name}' in {path}")
@@ -136,7 +136,7 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
 
         if list_skills:
             # Use SkillsManager for raw listing of available skills
-            manager = SkillsManager(base_path=skills_dir)
+            manager = SkillsManager()
             skills_map = manager.list_skills()
 
             total_skills = sum(len(s) for s in skills_map.values())

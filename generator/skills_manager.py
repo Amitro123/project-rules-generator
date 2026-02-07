@@ -14,7 +14,9 @@ class SkillsManager:
             
         self.builtin_path = self.base_path / "builtin"
         self.awesome_path = self.base_path / "awesome"
-        self.learned_path = self.base_path / "learned"
+        
+        # storage for learned skills (user directory)
+        self.learned_path = Path.home() / ".project-rules-generator" / "learned_skills"
 
     def list_skills(self) -> Dict[str, List[str]]:
         """List all available skills organized by category."""

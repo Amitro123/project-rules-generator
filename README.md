@@ -284,7 +284,7 @@ Manage your skills directly from the terminal:
 # List all available skills (builtin, awesome, learned)
 python main.py --list-skills
 
-# Create a new learned skill from a template
+# Create a new learned skill from a template (Stored in ~/.project-rules-generator/learned_skills)
 python main.py --create-skill my-new-skill
 
 # Create a skill based on an existing README (extracts context)
