@@ -84,8 +84,10 @@ from generator.pack_manager import load_external_packs
 @click.option('--include-pack', multiple=True, help='Include external skill pack (name or path)')
 @click.option('--external-packs-dir', type=click.Path(exists=True, file_okay=False), help='Directory containing external packs')
 @click.option('--list-skills', is_flag=True, help='List all available skills from all sources')
+@click.option('--create-skill', help='Create a new learned skill with the given name')
+@click.option('--from-readme', type=click.Path(exists=True, dir_okay=False), help='Source README for creating a skill')
 @click.version_option(version='0.1.0')
-def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills):
+def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme):
     """Generate rules.md and skills.md from README.md
     
     Examples:
@@ -127,23 +129,16 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
              # Let's just ensure the FLAG is processed. 
              pass
 
+        # Provide skills listing
         if list_skills:
-            # Initialize Orchestrator and list skills
-            orchestrator = setup_orchestrator(config)
-            skills = orchestrator.list_all_skills()
-            click.echo(f"\nAvailable Skills ({len(skills)} found):")
-
-            # Group by source
-            by_source = {}
-            for s in skills:
-                src = s.source or "unknown"
-                if src not in by_source: by_source[src] = []
-                by_source[src].append(s)
-
-            for src, src_skills in by_source.items():
-                click.echo(f"\nSource: {src}")
-                for s in sorted(src_skills, key=lambda x: x.name):
-                    click.echo(f"  - {s.name}: {s.description}")
+            from generator.skills_cli import list_skills
+            list_skills()
+            sys.exit(0)
+            
+        # Create new skill
+        if create_skill:
+            from generator.skills_cli import create_skill as create_skill_func
+            create_skill_func(create_skill, from_readme)
             sys.exit(0)
 
         # Load External Packs
