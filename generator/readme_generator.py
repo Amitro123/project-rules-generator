@@ -149,8 +149,7 @@ Generate the complete README now:
 """
         
         generator = LLMSkillGenerator()
-        response = generator.model.generate_content(prompt)
-        return response.text
+        return generator.generate_content(prompt, max_tokens=3000)
     except Exception as e:
         click.echo(f"⚠️  LLM generation failed: {e}", err=True)
         click.echo("Falling back to template...")
