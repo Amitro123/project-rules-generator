@@ -71,6 +71,7 @@ def setup_orchestrator(config):
 
 
 from generator.pack_manager import load_external_packs
+from generator.skills_manager import SkillsManager
 
 @click.command()
 @click.argument('project_path', type=click.Path(exists=True, file_okay=False), default='.')
@@ -85,7 +86,7 @@ from generator.pack_manager import load_external_packs
 @click.option('--external-packs-dir', type=click.Path(exists=True, file_okay=False), help='Directory containing external packs')
 @click.option('--list-skills', is_flag=True, help='List all available skills from all sources')
 @click.option('--create-skill', help='Create a new learned skill with the given name')
-@click.option('--from-readme', type=click.Path(exists=True, dir_okay=False), help='Source README for creating a skill')
+@click.option('--from-readme', type=click.Path(exists=True, dir_okay=False), help='Use README as context for new skill')
 @click.version_option(version='0.1.0')
 def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme):
     """Generate rules.md and skills.md from README.md
@@ -114,31 +115,34 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
              if 'skill_sources' not in config: config['skill_sources'] = {}
              if 'learned' not in config['skill_sources']: config['skill_sources']['learned'] = {}
              config['skill_sources']['learned']['auto_save'] = True
-             # Use a distinct flag in config to trigger saving later?
-             # Orchestrator doesn't automatically save yet. We need to call save explicitly or tell Orchestrator to do it.
-             # The design doc said "Learning (optional) - save newly generated skills".
-             # Currently we don't generate new skills via LLM, so there is nothing *new* to save unless we save adapted skills?
-             # User Request: "Should generate video-pipeline-reviewer as new skill ... Should save it to learned_skills/"
-             # Since generation isn't implemented, we can't save generated skills.
-             # But if adaptation counts as "generation" for now? 
-             # Let's assume for now we only save if we had a generator.
-             # BUT user wants to see "List of skills saved".
-             # If I implement a dummy generator or just save adapted skills?
-             # Let's stick to the plan: Phase 5 is Generation.
-             # However, adaptation changes the skill. Maybe we save adapted skills if they are "new"?
-             # Let's just ensure the FLAG is processed. 
              pass
 
-        # Provide skills listing
-        if list_skills:
-            from generator.skills_cli import list_skills
-            list_skills()
-            sys.exit(0)
-            
-        # Create new skill
+        # Skills Manager Logic
+        skills_dir = project_path / "skills"
+        
         if create_skill:
-            from generator.skills_cli import create_skill as create_skill_func
-            create_skill_func(create_skill, from_readme)
+            manager = SkillsManager(base_path=skills_dir)
+            try:
+                path = manager.create_skill(create_skill, from_readme=from_readme)
+                click.echo(f"✨ Created new skill '{create_skill}' in {path}")
+            except Exception as e:
+                click.echo(f"❌ Failed to create skill: {e}", err=True)
+                sys.exit(1)
+            sys.exit(0)
+
+        if list_skills:
+            # Use SkillsManager for raw listing of available skills
+            manager = SkillsManager(base_path=skills_dir)
+            skills_map = manager.list_skills()
+
+            total_skills = sum(len(s) for s in skills_map.values())
+            click.echo(f"\nAvailable Skills ({total_skills} found):")
+
+            for category, skills in skills_map.items():
+                if skills:
+                    click.echo(f"\n📁 {category.title()}:")
+                    for skill in skills:
+                        click.echo(f"  - {skill}")
             sys.exit(0)
 
         # Load External Packs
