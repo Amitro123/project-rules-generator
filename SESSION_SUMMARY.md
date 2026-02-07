@@ -1,42 +1,34 @@
 # Session Summary - Intelligent Skills Generator
-Date: 2026-02-05
+Date: 2026-02-06
 
 ## Built
-- **Refactored Generator Core**:
-  - Implemented `Skill` dataclass for structured data handling.
-  - Separated logic into `MarkdownSkillRenderer`, `JsonSkillRenderer`, and `YamlSkillRenderer`.
-- **Structured Templates**:
-  - Migrated from unstructured Markdown to structured YAML templates in `templates/skills/`.
-  - Added schema-compliant fields: `triggers`, `tools`, `when_to_use`, `avoid_if`, `input`, `output`.
-- **Multi-Format Export**:
-  - Added `--export-json` and `--export-yaml` CLI flags.
-  - Updated `README.md` with integration examples.
-- **External Skill Packs**:
-  - Implement `extensions/importers.py` to ingest skills from `agent-rules` (.mdc) and `vercel-agent-skills` (SKILL.md).
-  - Added `--include-pack` and `--external-packs-dir` to CLI for merging external knowledge.
-  - Updated generator to merge and deduplicate skills from multiple sources.
+- **AwesomeSkillsSource**:
+  - Implemented `AwesomeSkillsSource` to discover skills from external directories recursively.
+  - Added smart matching logic using `matches` metadata (files, tech_stack) + adaptability.
+- **Skill Orchestrator (Priority System)**:
+  - Standardized priority resolution: **Learned** (highest) > **Awesome** > **Builtin** (fallback).
+  - Overhaul of `SkillOrchestrator` to sort sources by priority and deduplicate skills.
+- **Configuration**:
+  - Updated `config.yaml` schema with `skill_sources` block and strict `preference_order` list.
+  - Added Pydantic models in `prg_utils/config_schema.py` for type-safe validation.
 
 ## Verified
-- **Automated Tests**:
-  - Added `tests/test_skills_structure.py` to verify JSON/YAML output.
-  - Added `tests/test_importers.py` for external pack parsing.
-  - Added `tests/test_pack_integration.py` for merging logic.
-- **Dogfooding**:
-  - Ran `python main.py . --export-json --export-yaml` on the repo itself.
-  - Verified `project-rules-generator-skills.json` match checks.
-- **Legacy Tests**:
-  - Confirmed existing detector tests still pass.
+- **E2E Simulation**:
+  - Simulated full flow: Created custom learned skill (`analyze-code`) -> Verified it overrides Builtin.
+  - Verified `awesome-skills` override Builtin.
+  - Cleaned up test environment.
+- **Test Suite**:
+  - Added `tests/test_conflict_resolution.py` covering full/partial priority chains.
+  - Added `tests/test_sources.py` for recursive discovery logic.
+  - **Result**: 61/61 tests passed.
+
+## Documentation
+- **README.md Overhaul**:
+  - Added "Smart Skill Orchestration" section.
+  - Added comprehensive ASCII **Flow Diagram** representing the entire pipeline.
+  - Added visual **Priority Resolution** examples.
+  - Documented new CLI flags (`--save-learned`, `--source`) and config options.
 
 ## Decisions
-- **YAML Templates**: Chose YAML for templates over JSON for better readability when manually editing triggers/descriptions.
-- **Renderer Pattern**: Decided to use a Strategy pattern for Renderers to easily add new formats (e.g., TOML) in the future.
-
-## Fixed
-- **CI Failures**:
-  - Fixed `TypeError` in `main.py` when `tqdm` is missing.
-  - Replaced dummy function with a class implementing `__enter__`/`__exit__`.
-  - Verified with full test suite (51 tests passed).
-- **Dependencies**:
-  - Added `tqdm` to `requirements.txt` to ensure progress bars appear in production/CI.
-- **Code Review**:
-  - Removed duplicate import in `main.py` found during automated review.
+- **Strict Priority**: Decided on a strict, user-configurable list `preference_order` (e.g., `['learned', 'awesome', 'builtin']`) to resolve conflicts deterministically.
+- **Manual "Save Learned"**: Learned skills are only saved when explicitly requested via `--save-learned` to prevent cluttering the user's library with auto-generated noise.

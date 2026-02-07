@@ -1,25 +1,20 @@
-# Changes Tracker - Skills Refactor
-Date: 2026-02-05
+# Changes Tracker - Skill Orchestration
+Date: 2026-02-06
 
 ## Modified Files
-- `generator/types.py`: [NEW] Skill data structures.
-- `generator/renderers.py`: [NEW] Markdown/JSON/YAML renderers.
-- `generator/skills_generator.py`: [MOD] Logic to use new Skill objects and Renderers.
-- `generator/skill_templates.py`: [MOD] Logic to load YAML templates.
-- `templates/skills/*.yaml`: [NEW] Structured skill templates (replaced .md).
-- `generator/importers.py`: [NEW] External pack importers.
-- `main.py`: [MOD] Added export flags and pack loading.
-- `config.yaml`: [MOD] Added `packs` section.
-- `tests/test_skills_structure.py`: [NEW] Unit tests for new system.
-- `tests/test_importers.py`: [NEW] Tests for external packs.
-- `tests/test_pack_integration.py`: [NEW] Tests for pack merging.
-- `README.md`: [MOD] Added specific documentation for new formats and packs.
-- `main.py`: [FIX] Improved `tqdm` fallback to support context manager protocol.
-- `requirements.txt`: [MOD] Added `tqdm` dependency.
-- `.gitignore`: [MOD] Removed redundant pycache entries.
-- `Git`: [DEL] Removed accidentally tracked `__pycache__` files from repo.
-- `main.py`: [FIX] Removed duplicate `generate_skills` import.
+- `generator/sources/awesome.py`: [NEW] Recursive discovery source.
+- `generator/sources/learned.py`: [NEW] Learned skills source.
+- `generator/sources/builtin.py`: [NEW] Builtin templates source.
+- `generator/orchestrator.py`: [NEW] Central orchestration logic.
+- `generator/types.py`: [MOD] Added `source`, `priority` fields.
+- `prg_utils/config_schema.py`: [MOD] Added `SkillSourcesConfig` models.
+- `config.yaml`: [MOD] Added `skill_sources` section.
+- `README.md`: [MOD] Major documentation update (Orchestration, Installation, Flow Diagram).
+- `tests/test_conflict_resolution.py`: [NEW] Priority tests.
+- `tests/test_sources.py`: [NEW] Source discovery tests.
+- `tests/fixtures/`: [NEW] Test data for E2E simulation.
 
 ## Verification
-- **Test Suite**: `pytest tests/test_skills_structure.py` passed.
-- **Manual Check**: Generated `project-rules-generator-skills.json` verified for correct structure.
+- **Test Suite**: `pytest` (61 passed).
+- **E2E Simulation**: Verified specific override scenarios (Learned > Awesome > Builtin).
+- **Docs**: Visual inspection of README flow diagram.
