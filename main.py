@@ -71,6 +71,7 @@ def setup_orchestrator(config):
 
 
 from generator.pack_manager import load_external_packs
+from generator.skills_manager import SkillsManager
 
 @click.command()
 @click.argument('project_path', type=click.Path(exists=True, file_okay=False), default='.')
@@ -84,8 +85,10 @@ from generator.pack_manager import load_external_packs
 @click.option('--include-pack', multiple=True, help='Include external skill pack (name or path)')
 @click.option('--external-packs-dir', type=click.Path(exists=True, file_okay=False), help='Directory containing external packs')
 @click.option('--list-skills', is_flag=True, help='List all available skills from all sources')
+@click.option('--create-skill', help='Create a new skill (in learned/)')
+@click.option('--from-readme', type=click.Path(exists=True), help='Use README as context for new skill')
 @click.version_option(version='0.1.0')
-def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills):
+def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme):
     """Generate rules.md and skills.md from README.md
     
     Examples:
@@ -127,23 +130,31 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
              # Let's just ensure the FLAG is processed. 
              pass
 
+        # Skills Manager Logic
+        skills_dir = project_path / "skills"
+        if create_skill:
+            manager = SkillsManager(base_path=skills_dir)
+            try:
+                path = manager.create_skill(create_skill, from_readme=from_readme)
+                click.echo(f"✨ Created new skill '{create_skill}' in {path}")
+            except Exception as e:
+                click.echo(f"❌ Failed to create skill: {e}", err=True)
+                sys.exit(1)
+            sys.exit(0)
+
         if list_skills:
-            # Initialize Orchestrator and list skills
-            orchestrator = setup_orchestrator(config)
-            skills = orchestrator.list_all_skills()
-            click.echo(f"\nAvailable Skills ({len(skills)} found):")
+            # Use SkillsManager for raw listing of available skills
+            manager = SkillsManager(base_path=skills_dir)
+            skills_map = manager.list_skills()
 
-            # Group by source
-            by_source = {}
-            for s in skills:
-                src = s.source or "unknown"
-                if src not in by_source: by_source[src] = []
-                by_source[src].append(s)
+            total_skills = sum(len(s) for s in skills_map.values())
+            click.echo(f"\nAvailable Skills ({total_skills} found):")
 
-            for src, src_skills in by_source.items():
-                click.echo(f"\nSource: {src}")
-                for s in sorted(src_skills, key=lambda x: x.name):
-                    click.echo(f"  - {s.name}: {s.description}")
+            for category, skills in skills_map.items():
+                if skills:
+                    click.echo(f"\n📁 {category.title()}:")
+                    for skill in skills:
+                        click.echo(f"  - {skill}")
             sys.exit(0)
 
         # Load External Packs
