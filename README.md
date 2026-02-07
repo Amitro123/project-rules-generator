@@ -1,5 +1,11 @@
-# Project Rules Generator
-> Turn any project's README into intelligent, context-aware agent skills.
+# Project Rules Generator 🚀
+
+**Generate unified detector-response rules and AI agent skills from your project context.**
+
+> **New in v0.2.0**: 
+> - 🧠 **AI-Powered Skills**: Auto-generate skills using Gemini 2.0 Flash (`--ai`).
+> - 🔗 **Unified Rules**: Create a single `.clinerules` file combining project context and active skill triggers.
+> - 🔎 **Smart Context**: Analyzes project structure and workflows to suggest relevant skills.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -81,160 +87,49 @@ When the same skill exists in multiple sources:
 1. Built-in (generic)
 2. **Awesome** (community best practices) ← **This wins!**
 
-## 📊 How It Works - Complete Flow
+## 🔄 How It Works
 
-Here's what happens when you run `python main.py /path/to/project`:
+### Complete Flow Diagram
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│ USER RUNS: python main.py /path/to/my-fastapi-project           │
-└─────────────────────────────────────────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ PHASE 1: PROJECT ANALYSIS                                       │
-├─────────────────────────────────────────────────────────────────┤
-│ ✓ Parse README.md → name, description, features                 │
-│ ✓ Detect tech stack → python, fastapi, docker                   │
-│ ✓ Analyze file structure → requirements.txt, Dockerfile         │
-│ ✓ Detect project type → web_app (confidence: 0.85)              │
-└─────────────────────────────────────────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ PHASE 2: GENERATE PROJECT NEEDS                                 │
-├─────────────────────────────────────────────────────────────────┤
-│ Based on analysis, create list of needs:                        │
-│ - Need: "core skills"       (priority: critical)                │
-│ - Need: "fastapi expert"    (priority: normal)                  │
-│ - Need: "docker optimizer"  (priority: normal)                  │
-│ - Need: "web_app patterns"  (priority: normal)                  │
-└─────────────────────────────────────────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ PHASE 3: SKILL DISCOVERY (from all sources)                     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐       │
-│  │   BUILTIN    │    │   AWESOME    │    │   LEARNED    │       │
-│  │ Priority: 1  │    │ Priority: 2  │    │ Priority: 3  │       │
-│  └──────────────┘    └──────────────┘    └──────────────┘       │
-│         │                   │                   │               │
-│         ▼                   ▼                   ▼               │
-│ - analyze-code     - fastapi-security  - (empty on          │
-│ - refactor-module     -auditor            first run)            │
-│ - test-coverage    - react-expert                               │
-│ - fastapi-basic                                                 │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ PHASE 4: MATCHING & SCORING                                     │
-├─────────────────────────────────────────────────────────────────┤
-│ Match skills to project needs:                                  │
-│                                                                 │
-│ Need: "fastapi expert"                                          │
-│  ├─ fastapi-basic (builtin)              → score: 0.6           │
-│  └─ fastapi-security-auditor (awesome)   → score: 0.9  ✓        │
-│                                                                 │
-│ Need: "core skills"                                             │
-│  ├─ analyze-code (builtin)               → score: 1.0  ✓        │
-│  ├─ refactor-module (builtin)            → score: 1.0  ✓        │
-│  └─ test-coverage (builtin)              → score: 1.0  ✓        │
-└─────────────────────────────────────────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ PHASE 5: CONFLICT RESOLUTION                                    │
-├─────────────────────────────────────────────────────────────────┤
-│ If same skill exists in multiple sources, pick highest priority │
-│                                                                 │
-│ Example conflict: "fastapi-security-auditor"                    │
-│  ├─ Found in BUILTIN (priority: 1)                              │
-│  └─ Found in AWESOME (priority: 2) → AWESOME WINS! ✓            │
-│                                                                 │
-│ If exists in LEARNED (priority: 3) → LEARNED ALWAYS WINS!       │
-└─────────────────────────────────────────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ PHASE 6: ADAPTATION (optional)                                  │
-├─────────────────────────────────────────────────────────────────┤
-│ Fill project-specific placeholders:                             │
-│ - {project_name}  → "my-fastapi-project"                        │
-│ - {tech_stack}    → "python, fastapi, docker"                   │
-│ - {api_endpoints} → detected from code                          │
-└─────────────────────────────────────────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ PHASE 7: GENERATE OUTPUT                                        │
-├─────────────────────────────────────────────────────────────────┤
-│ Create files:                                                   │
-│ ✓ my-fastapi-project-rules.md                                   │
-│ ✓ my-fastapi-project-skills.md ← Skills grouped by source       │
-│    ├─ ## CORE SKILLS (builtin)                                  │
-│    ├─ ## WEB APP SKILLS (builtin)                               │
-│    └─ ## TECH SECURITY (awesome-skills) ← Community skills!     │
-│                                                                 │
-│ Optional: Export JSON/YAML if --export-json/--export-yaml       │
-└─────────────────────────────────────────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ PHASE 8: SAVE TO LEARNED (if --save-learned)                    │
-├─────────────────────────────────────────────────────────────────┤
-│ Save newly generated or highly-scored skills to:                │
-│ ~/.project-rules-generator/learned_skills/                      │
-│                                                                 │
-│ These will be available for reuse in future projects!           │
-└─────────────────────────────────────────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ DONE! ✨                                                        │
-│ → Load skills in your IDE agent                                 │
-│ → Or use with OpenClaw: /skills load my-fastapi-skills.md       │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A[Start] --> B{README Exists?}
+    B -- Yes --> C[Parse README]
+    B -- No --> D{Interactive Mode?}
+    D -- Yes --> E[Prompt User & Gen README]
+    D -- No --> F[Scan Code Only]
+    E --> C
+    F --> G[Context Extraction]
+    C --> G
+    G --> H[Rules Generation]
+    G --> I[Skills Management]
+    I --> J{Auto-Generate?}
+    J -- Yes --> K[LLM Spec Generation]
+    J -- No --> L[Load Existing]
+    K --> L
+    H --> M[Unified Export]
+    L --> M
+    M --> N[.clinerules]
 ```
 
-### Priority Resolution Example
+### Steps
 
-Visual example of how conflicts are resolved:
+1.  **Project Analysis**: Scans structure, tech stack, and workflows.
+    *   *New*: If `README.md` is missing, use `--interactive` to generate one with AI.
+2.  **Context Extraction**: Pulls rules, patterns, and conventions from your documentation and code.
+3.  **Skills Management**:
+    *   Loads **Builtin** skills (universal best practices).
+    *   Loads **Awesome** skills (community curated).
+    *   Loads **Learned** skills (your custom patterns).
+    *   *Auto-Generates* missing skills using Gemini 2.0 Flash (if `--auto-generate-skills` is used).
+4.  **Auto-Trigger Extraction**: Maps keywords (e.g., "fastapi") to relevant skills.
+5.  **Unified Export**: Combines everything into a single `.clinerules` file for your agent.
 
-**Skill:** `fastapi-security-auditor`
-
-```text
-┌─────────────┐        ┌─────────────┐        ┌─────────────┐
-│   BUILTIN   │        │   AWESOME   │        │   LEARNED   │
-│ Priority: 1 │   VS   │ Priority: 2 │   VS   │ Priority: 3 │
-│  (generic)  │        │ (community) │        │ (your own)  │
-└─────────────┘        └─────────────┘        └─────────────┘
-       │                      │                      │
-       │                      │                      │
-       └───────────────────────┼───────────────────────┘
-                               ▼
-                        ┌─────────────────┐
-                        │  LEARNED WINS!  │
-                        │(Highest Priority) │
-                        └─────────────────┘
-```
-
-If **LEARNED** doesn't exist:
-```text
-┌─────────────┐        ┌─────────────┐
-│   BUILTIN   │   VS   │   AWESOME   │
-│ Priority: 1 │        │ Priority: 2 │
-└─────────────┘        └─────────────┘
-       │                      │
-       └───────────────────────┘
-                               ▼
-                        ┌──────────────┐
-                        │ AWESOME WINS!│
-                        └──────────────┘
-```
+### Priority Resolution
+When the same skill exists in multiple sources:
+1.  **Learned** (Highest Priority) - Your custom overrides.
+2.  **Awesome** - Community best practices.
+3.  **Builtin** - Default fallbacks.
 
 ## 🚀 Quick Start
 
@@ -264,31 +159,35 @@ Or for development (if not installed):
 python main.py [OPTIONS] [PROJECT_PATH]
 ```
 
-Examples:
+## ⚡ Quick Start
+
+### 1. Unified Generation (Recommended)
+Generate a `.clinerules` file containing project rules and active skill triggers:
+
 ```bash
-# Generate for current directory
-project-rules-generator .
+# Basic usage (uses builtin/learned skills)
+python main.py . --with-skills
 
-# Generate for a specific project
-project-rules-generator /path/to/your-project
-
-# Interactive mode
-project-rules-generator . --interactive
+# With AI-powered skill auto-generation (Requires GEMINI_API_KEY)
+python main.py . --ai --auto-generate-skills
 ```
 
-### 🔧 Skill Management (CLI)
-
-Manage your skills directly from the terminal:
+### 2. Manual Skill Creation
+Create a custom skill tailored to your project:
 
 ```bash
-# List all available skills (builtin, awesome, learned)
-python main.py --list-skills
+# Create skill from prompt + project context analysis
+python main.py --create-skill "feature-name" --ai
 
-# Create a new learned skill from a template (Stored in ~/.project-rules-generator/learned_skills)
-python main.py --create-skill my-new-skill
+# Create skill from README context
+python main.py --create-skill "data-pipeline" --from-readme docs/pipeline.md
+```
 
-# Create a skill based on an existing README (extracts context)
-python main.py --create-skill specialized-workflow --from-readme ./docs/workflow.md
+### 3. Legacy / Separate Files
+Generate separate `rules.md` and `skills.md`:
+
+```bash
+python main.py . --output rules.md
 ```
 
 ### Advanced Options

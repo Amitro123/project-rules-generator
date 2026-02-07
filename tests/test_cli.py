@@ -33,16 +33,17 @@ class TestCLI:
         assert 'sample-project-skills.md' in result.output
     
     def test_cli_missing_readme(self, tmp_path):
-        """Test CLI error when no README exists."""
+        """Test CLI handles missing README by falling back to structure analysis."""
         runner = CliRunner()
         empty_dir = tmp_path / 'empty'
         empty_dir.mkdir()
         
         result = runner.invoke(main, [str(empty_dir)])
         
-        assert result.exit_code == 1
-        assert 'Error: No README.md found' in result.output
-        assert 'No README.md' in result.output
+        # Should now pass with exit code 0 due to structure-only fallback
+        assert result.exit_code == 0
+        assert 'No README found' in result.output
+        assert 'Proceeding with structure-only analysis' in result.output
     
     def test_cli_default_path(self, tmp_path):
         """Test CLI with default path (current directory).."""

@@ -91,8 +91,12 @@ from generator.skills_manager import SkillsManager
 @click.option('--list-skills', is_flag=True, help='List all available skills from all sources')
 @click.option('--create-skill', help='Create a new learned skill with the given name')
 @click.option('--from-readme', type=click.Path(exists=True, dir_okay=False), help='Use README as context for new skill')
+@click.option('--ai', is_flag=True, help='Use AI to generate skill content (requires GEMINI_API_KEY)')
+@click.option('--output', type=click.Path(), default='.clinerules', help='Output file (unified rules + skills)')
+@click.option('--with-skills', is_flag=True, default=True, help='Include skills in output')
+@click.option('--auto-generate-skills', is_flag=True, help='Auto-detect and generate skills (requires --ai)')
 @click.version_option(version='0.1.0')
-def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme):
+def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills):
     """Generate rules.md and skills.md from README.md
     
     Examples:
@@ -119,7 +123,6 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
              if 'skill_sources' not in config: config['skill_sources'] = {}
              if 'learned' not in config['skill_sources']: config['skill_sources']['learned'] = {}
              config['skill_sources']['learned']['auto_save'] = True
-             pass
 
         # Skills Manager Logic
         skills_dir = project_path / "skills"
@@ -127,7 +130,12 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
         if create_skill:
             manager = SkillsManager()
             try:
-                path = manager.create_skill(create_skill, from_readme=from_readme)
+                path = manager.create_skill(
+                    create_skill, 
+                    from_readme=from_readme, 
+                    project_path=str(project_path),
+                    use_ai=ai
+                )
                 click.echo(f"✨ Created new skill '{path.name}' in {path}")
             except Exception as e:
                 click.echo(f"❌ Failed to create skill: {e}", err=True)
@@ -159,21 +167,65 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
                 verbose=verbose
             )
 
+
+
         # Find README
-        readme_path = project_path / 'README.md'
-        if not readme_path.exists():
-            alternative_readmes = list(project_path.glob('*.md'))
-            readme_candidates = [r for r in alternative_readmes if 'readme' in r.name.lower()]
-            if readme_candidates:
-                readme_path = readme_candidates[0]
+        readme_candidates = ['README.md', 'README.rst', 'README.txt', 'README']
+        readme_path = None
+        for candidate in readme_candidates:
+            if (project_path / candidate).exists():
+                readme_path = project_path / candidate
+                break
+        
+        # Interactive README Generation
+        from generator.readme_generator import is_readme_minimal, generate_readme_interactively
+        
+        # If no README or minimal, and we want to try generating one
+        if not readme_path or is_readme_minimal(readme_path or (project_path / 'README.md')):
+            if interactive:
+                try:
+                    click.echo("\n⚠️  README is missing or minimal.")
+                    content = generate_readme_interactively(project_path, ai)
+                    
+                    if not readme_path:
+                        readme_path = project_path / 'README.md'
+                    
+                    readme_path.write_text(content, encoding='utf-8')
+                    click.echo(f"✅ README.md created/updated and saved to {readme_path}\n")
+                except click.Abort:
+                    click.echo("⚠️  Skipping README generation. Analysis will be limited.")
             else:
-                raise READMENotFoundError(f"No README.md found in {project_path}")
-        
-        if verbose:
-            click.echo(f"README: {readme_path}")
-        
-        # Parse README
-        project_data = parse_readme(readme_path)
+                if not readme_path:
+                    click.echo("⚠️  No README found. Context will be limited.")
+                    click.echo("💡 Tip: Use --interactive to auto-generate a professional README.")
+                else:
+                    click.echo(f"⚠️  README ({readme_path.name}) is minimal. Context may be limited.")
+                    click.echo("💡 Tip: Use --interactive to improve it.")
+
+        # Fallback if still no README (create dummy or skip)
+        if not readme_path or not readme_path.exists():
+            # If we are here, we don't have a readme and user skipped/didnt ask for generation
+            # We must proceed carefully.
+            readme_path = None
+
+        if readme_path and readme_path.exists():
+            # Parse README
+            if verbose:
+                click.echo(f"README: {readme_path}")
+            project_data = parse_readme(readme_path)
+        else:
+            # Create minimal project data from structure
+            click.echo("ℹ️  Proceeding with structure-only analysis...")
+            from generator.project_analyzer import ProjectAnalyzer
+            analyzer = ProjectAnalyzer(project_path)
+            context = analyzer.analyze()
+            project_data = {
+                'name': project_path.name,
+                'tech_stack': sorted(list(set(sum(context['tech_stack'].values(), [])))),
+                'features': [],
+                'description': "No README provided.",
+                'raw_name': project_path.name
+            }
         project_name = project_data['name']
         
         if verbose:
@@ -200,13 +252,70 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
         
         generated_files = []
         
-        with tqdm(total=3, disable=not verbose, desc="Build") as pbar:
+        with tqdm(total=4, disable=not verbose, desc="Build") as pbar:
              pbar.set_description("Generating Rules")
              rules_content = generate_rules(project_data, config)
              pbar.update(1)
              
-             pbar.set_description("Generating Skills (Orchestrated)")
+             pbar.set_description("Processing Skills")
+             skills_manager = SkillsManager()
              
+             # Auto-generate skills if requested
+             if auto_generate_skills and ai:
+                 try:
+                     from generator.project_analyzer import ProjectAnalyzer
+                     analyzer = ProjectAnalyzer(project_path)
+                     analysis = analyzer.analyze()
+                     workflows = analysis.get('workflows', [])
+                     
+                     for wf in workflows:
+                         skill_name = wf['name'].lower().replace(' ', '-')
+                         # Check if exists
+                         skill_dir = skills_manager.learned_path / skill_name
+                         if not skill_dir.exists():
+                             click.echo(f"\n🤖 Auto-generating skill: {skill_name}")
+                             try:
+                                 skills_manager.create_skill(skill_name, project_path=str(project_path), use_ai=True)
+                             except Exception as e:
+                                 click.echo(f"Warning: Failed to auto-gen skill {skill_name}: {e}")
+                 except Exception as e:
+                     click.echo(f"Warning: Auto-generation failed: {e}")
+
+             # Extract Triggers
+             triggers = []
+             if with_skills:
+                 triggers = skills_manager.extract_auto_triggers()
+             pbar.update(1)
+             
+             pbar.set_description("Unified Export (.clinerules)")
+             # Build Unified Content
+             unified_content = rules_content + "\n\n# 🧠 Agent Skills\n\n"
+             
+             if triggers:
+                 unified_content += "## Active Skill Triggers\n"
+                 for t in triggers:
+                     unified_content += f"- **{t['skill']}** ({t['category']}): {', '.join(t['conditions'])}\n"
+                 unified_content += "\n"
+                 
+                 # Embed full skill content (optional, but requested 'Unified')
+                 # For .clinerules, having the full context is good.
+                 unified_content += "## Skill Definitions\n"
+                 all_skills = skills_manager.get_all_skills_content()
+                 for t in triggers:
+                     skill_name = t['skill']
+                     category = t['category']
+                     if skill_name in all_skills.get(category, {}):
+                         content = all_skills[category][skill_name]['content']
+                         # Downgrade headers in content?
+                         unified_content += f"\n### Skill: {skill_name}\n{content}\n"
+
+             output_path = project_path / output
+             save_markdown(output_path, unified_content)
+             generated_files.append(output_path)
+             pbar.update(1)
+
+             # Legacy/Separate Generation (Orchestrated)
+             pbar.set_description("Saving Separate Artifacts")
              # Initialize Orchestrator
              from generator.types import SkillFile
              from generator.sources.learned import LearnedSkillsSource
@@ -221,7 +330,7 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
              if save_learned:
                  learned_source = next((s for s in orchestrator.sources if isinstance(s, LearnedSkillsSource)), None)
                  if learned_source:
-                     print(f"Saving {len(skills)} skills to learned library...")
+                     # print(f"Saving {len(skills)} skills to learned library...")
                      for skill in skills:
                          learned_source.save_skill(skill)
              
@@ -240,16 +349,19 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
              
              # Render Markdown
              skills_content = get_renderer('markdown').render(skill_file)
-             pbar.update(1)
              
-             pbar.set_description("Saving Artifacts")
              # Define output paths
-             rules_path = project_path / f"{project_name}-rules.md"
+             # rules_path = project_path / f"{project_name}-rules.md" # Replaced by .clinerules
              skills_path = project_path / f"{project_name}-skills.md"
              
-             save_markdown(rules_path, rules_content)
+             # save_markdown(rules_path, rules_content) # Optional: keep generating rules separately? User didn't strictly forbid.
+             # I'll enable it for backward compat if output != rules.md
+             if output != f"{project_name}-rules.md":
+                 save_markdown(project_path / f"{project_name}-rules.md", rules_content)
+                 generated_files.append(project_path / f"{project_name}-rules.md")
+
              save_markdown(skills_path, skills_content)
-             generated_files.extend([rules_path, skills_path])
+             generated_files.append(skills_path)
 
              # Handle exports
              if export_json:

@@ -51,7 +51,7 @@ class SkillsManager:
             pass
         return found
 
-    def create_skill(self, name: str, from_readme: Optional[str] = None) -> Path:
+    def create_skill(self, name: str, from_readme: Optional[str] = None, project_path: Optional[str] = None, use_ai: bool = False) -> Path:
         """Create a new learned skill."""
         # Sanitize name
         safe_name = re.sub(r'[^a-z0-9-]', '', name.lower().replace(' ', '-'))
@@ -66,7 +66,29 @@ class SkillsManager:
         skill_file = target_dir / "SKILL.md"
 
         content = ""
-        if from_readme:
+        
+        # 1. AI Generation
+        if use_ai and project_path:
+            try:
+                from generator.project_analyzer import ProjectAnalyzer
+                from generator.llm_skill_generator import LLMSkillGenerator, GEMINI_AVAILABLE
+                
+                if not GEMINI_AVAILABLE:
+                    print("[!] Warning: google-generativeai not installed. Skipping AI generation.")
+                else:
+                    print(f"🤖 Analyzing project context in {project_path}...")
+                    analyzer = ProjectAnalyzer(Path(project_path))
+                    context = analyzer.analyze()
+                    
+                    print("✨ Generating skill with Gemini 2.0 Flash...")
+                    generator = LLMSkillGenerator()
+                    content = generator.generate_skill(safe_name, context)
+            except Exception as e:
+                print(f"[!] Warning: AI generation failed ({e}). Falling back to standard parsing.")
+                # Fallthrough
+
+        # 2. Smart README Parsing (if AI didn't generate content)
+        if not content and from_readme:
             readme_path = Path(from_readme)
             if readme_path.exists():
                 try:
@@ -121,7 +143,7 @@ class SkillsManager:
             else:
                  print(f"[!] Warning: README {from_readme} not found.")
 
-        # Fallback / Default Template if content not generated
+        # 3. Fallback / Default Template if content not generated
         if not content:
             if from_readme and Path(from_readme).exists():
                  # Valid readme but parsing failed or was skipped
@@ -153,3 +175,60 @@ class SkillsManager:
 
         skill_file.write_text(content, encoding='utf-8')
         return target_dir
+
+    def get_all_skills_content(self) -> Dict[str, Dict]:
+        """Get full content of all skills for export."""
+        skills_content = {
+            'builtin': {},
+            'awesome': {},
+            'learned': {}
+        }
+        
+        # Helper to read skills
+        def _read_skills(path: Path, category: str):
+            if not path.exists():
+                return
+            skills_list = self._scan_directory(path)
+            for skill_name in skills_list:
+                # Handle nested skills (e.g. meta/writing-skills)
+                skill_path = path / skill_name / 'SKILL.md'
+                if skill_path.exists():
+                    skills_content[category][skill_name] = {
+                        'path': str(skill_path),
+                        'content': skill_path.read_text(encoding='utf-8', errors='replace')
+                    }
+
+        _read_skills(self.builtin_path, 'builtin')
+        _read_skills(self.awesome_path, 'awesome')
+        _read_skills(self.learned_path, 'learned')
+        
+        return skills_content
+
+    def extract_auto_triggers(self) -> List[Dict]:
+        """Extract auto-trigger rules from all skills."""
+        triggers = []
+        
+        all_skills = self.get_all_skills_content()
+        for category in ['builtin', 'awesome', 'learned']:
+            for skill_name, skill_data in all_skills[category].items():
+                content = skill_data['content']
+                
+                # Extract Auto-Trigger section
+                # Match content between "## Auto-Trigger" and next "## " section
+                match = re.search(r'## Auto-Trigger\n(.*?)\n## ', content, re.DOTALL)
+                if match:
+                    trigger_text = match.group(1)
+                    conditions = [
+                        line.strip('- ').strip()
+                        for line in trigger_text.split('\n')
+                        if line.strip().startswith('-')
+                    ]
+                    
+                    if conditions:
+                        triggers.append({
+                            'skill': skill_name,
+                            'category': category,
+                            'conditions': conditions
+                        })
+        
+        return triggers
