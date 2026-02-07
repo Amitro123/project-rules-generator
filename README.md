@@ -24,7 +24,14 @@ No more generic "analyze code" - get skills like:
 - 🔧 **Dual Interface** - CLI for automation, IDE-agent for interactive use
 - 📊 **High Confidence** - Multi-signal detection with confidence scores
 - ⚙️ **Configurable** - YAML config for LLM enhancement, git settings
-- 🧪 **Tested** - Unit tests + verified on real projects
+- � **Context-Aware Rules**: Generates `.cursorrules`, `.windsurfrules`, and generic `project-rules.md` based on your tech stack.
+- ⚡ **Smart Skill Orchestration**: Automatically suggests relevant skills (agents) based on your project dependencies (e.g., "React Expert" if `package.json` has React).
+- 🧩 **Modular Skills System**:
+  - **Builtin**: Core workflows (TDD, Debugging, Code Review) shipped with the tool.
+  - **Awesome**: Curated skills from top open-source projects.
+  - **Learned**: Custom skills generated from your project's own documentation (`learned_skills/`).
+- 🔍 **Audit & Fix**: Analyzes your project for common issues and security vulnerabilities (Bandit, Safety).
+- �🧪 **Tested** - Unit tests + verified on real projects
 - 🎯 **Smart Skill Orchestration** - Combines skills from built-in, awesome-agent-skills, and your learned library
 - 🔄 **Skill Reuse** - Save and reuse adapted skills across projects
 - 🏆 **Conflict Resolution** - Intelligent priority system (learned > awesome > built-in)
@@ -423,7 +430,24 @@ You can mix in skills from other repositories like [agent-rules](https://github.
 - **Agent Rules** (`.mdc` / `.md`): Parsed from generic markdown or Cursor rules.
 - **Vercel Skills** (`SKILL.md`): Parsed from Vercel's directory structure.
 
-### Usage
+## 🧩 Skills System
+
+The tool creates a `skills/` directory in your project with 3 layers:
+
+1.  **Builtin (`skills/builtin/`)**: Core engineering standards shipped with the tool.
+    *   `brainstorming`: Refine vague ideas into designs.
+    *   `writing-plans`: Break designs into executable tasks.
+    *   `subagent-driven-development`: Execute plans with subagents.
+    *   `test-driven-development`: Enforce Red-Green-Refactor.
+    *   `systematic-debugging`: 4-phase bug isolation.
+    *   `requesting-code-review`: Pre-review checklists.
+    *   `meta`: workflows for creating new skills.
+
+2.  **Awesome (`skills/awesome/`)**: Community-driven skills (coming soon via CLI).
+
+3.  **Learned (`skills/learned/`)**: Project-specific patterns extracted from your docs.
+
+## 🚀 Usage
 1. Clone the rules repo(s):
    ```bash
    git clone https://github.com/steipete/agent-rules ../agent-rules
