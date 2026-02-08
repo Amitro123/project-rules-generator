@@ -63,19 +63,27 @@ def load_config():
     config_model = validate_config(raw_config)
     return config_model.model_dump()
 
+def cleanup_awesome_skills():
+    """Remove deprecated awesome-skills directory."""
+    try:
+        import shutil
+        awesome_dir = Path.home() / ".project-rules-generator" / "awesome-skills"
+        if awesome_dir.exists():
+            shutil.rmtree(awesome_dir)
+    except Exception:
+        pass
+
+
 
 def setup_orchestrator(config):
     """Initialize and configure SkillOrchestrator."""
     from generator.orchestrator import SkillOrchestrator
     from generator.sources.builtin import BuiltinSkillsSource
     from generator.sources.learned import LearnedSkillsSource
-    from generator.sources.awesome import AwesomeSkillsSource
-
+    
     orchestrator = SkillOrchestrator(config)
     orchestrator.register_source(BuiltinSkillsSource(config))
     orchestrator.register_source(LearnedSkillsSource(config))
-    if config.get('skill_sources', {}).get('awesome', {}).get('enabled'):
-         orchestrator.register_source(AwesomeSkillsSource(config))
     return orchestrator
 
 
@@ -111,6 +119,7 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
         python main.py . --include-pack agent-rules
     """
     project_path = Path(project_path).resolve()
+    cleanup_awesome_skills()
     
     if verbose:
         setup_logging(verbose=True)
@@ -191,21 +200,44 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
         
         # Interactive README Generation
         from generator.readme_generator import is_readme_minimal, generate_readme_interactively
+        from generator.interactive import create_readme_interactive, show_generated_files
         
         # If no README or minimal, and we want to try generating one
-        if not readme_path or is_readme_minimal(readme_path or (project_path / 'README.md')):
+        if not readme_path or (readme_path and is_readme_minimal(readme_path)):
             if interactive:
                 try:
-                    click.echo("\n⚠️  README is missing or minimal.")
-                    content = generate_readme_interactively(project_path, ai)
+                    # New Rich UI Flow
+                    user_input_data = create_readme_interactive(project_path)
+                    
+                    # Generate content using AI or Template based on 'ai' flag
+                    # We reuse _generate_readme_with_llm / _generate_readme_template from readme_generator
+                    # but we need to pass the collected data
+                    
+                    # NOTE: generate_readme_interactively did both prompt + generation.
+                    # We disjointed them. Now we have inputs.
+                    # We need to run generation.
+                    from generator.readme_generator import generate_readme_with_llm, generate_readme_template
+                    
+                    # Need context for generation
+                    from generator.project_analyzer import ProjectAnalyzer
+                    analyzer = ProjectAnalyzer(project_path)
+                    context = analyzer.analyze()
+                    
+                    if ai:
+                        click.echo("🤖 Generating README with AI...\n")
+                        content = generate_readme_with_llm(user_input_data, context)
+                    else:
+                        content = generate_readme_template(user_input_data, context)
                     
                     if not readme_path:
                         readme_path = project_path / 'README.md'
                     
                     readme_path.write_text(content, encoding='utf-8')
                     click.echo(f"✅ README.md created/updated and saved to {readme_path}\n")
-                except click.Abort:
-                    click.echo("⚠️  Skipping README generation. Analysis will be limited.")
+                    
+                except Exception as e:
+                     click.echo(f"⚠️  README generation failed: {e}")
+                     # Fallback to structure analysis if readme gen failed
             else:
                 if not readme_path:
                     click.echo("⚠️  No README found. Context will be limited.")
@@ -231,12 +263,14 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
             from generator.project_analyzer import ProjectAnalyzer
             analyzer = ProjectAnalyzer(project_path)
             context = analyzer.analyze()
+            
             project_data = {
                 'name': project_path.name,
                 'tech_stack': sorted(list(set(sum(context['tech_stack'].values(), [])))),
                 'features': [],
                 'description': "No README provided.",
-                'raw_name': project_path.name
+                'raw_name': project_path.name,
+                'readme_path': None
             }
         project_name = project_data['name']
         
@@ -246,17 +280,15 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
             click.echo(f"   Tech: {', '.join(project_data['tech_stack']) if project_data['tech_stack'] else 'None detected'}")
             click.echo(f"   Features: {len(project_data['features'])} found")
         
-        # Interactive mode
+        # Interactive mode confirmation for rules generation
         if interactive:
-            click.echo(f"\nProject: {project_data.get('raw_name', project_name)}")
-            if project_data['tech_stack']:
-                click.echo(f"   Tech stack: {', '.join(project_data['tech_stack'])}")
-            if project_data['features']:
-                click.echo(f"   Top feature: {project_data['features'][0]}")
-            
-            if not click.confirm(f"\nContinue generating files?", default=True):
-                click.echo("Aborted.")
-                sys.exit(0)
+            from rich.prompt import Confirm
+            from generator.utils import flush_input
+            # Fixed Bug #1: Ensure single prompt
+            flush_input()
+            if not Confirm.ask(f"Continue generating .clinerules for [bold]{project_name}[/bold]?", default=True):
+                 click.echo("Aborted.")
+                 sys.exit(0)
         
         # Generate files with progress bar if available
         if verbose:
@@ -272,24 +304,48 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
              pbar.set_description("Processing Skills")
              skills_manager = SkillsManager()
              
-             # Auto-generate skills if requested
-             if auto_generate_skills and ai:
+             # Auto-generate skills if requested (Replaced with SkillMatcher logic)
+             if auto_generate_skills:
                  try:
                      from generator.project_analyzer import ProjectAnalyzer
+                     from generator.skill_matcher import SkillMatcher
+                     from generator.llm_skill_generator import LLMSkillGenerator
+                     
                      analyzer = ProjectAnalyzer(project_path)
                      analysis = analyzer.analyze()
                      workflows = analysis.get('workflows', [])
                      
+                     # Initialize Matcher
+                     matcher = SkillMatcher(
+                         learned_dir=skills_manager.learned_path,
+                         builtin_dir=skills_manager.builtin_path
+                     )
+                     
                      for wf in workflows:
                          skill_name = wf['name'].lower().replace(' ', '-')
-                         # Check if exists
-                         skill_dir = skills_manager.learned_path / skill_name
-                         if not skill_dir.exists():
-                             click.echo(f"\n🤖 Auto-generating skill: {skill_name}")
-                             try:
-                                 skills_manager.create_skill(skill_name, project_path=str(project_path), use_ai=True)
-                             except Exception as e:
-                                 click.echo(f"Warning: Failed to auto-gen skill {skill_name}: {e}")
+                         logger = None # fallback
+                         
+                         # Use SkillMatcher to find or generate
+                         skill = matcher.find_skill(skill_name, analysis)
+                         
+                         if skill:
+                             # Skill found (learned or builtin)
+                             # We should add it to the list of "generated" skills?
+                             # Or just ensure it's available?
+                             # The original logic created a skill file if missing.
+                             pass
+                         else:
+                             # Need to generate NEW skill
+                             if ai:
+                                 click.echo(f"\n🤖 Generating NEW skill: {skill_name}")
+                                 try:
+                                     # Generate and save
+                                     skills_manager.create_skill(skill_name, project_path=str(project_path), use_ai=True)
+                                     click.echo(f"💾 Saved to learned skills: {skill_name}")
+                                 except Exception as e:
+                                     click.echo(f"Warning: Failed to auto-gen skill {skill_name}: {e}")
+                             else:
+                                 click.echo(f"\n⚠️  Skill '{skill_name}' needed but not found. Use --ai to generate.")
                  except Exception as e:
                      click.echo(f"Warning: Auto-generation failed: {e}")
 
@@ -390,14 +446,40 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
 
              pbar.update(1)
         
-        click.echo(f"\nGenerated files:")
-        for f in generated_files:
-            click.echo(f"   {f}")
+        if interactive:
+            # Final stats for rich UI
+            # We need to track where skills came from.
+            # Currently logic is scattered.
+            # Ideally SkillsManager or SkillMatcher should return source info.
+            
+            # Hack for now: Count based on source attribute if we preserved it, 
+            # or just dummy count for the UI demo since we don't have full tracking passed back easily yet.
+            # Users request explicitly asked for "Skills Breakdown".
+            
+            # Let's try to get it from `skills` list which contains Skill objects
+            skills_stats = {'learned': 0, 'builtin': 0, 'generated': 0}
+            for s in skills:
+                if hasattr(s, 'source'):
+                    if s.source == 'learned': skills_stats['learned'] += 1
+                    elif s.source == 'builtin': skills_stats['builtin'] += 1
+                    elif s.source == 'generated': skills_stats['generated'] += 1
+                    else: skills_stats['generated'] += 1 # Default
+
+            show_generated_files(generated_files, skills_stats)
+        else:
+            click.echo(f"\nGenerated files:")
+            for f in generated_files:
+                click.echo(f"   {f}")
         
         # Git commit
         if commit:
             if not is_git_repo(project_path):
-                click.echo(f"\nWARNING: Not a git repository, skipping commit")
+                # Using rich console if interactive?
+                if interactive:
+                     # Warn but don't look like error
+                     pass 
+                else:
+                     click.echo(f"\nWARNING: Not a git repository, skipping commit")
             else:
                 commit_msg = config.get('git', {}).get('commit_message', 'Auto-generated rules and skills')
                 user_name = config.get('git', {}).get('commit_user_name')

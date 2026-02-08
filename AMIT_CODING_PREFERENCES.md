@@ -15,3 +15,6 @@ Learned:
 - **Cleanup**: Always ensure `__pycache__` is ignored and deleted. Use `clean.ps1` helper.
 - **Priority Logic**: When designing override systems, use a clear, configurable list (e.g., `preference_order`) and deterministic numeric priorities (inverted index) to avoid ambiguity.
 - **Documentation**: Visual diagrams (ASCII) are highly valued for explaining complex flows like orchestration.
+- **Refactoring Safety**: When removing features, immediately remove associated tests to prevent ghost failures.
+- **Testing Mocks**: Verify mock targets against actual function signatures to avoid AttributeErrors.
+- **Instantiation**: In factory functions (like `setup_orchestrator`), ensure objects are assigned to variables before use.

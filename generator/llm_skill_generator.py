@@ -6,7 +6,8 @@ from typing import Dict, Optional
 
 # Import Gemini if available
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
@@ -18,8 +19,8 @@ class LLMSkillGenerator:
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
         if not GEMINI_AVAILABLE:
             raise ImportError(
-                "google-generativeai not installed. "
-                "Run: pip install google-generativeai"
+                "google-genai not installed. "
+                "Run: pip install google-genai"
             )
         
         self.api_key = api_key or os.getenv('GEMINI_API_KEY')
@@ -28,10 +29,8 @@ class LLMSkillGenerator:
                 "GEMINI_API_KEY not found. Set it in environment or .env file"
             )
         
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel(
-            model_name or os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
-        )
+        self.client = genai.Client(api_key=self.api_key)
+        self.model_name = model_name or os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
     
     def generate_skill(self, skill_name: str, context: Dict) -> str:
         """Generate complete skill from project context."""
@@ -41,9 +40,10 @@ class LLMSkillGenerator:
     def generate_content(self, prompt: str, max_tokens: int = 2000) -> str:
         """Generate content from prompt using the configured model."""
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
                     temperature=0.7,
                     max_output_tokens=max_tokens,
                 )
@@ -125,15 +125,19 @@ Create a **complete, actionable skill** for an AI agent.
 ### Format:
 
 ```markdown
+---
+name: {skill_name.lower().replace(' ', '-')}
+description: [Short description]
+auto_triggers:
+  - keywords: [[list, of, keywords]]
+    project_signals: [[has_docker, has_tests, etc]]
+tools: [[list, of, tools, needed]]
+---
+
 # Skill: {skill_name.replace('-', ' ').title()}
 
 ## Purpose
 [ONE clear sentence about what this solves in THIS project]
-
-## Auto-Trigger
-- User mentions: [keywords]
-- Working with files: [file patterns]
-- Project phase: [when to use]
 
 ## Process
 
@@ -160,6 +164,7 @@ Create a **complete, actionable skill** for an AI agent.
 1. **Be SPECIFIC**: Use actual paths, commands, APIs from this project
 2. **Be ACTIONABLE**: Agent should know exactly what to do
 3. **No placeholders**: Fill in all sections with real content
+4. **Use YAML Frontmatter**: Include metadata for automation
 
 Generate the skill now:
 """

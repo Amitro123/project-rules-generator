@@ -41,7 +41,7 @@ class TestCLI:
         result = runner.invoke(main, [str(empty_dir)])
         
         # Should now pass with exit code 0 due to structure-only fallback
-        assert result.exit_code == 0
+        assert result.exit_code == 0, f"Exit code {result.exit_code}.\nOutput:\n{result.output}\nException: {result.exception}"
         assert 'No README found' in result.output
         assert 'Proceeding with structure-only analysis' in result.output
     

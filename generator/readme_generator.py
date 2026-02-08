@@ -17,13 +17,30 @@ def is_readme_minimal(readme_path: Path) -> bool:
             return True
         if content.count('\n') < 5:  # Less than 5 lines
             return True
-        if 'TODO' in content.upper() or 'PLACEHOLDER' in content.upper():
-            return True
+        
+        # Check for placeholders and template artifacts
+        placeholders = [
+            'TODO', 
+            'PLACEHOLDER',
+            '(one per line',
+            'Add features here',
+            'Add your run command here',
+            'Various technologies',
+            'A brief description of the project'
+        ]
+        
+        content_upper = content.upper()
+        for p in placeholders:
+            if p.upper() in content_upper:
+                return True
         
         return False
     except Exception:
         return True
 
+
+
+from generator.utils import flush_input
 
 def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
     """Generate README through user prompts and LLM."""
@@ -36,6 +53,7 @@ def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
     # Gather user input
     user_input = {}
     
+    flush_input()
     user_input['name'] = click.prompt(
         "Project name",
         default=project_path.name
@@ -70,10 +88,10 @@ def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
     if use_ai:
         # Use LLM to generate README
         click.echo("🤖 Generating README with AI...\n")
-        readme_content = _generate_readme_with_llm(user_input, context)
+        readme_content = generate_readme_with_llm(user_input, context)
     else:
         # Use template
-        readme_content = _generate_readme_template(user_input, context)
+        readme_content = generate_readme_template(user_input, context)
     
     # Preview
     click.echo("="*60)
@@ -83,6 +101,7 @@ def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
     click.echo(preview)
     click.echo("="*60 + "\n")
     
+    flush_input()
     if not click.confirm("Save this README?", default=True):
         click.echo("❌ Cancelled.")
         raise click.Abort()
@@ -90,7 +109,7 @@ def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
     return readme_content
 
 
-def _generate_readme_with_llm(user_input: Dict, context: Dict) -> str:
+def generate_readme_with_llm(user_input: Dict, context: Dict) -> str:
     """Generate README using Gemini."""
     try:
         from generator.llm_skill_generator import LLMSkillGenerator, GEMINI_AVAILABLE
@@ -153,10 +172,10 @@ Generate the complete README now:
     except Exception as e:
         click.echo(f"⚠️  LLM generation failed: {e}", err=True)
         click.echo("Falling back to template...")
-        return _generate_readme_template(user_input, context)
+        return generate_readme_template(user_input, context)
 
 
-def _generate_readme_template(user_input: Dict, context: Dict) -> str:
+def generate_readme_template(user_input: Dict, context: Dict) -> str:
     """Generate README from template (fallback)."""
     
     # Collect tech
@@ -167,8 +186,13 @@ def _generate_readme_template(user_input: Dict, context: Dict) -> str:
     
     tech_display = ', '.join(tech_list) if tech_list else user_input.get('tech_stack', 'Various technologies')
     
-    # Format features
-    features = [f.strip() for f in user_input.get('features', '').split(',') if f.strip()]
+    # Format features - Sanitize input
+    raw_features = user_input.get('features', '')
+    # Check for placeholder text capture
+    if "comma-separated" in raw_features.lower() or "one per line" in raw_features.lower():
+        raw_features = ""
+        
+    features = [f.strip() for f in raw_features.split(',') if f.strip()]
     features_md = '\n'.join([f"- **{feat}**" for feat in features]) if features else "- (Add features here)"
     
     # Installation steps

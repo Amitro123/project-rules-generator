@@ -13,7 +13,6 @@ class SkillsManager:
             self.base_path = base_path
             
         self.builtin_path = self.base_path / "builtin"
-        self.awesome_path = self.base_path / "awesome"
         
         # storage for learned skills (user directory)
         self.learned_path = Path.home() / ".project-rules-generator" / "learned_skills"
@@ -22,30 +21,32 @@ class SkillsManager:
         """List all available skills organized by category."""
         skills = {
             "builtin": [],
-            "awesome": [],
             "learned": []
         }
 
-        for category, path in [("builtin", self.builtin_path), ("awesome", self.awesome_path), ("learned", self.learned_path)]:
+        for category, path in [("builtin", self.builtin_path), ("learned", self.learned_path)]:
             if path.exists():
                 skills[category] = sorted(self._scan_directory(path))
 
         return skills
 
     def _scan_directory(self, path: Path, prefix: str = "") -> List[str]:
-        """Recursively scan for skills (directories containing SKILL.md)."""
+        """Recursively scan for skills (YAML or SKILL.md)."""
         found = []
         try:
             for item in path.iterdir():
-                if item.is_dir():
+                # Case 1: YAML definition (e.g. skill.yaml)
+                if item.is_file() and item.suffix in ['.yaml', '.yml']:
+                     found.append(f"{prefix}{item.stem}")
+                
+                # Case 2: Directory with SKILL.md (legacy/rich)
+                elif item.is_dir():
                     if (item / "SKILL.md").exists():
                         found.append(f"{prefix}{item.name}")
-                    # Recurse for nested categories/skills
-                    # Note: If a directory is a skill (has SKILL.md), we might still want to check inside?
-                    # But usually a skill is a leaf.
-                    # The 'meta/writing-skills' case implies 'meta' is a container folder, not a skill itself?
-                    # Or 'meta' could be a skill with sub-skills?
-                    # Assuming standard directory traversal.
+                    
+                    # Recurse
+                    # Only recurse if we didn't just match a skill (skills are leaves)
+                    # changing logic slightly: allow nested categories
                     found.extend(self._scan_directory(item, prefix=f"{prefix}{item.name}/"))
         except PermissionError:
             pass
@@ -180,7 +181,6 @@ class SkillsManager:
         """Get full content of all skills for export."""
         skills_content = {
             'builtin': {},
-            'awesome': {},
             'learned': {}
         }
         
@@ -189,17 +189,40 @@ class SkillsManager:
             if not path.exists():
                 return
             skills_list = self._scan_directory(path)
-            for skill_name in skills_list:
-                # Handle nested skills (e.g. meta/writing-skills)
-                skill_path = path / skill_name / 'SKILL.md'
-                if skill_path.exists():
+            for skill_rel_path in skills_list:
+                # Skill list returns relative paths like 'category/skill'
+                # Check for YAML first
+                
+                # We need to resolve the actual file from the relative path returned by scan
+                # "category/skill" could be "path/category/skill.yaml" or "path/category/skill/SKILL.md"
+                
+                # Re-construct lookup (simplistic)
+                # This part is tricky because _scan_directory returns flattened names but we need file paths
+                
+                # Let's try locating it again relative to base path
+                # A better approach for scan might be returning tuples (name, path)
+                # For now, let's look for both candidates
+                
+                # Check 1: YAML
+                yaml_path = path / f"{skill_rel_path}.yaml"
+                yml_path = path / f"{skill_rel_path}.yml"
+                md_path = path / skill_rel_path / "SKILL.md"
+                
+                skill_file = None
+                if yaml_path.exists(): skill_file = yaml_path
+                elif yml_path.exists(): skill_file = yml_path
+                elif md_path.exists(): skill_file = md_path
+                
+                if skill_file:
+                    content = skill_file.read_text(encoding='utf-8', errors='replace')
+                    
+                    skill_name = skill_rel_path.split('/')[-1] # Leaf name
                     skills_content[category][skill_name] = {
-                        'path': str(skill_path),
-                        'content': skill_path.read_text(encoding='utf-8', errors='replace')
+                        'path': str(skill_file),
+                        'content': content
                     }
 
         _read_skills(self.builtin_path, 'builtin')
-        _read_skills(self.awesome_path, 'awesome')
         _read_skills(self.learned_path, 'learned')
         
         return skills_content
@@ -209,7 +232,11 @@ class SkillsManager:
         triggers = []
         
         all_skills = self.get_all_skills_content()
-        for category in ['builtin', 'awesome', 'learned']:
+        # Only use builtin and learned (awesome removed!)
+        for category in ['builtin', 'learned']:
+            if category not in all_skills:
+                continue
+
             for skill_name, skill_data in all_skills[category].items():
                 content = skill_data['content']
                 

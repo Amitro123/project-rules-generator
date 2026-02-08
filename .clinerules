@@ -1,5 +1,5 @@
 ---
-project: sample-project
+project: project-rules-generator
 purpose: Coding & contribution rules for this workspace
 version: 1.0
 generated: auto
@@ -7,13 +7,13 @@ generated: auto
 
 ## CONTEXT
 
-A demo project for testing the rules generator. This shows basic functionality.
+> The First AI That Learns Your Coding Style
 
-This project uses: python, fastapi, docker
+This project uses: python, fastapi, react, gemini, claude, ffmpeg
 
 ## DO (must follow)
 
-- Use python, fastapi, docker as the primary tech stack
+- Use python, fastapi, react, gemini, claude, ffmpeg as the primary tech stack
 - Add type hints and docstrings to all public functions
 - Write tests for new features and bug fixes
 - Follow existing project structure and naming conventions
@@ -33,9 +33,9 @@ This project uses: python, fastapi, docker
 
 ## PRIORITIES
 
-1. **Fast Processing** - Handles 10,000+ files per minute
-2. **Multiple Formats** - JSON, CSV, Markdown output
-3. **Flexible Config**
+1. *Stop copy-pasting generic rules. Start with AI that knows your project.**
+2. **Learned** = Your evolving patterns (highest priority)
+3. **Builtin** = Universal workflows (TDD, Code Review) that complement Learned
 
 ## WORKFLOWS
 

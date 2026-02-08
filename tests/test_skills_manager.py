@@ -11,7 +11,6 @@ def temp_skills_dir(tmp_path):
     skills_dir.mkdir()
     (skills_dir / "builtin").mkdir()
     (skills_dir / "learned").mkdir()
-    (skills_dir / "awesome").mkdir()
 
     # Create a dummy builtin skill
     (skills_dir / "builtin" / "brainstorming").mkdir()

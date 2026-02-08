@@ -41,20 +41,16 @@ def mock_config():
                 "enabled": True,
                 "path": "~/.project-rules-generator/learned_skills"
             },
-            "awesome": {
-                "enabled": False,
-                "path": ""
-            },
-            "preference_order": ["builtin", "awesome", "learned"]
+            "preference_order": ["builtin", "learned"]
         }
     }
 
 def test_builtin_source_priority(mock_config, mock_templates_dir):
     source = BuiltinSkillsSource(mock_config, templates_dir=mock_templates_dir)
     # Priority logic: len(order) - index
-    # order = ['builtin', 'awesome', 'learned']
-    # len=3, index('builtin')=0 => 3-0 = 3
-    assert source.priority == 3
+    # order = ['builtin', 'learned']
+    # len=2, index('builtin')=0 => 2-0 = 2
+    assert source.priority == 2
 
 def test_builtin_discovery_exact_match(mock_config, mock_templates_dir):
     source = BuiltinSkillsSource(mock_config, templates_dir=mock_templates_dir)
@@ -112,49 +108,4 @@ def test_learned_source_discovery(mock_config, mock_learned_dir):
     assert found[0].name == "custom-audit"
     assert found[0].source == "learned"
 
-# Awesome Source Tests
-from generator.sources.awesome import AwesomeSkillsSource
 
-def test_awesome_source_discovery(mock_config):
-    # Point to the fixtures directory
-    fixtures_path = Path("tests/fixtures/awesome-skills")
-    
-    mock_config['skill_sources']['awesome']['enabled'] = True
-    mock_config['skill_sources']['awesome']['path'] = str(fixtures_path)
-    
-    source = AwesomeSkillsSource(mock_config)
-    
-    # Test 1: Discover by tech match (fastapi)
-    needs = [SkillNeed(type="tech", name="fastapi", confidence=1.0)]
-    found = source.discover(needs)
-    
-    assert len(found) >= 1
-    names = [s.name for s in found]
-    assert "fastapi-security-auditor" in names
-    assert found[0].source == "awesome-skills"
-    
-    # Test 2: Discover by tech match (react)
-    needs = [SkillNeed(type="tech", name="react", confidence=1.0)]
-    found = source.discover(needs)
-    
-    names = [s.name for s in found]
-    assert "react-expert" in names
-    
-    # Test 3: Match with files context
-    # Create a need that matches files
-    needs = [SkillNeed(
-        type="core", 
-        name="custom-check", 
-        confidence=1.0, 
-        context={"files": ["main.py", "app.py"]} # These match fastapi-security-auditor matches
-    )]
-    found = source.discover(needs)
-    # The skill name isn't 'custom-check', but it matches on 'files'
-    # Wait, my logic checks score >= 0.5. 
-    # File match gives 0.7 if overlap.
-    # But does _calculate_match_score require name match?
-    # No, it adds max score.
-    # So it should find it.
-    
-    names = [s.name for s in found]
-    assert "fastapi-security-auditor" in names

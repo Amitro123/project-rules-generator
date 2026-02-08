@@ -46,7 +46,7 @@ class TestReadmeGenerator(unittest.TestCase):
     
     @patch('click.prompt')
     @patch('click.confirm')
-    @patch('generator.readme_generator._generate_readme_template')
+    @patch('generator.readme_generator.generate_readme_template')
     @patch('generator.project_analyzer.ProjectAnalyzer')
     def test_generate_interactive(self, mock_analyzer_cls, mock_gen_template, mock_confirm, mock_prompt):
         """Test flow of interactive generation."""

@@ -43,8 +43,12 @@ class SkillOrchestrator:
         # 1. Analysis -> Needs
         needs = self.analyzer.analyze(project_data, project_path)
         
-        # 2. Discovery
+        # 2. Discovery (Needs-based)
         candidates = self._discover_skills(needs)
+        
+        # 2a. Discovery (Auto-Triggers)
+        triggered = self._detect_triggered_skills(project_path, project_data)
+        candidates.extend(triggered)
         
         # 3. Matching & Conflict Resolution
         matched_skills = self._match_skills(candidates)
@@ -55,6 +59,26 @@ class SkillOrchestrator:
         # 5. Generation (TODO: Future phase)
         
         return adapted_skills
+
+    def _detect_triggered_skills(self, project_path: str, project_data: Dict[str, Any]) -> List[Skill]:
+        """Detect skills that should be active based on triggers."""
+        from analyzer.triggers import SkillTriggerDetector
+        from pathlib import Path
+        
+        detector = SkillTriggerDetector(Path(project_path), project_data)
+        all_skills = self.list_all_skills()
+        triggered = []
+        
+        for skill in all_skills:
+            # Check match
+            matches = detector.match_skill(skill)
+            if matches:
+                logger.info(f"Auto-triggering skill '{skill.name}': {matches}")
+                # Optional: Append validation info
+                skill.confidence = 1.0 # Boost confidence
+                triggered.append(skill)
+                
+        return triggered
 
     def list_all_skills(self) -> List[Skill]:
         """List all available skills from all sources."""

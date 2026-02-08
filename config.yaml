@@ -31,12 +31,7 @@ skill_sources:
     path: "~/.project-rules-generator/learned_skills"
     auto_save: true
   
-  awesome:
-    enabled: false  # user needs to clone the repo first
-    path: ""  # to be configured by user
-  
   # Priority order (First item = Highest priority)
   preference_order:
     - learned
-    - awesome
     - builtin
