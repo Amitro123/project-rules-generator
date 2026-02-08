@@ -17,7 +17,7 @@ version: 1.0
 ### analyze-code
 Parse and analyze codebase for quality issues.
 
-> *Source: builtin*
+> *Source: learned*
 
 **Tools:** read, search, exec
 
@@ -36,7 +36,7 @@ analyze-code src/
 ### refactor-module
 Refactor following project rules.
 
-> *Source: builtin*
+> *Source: learned*
 
 **Triggers:**
 - refactor
@@ -49,7 +49,7 @@ Refactor following project rules.
 ### test-coverage
 Run tests and generate coverage.
 
-> *Source: builtin*
+> *Source: learned*
 
 **Tools:** exec, pytest
 
@@ -68,7 +68,7 @@ pytest --cov=src --cov-report=term
 ### fastapi-security-auditor
 Check FastAPI endpoints for common security issues.
 
-> *Source: builtin*
+> *Source: learned*
 
 **Triggers:**
 - audit api

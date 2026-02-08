@@ -122,6 +122,8 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
     # Handle API Key
     if api_key:
         os.environ['GEMINI_API_KEY'] = api_key
+        if verbose:
+            click.echo("Using API key from --api-key flag")
 
     try:
         # Load config

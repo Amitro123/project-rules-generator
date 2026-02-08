@@ -15,7 +15,7 @@ except ImportError:
 class LLMSkillGenerator:
     """Generate actionable skills using LLM analysis."""
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
         if not GEMINI_AVAILABLE:
             raise ImportError(
                 "google-generativeai not installed. "
@@ -29,7 +29,9 @@ class LLMSkillGenerator:
             )
         
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        self.model = genai.GenerativeModel(
+            model_name or os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+        )
     
     def generate_skill(self, skill_name: str, context: Dict) -> str:
         """Generate complete skill from project context."""

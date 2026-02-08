@@ -10,10 +10,7 @@ from generator.project_analyzer import ProjectAnalyzer
 
 class TestProjectAnalyzer(unittest.TestCase):
     def setUp(self):
-        self.test_dir = Path("tests/temp_project_analyzer")
-        if self.test_dir.exists():
-            shutil.rmtree(self.test_dir)
-        self.test_dir.mkdir(parents=True)
+        self.test_dir = Path(tempfile.mkdtemp())
 
     def tearDown(self):
         if self.test_dir.exists():
@@ -112,3 +109,6 @@ class TestProjectAnalyzer(unittest.TestCase):
         self.assertIn('main.py', files)
         self.assertIn('requirements.txt', files)
         self.assertEqual(files['main.py'], "print('hello')")
+
+if __name__ == '__main__':
+    unittest.main()
