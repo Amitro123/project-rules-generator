@@ -11,5 +11,5 @@ def flush_input():
         try:
             import termios, sys
             termios.tcflush(sys.stdin, termios.TCIOFLUSH)
-        except ImportError:
+        except (ImportError, Exception):
             pass
