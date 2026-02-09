@@ -307,21 +307,31 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
         generated_files = []
         
         with tqdm(total=4, disable=not verbose, desc="Build") as pbar:
+             pbar.set_description("Analyzing Project")
+             # Always run enhanced parser for project-specific rules
+             enhanced_context = None
+             try:
+                 enhanced_parser = EnhancedProjectParser(project_path)
+                 enhanced_context = enhanced_parser.extract_full_context()
+             except Exception as e:
+                 if verbose:
+                     click.echo(f"   Enhanced analysis unavailable: {e}")
+
              pbar.set_description("Generating Rules")
-             rules_content = generate_rules(project_data, config)
+             rules_content = generate_rules(project_data, config, enhanced_context=enhanced_context)
              pbar.update(1)
-             
+
              pbar.set_description("Processing Skills")
              skills_manager = SkillsManager()
-             
+
              # Enhanced auto-generate skills using new Phase 1-4 modules
-             enhanced_context = None
              enhanced_selected_skills = set()
              if auto_generate_skills:
                  try:
-                     # Step 1: Extract full context using EnhancedProjectParser
-                     enhanced_parser = EnhancedProjectParser(project_path)
-                     enhanced_context = enhanced_parser.extract_full_context()
+                     # Use already-extracted enhanced_context, or extract if missing
+                     if enhanced_context is None:
+                         enhanced_parser = EnhancedProjectParser(project_path)
+                         enhanced_context = enhanced_parser.extract_full_context()
 
                      detected_tech = enhanced_context.get('metadata', {}).get('tech_stack', [])
                      project_type = enhanced_context.get('metadata', {}).get('project_type', 'unknown')
@@ -378,6 +388,7 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
                                  context=enhanced_context,
                                  code_examples=examples,
                                  detected_patterns=enhanced_context.get('structure', {}).get('patterns', []),
+                                 project_path=project_path,
                              )
 
                              try:

@@ -105,7 +105,7 @@ class SkillsManager:
                     tech = extract_tech_stack(readme_content)
                     triggers = extract_auto_triggers(readme_content, safe_name)
                     steps = extract_process_steps(readme_content)
-                    anti_patterns = extract_anti_patterns(readme_content, tech)
+                    anti_patterns = extract_anti_patterns(readme_content, tech, project_path=readme_path.parent)
                     
                     # Build skill content
                     title = safe_name.replace('-', ' ').title()

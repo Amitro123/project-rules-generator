@@ -70,9 +70,15 @@ def test_extract_process_steps():
     assert any("pip install my-project" in s for s in steps)
     assert any("Run setup" in s for s in steps)
 
-def test_extract_anti_patterns():
-    tech = ['ffmpeg', 'redis']
-    patterns = extract_anti_patterns("dummy", tech)
-    assert any("FFmpeg" in p for p in patterns)
-    assert any("Redis" in p for p in patterns)
-    assert any("Not testing" in p for p in patterns)
+def test_extract_anti_patterns(tmp_path):
+    """Anti-patterns are only returned when grounded in actual project files."""
+    # Without project_path, no anti-patterns
+    patterns = extract_anti_patterns("dummy", ['ffmpeg', 'redis'])
+    assert len(patterns) == 0, "Should return nothing without project_path"
+
+    # With project_path and actual code using ffmpeg without a guard
+    (tmp_path / 'processor.py').write_text(
+        'import subprocess\nsubprocess.run(["ffmpeg", "-i", f])\n'
+    )
+    patterns = extract_anti_patterns("dummy", ['ffmpeg'], project_path=tmp_path)
+    assert any("FFmpeg" in p or "ffmpeg" in p for p in patterns)

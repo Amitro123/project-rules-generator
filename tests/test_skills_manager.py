@@ -104,8 +104,8 @@ Description of test project.
         assert "Run install command" in content          # Process (Installation)
         assert "Run usage command" in content            # Process (Usage/Quick Start)
         
-        # Anti-Patterns (generic ones should be there even if tech stack is empty)
-        assert "❌ Not testing before deployment" in content
+        # Anti-Patterns section header should be present
+        assert "## Anti-Patterns" in content
         
         # Context
         assert "## Context (from README.md)" in content

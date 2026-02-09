@@ -6,6 +6,7 @@ from typing import Set, Dict, List, Any
 import logging
 
 from generator.storage.skill_paths import SkillPathManager
+from generator.prompts.skill_generation import detect_project_tools
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,15 @@ def generate_clinerules(
             clinerules['tech_stack'] = metadata['tech_stack']
         if metadata.get('project_type'):
             clinerules['project_type'] = metadata['project_type']
+
+    # Tools section: runnable commands for the project
+    if project_context:
+        metadata = project_context.get('metadata', {})
+        project_path_str = project_context.get('readme', {}).get('readme_path', '')
+        project_path = Path(project_path_str).parent if project_path_str else None
+        tools = detect_project_tools(project_path, metadata.get('tech_stack', []))
+        if tools:
+            clinerules['tools'] = tools
 
     # Skills section
     skills_section: Dict[str, Any] = {}

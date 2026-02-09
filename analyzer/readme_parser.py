@@ -6,30 +6,33 @@ import re
 def parse_readme(readme_path: Union[str, Path]) -> Dict[str, Any]:
     """
     Extract structured metadata from README.md.
-    
+
     Args:
         readme_path: Path to README.md file
-        
+
     Returns:
         Dict with keys: name, tech_stack, features, description, raw_readme
-        
+
     Raises:
         FileNotFoundError: If README.md doesn't exist
         ValueError: If README is empty or malformed
     """
     path = Path(readme_path)
-    
+
     if not path.exists():
         raise FileNotFoundError(f"README not found: {readme_path}")
-    
+
     content = path.read_text(encoding='utf-8')
-    
+
     if not content.strip():
         raise ValueError(f"README is empty: {readme_path}")
-    
+
+    # Pass project_path for dependency cross-referencing
+    project_path = path.parent
+
     return {
         'name': _extract_project_name(content, path),
-        'tech_stack': extract_tech_stack(content),
+        'tech_stack': extract_tech_stack(content, project_path=project_path),
         'features': _extract_features(content),
         'description': _extract_description(content),
         'installation': _extract_section(content, ['installation', 'setup', 'getting started']),
@@ -97,23 +100,179 @@ TECH_KEYWORDS = [
 ]
 
 
-def extract_tech_stack(content: str) -> List[str]:
-    """Extract technologies from README content."""
-    
-    # Remove sections that typically contain examples or comparisons to avoid false positives
-    # Matches headers containing keywords and all content until the next header
-    ignore_pattern = r'(?m)^\s*#+\s*.*(?:Example|Sample|Supported|Comparison).*$(?:\n(?!^\s*#+).*)*'
-    content_cleaned = re.sub(ignore_pattern, '', content)
-    
-    # Also strip code blocks to avoid matching tools in examples/config
-    # This also helps avoid matching 'ffmpeg' in the JSON example
+def extract_tech_stack(content: str, project_path: Optional[Path] = None) -> List[str]:
+    """Extract technologies from README content, validated against actual dependencies.
+
+    Args:
+        content: README text content
+        project_path: Optional path to project root for dependency cross-referencing
+    """
+
+    # Remove sections that typically contain examples, comparisons, docs, or illustrative content
+    ignore_section_keywords = (
+        r'Example|Sample|Supported|Comparison|vs\b|FAQ|'
+        r'How It Works|What Makes|Wow Moment|Scenario|'
+        r'Real.World|Impact|Contributing|License'
+    )
+    ignore_pattern = rf'(?m)^\s*#+\s*.*(?:{ignore_section_keywords}).*$(?:\n(?!^\s*#+).*)*'
+    content_cleaned = re.sub(ignore_pattern, '', content, flags=re.IGNORECASE)
+
+    # Strip code blocks (```...```)
     content_cleaned = re.sub(r'```[\s\S]*?```', '', content_cleaned)
+
+    # Strip mermaid/diagram blocks
+    content_cleaned = re.sub(r'```mermaid[\s\S]*?```', '', content_cleaned)
+
+    # Strip inline code (`...`) to avoid matching tech names in code refs
+    content_cleaned = re.sub(r'`[^`]+`', '', content_cleaned)
+
+    # Strip markdown tables (lines starting with |)
+    content_cleaned = re.sub(r'(?m)^\|.*\|$', '', content_cleaned)
+
+    # Strip markdown image/badge syntax
+    content_cleaned = re.sub(r'!\[.*?\]\(.*?\)', '', content_cleaned)
+    content_cleaned = re.sub(r'\[!\[.*?\]\(.*?\)\]\(.*?\)', '', content_cleaned)
 
     content_lower = content_cleaned.lower()
     found = [tech for tech in TECH_KEYWORDS if re.search(rf'\b{re.escape(tech)}\b', content_lower)]
-    
+
+    # Cross-reference with actual dependencies if project_path is provided
+    if project_path:
+        found = _validate_tech_with_deps(found, Path(project_path))
+
     # Remove duplicates, preserve order
     return list(dict.fromkeys(found))
+
+
+def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List[str]:
+    """Cross-reference README-detected tech with actual project dependencies.
+
+    Keeps tech that is:
+    - Found in requirements.txt / pyproject.toml / package.json / setup.py
+    - Found as actual imports in source files
+    - A language marker ('python', 'javascript', 'typescript') confirmed by file existence
+    - Infrastructure confirmed by file existence (docker, kubernetes)
+
+    If no dependency files exist at all, returns readme_tech unchanged (nothing to validate against).
+    """
+    # If no dependency files exist, skip validation entirely
+    dep_files = ['requirements.txt', 'requirements-dev.txt', 'requirements-llm.txt',
+                 'pyproject.toml', 'package.json', 'setup.py', 'setup.cfg']
+    has_any_deps = any((project_path / f).exists() for f in dep_files)
+    has_any_source = list(project_path.glob('*.py')) or (project_path / 'package.json').exists()
+    if not has_any_deps and not has_any_source:
+        return readme_tech
+
+    # Always-valid: confirmed by checking actual files, not README
+    confirmed = set()
+
+    # Language detection from files
+    if (project_path / 'requirements.txt').exists() or list(project_path.glob('*.py')):
+        confirmed.add('python')
+    if (project_path / 'package.json').exists():
+        confirmed.add('javascript')
+        confirmed.add('node')
+
+    # Infrastructure from files
+    if (project_path / 'Dockerfile').exists():
+        confirmed.add('docker')
+    if (project_path / 'docker-compose.yml').exists() or (project_path / 'docker-compose.yaml').exists():
+        confirmed.add('docker')
+    if any(project_path.glob('*.tf')):
+        confirmed.add('terraform')
+
+    # Read actual dependency files
+    dep_content = ''
+    for dep_file in ['requirements.txt', 'requirements-dev.txt', 'requirements-llm.txt']:
+        dep_path = project_path / dep_file
+        if dep_path.exists():
+            try:
+                dep_content += dep_path.read_text(encoding='utf-8', errors='replace').lower() + '\n'
+            except Exception:
+                pass
+
+    # pyproject.toml
+    pyproject = project_path / 'pyproject.toml'
+    if pyproject.exists():
+        try:
+            dep_content += pyproject.read_text(encoding='utf-8', errors='replace').lower() + '\n'
+        except Exception:
+            pass
+
+    # package.json
+    pkg_json = project_path / 'package.json'
+    if pkg_json.exists():
+        try:
+            dep_content += pkg_json.read_text(encoding='utf-8', errors='replace').lower() + '\n'
+        except Exception:
+            pass
+
+    # Map tech keywords to dependency patterns
+    tech_to_dep_patterns = {
+        'fastapi': ['fastapi'],
+        'flask': ['flask'],
+        'django': ['django'],
+        'react': ['react', '"react"', "'react'"],
+        'vue': ['vue', '"vue"', "'vue'"],
+        'angular': ['@angular'],
+        'express': ['express'],
+        'pytorch': ['torch', 'pytorch'],
+        'tensorflow': ['tensorflow'],
+        'sklearn': ['scikit-learn', 'sklearn'],
+        'transformers': ['transformers'],
+        'redis': ['redis'],
+        'postgres': ['psycopg', 'postgresql', 'postgres'],
+        'mongodb': ['pymongo', 'mongodb', 'mongoose'],
+        'gemini': ['google-generativeai', 'google-genai', 'gemini'],
+        'openai': ['openai'],
+        'anthropic': ['anthropic'],
+        'claude': ['anthropic'],
+        'langchain': ['langchain'],
+        'ffmpeg': ['ffmpeg'],
+        'opencv': ['opencv', 'cv2'],
+        'pillow': ['pillow', 'pil'],
+        'moviepy': ['moviepy'],
+        'whisper': ['whisper', 'openai-whisper'],
+        'click': ['click'],
+        'argparse': ['argparse'],
+        'typer': ['typer'],
+        'fire': ['python-fire', 'fire'],
+        'kubernetes': ['kubernetes'],
+        'typescript': ['typescript'],
+        'gpt': ['openai'],
+        'helm': ['helm'],
+        'aws': ['boto3', 'aws-cdk', 'aws'],
+        'gcp': ['google-cloud', 'gcp'],
+        'azure': ['azure'],
+    }
+
+    # Check each README-detected tech against deps
+    validated = []
+    for tech in readme_tech:
+        # Already confirmed by file existence
+        if tech in confirmed:
+            validated.append(tech)
+            continue
+
+        # Check against dependency content
+        patterns = tech_to_dep_patterns.get(tech, [tech])
+        if any(pat in dep_content for pat in patterns):
+            confirmed.add(tech)
+            validated.append(tech)
+
+    # Also ADD tech from actual dependencies not found in README
+    # (e.g., "click" only appears in code blocks which get stripped)
+    dep_to_tech_reverse = {}
+    for tech_name, patterns in tech_to_dep_patterns.items():
+        for pat in patterns:
+            dep_to_tech_reverse[pat] = tech_name
+
+    for pat, tech_name in dep_to_tech_reverse.items():
+        if tech_name not in confirmed and pat in dep_content:
+            validated.append(tech_name)
+            confirmed.add(tech_name)
+
+    return validated
 
 
 def extract_purpose(readme: str) -> str:
@@ -186,23 +345,61 @@ def extract_process_steps(readme: str) -> List[str]:
     return steps[:10]  # Limit to 10 steps
 
 
-def extract_anti_patterns(readme: str, tech: List[str]) -> List[str]:
-    """Generate anti-patterns based on tech stack."""
+def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[Path] = None) -> List[str]:
+    """Generate anti-patterns grounded in actual project analysis.
+
+    Only returns patterns that can be verified against the actual project,
+    not hypothetical issues.
+    """
     anti_patterns = []
-    
+
+    if not project_path:
+        return anti_patterns
+
+    project_path = Path(project_path)
+
+    # Check for missing system dependency guards
     if 'ffmpeg' in tech:
-        anti_patterns.append("Running without FFmpeg installed → Check first: `ffmpeg -version`")
-    if 'redis' in tech:
-        anti_patterns.append("Processing without Redis for queue management")
-    if any(t in tech for t in ['whisper', 'gemini']):
-        anti_patterns.append("Ignoring API rate limits")
-    if 'docker' in tech:
-        anti_patterns.append("Not using Docker for consistent environment")
-    
-    # Generic
-    anti_patterns.append("Not testing before deployment")
-    anti_patterns.append("Skipping error handling")
-    
+        # Verify ffmpeg is actually called in code
+        for py_file in project_path.rglob('*.py'):
+            if any(skip in py_file.parts for skip in ('.venv', 'venv', '__pycache__', '.git', 'node_modules')):
+                continue
+            try:
+                content = py_file.read_text(encoding='utf-8', errors='replace')
+                if 'ffmpeg' in content and 'shutil.which' not in content:
+                    anti_patterns.append(
+                        f"Missing FFmpeg availability check in {py_file.name} → "
+                        "Add: `if not shutil.which('ffmpeg'): raise RuntimeError('ffmpeg not found')`"
+                    )
+                    break
+            except Exception:
+                pass
+
+    # Check for missing type checking config
+    if 'python' in tech or 'pydantic' in tech:
+        has_mypy_config = (
+            (project_path / 'mypy.ini').exists() or
+            (project_path / '.mypy.ini').exists() or
+            (project_path / 'setup.cfg').exists() or
+            (project_path / 'pyproject.toml').exists()
+        )
+        if not has_mypy_config:
+            anti_patterns.append(
+                "No type checking config found → Run: `mypy --install-types --strict .`"
+            )
+
+    # Check for missing test configuration
+    if 'pytest' in tech:
+        has_pytest_config = any([
+            (project_path / 'pytest.ini').exists(),
+            (project_path / 'setup.cfg').exists(),
+            (project_path / 'pyproject.toml').exists(),
+        ])
+        if not has_pytest_config:
+            anti_patterns.append(
+                "No pytest config found → Run: `pytest --co -q` to verify test discovery"
+            )
+
     return anti_patterns
 
 

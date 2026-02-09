@@ -4,14 +4,15 @@ generated_by: project-rules-generator
 tech_stack:
 - claude
 - click
-- fastapi
-- ffmpeg
 - gemini
 - pydantic
 - pytest
 - python
-- react
 project_type: python-cli
+tools:
+  test: pytest
+  check: ruff check .
+  lint: mypy .
 skills:
   builtin:
   - C:\Users\USER\.project-rules-generator\builtin\code-review.md

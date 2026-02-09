@@ -117,9 +117,7 @@ class SkillOrchestrator:
             if skill.name not in unique_skills:
                 unique_skills[skill.name] = skill
             else:
-                # Debug logging
-                logger.debug(f"Skipping duplicate skill {skill.name} from lower priority source")
-                pass
+                pass  # Expected: higher-priority source already provided this skill
                 
         return list(unique_skills.values())
 
