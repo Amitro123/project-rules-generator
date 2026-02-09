@@ -1,0 +1,32 @@
+project: project-rules-generator
+version: '2.0'
+generated_by: project-rules-generator
+tech_stack:
+- claude
+- click
+- fastapi
+- ffmpeg
+- gemini
+- pydantic
+- pytest
+- python
+- react
+project_type: python-cli
+skills:
+  builtin:
+  - C:\Users\USER\.project-rules-generator\builtin\code-review.md
+  - C:\Users\USER\.project-rules-generator\builtin\systematic-debugging\SKILL.md
+  - C:\Users\USER\.project-rules-generator\builtin\test-driven-development\SKILL.md
+  learned:
+  - C:\Users\USER\.project-rules-generator\learned\pytest\coverage-patterns.md
+  - C:\Users\USER\.project-rules-generator\learned\pytest\fixture-patterns.md
+  - C:\Users\USER\.project-rules-generator\learned\pytest\mocking-patterns.md
+  - C:\Users\USER\.project-rules-generator\learned\pytest\parametrize-patterns.md
+  - C:\Users\USER\.project-rules-generator\learned\python-cli\argparse-patterns.md
+  - C:\Users\USER\.project-rules-generator\learned\python-cli\click-commands.md
+  - C:\Users\USER\.project-rules-generator\learned\python-cli\config-management.md
+  - C:\Users\USER\.project-rules-generator\learned\python-cli\error-handling.md
+skills_count:
+  builtin: 3
+  learned: 8
+  total: 11

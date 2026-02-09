@@ -51,6 +51,16 @@ from pydantic import ValidationError
 from prg_utils.config_schema import validate_config
 from prg_utils.logger import setup_logging
 
+# Enhanced modules (Phase 1-4)
+from generator.parsers.enhanced_parser import EnhancedProjectParser
+from generator.parsers.dependency_parser import DependencyParser
+from generator.analyzers.structure_analyzer import StructureAnalyzer
+from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
+from generator.extractors.code_extractor import CodeExampleExtractor
+from generator.prompts.skill_generation import build_skill_prompt
+from generator.storage.skill_paths import SkillPathManager
+from generator.outputs.clinerules_generator import generate_clinerules, generate_clinerules_with_inline
+
 
 def load_config():
     """Load configuration from config.yaml."""
@@ -304,50 +314,93 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
              pbar.set_description("Processing Skills")
              skills_manager = SkillsManager()
              
-             # Auto-generate skills if requested (Replaced with SkillMatcher logic)
+             # Enhanced auto-generate skills using new Phase 1-4 modules
+             enhanced_context = None
+             enhanced_selected_skills = set()
              if auto_generate_skills:
                  try:
-                     from generator.project_analyzer import ProjectAnalyzer
-                     from generator.skill_matcher import SkillMatcher
-                     from generator.llm_skill_generator import LLMSkillGenerator
-                     
-                     analyzer = ProjectAnalyzer(project_path)
-                     analysis = analyzer.analyze()
-                     workflows = analysis.get('workflows', [])
-                     
-                     # Initialize Matcher
-                     matcher = SkillMatcher(
-                         learned_dir=skills_manager.learned_path,
-                         builtin_dir=skills_manager.builtin_path
+                     # Step 1: Extract full context using EnhancedProjectParser
+                     enhanced_parser = EnhancedProjectParser(project_path)
+                     enhanced_context = enhanced_parser.extract_full_context()
+
+                     detected_tech = enhanced_context.get('metadata', {}).get('tech_stack', [])
+                     project_type = enhanced_context.get('metadata', {}).get('project_type', 'unknown')
+
+                     if verbose:
+                         click.echo(f"\n   Enhanced Analysis:")
+                         click.echo(f"   Project Type: {project_type}")
+                         click.echo(f"   Tech Stack: {', '.join(detected_tech)}")
+                         dep_count = len(enhanced_context.get('dependencies', {}).get('python', []))
+                         dep_count += len(enhanced_context.get('dependencies', {}).get('node', []))
+                         click.echo(f"   Dependencies: {dep_count} parsed")
+                         test_info = enhanced_context.get('test_patterns', {})
+                         if test_info.get('framework'):
+                             click.echo(f"   Tests: {test_info['framework']} ({test_info.get('test_files', 0)} files)")
+
+                     # Step 2: Match skills using EnhancedSkillMatcher
+                     enhanced_matcher = EnhancedSkillMatcher()
+                     enhanced_selected_skills = enhanced_matcher.match_skills(
+                         detected_tech=detected_tech,
+                         project_context=enhanced_context,
                      )
-                     
-                     for wf in workflows:
-                         skill_name = wf['name'].lower().replace(' ', '-')
-                         logger = None # fallback
-                         
-                         # Use SkillMatcher to find or generate
-                         skill = matcher.find_skill(skill_name, analysis)
-                         
-                         if skill:
-                             # Skill found (learned or builtin)
-                             # We should add it to the list of "generated" skills?
-                             # Or just ensure it's available?
-                             # The original logic created a skill file if missing.
-                             pass
-                         else:
-                             # Need to generate NEW skill
-                             if ai:
-                                 click.echo(f"\n🤖 Generating NEW skill: {skill_name}")
-                                 try:
-                                     # Generate and save
-                                     skills_manager.create_skill(skill_name, project_path=str(project_path), use_ai=True)
-                                     click.echo(f"💾 Saved to learned skills: {skill_name}")
-                                 except Exception as e:
-                                     click.echo(f"Warning: Failed to auto-gen skill {skill_name}: {e}")
-                             else:
-                                 click.echo(f"\n⚠️  Skill '{skill_name}' needed but not found. Use --ai to generate.")
+
+                     if verbose:
+                         click.echo(f"   Matched Skills: {len(enhanced_selected_skills)}")
+                         for s in sorted(enhanced_selected_skills):
+                             click.echo(f"     - {s}")
+
+                     # Step 3: Ensure SkillPathManager directories exist
+                     SkillPathManager.ensure_setup()
+
+                     # Step 4: Generate high-quality skills with LLM for learned skills
+                     if ai:
+                         extractor = CodeExampleExtractor()
+
+                         for skill_ref in sorted(enhanced_selected_skills):
+                             if not skill_ref.startswith('learned/'):
+                                 continue
+
+                             # Check if skill already exists
+                             existing_path = SkillPathManager.get_skill_path(skill_ref)
+                             if existing_path and existing_path.exists():
+                                 continue
+
+                             # Extract code examples for this skill
+                             skill_topic = skill_ref.split('/')[-1]
+                             examples = extractor.extract_examples_for_skill(
+                                 project_path, skill_topic, detected_tech
+                             )
+
+                             # Build enhanced prompt
+                             prompt = build_skill_prompt(
+                                 skill_topic=skill_topic,
+                                 project_name=project_name,
+                                 context=enhanced_context,
+                                 code_examples=examples,
+                                 detected_patterns=enhanced_context.get('structure', {}).get('patterns', []),
+                             )
+
+                             try:
+                                 from generator.llm_skill_generator import LLMSkillGenerator
+                                 llm_gen = LLMSkillGenerator()
+                                 skill_content = llm_gen.generate_content(prompt, max_tokens=2000)
+
+                                 # Save using SkillPathManager
+                                 parts = skill_ref.split('/')
+                                 category = parts[1] if len(parts) >= 3 else 'general'
+                                 SkillPathManager.save_learned_skill(
+                                     {'name': skill_topic, 'content': skill_content},
+                                     category
+                                 )
+                                 click.echo(f"   💾 Generated: {skill_ref}")
+                             except Exception as e:
+                                 click.echo(f"   ⚠️  Failed to generate {skill_ref}: {e}")
+
                  except Exception as e:
-                     click.echo(f"Warning: Auto-generation failed: {e}")
+                     click.echo(f"Warning: Enhanced auto-generation failed: {e}")
+                     if verbose:
+                         import traceback
+                         traceback.print_exc()
 
              # Extract Triggers
              triggers = []
@@ -358,13 +411,13 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
              pbar.set_description("Unified Export (.clinerules)")
              # Build Unified Content
              unified_content = rules_content + "\n\n# 🧠 Agent Skills\n\n"
-             
+
              if triggers:
                  unified_content += "## Active Skill Triggers\n"
                  for t in triggers:
                      unified_content += f"- **{t['skill']}** ({t['category']}): {', '.join(t['conditions'])}\n"
                  unified_content += "\n"
-                 
+
                  # Embed full skill content (optional, but requested 'Unified')
                  # For .clinerules, having the full context is good.
                  unified_content += "## Skill Definitions\n"
@@ -374,8 +427,22 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
                      category = t['category']
                      if skill_name in all_skills.get(category, {}):
                          content = all_skills[category][skill_name]['content']
-                         # Downgrade headers in content?
                          unified_content += f"\n### Skill: {skill_name}\n{content}\n"
+
+             # If enhanced matching was done, also generate lightweight clinerules
+             if enhanced_selected_skills:
+                 lightweight_yaml = generate_clinerules(
+                     project_name, enhanced_selected_skills, enhanced_context
+                 )
+                 # Append as YAML reference block
+                 unified_content += f"\n\n<!-- Lightweight Skill References\n{lightweight_yaml}-->\n"
+
+                 # Also save standalone lightweight .clinerules.yaml
+                 lightweight_path = project_path / '.clinerules.yaml'
+                 lightweight_path.write_text(lightweight_yaml, encoding='utf-8')
+                 generated_files.append(lightweight_path)
+                 if verbose:
+                     click.echo(f"   Generated lightweight .clinerules.yaml ({len(enhanced_selected_skills)} skills)")
 
              output_path = project_path / output
              save_markdown(output_path, unified_content)

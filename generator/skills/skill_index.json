@@ -1,0 +1,370 @@
+{
+  "version": "1.0",
+  "skills": {
+    "python-cli": {
+      "builtin": ["code-review", "systematic-debugging"],
+      "learned": [
+        "python-cli/argparse-patterns",
+        "python-cli/click-commands",
+        "python-cli/error-handling",
+        "python-cli/config-management"
+      ],
+      "triggers": [
+        {
+          "type": "import",
+          "pattern": "import argparse"
+        },
+        {
+          "type": "import",
+          "pattern": "import click"
+        },
+        {
+          "type": "import",
+          "pattern": "import typer"
+        },
+        {
+          "type": "file",
+          "pattern": "__main__.py"
+        },
+        {
+          "type": "file",
+          "pattern": "cli.py"
+        },
+        {
+          "type": "dependency",
+          "package": "click"
+        },
+        {
+          "type": "dependency",
+          "package": "typer"
+        }
+      ]
+    },
+    "fastapi": {
+      "builtin": ["code-review", "test-driven-development"],
+      "learned": [
+        "fastapi/async-patterns",
+        "fastapi/dependency-injection",
+        "fastapi/pydantic-validation",
+        "fastapi/error-handling",
+        "fastapi/middleware-patterns"
+      ],
+      "triggers": [
+        {
+          "type": "import",
+          "pattern": "from fastapi import"
+        },
+        {
+          "type": "import",
+          "pattern": "app = FastAPI()"
+        },
+        {
+          "type": "file",
+          "pattern": "*/routes/*.py"
+        },
+        {
+          "type": "file",
+          "pattern": "*/routers/*.py"
+        },
+        {
+          "type": "dependency",
+          "package": "fastapi"
+        }
+      ]
+    },
+    "django": {
+      "builtin": ["code-review", "test-driven-development"],
+      "learned": [
+        "django/model-patterns",
+        "django/view-patterns",
+        "django/orm-optimization",
+        "django/middleware-patterns",
+        "django/admin-customization"
+      ],
+      "triggers": [
+        {
+          "type": "import",
+          "pattern": "from django"
+        },
+        {
+          "type": "import",
+          "pattern": "import django"
+        },
+        {
+          "type": "file",
+          "pattern": "manage.py"
+        },
+        {
+          "type": "file",
+          "pattern": "*/migrations/*.py"
+        },
+        {
+          "type": "dependency",
+          "package": "django"
+        }
+      ]
+    },
+    "flask": {
+      "builtin": ["code-review", "test-driven-development"],
+      "learned": [
+        "flask/blueprint-patterns",
+        "flask/extension-patterns",
+        "flask/error-handling",
+        "flask/template-patterns"
+      ],
+      "triggers": [
+        {
+          "type": "import",
+          "pattern": "from flask import"
+        },
+        {
+          "type": "import",
+          "pattern": "Flask(__name__)"
+        },
+        {
+          "type": "dependency",
+          "package": "flask"
+        }
+      ]
+    },
+    "react": {
+      "builtin": ["code-review"],
+      "learned": [
+        "react/hooks-patterns",
+        "react/component-optimization",
+        "react/state-management",
+        "react/routing-patterns"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "react"
+        },
+        {
+          "type": "file",
+          "pattern": "*.jsx"
+        },
+        {
+          "type": "file",
+          "pattern": "*.tsx"
+        },
+        {
+          "type": "import",
+          "pattern": "from 'react'"
+        },
+        {
+          "type": "import",
+          "pattern": "from \"react\""
+        }
+      ]
+    },
+    "vue": {
+      "builtin": ["code-review"],
+      "learned": [
+        "vue/composition-api",
+        "vue/component-patterns",
+        "vue/state-management",
+        "vue/routing-patterns"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "vue"
+        },
+        {
+          "type": "file",
+          "pattern": "*.vue"
+        },
+        {
+          "type": "import",
+          "pattern": "from 'vue'"
+        }
+      ]
+    },
+    "node": {
+      "builtin": ["code-review"],
+      "learned": [
+        "node/express-patterns",
+        "node/middleware-patterns",
+        "node/async-patterns",
+        "node/error-handling"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "express"
+        },
+        {
+          "type": "dependency",
+          "package": "koa"
+        },
+        {
+          "type": "file",
+          "pattern": "server.js"
+        },
+        {
+          "type": "import",
+          "pattern": "require('express')"
+        }
+      ]
+    },
+    "pytest": {
+      "builtin": ["test-driven-development", "systematic-debugging"],
+      "learned": [
+        "pytest/fixture-patterns",
+        "pytest/parametrize-patterns",
+        "pytest/coverage-patterns",
+        "pytest/mocking-patterns"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "pytest"
+        },
+        {
+          "type": "file",
+          "pattern": "conftest.py"
+        },
+        {
+          "type": "file",
+          "pattern": "test_*.py"
+        },
+        {
+          "type": "import",
+          "pattern": "import pytest"
+        }
+      ]
+    },
+    "jest": {
+      "builtin": ["test-driven-development"],
+      "learned": [
+        "jest/mock-patterns",
+        "jest/snapshot-testing",
+        "jest/async-testing"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "jest"
+        },
+        {
+          "type": "file",
+          "pattern": "jest.config.*"
+        },
+        {
+          "type": "file",
+          "pattern": "*.test.js"
+        },
+        {
+          "type": "file",
+          "pattern": "*.test.ts"
+        }
+      ]
+    },
+    "docker": {
+      "builtin": ["code-review"],
+      "learned": [
+        "docker/multi-stage-builds",
+        "docker/compose-patterns",
+        "docker/security-hardening"
+      ],
+      "triggers": [
+        {
+          "type": "file",
+          "pattern": "Dockerfile"
+        },
+        {
+          "type": "file",
+          "pattern": "docker-compose.yml"
+        },
+        {
+          "type": "file",
+          "pattern": "docker-compose.yaml"
+        },
+        {
+          "type": "file",
+          "pattern": ".dockerignore"
+        }
+      ]
+    },
+    "ml-pipeline": {
+      "builtin": ["code-review", "systematic-debugging"],
+      "learned": [
+        "ml/data-pipeline-patterns",
+        "ml/model-training-patterns",
+        "ml/experiment-tracking",
+        "ml/model-serving"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "torch"
+        },
+        {
+          "type": "dependency",
+          "package": "tensorflow"
+        },
+        {
+          "type": "dependency",
+          "package": "scikit-learn"
+        },
+        {
+          "type": "dependency",
+          "package": "transformers"
+        },
+        {
+          "type": "import",
+          "pattern": "import torch"
+        },
+        {
+          "type": "import",
+          "pattern": "import tensorflow"
+        }
+      ]
+    },
+    "sqlalchemy": {
+      "builtin": ["code-review"],
+      "learned": [
+        "sqlalchemy/model-patterns",
+        "sqlalchemy/query-optimization",
+        "sqlalchemy/migration-patterns"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "sqlalchemy"
+        },
+        {
+          "type": "import",
+          "pattern": "from sqlalchemy"
+        },
+        {
+          "type": "file",
+          "pattern": "*/models/*.py"
+        }
+      ]
+    },
+    "celery": {
+      "builtin": ["code-review"],
+      "learned": [
+        "celery/task-patterns",
+        "celery/retry-patterns",
+        "celery/monitoring"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "celery"
+        },
+        {
+          "type": "import",
+          "pattern": "from celery"
+        },
+        {
+          "type": "file",
+          "pattern": "celery.py"
+        }
+      ]
+    }
+  }
+}
