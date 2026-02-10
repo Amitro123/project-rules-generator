@@ -43,20 +43,9 @@ def generate_clinerules(
             name = parts[-1]
 
             if output_dir:
-                # Use relative path pointing to copied skill inside output dir
-                # Resolve the actual filename from the global store
-                global_path = SkillPathManager.GLOBAL_BUILTIN / f"{name}.md"
-                if not global_path.exists():
-                    for ext in ('.yaml', '.yml'):
-                        alt = SkillPathManager.GLOBAL_BUILTIN / f"{name}{ext}"
-                        if alt.exists():
-                            global_path = alt
-                            break
-                if not global_path.exists():
-                    dir_path = SkillPathManager.GLOBAL_BUILTIN / name / 'SKILL.md'
-                    if dir_path.exists():
-                        global_path = dir_path
-                rel_path = f"skills/builtin/{global_path.name}"
+                # Use the skill name as filename (not the resolved path which
+                # may be generic "SKILL.md" for directory-style skills)
+                rel_path = f"skills/builtin/{name}.md"
             else:
                 global_path = SkillPathManager.GLOBAL_BUILTIN / f"{name}.md"
                 if not global_path.exists():
@@ -85,14 +74,8 @@ def generate_clinerules(
                 name = parts[-1]
 
             if output_dir:
-                global_path = SkillPathManager.GLOBAL_LEARNED / category / f"{name}.md"
-                if not global_path.exists():
-                    for ext in ('.yaml', '.yml'):
-                        alt = SkillPathManager.GLOBAL_LEARNED / category / f"{name}{ext}"
-                        if alt.exists():
-                            global_path = alt
-                            break
-                rel_path = f"skills/learned/{global_path.name}"
+                # Use the skill name as filename (consistent with copy logic)
+                rel_path = f"skills/learned/{name}.md"
             else:
                 global_path = SkillPathManager.GLOBAL_LEARNED / category / f"{name}.md"
                 if not global_path.exists():

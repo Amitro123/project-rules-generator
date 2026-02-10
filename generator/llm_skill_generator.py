@@ -4,33 +4,26 @@ import os
 from pathlib import Path
 from typing import Dict, Optional
 
-# Import Gemini if available
-try:
-    from google import genai
-    from google.genai import types
-    GEMINI_AVAILABLE = True
-except ImportError:
-    GEMINI_AVAILABLE = False
+from .ai.ai_client import create_ai_client
 
 
 class LLMSkillGenerator:
     """Generate actionable skills using LLM analysis."""
     
-    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
-        if not GEMINI_AVAILABLE:
-            raise ImportError(
-                "google-genai not installed. "
-                "Run: pip install google-genai"
-            )
-        
-        self.api_key = api_key or os.getenv('GEMINI_API_KEY')
-        if not self.api_key:
-            raise ValueError(
-                "GEMINI_API_KEY not found. Set it in environment or .env file"
-            )
-        
-        self.client = genai.Client(api_key=self.api_key)
-        self.model_name = model_name or os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = 'gemini'):
+        self.api_key = api_key or os.getenv('GEMINI_API_KEY') or os.getenv('GROQ_API_KEY')
+        self.provider = provider
+        # If Groq key is present but no Gemini key, default to Groq
+        if not os.getenv('GEMINI_API_KEY') and os.getenv('GROQ_API_KEY'):
+            self.provider = 'groq'
+
+        try:
+            self.client = create_ai_client(self.provider, api_key=self.api_key)
+        except Exception as e:
+             # Fallback or re-raise with clear message
+             raise RuntimeError(f"Failed to initialize AI client ({self.provider}): {e}")
+
+        self.model_name = model_name
     
     def generate_skill(self, skill_name: str, context: Dict) -> str:
         """Generate complete skill from project context."""
@@ -40,15 +33,7 @@ class LLMSkillGenerator:
     def generate_content(self, prompt: str, max_tokens: int = 2000) -> str:
         """Generate content from prompt using the configured model."""
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.7,
-                    max_output_tokens=max_tokens,
-                )
-            )
-            return response.text
+            return self.client.generate(prompt, max_tokens=max_tokens, model=self.model_name)
         except Exception as e:
             raise RuntimeError(f"LLM generation failed: {e}")
     

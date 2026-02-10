@@ -263,6 +263,45 @@ class TestLightweightClinerules:
         assert line_count < 40, f"Expected < 40 lines, got {line_count}"
 
 
+    def test_clinerules_no_duplicate_skill_md(self):
+        """Builtin skills with directory layout must NOT produce duplicate SKILL.md paths."""
+        selected = {
+            'builtin/code-review',
+            'builtin/test-driven-development',
+            'builtin/systematic-debugging',
+        }
+        context = {
+            'metadata': {
+                'tech_stack': ['python'],
+                'project_type': 'python-cli',
+            }
+        }
+
+        # With output_dir, paths should use skill names, not SKILL.md
+        output = generate_clinerules('test', selected, context, output_dir=Path('/fake'))
+        parsed = yaml.safe_load(output)
+
+        builtin_paths = parsed['skills']['builtin']
+        # Each path must be unique and named after the skill
+        assert len(builtin_paths) == len(set(builtin_paths)), f"Duplicate paths: {builtin_paths}"
+        for p in builtin_paths:
+            assert 'SKILL.md' not in p, f"Generic SKILL.md found in path: {p}"
+            assert p.startswith('skills/builtin/')
+
+    def test_clinerules_skill_names_in_paths(self):
+        """Each builtin skill path should contain the skill name."""
+        selected = {
+            'builtin/brainstorming',
+            'builtin/writing-plans',
+        }
+        output = generate_clinerules('test', selected, output_dir=Path('/fake'))
+        parsed = yaml.safe_load(output)
+
+        paths = parsed['skills']['builtin']
+        assert 'skills/builtin/brainstorming.md' in paths
+        assert 'skills/builtin/writing-plans.md' in paths
+
+
 class TestCLIIntegration:
     """Test CLI integration with enhanced modules."""
 

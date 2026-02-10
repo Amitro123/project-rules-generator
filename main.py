@@ -144,12 +144,13 @@ def cli():
 @click.option('--output', type=click.Path(file_okay=False), default='.clinerules', help='Output directory (default: .clinerules)')
 @click.option('--with-skills', is_flag=True, default=True, help='Include skills in output')
 @click.option('--auto-generate-skills', is_flag=True, help='Auto-detect and generate skills (requires --ai)')
-@click.option('--api-key', help='Gemini API Key (overrides GEMINI_API_KEY env var)')
+@click.option('--api-key', help='API Key (overrides env var)')
+@click.option('--provider', type=click.Choice(['groq', 'gemini']), default='groq', help='AI Provider (default: groq - free tier)')
 @click.option('--constitution', is_flag=True, help='Generate constitution.md with project-specific coding principles')
 @click.option('--merge', is_flag=True, help='Preserve existing skill files, only add new ones')
 @click.option('--mode', type=click.Choice(['manual', 'ai', 'constitution']), default=None, help='Explicit mode (manual=no AI, ai=auto-generate+AI, constitution=adds constitution.md)')
 @click.option('--incremental', is_flag=True, help='Only regenerate changed sections (skip if nothing changed)')
-def analyze(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key, constitution, merge, mode, incremental):
+def analyze(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key, provider, constitution, merge, mode, incremental):
     """Analyze project and generate rules.md and skills.md from README.md
 
     Examples:
@@ -194,9 +195,12 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
 
     # Handle API Key
     if api_key:
-        os.environ['GEMINI_API_KEY'] = api_key
+        if provider == 'gemini':
+            os.environ['GEMINI_API_KEY'] = api_key
+        elif provider == 'groq':
+            os.environ['GROQ_API_KEY'] = api_key
         if verbose:
-            click.echo("Using API key from --api-key flag")
+            click.echo(f"Using API key from --api-key flag for {provider}")
 
     try:
         # Load config
@@ -423,6 +427,13 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                          project_context=enhanced_context,
                      )
 
+                     # Inject provider into kwargs for checking
+                     kwargs = {'provider': provider}
+                     enhanced_selected_skills = enhanced_matcher.match_skills(
+                         detected_tech=detected_tech,
+                         project_context=enhanced_context,
+                     )
+
                      if verbose:
                          click.echo(f"   Matched Skills: {len(enhanced_selected_skills)}")
                          for s in sorted(enhanced_selected_skills):
@@ -462,7 +473,15 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
 
                              try:
                                  from generator.llm_skill_generator import LLMSkillGenerator
-                                 llm_gen = LLMSkillGenerator()
+                                 # Determine provider from flags/env (defaulting to groq if not set, handled in main but here we need to pass it)
+                                 # We need to pass 'provider' from analyze() args to here.
+                                 # For now, let's look at env or default.
+                                 # Actually, let's update analyze() signature to accept provider!
+                                 # But for this step, let's infer or default.
+                                 # Wait, I should update analyze() signature in this same tool call! 
+                                 # I will add 'provider' to analyze args.
+                                 current_provider = kwargs.get('provider', 'groq') 
+                                 llm_gen = LLMSkillGenerator(provider=current_provider)
                                  skill_content = llm_gen.generate_content(prompt, max_tokens=2000)
 
                                  # Save using SkillPathManager
@@ -540,10 +559,15 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                  for skill_ref in sorted(enhanced_selected_skills):
                      skill_path = SkillPathManager.get_skill_path(skill_ref)
                      if skill_path and skill_path.exists():
+                         # Use the skill name from the ref as filename, not the
+                         # resolved path name (which may be generic "SKILL.md"
+                         # for directory-style builtin skills).
+                         ref_name = skill_ref.split('/')[-1]
+                         dest_name = f"{ref_name}.md" if not ref_name.endswith('.md') else ref_name
                          if skill_ref.startswith('builtin/'):
-                             dest = output_dir / 'skills' / 'builtin' / skill_path.name
+                             dest = output_dir / 'skills' / 'builtin' / dest_name
                          elif skill_ref.startswith('learned/'):
-                             dest = output_dir / 'skills' / 'learned' / skill_path.name
+                             dest = output_dir / 'skills' / 'learned' / dest_name
                          else:
                              continue
                          shutil.copy2(skill_path, dest)

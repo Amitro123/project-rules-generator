@@ -139,9 +139,21 @@ def _extract_bullets(text: str) -> List[str]:
 class DesignGenerator:
     """Generate a technical design document using AI or templates."""
 
-    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
-        self.api_key = api_key or os.getenv('GEMINI_API_KEY')
-        self.model_name = model_name or os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = 'gemini'):
+        self.api_key = api_key or os.getenv('GEMINI_API_KEY') or os.getenv('GROQ_API_KEY')
+        self.provider = provider
+        # If Groq key is present but no Gemini key, default to Groq
+        if not os.getenv('GEMINI_API_KEY') and os.getenv('GROQ_API_KEY'):
+            self.provider = 'groq'
+
+        try:
+            from .ai.ai_client import create_ai_client
+            self.client = create_ai_client(self.provider, api_key=self.api_key)
+        except Exception as e:
+             self.client = None
+             print(f"Warning: Design AI client init failed: {e}")
+
+        self.model_name = model_name
 
     def generate_design(
         self,
@@ -215,22 +227,10 @@ Generate the design now:
 """
 
     def _call_llm(self, prompt: str) -> str:
-        if not self.api_key:
+        if not self.client:
             return ''
         try:
-            from google import genai
-            from google.genai import types
-
-            client = genai.Client(api_key=self.api_key)
-            response = client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.5,
-                    max_output_tokens=3000,
-                ),
-            )
-            return response.text
+            return self.client.generate(prompt, max_tokens=3000, model=self.model_name)
         except Exception:
             return ''
 

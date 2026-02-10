@@ -112,10 +112,8 @@ def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
 def generate_readme_with_llm(user_input: Dict, context: Dict) -> str:
     """Generate README using Gemini."""
     try:
-        from generator.llm_skill_generator import LLMSkillGenerator, GEMINI_AVAILABLE
-        if not GEMINI_AVAILABLE:
-            raise ImportError("Google Generative AI not available")
-            
+        from generator.llm_skill_generator import LLMSkillGenerator
+
         # Format tech stack
         tech_detected = []
         for category in ['backend', 'frontend', 'database', 'languages']:

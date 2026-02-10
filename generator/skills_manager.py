@@ -72,18 +72,17 @@ class SkillsManager:
         if use_ai and project_path:
             try:
                 from generator.project_analyzer import ProjectAnalyzer
-                from generator.llm_skill_generator import LLMSkillGenerator, GEMINI_AVAILABLE
-                
-                if not GEMINI_AVAILABLE:
-                    print("[!] Warning: google-generativeai not installed. Skipping AI generation.")
-                else:
-                    print(f"🤖 Analyzing project context in {project_path}...")
-                    analyzer = ProjectAnalyzer(Path(project_path))
-                    context = analyzer.analyze()
-                    
-                    print("✨ Generating skill with Gemini 2.0 Flash...")
-                    generator = LLMSkillGenerator()
-                    content = generator.generate_skill(safe_name, context)
+                from generator.llm_skill_generator import LLMSkillGenerator
+
+                print(f"🤖 Analyzing project context in {project_path}...")
+                analyzer = ProjectAnalyzer(Path(project_path))
+                context = analyzer.analyze()
+
+                print("✨ Generating skill with AI...")
+                generator = LLMSkillGenerator()
+                content = generator.generate_skill(safe_name, context)
+            except ImportError as e:
+                print(f"[!] Warning: AI provider not available ({e}). Falling back to standard parsing.")
             except Exception as e:
                 print(f"[!] Warning: AI generation failed ({e}). Falling back to standard parsing.")
                 # Fallthrough
