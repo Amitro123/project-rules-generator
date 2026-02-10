@@ -6,9 +6,9 @@ class SkillsManager:
     """Manages skill discovery, creation, and loading."""
 
     def __init__(self, base_path: Optional[Path] = None):
-        # Default to skills/ directory relative to this file (in generator package)
+        # Default to current directory (src/skills)
         if base_path is None:
-            self.base_path = Path(__file__).parent / "skills"
+            self.base_path = Path(__file__).parent
         else:
             self.base_path = base_path
             
@@ -72,18 +72,15 @@ class SkillsManager:
         if use_ai and project_path:
             try:
                 from generator.project_analyzer import ProjectAnalyzer
-                from generator.llm_skill_generator import LLMSkillGenerator, GEMINI_AVAILABLE
+                from generator.llm_skill_generator import LLMSkillGenerator
                 
-                if not GEMINI_AVAILABLE:
-                    print("[!] Warning: google-generativeai not installed. Skipping AI generation.")
-                else:
-                    print(f"🤖 Analyzing project context in {project_path}...")
-                    analyzer = ProjectAnalyzer(Path(project_path))
-                    context = analyzer.analyze()
-                    
-                    print("✨ Generating skill with Gemini 2.0 Flash...")
-                    generator = LLMSkillGenerator()
-                    content = generator.generate_skill(safe_name, context)
+                print(f"🤖 Analyzing project context in {project_path}...")
+                analyzer = ProjectAnalyzer(Path(project_path))
+                context = analyzer.analyze()
+
+                print("✨ Generating skill with AI...")
+                generator = LLMSkillGenerator()
+                content = generator.generate_skill(safe_name, context)
             except Exception as e:
                 print(f"[!] Warning: AI generation failed ({e}). Falling back to standard parsing.")
                 # Fallthrough

@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 from click.testing import CliRunner
 
-from generator.incremental_analyzer import IncrementalAnalyzer
+from src.core.incremental_analyzer import IncrementalAnalyzer
 from main import main
 
 

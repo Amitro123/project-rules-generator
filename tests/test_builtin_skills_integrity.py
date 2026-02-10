@@ -17,9 +17,9 @@ def skills_root():
     """Returns the root path of the skills directory."""
     # Assuming code is running from project root or tests/
     # Adjust this based on actual project structure
-    root = Path(__file__).parent.parent / "generator" / "skills"
+    root = Path(__file__).parent.parent / "src" / "skills"
     if not root.exists():
-         root = Path("generator/skills") # try relative to CWD
+         root = Path("src/skills") # try relative to CWD
     return root
 
 def test_skills_directory_structure(skills_root):

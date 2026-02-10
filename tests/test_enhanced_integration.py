@@ -7,7 +7,7 @@ from click.testing import CliRunner
 from main import main
 
 from generator.parsers.enhanced_parser import EnhancedProjectParser
-from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
+from src.skills.enhanced_skill_matcher import EnhancedSkillMatcher
 from generator.extractors.code_extractor import CodeExampleExtractor
 from generator.storage.skill_paths import SkillPathManager
 from generator.outputs.clinerules_generator import generate_clinerules

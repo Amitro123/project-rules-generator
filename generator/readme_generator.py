@@ -109,12 +109,10 @@ def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
     return readme_content
 
 
-def generate_readme_with_llm(user_input: Dict, context: Dict) -> str:
-    """Generate README using Gemini."""
+def generate_readme_with_llm(user_input: Dict, context: Dict, provider: str = 'gemini', api_key: str = None) -> str:
+    """Generate README using AI."""
     try:
-        from generator.llm_skill_generator import LLMSkillGenerator, GEMINI_AVAILABLE
-        if not GEMINI_AVAILABLE:
-            raise ImportError("Google Generative AI not available")
+        from generator.llm_skill_generator import LLMSkillGenerator
             
         # Format tech stack
         tech_detected = []
@@ -167,7 +165,7 @@ Generate a **professional, complete README.md** with these sections:
 Generate the complete README now:
 """
         
-        generator = LLMSkillGenerator()
+        generator = LLMSkillGenerator(provider=provider, api_key=api_key)
         return generator.generate_content(prompt, max_tokens=3000)
     except Exception as e:
         click.echo(f"⚠️  LLM generation failed: {e}", err=True)

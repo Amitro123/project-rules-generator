@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 from click.testing import CliRunner
 
-from generator.task_decomposer import SubTask, TaskDecomposer
+from src.ai.task_decomposer import SubTask, TaskDecomposer
 from main import cli
 
 

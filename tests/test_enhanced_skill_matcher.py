@@ -3,7 +3,7 @@ import pytest
 import json
 from pathlib import Path
 
-from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
+from src.skills.enhanced_skill_matcher import EnhancedSkillMatcher
 
 
 class TestEnhancedSkillMatcher:

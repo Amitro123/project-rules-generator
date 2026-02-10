@@ -3,34 +3,15 @@
 import os
 from pathlib import Path
 from typing import Dict, Optional
+from src.ai.ai_client import AIClientFactory
 
-# Import Gemini if available
-try:
-    from google import genai
-    from google.genai import types
-    GEMINI_AVAILABLE = True
-except ImportError:
-    GEMINI_AVAILABLE = False
-
+# GEMINI_AVAILABLE check removed as abstraction handles it
 
 class LLMSkillGenerator:
     """Generate actionable skills using LLM analysis."""
     
-    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
-        if not GEMINI_AVAILABLE:
-            raise ImportError(
-                "google-genai not installed. "
-                "Run: pip install google-genai"
-            )
-        
-        self.api_key = api_key or os.getenv('GEMINI_API_KEY')
-        if not self.api_key:
-            raise ValueError(
-                "GEMINI_API_KEY not found. Set it in environment or .env file"
-            )
-        
-        self.client = genai.Client(api_key=self.api_key)
-        self.model_name = model_name or os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = 'gemini'):
+        self.client = AIClientFactory.get_client(provider=provider, api_key=api_key, model_name=model_name)
     
     def generate_skill(self, skill_name: str, context: Dict) -> str:
         """Generate complete skill from project context."""
@@ -39,16 +20,10 @@ class LLMSkillGenerator:
 
     def generate_content(self, prompt: str, max_tokens: int = 2000) -> str:
         """Generate content from prompt using the configured model."""
+        if not self.client:
+            raise RuntimeError("AI Client not initialized")
         try:
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.7,
-                    max_output_tokens=max_tokens,
-                )
-            )
-            return response.text
+            return self.client.generate_content(prompt, temperature=0.7, max_tokens=max_tokens)
         except Exception as e:
             raise RuntimeError(f"LLM generation failed: {e}")
     

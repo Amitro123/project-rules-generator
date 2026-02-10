@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 from click.testing import CliRunner
 
-from generator.design_generator import Design, ArchitectureDecision, DesignGenerator
+from src.ai.design_generator import Design, ArchitectureDecision, DesignGenerator
 from main import cli
 
 
