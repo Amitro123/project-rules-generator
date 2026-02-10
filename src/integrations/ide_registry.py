@@ -52,11 +52,18 @@ class IDERegistry:
         if settings_path.exists():
             try:
                 settings = json.loads(settings_path.read_text(encoding='utf-8'))
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as e:
+                logger.warning(f"Corrupt {settings_path}, backing up: {e}")
+                backup = settings_path.with_suffix('.json.bak')
+                shutil.copy2(settings_path, backup)
+                settings = {}
 
         # Hypothetical setting for Antigravity
-        settings['antigravity.rulesPath'] = str(rules_path.relative_to(project_path))
+        try:
+            rel = rules_path.relative_to(project_path).as_posix()
+        except ValueError:
+            rel = str(rules_path)
+        settings['antigravity.rulesPath'] = rel
 
         settings_path.write_text(json.dumps(settings, indent=4), encoding='utf-8')
         logger.info(f"Updated {settings_path}")
@@ -80,9 +87,10 @@ class IDERegistry:
                 target.unlink()
 
             # Create relative symlink
-            # target -> rules_path
-            # rules_path relative to project_path
-            rel_path = rules_path.relative_to(project_path)
+            try:
+                rel_path = rules_path.relative_to(project_path)
+            except ValueError:
+                rel_path = rules_path
             target.symlink_to(rel_path)
             logger.info(f"Created symlink {target} -> {rel_path}")
         except OSError as e:
@@ -98,7 +106,10 @@ class IDERegistry:
             if target.exists() or target.is_symlink():
                 target.unlink()
 
-            rel_path = rules_path.relative_to(project_path)
+            try:
+                rel_path = rules_path.relative_to(project_path)
+            except ValueError:
+                rel_path = rules_path
             target.symlink_to(rel_path)
             logger.info(f"Created symlink {target} -> {rel_path}")
         except OSError as e:

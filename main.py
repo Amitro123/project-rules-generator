@@ -13,6 +13,11 @@ from dotenv import load_dotenv
 # Load environment variables from .env file if present
 load_dotenv()
 
+# Ensure project root is in sys.path for 'src' resolution
+root_dir = Path(__file__).parent.resolve()
+if str(root_dir) not in sys.path:
+    sys.path.insert(0, str(root_dir))
+
 try:
     from tqdm import tqdm
 except ImportError:
@@ -244,7 +249,9 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                 target = (manager.learned_path / remove_skill).resolve()
 
                 # Security check: prevent path traversal
-                if not str(target).startswith(str(manager.learned_path.resolve())):
+                try:
+                    target.relative_to(manager.learned_path.resolve())
+                except ValueError:
                     click.echo(f"❌ Invalid skill path: {remove_skill}", err=True)
                     sys.exit(1)
 

@@ -37,7 +37,7 @@ class GroqClient(AIClient):
                 max_tokens=max_tokens,
             )
 
-            return chat_completion.choices[0].message.content
+            return chat_completion.choices[0].message.content or ""
         except ImportError:
             logger.error("groq package not installed.")
             return ''

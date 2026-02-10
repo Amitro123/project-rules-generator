@@ -40,7 +40,8 @@ class TaskDecomposer:
         """
         prompt = self._build_prompt(user_task, project_context, project_path)
         raw = self._call_llm(prompt)
-        return self._parse_response(raw, user_task)
+        tasks = self._parse_response(raw, user_task)
+        return self._ensure_minimum_tasks(tasks, user_task)
 
     def from_design(
         self,
@@ -272,19 +273,28 @@ Generate the subtasks now:
         return f"""# Task Decomposition
 
 Break down the following task into small, actionable subtasks.
-Each subtask should take 2-5 minutes to complete.
+
+MANDATORY: Generate EXACTLY 5-8 subtasks, each 2-5 minutes.
 
 ## Task
 {user_task}
 {ctx_block}
+## Requirements
+
+1. Each subtask MUST specify concrete file paths (e.g. `src/api.py`, not "the API file")
+2. Each subtask MUST include code change descriptions with +/- line indicators
+3. Each subtask MUST include test commands (e.g. `pytest tests/test_api.py -k test_create`)
+4. Subtasks must be ordered by dependency (foundations first, features next, tests last)
+5. NO subtask should take longer than 5 minutes
+
 ## Output Format
 
-Return a numbered list of subtasks. For each subtask provide:
+Return a numbered list of 5-8 subtasks. For each subtask provide:
 - Title (short, imperative)
 - Goal (one sentence)
-- Files to create/modify
-- Specific changes
-- Tests to write
+- Files to create/modify (SPECIFIC paths)
+- Changes (with code snippets showing what to add/modify)
+- Tests (specific pytest/test commands to verify)
 - Dependencies (which subtask IDs must finish first)
 - Estimated minutes (2-5)
 
@@ -293,12 +303,12 @@ Format each subtask as:
 ### <number>. <title>
 Goal: <goal>
 Files: <comma-separated file paths>
-Changes: <bullet list>
-Tests: <bullet list>
+Changes: <bullet list with code snippets>
+Tests: <bullet list with test commands>
 Dependencies: <comma-separated subtask numbers or "none">
 Estimated: <minutes>
 
-Generate the subtasks now:
+Generate exactly 5-8 subtasks now:
 """
 
     def _call_llm(self, prompt: str) -> str:
@@ -378,3 +388,37 @@ Generate the subtasks now:
             return []
         items = re.findall(r'[-*]\s*(.+)', match.group(1))
         return [item.strip() for item in items if item.strip()]
+
+    @staticmethod
+    def _ensure_minimum_tasks(tasks: List['SubTask'], user_task: str, minimum: int = 3) -> List['SubTask']:
+        """Ensure at least *minimum* subtasks by splitting large ones.
+
+        When the AI returns fewer tasks than desired, pad with planning,
+        implementation, and verification subtasks derived from the original task.
+        """
+        if len(tasks) >= minimum:
+            return tasks
+
+        # If we have a single fallback task, expand it into a standard pattern
+        if len(tasks) == 1 and tasks[0].title == user_task[:80]:
+            next_id = 1
+            expanded = [
+                SubTask(id=next_id, title="Research and plan approach",
+                        goal=f"Understand requirements for: {user_task[:60]}",
+                        estimated_minutes=3, dependencies=[]),
+                SubTask(id=next_id + 1, title="Implement core changes",
+                        goal=f"Make primary code changes for: {user_task[:60]}",
+                        estimated_minutes=5, dependencies=[next_id]),
+                SubTask(id=next_id + 2, title="Write tests",
+                        goal="Add tests covering the new behaviour",
+                        estimated_minutes=4, dependencies=[next_id + 1]),
+                SubTask(id=next_id + 3, title="Update documentation",
+                        goal="Update relevant docs and comments",
+                        estimated_minutes=2, dependencies=[next_id + 1]),
+                SubTask(id=next_id + 4, title="Verify and clean up",
+                        goal="Run full test suite, fix lint, confirm success",
+                        estimated_minutes=3, dependencies=[next_id + 2, next_id + 3]),
+            ]
+            return expanded
+
+        return tasks

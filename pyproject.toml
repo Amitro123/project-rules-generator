@@ -34,7 +34,7 @@ prg = "main:cli"
 
 [tool.setuptools]
 py-modules = ["main", "project_rules_generator"]
-packages = ["generator", "analyzer", "prg_utils"]
+packages = ["generator", "analyzer", "prg_utils", "src"]
 
 [tool.setuptools.package-data]
 generator = ["skills/**/*"]

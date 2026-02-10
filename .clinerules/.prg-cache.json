@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "timestamp": "2026-02-10T11:59:59.020493+00:00",
+  "hashes": {
+    "deps": "d152b50e237b4e997fe76292d680a741af206ecfa66d44221d77a7bbb9c6ed75",
+    "readme": "50da268d3b8c6872303de9925e1258fcfbde4ebe0686dd782a5046693aeb12d2",
+    "source": "d454aed6b1d732903f6451c9e54709bbbda63689115ac75642a6b0e5f1dd3000",
+    "tests": "0a0c0e835da2efc175dfc8696ab89da99df9a02fecc52bb91d25d2aac05571cb",
+    "structure": "9f990ec5dd4d0da70e97962afe45a19cb03301f18bcd585c9e9a0a0f4c019d38"
+  }
+}
