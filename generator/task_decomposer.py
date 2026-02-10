@@ -20,13 +20,12 @@ class SubTask(BaseModel):
     estimated_minutes: int = Field(default=5, ge=1, le=10, description="Time estimate (2-5 min target)")
 
 
-from src.ai.ai_client import AIClientFactory
-
 class TaskDecomposer:
     """Break a high-level task into subtasks using an AI model."""
 
-    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = 'gemini'):
-        self.client = AIClientFactory.get_client(provider=provider, api_key=api_key, model_name=model_name)
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
+        self.api_key = api_key or os.getenv('GEMINI_API_KEY')
+        self.model_name = model_name or os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
 
     def decompose(
         self,
@@ -52,7 +51,7 @@ class TaskDecomposer:
         Parses the design document sections and either uses AI to decompose
         each section or creates subtasks directly from the design structure.
         """
-        from src.ai.design_generator import Design
+        from generator.design_generator import Design
 
         text = Path(design_path).read_text(encoding='utf-8')
         design = Design.from_markdown(text)
@@ -302,10 +301,25 @@ Generate the subtasks now:
 """
 
     def _call_llm(self, prompt: str) -> str:
-        """Call the AI model via abstraction layer."""
-        if not self.client:
+        """Call the AI model. Falls back to empty string if unavailable."""
+        if not self.api_key:
             return ''
-        return self.client.generate_content(prompt, temperature=0.4, max_tokens=3000)
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client(api_key=self.api_key)
+            response = client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.4,
+                    max_output_tokens=3000,
+                ),
+            )
+            return response.text
+        except Exception:
+            return ''
 
     def _parse_response(self, raw: str, user_task: str) -> List[SubTask]:
         """Parse the LLM response into SubTask objects.

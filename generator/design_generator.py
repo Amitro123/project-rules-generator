@@ -136,13 +136,12 @@ def _extract_bullets(text: str) -> List[str]:
     return [m.group(1).strip() for m in re.finditer(r'^-\s+(.+)', text, re.MULTILINE)]
 
 
-from src.ai.ai_client import AIClientFactory
-
 class DesignGenerator:
     """Generate a technical design document using AI or templates."""
 
-    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = 'gemini'):
-        self.client = AIClientFactory.get_client(provider=provider, api_key=api_key, model_name=model_name)
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
+        self.api_key = api_key or os.getenv('GEMINI_API_KEY')
+        self.model_name = model_name or os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
 
     def generate_design(
         self,
@@ -216,9 +215,24 @@ Generate the design now:
 """
 
     def _call_llm(self, prompt: str) -> str:
-        if not self.client:
+        if not self.api_key:
             return ''
-        return self.client.generate_content(prompt, temperature=0.5, max_tokens=3000)
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client(api_key=self.api_key)
+            response = client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.5,
+                    max_output_tokens=3000,
+                ),
+            )
+            return response.text
+        except Exception:
+            return ''
 
     def _parse_response(self, raw: str, user_request: str) -> Design:
         """Parse AI output into a Design. Falls back to template if empty."""

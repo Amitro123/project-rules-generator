@@ -7,7 +7,7 @@ import shutil
 import tempfile
 import sys
 
-from src.skills.skill_manager import SkillsManager
+from generator.skills_manager import SkillsManager
 
 class TestSkillsIntegration(unittest.TestCase):
     def setUp(self):

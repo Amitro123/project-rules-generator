@@ -55,13 +55,13 @@ from prg_utils.logger import setup_logging
 from generator.parsers.enhanced_parser import EnhancedProjectParser
 from generator.parsers.dependency_parser import DependencyParser
 from generator.analyzers.structure_analyzer import StructureAnalyzer
-from src.skills.enhanced_skill_matcher import EnhancedSkillMatcher
+from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
 from generator.extractors.code_extractor import CodeExampleExtractor
 from generator.prompts.skill_generation import build_skill_prompt
 from generator.storage.skill_paths import SkillPathManager
 from generator.outputs.clinerules_generator import generate_clinerules, generate_clinerules_with_inline
 from generator.constitution_generator import generate_constitution
-from src.core.incremental_analyzer import IncrementalAnalyzer
+from generator.incremental_analyzer import IncrementalAnalyzer
 
 
 def load_config():
@@ -100,7 +100,7 @@ def setup_orchestrator(config):
 
 
 from generator.pack_manager import load_external_packs
-from src.skills.skill_manager import SkillsManager
+from generator.skills_manager import SkillsManager
 
 
 class DefaultGroup(click.Group):
@@ -149,18 +149,14 @@ def cli():
 @click.option('--merge', is_flag=True, help='Preserve existing skill files, only add new ones')
 @click.option('--mode', type=click.Choice(['manual', 'ai', 'constitution']), default=None, help='Explicit mode (manual=no AI, ai=auto-generate+AI, constitution=adds constitution.md)')
 @click.option('--incremental', is_flag=True, help='Only regenerate changed sections (skip if nothing changed)')
-@click.option('--ide', help='Register rules with IDE (antigravity, cline, cursor, vscode)')
-@click.option('--provider', type=click.Choice(['gemini', 'groq']), default='gemini', help='AI Provider (gemini, groq)')
-@click.option('--add-skill', help='Add a skill (alias for create-skill)')
-@click.option('--remove-skill', help='Remove a learned skill')
-def analyze(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key, constitution, merge, mode, incremental, ide, provider, add_skill, remove_skill):
+def analyze(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key, constitution, merge, mode, incremental):
     """Analyze project and generate rules.md and skills.md from README.md
 
     Examples:
     \b
         python main.py . --export-json
-        python main.py . --ide antigravity
-        python main.py . --provider groq
+        python main.py . --include-pack agent-rules
+        python main.py . --incremental
     """
     project_path = Path(project_path).resolve()
     cleanup_awesome_skills()
@@ -198,12 +194,9 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
 
     # Handle API Key
     if api_key:
-        if provider == 'groq':
-            os.environ['GROQ_API_KEY'] = api_key
-        else:
-            os.environ['GEMINI_API_KEY'] = api_key
+        os.environ['GEMINI_API_KEY'] = api_key
         if verbose:
-            click.echo(f"Using API key from --api-key flag for {provider}")
+            click.echo("Using API key from --api-key flag")
 
     try:
         # Load config
@@ -219,13 +212,11 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
         # Skills Manager Logic
         skills_dir = project_path / "skills"
         
-        # Skill Management (CLI Flags)
-        if create_skill or add_skill:
-            skill_name = create_skill or add_skill
+        if create_skill:
             manager = SkillsManager()
             try:
                 path = manager.create_skill(
-                    skill_name,
+                    create_skill, 
                     from_readme=from_readme, 
                     project_path=str(project_path),
                     use_ai=ai
@@ -233,29 +224,6 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                 click.echo(f"✨ Created new skill '{path.name}' in {path}")
             except Exception as e:
                 click.echo(f"❌ Failed to create skill: {e}", err=True)
-                sys.exit(1)
-            sys.exit(0)
-
-        if remove_skill:
-            manager = SkillsManager()
-            try:
-                # Basic removal logic - check learned skills
-                import shutil
-                target = (manager.learned_path / remove_skill).resolve()
-
-                # Security check: prevent path traversal
-                if not str(target).startswith(str(manager.learned_path.resolve())):
-                    click.echo(f"❌ Invalid skill path: {remove_skill}", err=True)
-                    sys.exit(1)
-
-                if target.exists():
-                    shutil.rmtree(target)
-                    click.echo(f"🗑️ Removed skill '{remove_skill}'")
-                else:
-                    click.echo(f"❌ Skill '{remove_skill}' not found in learned skills.", err=True)
-                    sys.exit(1)
-            except Exception as e:
-                click.echo(f"❌ Failed to remove skill: {e}", err=True)
                 sys.exit(1)
             sys.exit(0)
 
@@ -320,8 +288,8 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                     context = analyzer.analyze()
                     
                     if ai:
-                        click.echo(f"🤖 Generating README with AI ({provider})...\n")
-                        content = generate_readme_with_llm(user_input_data, context, provider=provider, api_key=api_key)
+                        click.echo("🤖 Generating README with AI...\n")
+                        content = generate_readme_with_llm(user_input_data, context)
                     else:
                         content = generate_readme_template(user_input_data, context)
                     
@@ -494,7 +462,7 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
 
                              try:
                                  from generator.llm_skill_generator import LLMSkillGenerator
-                                 llm_gen = LLMSkillGenerator(provider=provider, api_key=api_key)
+                                 llm_gen = LLMSkillGenerator()
                                  skill_content = llm_gen.generate_content(prompt, max_tokens=2000)
 
                                  # Save using SkillPathManager
@@ -700,14 +668,6 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                     click.echo(f"\nWARNING: Git commit failed: {e}")
                     click.echo(f"   Files were generated, you can commit manually")
         
-        # IDE Registration
-        if ide:
-            from src.integrations.ide_registry import IDERegistry
-            registry = IDERegistry()
-            # rules_path is typically .clinerules/rules.md
-            rules_path = output_dir / 'rules.md'
-            registry.register(ide, project_path, rules_path)
-
         # Save incremental cache
         if inc_analyzer:
             inc_analyzer.save_hash(inc_analyzer.compute_project_hash())
@@ -746,24 +706,20 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
 @click.argument('description')
 @click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory')
 @click.option('--output', '-o', type=click.Path(), default='DESIGN.md', help='Output file (default: DESIGN.md)')
-@click.option('--api-key', help='API Key (overrides env var)')
-@click.option('--provider', type=click.Choice(['gemini', 'groq']), default='gemini', help='AI Provider (gemini, groq)')
+@click.option('--api-key', help='Gemini API Key (overrides GEMINI_API_KEY env var)')
 @click.option('--verbose/--quiet', default=True, help='Verbose output')
-def design(description, project_path, output, api_key, provider, verbose):
+def design(description, project_path, output, api_key, verbose):
     """Generate a technical design document (Stage 1 of two-stage planning).
 
     Examples:
     \b
-        python main.py design "Add authentication to API" --provider groq
+        python main.py design "Add authentication to API"
         python main.py design "Add rate limiting middleware" --output docs/DESIGN.md
     """
     project_path = Path(project_path).resolve()
 
     if api_key:
-        if provider == 'groq':
-            os.environ['GROQ_API_KEY'] = api_key
-        else:
-            os.environ['GEMINI_API_KEY'] = api_key
+        os.environ['GEMINI_API_KEY'] = api_key
 
     if verbose:
         click.echo(f"Project Rules Generator v0.1.0 — Design Generator")
@@ -783,11 +739,11 @@ def design(description, project_path, output, api_key, provider, verbose):
         if verbose:
             click.echo(f"Context extraction skipped: {exc}")
 
-    from src.ai.design_generator import DesignGenerator
+    from generator.design_generator import DesignGenerator
 
-    generator = DesignGenerator(provider=provider, api_key=api_key)
+    generator = DesignGenerator(api_key=os.getenv('GEMINI_API_KEY'))
     if verbose:
-        click.echo(f"Generating design with {provider}...")
+        click.echo("Generating design...")
 
     design_obj = generator.generate_design(
         description,
@@ -816,18 +772,18 @@ def design(description, project_path, output, api_key, provider, verbose):
 @click.option('--from-design', type=click.Path(exists=True, dir_okay=False), default=None, help='Generate plan from a DESIGN.md file')
 @click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory')
 @click.option('--output', '-o', type=click.Path(), default='PLAN.md', help='Output file for the plan (default: PLAN.md)')
-@click.option('--api-key', help='API Key (overrides env var)')
-@click.option('--provider', type=click.Choice(['gemini', 'groq']), default='gemini', help='AI Provider (gemini, groq)')
+@click.option('--api-key', help='Gemini API Key (overrides GEMINI_API_KEY env var)')
 @click.option('--verbose/--quiet', default=True, help='Verbose output')
-def plan(task_description, from_design, project_path, output, api_key, provider, verbose):
+def plan(task_description, from_design, project_path, output, api_key, verbose):
     """Break down a task into subtasks and generate PLAN.md.
 
     Can generate from a task description or from an existing DESIGN.md.
 
     Examples:
     \b
-        python main.py plan "Add authentication to API" --provider groq
+        python main.py plan "Add authentication to API"
         python main.py plan --from-design DESIGN.md
+        python main.py plan "Refactor database layer" --output docs/PLAN.md
     """
     if not task_description and not from_design:
         click.echo("Error: Provide a TASK_DESCRIPTION or --from-design.", err=True)
@@ -836,10 +792,7 @@ def plan(task_description, from_design, project_path, output, api_key, provider,
     project_path = Path(project_path).resolve()
 
     if api_key:
-        if provider == 'groq':
-            os.environ['GROQ_API_KEY'] = api_key
-        else:
-            os.environ['GEMINI_API_KEY'] = api_key
+        os.environ['GEMINI_API_KEY'] = api_key
 
     if verbose:
         click.echo(f"Project Rules Generator v0.1.0 — Task Planner")
@@ -862,11 +815,11 @@ def plan(task_description, from_design, project_path, output, api_key, provider,
         if verbose:
             click.echo(f"Context extraction skipped: {exc}")
 
-    from src.ai.task_decomposer import TaskDecomposer
+    from generator.task_decomposer import TaskDecomposer
 
-    decomposer = TaskDecomposer(provider=provider, api_key=api_key)
+    decomposer = TaskDecomposer(api_key=os.getenv('GEMINI_API_KEY'))
     if verbose:
-        click.echo(f"Decomposing task with {provider}...")
+        click.echo("Decomposing task...")
 
     if from_design:
         subtasks = decomposer.from_design(
@@ -874,7 +827,7 @@ def plan(task_description, from_design, project_path, output, api_key, provider,
             project_context=enhanced_context,
         )
         # Use the design title as user_task for the plan header
-        from src.ai.design_generator import Design
+        from generator.design_generator import Design
         design_obj = Design.from_markdown(Path(from_design).read_text(encoding='utf-8'))
         user_task_label = design_obj.title
     else:
