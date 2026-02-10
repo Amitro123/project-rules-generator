@@ -12,8 +12,7 @@ class SkillPathManager:
     """Manage builtin and learned skill locations with sync support."""
 
     # Builtin source (in project repo)
-    # Assumes run from repo root where src/skills/builtin exists
-    BUILTIN_SOURCE = Path(__file__).parent.parent.parent / "src" / "skills" / "builtin"
+    BUILTIN_SOURCE = Path(__file__).parent.parent / "skills" / "builtin"
 
     # Global user directory
     GLOBAL_DIR = Path.home() / ".project-rules-generator"

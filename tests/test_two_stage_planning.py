@@ -3,8 +3,8 @@ import pytest
 from pathlib import Path
 from click.testing import CliRunner
 
-from src.ai.design_generator import Design, DesignGenerator, ArchitectureDecision
-from src.ai.task_decomposer import TaskDecomposer
+from generator.design_generator import Design, DesignGenerator, ArchitectureDecision
+from generator.task_decomposer import TaskDecomposer
 from main import cli
 
 

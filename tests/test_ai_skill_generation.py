@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 from pathlib import Path
 import shutil
 
-from src.skills.skill_manager import SkillsManager
+from generator.skills_manager import SkillsManager
 
 class TestAISkillGeneration(unittest.TestCase):
     def setUp(self):
@@ -17,28 +17,26 @@ class TestAISkillGeneration(unittest.TestCase):
         
         # Mock home directory for SkillsManager
         self.original_home = Path.home
-        # Create a function that returns the test path
-        self.home_patch = patch('pathlib.Path.home', return_value=self.test_dir)
-        self.home_patch.start()
+        Path.home = MagicMock(return_value=self.test_dir)
         
     def tearDown(self):
-        self.home_patch.stop()
+        Path.home = self.original_home
         if self.test_dir.exists():
             shutil.rmtree(self.test_dir)
 
+    @patch('generator.llm_skill_generator.GEMINI_AVAILABLE', True)
     @patch('generator.project_analyzer.ProjectAnalyzer')
-    @patch('src.ai.ai_client.AIClientFactory.get_client')
-    def test_create_skill_with_ai(self, mock_get_client, mock_analyzer_cls):
+    @patch('generator.llm_skill_generator.LLMSkillGenerator')
+    def test_create_skill_with_ai(self, mock_llm_cls, mock_analyzer_cls):
         """Test create_skill calls AI components when use_ai=True."""
         # Setup mocks
         mock_analyzer = MagicMock()
         mock_analyzer.analyze.return_value = {'context': 'dummy'}
         mock_analyzer_cls.return_value = mock_analyzer
         
-        mock_client = MagicMock()
-        # The prompt is complex, so we just mock the return
-        mock_client.generate_content.return_value = "# Skill: AI Test\n\n## Purpose\nAI Generated"
-        mock_get_client.return_value = mock_client
+        mock_generator = MagicMock()
+        mock_generator.generate_skill.return_value = "# Skill: AI Test\n\n## Purpose\nAI Generated"
+        mock_llm_cls.return_value = mock_generator
         
         manager = SkillsManager()
         
@@ -51,18 +49,42 @@ class TestAISkillGeneration(unittest.TestCase):
         
         # Verify interactions
         mock_analyzer_cls.assert_called_once()
-        mock_client.generate_content.assert_called()
+        mock_generator.generate_skill.assert_called_once_with("ai-test-skill", {'context': 'dummy'})
         
         # Verify file content
         content = (skill_path / "SKILL.md").read_text(encoding='utf-8')
         self.assertIn("AI Generated", content)
 
-    @patch('src.ai.ai_client.AIClientFactory.get_client')
-    def test_create_skill_ai_failure_fallback(self, mock_get_client):
-        """Test fallback when AI generation fails."""
-        mock_client = MagicMock()
-        mock_client.generate_content.return_value = "" # Empty response implies failure/fallback
-        mock_get_client.return_value = mock_client
+    @patch('generator.llm_skill_generator.GEMINI_AVAILABLE', False)
+    def test_create_skill_ai_missing_dependency(self):
+        """Test fallback when google-generativeai is missing."""
+        manager = SkillsManager()
+        
+        # Should gracefully fallback (print warning and use template/fallback)
+        # We can capture stdout if we want, but mainly checking it doesn't crash
+        # and produces a default template.
+        skill_path = manager.create_skill(
+            "missing-dep-skill", 
+            project_path=".", 
+            use_ai=True
+        )
+        
+        content = (skill_path / "SKILL.md").read_text(encoding='utf-8')
+        self.assertIn("# Skill: Missing Dep Skill", content)
+        self.assertNotIn("AI Generated", content)
+
+    @patch('generator.llm_skill_generator.GEMINI_AVAILABLE', True)
+    @patch('generator.project_analyzer.ProjectAnalyzer')
+    @patch('generator.llm_skill_generator.LLMSkillGenerator')
+    def test_create_skill_ai_failure_fallback(self, mock_llm_cls, mock_analyzer_cls):
+        """Test fallback when AI generation raises exception."""
+        mock_analyzer = MagicMock()
+        mock_analyzer_cls.return_value = mock_analyzer
+        
+        # Simulate LLM failure
+        mock_generator = MagicMock()
+        mock_generator.generate_skill.side_effect = RuntimeError("API Error")
+        mock_llm_cls.return_value = mock_generator
         
         manager = SkillsManager()
         
@@ -75,5 +97,3 @@ class TestAISkillGeneration(unittest.TestCase):
         # Should populate with default template
         content = (skill_path / "SKILL.md").read_text(encoding='utf-8')
         self.assertIn("# Skill: Failed Ai Skill", content)
-        # Should NOT have AI content
-        self.assertNotIn("AI Generated", content)
