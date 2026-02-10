@@ -11,7 +11,7 @@ class GroqClient(AIClient):
     """Client for Groq AI API."""
 
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
-        super().__init__(api_key=api_key or os.getenv('GROQ_API_KEY'), model_name=model_name or os.getenv('GROQ_MODEL', 'llama3-8b-8192'))
+        super().__init__(api_key=api_key or os.getenv('GROQ_API_KEY'), model_name=model_name or os.getenv('GROQ_MODEL', 'llama-3.1-8b-instant'))
 
     def generate_content(self, prompt: str, **kwargs) -> str:
         """Generate content using Groq."""
@@ -37,7 +37,14 @@ class GroqClient(AIClient):
                 max_tokens=max_tokens,
             )
 
-            return chat_completion.choices[0].message.content or ""
+            content = chat_completion.choices[0].message.content or ""
+
+            # Clean encoding artifacts
+            # Fix Windows/Terminal encoding issues where em-dash appears as garbage
+            content = content.encode('utf-8', errors='replace').decode('utf-8')
+            content = content.replace('ג€”', '—').replace('ג', '')
+
+            return content.strip()
         except ImportError:
             logger.error("groq package not installed.")
             return ''

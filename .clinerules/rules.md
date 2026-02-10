@@ -52,7 +52,7 @@ This project uses: python, gemini, claude, click
 ## TESTING
 
 - **Framework**: pytest
-- **Test files**: 32 (222 test cases)
+- **Test files**: 34 (240 test cases)
 - **Test types**: unit, integration
 - **Fixtures**: shared via `conftest.py`
 - **Test data**: `tests/fixtures/` directory
@@ -69,7 +69,7 @@ pytest tests/test_specific.py -v
 ## PRIORITIES
 
 1. *Stop copy-pasting generic rules. Start with AI that knows your project.**
-2. Test coverage
+2. run: pip install project-rules-generator
 3. Documentation clarity
 
 ## CONTEXT STRATEGY
@@ -552,53 +552,3 @@ Create `PLAN.md` in project root with all tasks.
 ❌ Tasks that take > 10 minutes
 ❌ Unclear dependencies
 
-
-
-<!-- Lightweight Skill References
-project: project-rules-generator
-version: '2.0'
-generated_by: project-rules-generator
-tech_stack:
-- claude
-- click
-- gemini
-- pydantic
-- pytest
-- python
-project_type: python-cli
-tools:
-  test: pytest
-  check: ruff check .
-  lint: mypy .
-skills:
-  builtin:
-  - skills/builtin/code-review.md
-  - skills/builtin/SKILL.md
-  - skills/builtin/SKILL.md
-  learned:
-  - skills/learned/coverage-patterns.md
-  - skills/learned/fixture-patterns.md
-  - skills/learned/mocking-patterns.md
-  - skills/learned/parametrize-patterns.md
-  - skills/learned/argparse-patterns.md
-  - skills/learned/click-commands.md
-  - skills/learned/config-management.md
-  - skills/learned/error-handling.md
-skills_count:
-  builtin: 3
-  learned: 8
-  total: 11
-context:
-  exclude:
-  - '**/*.pyc'
-  - '**/__pycache__/**'
-  - '**/.venv/**'
-  - '**/node_modules/**'
-  - '**/*-skills.md'
-  - '**/*-skills.json'
-  - '**/.clinerules*'
-  max_file_size: 50000
-  load_on_demand:
-  - tests/
-  - docs/
--->

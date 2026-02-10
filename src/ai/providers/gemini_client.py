@@ -37,7 +37,14 @@ class GeminiClient(AIClient):
                     max_output_tokens=max_tokens,
                 ),
             )
-            return response.text if response.text else ''
+            text = response.text if response.text else ''
+            
+            # Clean encoding artifacts
+            # Fix Windows/Terminal encoding issues where em-dash appears as garbage
+            text = text.encode('utf-8', errors='replace').decode('utf-8')
+            text = text.replace('ג€”', '—').replace('ג', '')
+            
+            return text.strip()
         except ImportError:
             logger.error("google-generativeai package not installed.")
             return ''

@@ -17,7 +17,7 @@ skills:
   builtin:
   - skills/builtin/code-review.md
   - skills/builtin/SKILL.md
-  - skills/builtin/SKILL.md
+  - skills/builtin/readme-improver.md
   learned:
   - skills/learned/coverage-patterns.md
   - skills/learned/fixture-patterns.md
@@ -26,11 +26,12 @@ skills:
   - skills/learned/argparse-patterns.md
   - skills/learned/click-commands.md
   - skills/learned/config-management.md
+  - skills/learned/validation-patterns.md
   - skills/learned/error-handling.md
 skills_count:
   builtin: 3
-  learned: 8
-  total: 11
+  learned: 9
+  total: 12
 context:
   exclude:
   - '**/*.pyc'

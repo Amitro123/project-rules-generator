@@ -19,3 +19,4 @@ Learned:
 - **Testing Mocks**: Verify mock targets against actual function signatures to avoid AttributeErrors.
 - **Instantiation**: In factory functions (like `setup_orchestrator`), ensure objects are assigned to variables before use.
 - **Src Layout**: When using `src/` layout, ALWAYS include `"src"` in `pyproject.toml` `packages` AND ensure `src/__init__.py` exists. Add `sys.path` injection in entry points for robustness.
+- **Encoding Safety**: When handling AI responses, ALWAYS explicitly clean encoding artifacts (e.g., `.encode('utf-8', errors='replace').decode('utf-8')`) and strip common corruptions like `ג€”` (em dash artifact) before processing.

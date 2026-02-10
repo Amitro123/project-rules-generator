@@ -5,17 +5,20 @@ import re
 class SkillsManager:
     """Manages skill discovery, creation, and loading."""
 
-    def __init__(self, base_path: Optional[Path] = None):
+    def __init__(self, base_path: Optional[Path] = None, learned_path: Optional[Path] = None):
         # Default to current directory (src/skills)
         if base_path is None:
             self.base_path = Path(__file__).parent
         else:
             self.base_path = base_path
-            
+
         self.builtin_path = self.base_path / "builtin"
-        
-        # storage for learned skills (user directory)
-        self.learned_path = Path.home() / ".project-rules-generator" / "learned_skills"
+
+        # storage for learned skills (project dir or user directory)
+        if learned_path is not None:
+            self.learned_path = Path(learned_path)
+        else:
+            self.learned_path = Path.home() / ".project-rules-generator" / "learned_skills"
 
     def list_skills(self) -> Dict[str, List[str]]:
         """List all available skills organized by category."""

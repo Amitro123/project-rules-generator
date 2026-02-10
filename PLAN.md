@@ -1,6 +1,6 @@
 # PLAN
 
-> **Goal:** Add user login
+> **Goal:** Add Redis caching layer
 
 **Subtasks:** 5
 **Estimated time:** 17 minutes
@@ -9,7 +9,7 @@
 
 ## 1. Research and plan approach
 
-**Goal:** Understand requirements for: Add user login
+**Goal:** Understand requirements for: Add Redis caching layer
 **Depends on:** none
 **Estimated:** ~3 min
 
@@ -17,7 +17,7 @@
 
 ## 2. Implement core changes
 
-**Goal:** Make primary code changes for: Add user login
+**Goal:** Make primary code changes for: Add Redis caching layer
 **Depends on:** #1
 **Estimated:** ~5 min
 

@@ -1,79 +1,94 @@
-FINAL FIXES: Complete project-rules-generator v1.0
+Agent suggested skill filename fix - implement!
 
-PRIORITY 1: Fix 2 CI test failures (blocks PR)
-Expected: 'python-cli', got 'library'
+1. Rename .clinerules/skills/learned/error-handling.md → validation-patterns.md
 
-tests/test_enhanced_integration.py:139
-tests/test_enhanced_parser.py:195
+2. Create NEW error-handling.md:
+Skill: Error Handling
+Purpose
+Handle exceptions following project patterns.
 
-Fix src/core/structure_analyzer.py:
+Triggers
+Exception handling needed
 
+sys.exit() detected
+
+Bare except blocks
+
+DO
+Use ProjectRulesGeneratorError for app errors
+
+logging.error() instead of print()
+
+Specific except: except ValueError as e:
+
+Let Click handle CLI exit codes
+
+DON'T
+Bare except: Exception
+
+sys.exit() in library code
+
+print() for errors
+
+Example
 python
-def detect_project_type(self):
-    cli_indicators = [
-        self.has_file('main.py'),
-        self.has_package('click'),
-        any('click.command' in f for f in self.find_imports()),
-        self.path.name in ['cli', 'tool', 'prg']
-    ]
-    return 'python-cli' if sum(cli_indicators) >= 2 else 'library'
-Update tests to accept both:
+try:
+    config = GenerationConfig(**data)
+except ValidationError as e:
+    logging.error(f"Invalid config: {e}")
+    raise ProjectRulesGeneratorError("Config validation failed")
 
-python
-assert result['type'] in ['python-cli', 'cli-tool']
-PRIORITY 2: Task breakdown (1 task → 5-8 subtasks)
-src/ai/task_decomposer.py - strengthen prompt:
+3. Update clinerules.yaml paths.
 
-MANDATORY: EXACTLY 5-8 subtasks, 2-5min each
-1. SPECIFIC file paths (src/api.py)
-2. CODE snippets (+/- lines)
-3. TEST commands (pytest tests/test_X.py)
-Add validation:
+Test: prg analyze . --list-skills → shows validation-patterns + error-handling
 
-python
-if len(tasks) < 5:
-    raise ValueError("Need 5-8 subtasks")
-PRIORITY 3: Builtin skills copying (SKILL.md duplicates)
-main.py - fix copying:
 
-python
-for skill in matched_builtin_skills:
-    src = BUILTIN_SKILLS_DIR / f"{skill.replace('-', '_')}.md"
-    dst = builtin_dir / f"{skill}.md"
-    shutil.copy2(src, dst)
-Remove duplicates from clinerules.yaml.
+v1.1 Features - Speckit.plan Style + README Improver:
 
-PRIORITY 4: 3 AI unit tests (mocking)
-generator/llm_skill_generator.py:
+1. **Enhanced prg plan** (Interactive):
+prg plan "Add Redis cache" → opens files automatically:
 
-python
-GEMINI_AVAILABLE = True
-ANTHROPIC_AVAILABLE = True
-Update mocks in test_ai_skill_generation.py.
+[Open] requirements.txt → +redis
 
-PRIORITY 5: Coderabbit 6 issues
+[Create] src/redis_cache.py
 
-rules.md: "precise line not identified" → "precise line not identified in stack trace"
+[Create] tests/test_redis.py
 
-ide_registry.py:59 - try/except relative_to
+CLI flags:
+--interactive  # Opens files in IDE
+--auto-execute # Agent executes tasks
 
-ide_registry.py:53 - JSONDecodeError logging + backup
+2. **Builtin Skill: readme-improver**
+Skill: README Improver
+Triggers: "improve README", new feature
+Actions:
 
-groq_client.py:40 - content or ""
+Extract CLI examples (click --help)
 
-main.py:244 - relative_to path check
+Generate badges (pytest-cov, PyPI)
 
-readme_generator.py:112 - Optional[str]
+Add quickstart + usage
 
-PRIORITY 6: Test count "31 files, 160 tests"
-constitution_generator.py:
+Commit README.md
 
-python
-test_stats = f"pytest (31 files, 160 tests)"
-TEST AFTER EACH:
+3. **Diagram in README** (Mermaid):
+graph TB
+A[prg analyze . --ide antigravity] --> B[.vscode/settings.json]
+B --> C[Agent Loads Rules + 11 Skills]
+D[prg plan "Add feature"] --> E[PLAN.md + Open Files]
 
-pytest tests/ -v  # 233/233
-prg analyze . --e2e --api-key $GROQ_API_KEY
-ls .vscode/settings.json
-prg plan "Add auth"  # 5-8 subtasks
-Fix in order. Commit after each priority. Final: 233 tests + all features working.
+Test:
+prg plan "Add Redis" --interactive
+Agent: "Opening requirements.txt for Task 1..."
+
+Priority: plan enhancement → readme skill → diagram
+🎯 v1.0.0 vs v1.1:
+
+v1.0.0 (NOW): 
+✅ Agent loads rules + skills ✓
+✅ Basic prg plan (5 subtasks) ✓
+
+v1.1 (Future):
+✅ Interactive tasks (open files)
+✅ readme-improver skill
+✅ Speckit.plan workflow
