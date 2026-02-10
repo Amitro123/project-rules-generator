@@ -30,7 +30,7 @@ This project uses: python, gemini, claude, click
 
 ## DEPENDENCIES
 
-**Python** (10 packages): click, pyyaml, pathspec, pydantic, tqdm, google-generativeai, python-dotenv, gitpython, rich, tomli
+**Python** (11 packages): click, pyyaml, pathspec, pydantic, tqdm, google-generativeai, groq, python-dotenv, gitpython, rich, tomli
 
 ## DO (must follow)
 
@@ -52,7 +52,7 @@ This project uses: python, gemini, claude, click
 ## TESTING
 
 - **Framework**: pytest
-- **Test files**: 31 (218 test cases)
+- **Test files**: 32 (222 test cases)
 - **Test types**: unit, integration
 - **Fixtures**: shared via `conftest.py`
 - **Test data**: `tests/fixtures/` directory
@@ -453,7 +453,7 @@ Understand *why* it breaks:
 ## Anti-Patterns
 ❌ Guessing without reproducing
 ❌ Fixing symptoms without finding root cause
-❌ precise line not identified
+❌ precise line not identified in stack trace
 ❌ Declaring "fixed" without verification
 
 
