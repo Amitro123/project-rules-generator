@@ -29,7 +29,8 @@ dependencies = [
 ]
 
 [project.scripts]
-project-rules-generator = "main:main"
+project-rules-generator = "main:cli"
+prg = "main:cli"
 
 [tool.setuptools]
 py-modules = ["main", "project_rules_generator"]

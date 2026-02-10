@@ -260,7 +260,7 @@ class TestLightweightClinerules:
         output = generate_clinerules('test-project', selected)
         line_count = len(output.strip().splitlines())
 
-        assert line_count < 30, f"Expected < 30 lines, got {line_count}"
+        assert line_count < 40, f"Expected < 40 lines, got {line_count}"
 
 
 class TestCLIIntegration:

@@ -68,6 +68,12 @@ lint:  mypy src/api/routes/ --strict
 NOW GENERATE SKILL FOR: {skill_topic}
 Topic Description: {topic_description}
 
+RELEVANT FILES (load these for context):
+{relevant_files}
+
+EXCLUDE FILES (never load these):
+{exclude_files}
+
 OUTPUT FORMAT (markdown):
 ### {{skill_name}}
 [One-line description]
@@ -75,6 +81,10 @@ OUTPUT FORMAT (markdown):
 **Context:** [Why this skill matters for THIS project]
 
 **Triggers:** [list of short phrases that should activate this skill]
+
+**relevant_files:** [{relevant_files_list}]
+
+**exclude_files:** [{exclude_files_list}]
 
 **When to use:**
 - [Specific scenario 1]
@@ -209,6 +219,13 @@ def build_skill_prompt(
     if not topic_description:
         topic_description = f"Best practices and patterns for {skill_topic.replace('-', ' ')} in this project."
 
+    # Detect relevant/exclude files for this skill topic
+    relevant, exclude = _detect_relevant_files(skill_topic, context, project_path)
+    relevant_files_str = '\n'.join(f'- {f}' for f in relevant) if relevant else 'No specific files detected.'
+    exclude_files_str = '\n'.join(f'- {f}' for f in exclude) if exclude else 'None.'
+    relevant_files_list = ', '.join(f'"{f}"' for f in relevant) if relevant else ''
+    exclude_files_list = ', '.join(f'"{f}"' for f in exclude) if exclude else ''
+
     return SKILL_GENERATION_PROMPT.format(
         project_name=project_name,
         context=context_str,
@@ -217,6 +234,10 @@ def build_skill_prompt(
         tools=tools_str,
         skill_topic=skill_topic,
         topic_description=topic_description,
+        relevant_files=relevant_files_str,
+        exclude_files=exclude_files_str,
+        relevant_files_list=relevant_files_list,
+        exclude_files_list=exclude_files_list,
     )
 
 
@@ -256,6 +277,69 @@ def _format_context(context: Dict[str, Any]) -> str:
         parts.append(f"Entry Points: {', '.join(entry_points)}")
 
     return '\n'.join(parts)
+
+
+def _detect_relevant_files(skill_topic: str, context: Dict[str, Any],
+                           project_path: Optional[Path] = None) -> tuple:
+    """Map skill topics to relevant file patterns.
+
+    Returns:
+        (relevant_files, exclude_files) — lists of glob patterns
+    """
+    relevant: List[str] = []
+    exclude: List[str] = [
+        "**/*.pyc",
+        "**/__pycache__/**",
+        "**/.venv/**",
+        "**/node_modules/**",
+    ]
+
+    structure = context.get('structure', {})
+    entry_points = structure.get('entry_points', [])
+    test_info = context.get('test_patterns', {})
+    metadata = context.get('metadata', {})
+    tech_stack = metadata.get('tech_stack', [])
+
+    topic_lower = skill_topic.lower().replace('-', ' ')
+
+    # Map topics to file patterns
+    topic_file_map = {
+        'test': ['tests/**', 'conftest.py'],
+        'auth': ['**/auth*.py', '**/security*.py', '**/middleware*.py'],
+        'api': ['**/routes/**', '**/endpoints/**', '**/api/**', '**/views/**'],
+        'database': ['**/models/**', '**/models.py', '**/db/**', '**/migrations/**'],
+        'docker': ['Dockerfile', 'docker-compose*.yml', '.dockerignore'],
+        'ci': ['.github/**', '.gitlab-ci.yml', 'Jenkinsfile'],
+        'config': ['config.*', 'settings.*', '*.toml', '*.yaml', '*.yml'],
+        'cli': ['**/cli.py', '**/main.py', '**/commands/**'],
+        'validation': ['**/schemas/**', '**/models/**', '**/validators/**'],
+        'async': ['**/tasks/**', '**/workers/**', '**/celery*.py'],
+    }
+
+    for keyword, patterns in topic_file_map.items():
+        if keyword in topic_lower:
+            relevant.extend(patterns)
+
+    # Always include entry points
+    for ep in entry_points:
+        if ep not in relevant:
+            relevant.append(ep)
+
+    # Add test files if topic is about testing
+    if test_info.get('framework') and 'test' not in topic_lower:
+        # For non-test topics, tests are secondary
+        exclude.append("tests/fixtures/**")
+
+    # If nothing matched, include general source patterns
+    if not relevant:
+        if 'python' in tech_stack:
+            relevant.extend(['**/*.py'])
+        if 'typescript' in tech_stack or 'javascript' in tech_stack:
+            relevant.extend(['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js'])
+        # Add entry points as fallback
+        relevant.extend(entry_points)
+
+    return relevant, exclude
 
 
 def _format_code_examples(examples: List[Dict[str, Any]]) -> str:

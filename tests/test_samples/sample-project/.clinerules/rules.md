@@ -1,5 +1,5 @@
 ---
-project: project-rules-generator
+project: sample-project
 purpose: Coding & contribution rules for this workspace
 version: 2.0
 generated: auto
@@ -8,103 +8,84 @@ project_type: python-cli
 
 ## CONTEXT
 
-> The First AI That Learns Your Coding Style
+A demo project for testing the rules generator. This shows basic functionality.
 
-This project uses: python, gemini, claude, click
+This project uses: python, fastapi, docker
 
 ## ARCHITECTURE
 
 - **Project type**: python-cli
-- **Entry points**: main.py
-- **Structural patterns**: python-cli, pytest-tests
-- **Languages**: python
 
 ## FILE STRUCTURE
 
-**Entry points:**
-- `main.py`
-
-**Detected patterns:**
-- python-cli
-- pytest-tests
+Standard project layout.
 
 ## DEPENDENCIES
 
-**Python** (10 packages): click, pyyaml, pathspec, pydantic, tqdm, google-generativeai, python-dotenv, gitpython, rich, tomli
+No dependency files found.
 
 ## DO (must follow)
 
-- Run `pytest` before committing; add tests for new features
+- Write tests for new features and bug fixes
 - Use type hints on all public function signatures
-- Use Pydantic models for data validation (not raw dicts)
-- Use Click decorators for CLI arguments — don't parse sys.argv manually
+- Use multi-stage Docker builds; keep final image minimal
 - Follow existing project structure and naming conventions
-- Keep module imports at file top; use absolute imports within the project
 
 ## DON'T
 
 - Don't use `print()` for logging — use the `logging` module
 - Don't catch bare `Exception` — catch specific exceptions
-- Don't use `sys.exit()` in library code — raise exceptions, let Click handle exit
+- Don't include dev dependencies in production Docker image
 - Don't commit secrets, API keys, or `.env` files
 - Don't add dependencies without checking license compatibility
 
 ## TESTING
 
-- **Framework**: pytest
-- **Test files**: 25
-- **Test types**: unit, integration
-- **Fixtures**: shared via `conftest.py`
-- **Test data**: `tests/fixtures/` directory
-
-```bash
-# Run all tests
-pytest
-# Run with coverage
-pytest --cov
-# Run specific test file
-pytest tests/test_specific.py -v
-```
+- No test framework detected
 
 ## PRIORITIES
 
-1. *Stop copy-pasting generic rules. Start with AI that knows your project.**
-2. **Learned** = Your evolving patterns (highest priority)
-3. **Builtin** = Universal workflows (TDD, Code Review) that complement Learned
+1. **Fast Processing** - Handles 10,000+ files per minute
+2. **Multiple Formats** - JSON, CSV, Markdown output
+3. **Flexible Config**
+
+## CONTEXT STRATEGY
+
+### File Loading by Task Type
+
+| Task | Load first | Then load |
+|------|-----------|-----------|
+| Bug fix | relevant module source | corresponding test file |
+| New feature | architecture overview | related modules |
+| Refactor | module + its dependents | test suite |
+| Writing tests | test directory | source module under test |
+
+### Exclude from Context
+
+- `**/*.pyc`
+- `**/__pycache__/**`
+- `**/.venv/**`
+- `**/node_modules/**`
+- `**/*-skills.md`
+- `**/*-skills.json`
+- `**/.clinerules*`
 
 ## WORKFLOWS
 
 ### Setup
-### From Source (Current)
 ```bash
-git clone https://github.com/Amitro123/project-rules-generator
-cd project-rules-generator
-pip install -e .
+pip install sample-project
 ```
 
-### From PyPI (Coming in v0.3.0)
+### Usage
 ```bash
-pip install project-rules-generator  # 🚧 Not yet available
+sample-process --input data/ --output report.json
 ```
-
-### Verify
-```bash
-prg --version
-```
-
-### Troubleshooting
-### "How is this different from Cursor rules generators?"
-Those give you static templates. This **learns from your actual projects** and improves over time.
-
-### "Why don't you have an 'Awesome' skills library?"
-We tried it, but it added complexity without value.
-*   **Problem:** 300+ skills to mana
 
 ### Development
 ```bash
 git checkout -b feat/descriptive-name
-# Write code + tests, then run:
-pytest
+# Write code + tests
 git add .
 git commit -m "feat: descriptive message"
 ```
@@ -538,40 +519,3 @@ Create `PLAN.md` in project root with all tasks.
 ❌ Tasks that take > 10 minutes
 ❌ Unclear dependencies
 
-
-
-<!-- Lightweight Skill References
-project: project-rules-generator
-version: '2.0'
-generated_by: project-rules-generator
-tech_stack:
-- claude
-- click
-- gemini
-- pydantic
-- pytest
-- python
-project_type: python-cli
-tools:
-  test: pytest
-  check: ruff check .
-  lint: mypy .
-skills:
-  builtin:
-  - C:\Users\USER\.project-rules-generator\builtin\code-review.md
-  - C:\Users\USER\.project-rules-generator\builtin\systematic-debugging\SKILL.md
-  - C:\Users\USER\.project-rules-generator\builtin\test-driven-development\SKILL.md
-  learned:
-  - C:\Users\USER\.project-rules-generator\learned\pytest\coverage-patterns.md
-  - C:\Users\USER\.project-rules-generator\learned\pytest\fixture-patterns.md
-  - C:\Users\USER\.project-rules-generator\learned\pytest\mocking-patterns.md
-  - C:\Users\USER\.project-rules-generator\learned\pytest\parametrize-patterns.md
-  - C:\Users\USER\.project-rules-generator\learned\python-cli\argparse-patterns.md
-  - C:\Users\USER\.project-rules-generator\learned\python-cli\click-commands.md
-  - C:\Users\USER\.project-rules-generator\learned\python-cli\config-management.md
-  - C:\Users\USER\.project-rules-generator\learned\python-cli\error-handling.md
-skills_count:
-  builtin: 3
-  learned: 8
-  total: 11
--->

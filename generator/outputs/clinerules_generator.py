@@ -15,14 +15,20 @@ def generate_clinerules(
     project_name: str,
     selected_skills: Set[str],
     project_context: Dict[str, Any] = None,
+    output_dir: 'Path | None' = None,
 ) -> str:
     """
-    Generate lightweight .clinerules YAML that links to skills in ~/.project-rules-generator/.
+    Generate lightweight .clinerules YAML that links to skills.
+
+    When output_dir is provided, paths are relative (e.g. skills/builtin/code-review.md)
+    pointing to copied skill files inside the output directory. Otherwise falls back to
+    absolute global paths in ~/.project-rules-generator/.
 
     Args:
         project_name: Name of the project
         selected_skills: Set of skill refs like {'builtin/code-review', 'learned/fastapi/async-patterns'}
         project_context: Optional context for additional metadata
+        output_dir: Optional output directory for relative path generation
 
     Returns:
         YAML string content for .clinerules file
@@ -35,23 +41,39 @@ def generate_clinerules(
 
         if skill.startswith('builtin/'):
             name = parts[-1]
-            path = SkillPathManager.GLOBAL_BUILTIN / f"{name}.md"
-            # Try alternative extensions
-            if not path.exists():
-                for ext in ('.yaml', '.yml'):
-                    alt = SkillPathManager.GLOBAL_BUILTIN / f"{name}{ext}"
-                    if alt.exists():
-                        path = alt
-                        break
-            # Check directory style
-            if not path.exists():
-                dir_path = SkillPathManager.GLOBAL_BUILTIN / name / 'SKILL.md'
-                if dir_path.exists():
-                    path = dir_path
+
+            if output_dir:
+                # Use relative path pointing to copied skill inside output dir
+                # Resolve the actual filename from the global store
+                global_path = SkillPathManager.GLOBAL_BUILTIN / f"{name}.md"
+                if not global_path.exists():
+                    for ext in ('.yaml', '.yml'):
+                        alt = SkillPathManager.GLOBAL_BUILTIN / f"{name}{ext}"
+                        if alt.exists():
+                            global_path = alt
+                            break
+                if not global_path.exists():
+                    dir_path = SkillPathManager.GLOBAL_BUILTIN / name / 'SKILL.md'
+                    if dir_path.exists():
+                        global_path = dir_path
+                rel_path = f"skills/builtin/{global_path.name}"
+            else:
+                global_path = SkillPathManager.GLOBAL_BUILTIN / f"{name}.md"
+                if not global_path.exists():
+                    for ext in ('.yaml', '.yml'):
+                        alt = SkillPathManager.GLOBAL_BUILTIN / f"{name}{ext}"
+                        if alt.exists():
+                            global_path = alt
+                            break
+                if not global_path.exists():
+                    dir_path = SkillPathManager.GLOBAL_BUILTIN / name / 'SKILL.md'
+                    if dir_path.exists():
+                        global_path = dir_path
+                rel_path = str(global_path)
 
             builtin_skills.append({
                 'name': name,
-                'path': str(path),
+                'path': rel_path,
             })
 
         elif skill.startswith('learned/'):
@@ -62,17 +84,28 @@ def generate_clinerules(
                 category = 'general'
                 name = parts[-1]
 
-            path = SkillPathManager.GLOBAL_LEARNED / category / f"{name}.md"
-            if not path.exists():
-                for ext in ('.yaml', '.yml'):
-                    alt = SkillPathManager.GLOBAL_LEARNED / category / f"{name}{ext}"
-                    if alt.exists():
-                        path = alt
-                        break
+            if output_dir:
+                global_path = SkillPathManager.GLOBAL_LEARNED / category / f"{name}.md"
+                if not global_path.exists():
+                    for ext in ('.yaml', '.yml'):
+                        alt = SkillPathManager.GLOBAL_LEARNED / category / f"{name}{ext}"
+                        if alt.exists():
+                            global_path = alt
+                            break
+                rel_path = f"skills/learned/{global_path.name}"
+            else:
+                global_path = SkillPathManager.GLOBAL_LEARNED / category / f"{name}.md"
+                if not global_path.exists():
+                    for ext in ('.yaml', '.yml'):
+                        alt = SkillPathManager.GLOBAL_LEARNED / category / f"{name}{ext}"
+                        if alt.exists():
+                            global_path = alt
+                            break
+                rel_path = str(global_path)
 
             learned_skills.append({
                 'name': f"{category}/{name}",
-                'path': str(path),
+                'path': rel_path,
             })
 
     # Build the clinerules structure
@@ -116,6 +149,9 @@ def generate_clinerules(
         'learned': len(learned_skills),
         'total': len(builtin_skills) + len(learned_skills),
     }
+
+    # Context configuration
+    clinerules['context'] = _build_context_config(project_context)
 
     return yaml.dump(clinerules, default_flow_style=False, sort_keys=False, allow_unicode=True)
 
@@ -173,3 +209,53 @@ def generate_clinerules_with_inline(
     content += f"\n<!-- Skills loaded: {builtin_loaded} builtin, {learned_loaded} learned -->\n"
 
     return content
+
+
+def _build_context_config(project_context: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Build context configuration for .clinerules.yaml.
+
+    Returns dict with exclude patterns, max_file_size, and load_on_demand hints.
+    """
+    exclude = [
+        "**/*.pyc",
+        "**/__pycache__/**",
+        "**/.venv/**",
+        "**/node_modules/**",
+        "**/*-skills.md",
+        "**/*-skills.json",
+        "**/.clinerules*",
+    ]
+
+    load_on_demand = [
+        "tests/",
+        "docs/",
+    ]
+
+    if project_context:
+        metadata = project_context.get('metadata', {})
+        project_type = metadata.get('project_type', '')
+
+        # Add project-type specific excludes
+        if project_type == 'django-app':
+            exclude.append("**/migrations/**")
+        if 'docker' in metadata.get('tech_stack', []):
+            exclude.append("**/docker-compose.override.yml")
+
+        # Add project-type specific load_on_demand
+        structure = project_context.get('structure', {})
+        patterns = structure.get('patterns', [])
+        if any('api' in p for p in patterns) or 'fastapi' in project_type:
+            load_on_demand.append("migrations/")
+        if structure.get('entry_points'):
+            # Config/spec directories are usually load-on-demand
+            for ep in structure['entry_points']:
+                if '/' in ep:
+                    top_dir = ep.split('/')[0] + '/'
+                    if top_dir not in load_on_demand:
+                        load_on_demand.append(top_dir)
+
+    return {
+        'exclude': exclude,
+        'max_file_size': 50000,
+        'load_on_demand': load_on_demand,
+    }

@@ -2,7 +2,7 @@
 import pytest
 from pathlib import Path
 from click.testing import CliRunner
-from main import main, load_config
+from main import main, cli, load_config
 
 
 class TestCLI:
@@ -29,8 +29,8 @@ class TestCLI:
         
         assert result.exit_code == 0, f"Exit code {result.exit_code}.\nOutput:\n{result.output}\nException: {result.exception}"
         assert 'Generated files' in result.output
-        assert 'sample-project-rules.md' in result.output
-        assert 'sample-project-skills.md' in result.output
+        assert 'rules.md' in result.output
+        assert 'index.md' in result.output
     
     def test_cli_missing_readme(self, tmp_path):
         """Test CLI handles missing README by falling back to structure analysis."""
@@ -73,19 +73,32 @@ class TestCLI:
     def test_cli_version_flag(self):
         """Test --version flag."""
         runner = CliRunner()
-        
-        result = runner.invoke(main, ['--version'])
-        
+
+        result = runner.invoke(cli, ['--version'])
+
         assert result.exit_code == 0
         assert '0.1.0' in result.output
-    
+
     def test_cli_help(self):
-        """Test --help output."""
+        """Test --help output for analyze command."""
         runner = CliRunner()
-        
+
         result = runner.invoke(main, ['--help'])
-        
+
         assert result.exit_code == 0
-        assert 'Generate rules.md and skills.md' in result.output
         assert '--commit' in result.output
         assert '--interactive' in result.output
+        assert '--mode' in result.output
+        assert '--merge' in result.output
+        assert '--output' in result.output
+        assert '--incremental' in result.output
+
+    def test_cli_group_help(self):
+        """Test --help output for the CLI group shows subcommands."""
+        runner = CliRunner()
+
+        result = runner.invoke(cli, ['--help'])
+
+        assert result.exit_code == 0
+        assert 'analyze' in result.output
+        assert 'plan' in result.output

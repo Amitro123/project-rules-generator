@@ -60,6 +60,8 @@ from generator.extractors.code_extractor import CodeExampleExtractor
 from generator.prompts.skill_generation import build_skill_prompt
 from generator.storage.skill_paths import SkillPathManager
 from generator.outputs.clinerules_generator import generate_clinerules, generate_clinerules_with_inline
+from generator.constitution_generator import generate_constitution
+from generator.incremental_analyzer import IncrementalAnalyzer
 
 
 def load_config():
@@ -100,7 +102,31 @@ def setup_orchestrator(config):
 from generator.pack_manager import load_external_packs
 from generator.skills_manager import SkillsManager
 
-@click.command()
+
+class DefaultGroup(click.Group):
+    """Click group that delegates to a default command when none is given."""
+
+    def __init__(self, *args, default_cmd='analyze', **kwargs):
+        super().__init__(*args, **kwargs)
+        self.default_cmd = default_cmd
+
+    def parse_args(self, ctx, args):
+        # Let group-level flags (--help, --version) pass through
+        if args and args[0] not in self.commands and args[0] not in ('--help', '--version', '-h'):
+            args = [self.default_cmd] + list(args)
+        elif not args:
+            args = [self.default_cmd]
+        return super().parse_args(ctx, args)
+
+
+@click.group(cls=DefaultGroup, default_cmd='analyze')
+@click.version_option(version='0.1.0')
+def cli():
+    """Project Rules Generator - Generate rules.md and skills.md from README.md"""
+    pass
+
+
+@cli.command(name='analyze')
 @click.argument('project_path', type=click.Path(exists=True, file_okay=False), default='.')
 @click.option('--scan-all', is_flag=True, help='Scan all subdirectories for projects')
 @click.option('--commit/--no-commit', default=True, help='Auto-commit to git')
@@ -115,29 +141,57 @@ from generator.skills_manager import SkillsManager
 @click.option('--create-skill', help='Create a new learned skill with the given name')
 @click.option('--from-readme', type=click.Path(exists=True, dir_okay=False), help='Use README as context for new skill')
 @click.option('--ai', is_flag=True, help='Use AI to generate skill content (requires GEMINI_API_KEY)')
-@click.option('--output', type=click.Path(), default='.clinerules', help='Output file (unified rules + skills)')
+@click.option('--output', type=click.Path(file_okay=False), default='.clinerules', help='Output directory (default: .clinerules)')
 @click.option('--with-skills', is_flag=True, default=True, help='Include skills in output')
 @click.option('--auto-generate-skills', is_flag=True, help='Auto-detect and generate skills (requires --ai)')
 @click.option('--api-key', help='Gemini API Key (overrides GEMINI_API_KEY env var)')
-@click.version_option(version='0.1.0')
-def main(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key):
-    """Generate rules.md and skills.md from README.md
-    
+@click.option('--constitution', is_flag=True, help='Generate constitution.md with project-specific coding principles')
+@click.option('--merge', is_flag=True, help='Preserve existing skill files, only add new ones')
+@click.option('--mode', type=click.Choice(['manual', 'ai', 'constitution']), default=None, help='Explicit mode (manual=no AI, ai=auto-generate+AI, constitution=adds constitution.md)')
+@click.option('--incremental', is_flag=True, help='Only regenerate changed sections (skip if nothing changed)')
+def analyze(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key, constitution, merge, mode, incremental):
+    """Analyze project and generate rules.md and skills.md from README.md
+
     Examples:
     \b
         python main.py . --export-json
         python main.py . --include-pack agent-rules
+        python main.py . --incremental
     """
     project_path = Path(project_path).resolve()
     cleanup_awesome_skills()
-    
+
+    # Handle --mode shortcut
+    if mode == 'ai':
+        auto_generate_skills = True
+        ai = True
+    elif mode == 'constitution':
+        constitution = True
+    # mode == 'manual' changes nothing (no AI)
+
+    # Create output directory structure
+    output_dir = project_path / output
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / 'skills' / 'builtin').mkdir(parents=True, exist_ok=True)
+    (output_dir / 'skills' / 'learned').mkdir(parents=True, exist_ok=True)
+
+    # Incremental mode: check for changes before doing heavy work
+    inc_analyzer = IncrementalAnalyzer(project_path, output_dir) if incremental else None
+    if inc_analyzer:
+        changed_sections = inc_analyzer.detect_changes()
+        if not changed_sections:
+            click.echo("No changes detected. Skipping regeneration. (use without --incremental to force)")
+            sys.exit(0)
+        if verbose:
+            click.echo(f"Incremental: changed sections: {', '.join(sorted(changed_sections))}")
+
     if verbose:
         setup_logging(verbose=True)
         click.echo(f"Project Rules Generator v0.1.0")
         click.echo(f"Target: {project_path}")
     else:
         setup_logging(verbose=False)
-    
+
     # Handle API Key
     if api_key:
         os.environ['GEMINI_API_KEY'] = api_key
@@ -317,6 +371,21 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
                  if verbose:
                      click.echo(f"   Enhanced analysis unavailable: {e}")
 
+             # Constitution generation (before rules so it appears early in output)
+             if constitution and enhanced_context:
+                 pbar.set_description("Generating Constitution")
+                 constitution_content = generate_constitution(
+                     project_name, enhanced_context, project_path=project_path
+                 )
+                 constitution_path = output_dir / 'constitution.md'
+                 constitution_path.write_text(constitution_content, encoding='utf-8')
+                 generated_files.append(constitution_path)
+                 if verbose:
+                     click.echo(f"   Generated constitution.md")
+             elif constitution and not enhanced_context:
+                 if verbose:
+                     click.echo(f"   Skipping constitution (enhanced analysis unavailable)")
+
              pbar.set_description("Generating Rules")
              rules_content = generate_rules(project_data, config, enhanced_context=enhanced_context)
              pbar.update(1)
@@ -419,7 +488,7 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
                  triggers = skills_manager.extract_auto_triggers()
              pbar.update(1)
              
-             pbar.set_description("Unified Export (.clinerules)")
+             pbar.set_description("Unified Export (.clinerules/)")
              # Build Unified Content
              unified_content = rules_content + "\n\n# 🧠 Agent Skills\n\n"
 
@@ -443,47 +512,76 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
              # If enhanced matching was done, also generate lightweight clinerules
              if enhanced_selected_skills:
                  lightweight_yaml = generate_clinerules(
-                     project_name, enhanced_selected_skills, enhanced_context
+                     project_name, enhanced_selected_skills, enhanced_context,
+                     output_dir=output_dir,
                  )
                  # Append as YAML reference block
                  unified_content += f"\n\n<!-- Lightweight Skill References\n{lightweight_yaml}-->\n"
 
-                 # Also save standalone lightweight .clinerules.yaml
-                 lightweight_path = project_path / '.clinerules.yaml'
+                 # Save standalone lightweight clinerules.yaml inside output dir
+                 lightweight_path = output_dir / 'clinerules.yaml'
                  lightweight_path.write_text(lightweight_yaml, encoding='utf-8')
                  generated_files.append(lightweight_path)
                  if verbose:
-                     click.echo(f"   Generated lightweight .clinerules.yaml ({len(enhanced_selected_skills)} skills)")
+                     click.echo(f"   Generated clinerules.yaml ({len(enhanced_selected_skills)} skills)")
 
-             output_path = project_path / output
-             save_markdown(output_path, unified_content)
-             generated_files.append(output_path)
+                 # Copy skill files into output_dir/skills/
+                 import shutil
+                 existing_skill_files = set()
+                 if merge and (output_dir / 'skills').exists():
+                     # Collect existing skill files for merge logic
+                     for subdir in ('builtin', 'learned'):
+                         skill_subdir = output_dir / 'skills' / subdir
+                         if skill_subdir.exists():
+                             for f in skill_subdir.iterdir():
+                                 if f.is_file():
+                                     existing_skill_files.add(f.name)
+
+                 for skill_ref in sorted(enhanced_selected_skills):
+                     skill_path = SkillPathManager.get_skill_path(skill_ref)
+                     if skill_path and skill_path.exists():
+                         if skill_ref.startswith('builtin/'):
+                             dest = output_dir / 'skills' / 'builtin' / skill_path.name
+                         elif skill_ref.startswith('learned/'):
+                             dest = output_dir / 'skills' / 'learned' / skill_path.name
+                         else:
+                             continue
+                         shutil.copy2(skill_path, dest)
+
+             # Write rules.md into output directory (with incremental merge if applicable)
+             rules_path = output_dir / 'rules.md'
+             if inc_analyzer and rules_path.exists():
+                 existing_rules = rules_path.read_text(encoding='utf-8')
+                 unified_content = IncrementalAnalyzer.merge_rules(
+                     existing_rules, unified_content, changed_sections
+                 )
+             save_markdown(rules_path, unified_content)
+             generated_files.append(rules_path)
              pbar.update(1)
 
-             # Legacy/Separate Generation (Orchestrated)
-             pbar.set_description("Saving Separate Artifacts")
+             # Orchestrated skill generation
+             pbar.set_description("Saving Skill Artifacts")
              # Initialize Orchestrator
              from generator.types import SkillFile
              from generator.sources.learned import LearnedSkillsSource
              from generator.renderers import get_renderer
-             
+
              orchestrator = setup_orchestrator(config)
-             
+
              # Run orchestration
              skills = orchestrator.orchestrate(project_data, str(project_path))
-             
+
              # Save learned skills if requested
              if save_learned:
                  learned_source = next((s for s in orchestrator.sources if isinstance(s, LearnedSkillsSource)), None)
                  if learned_source:
-                     # print(f"Saving {len(skills)} skills to learned library...")
                      for skill in skills:
                          learned_source.save_skill(skill)
-             
+
              # Create SkillFile wrapper
              from analyzer.project_type_detector import detect_project_type_from_data
              type_info = detect_project_type_from_data(project_data, str(project_path))
-             
+
              skill_file = SkillFile(
                 project_name=project_name,
                 project_type=type_info['primary_type'],
@@ -492,33 +590,25 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
                 tech_stack=project_data.get('tech_stack', []),
                 description=project_data.get('description', '')
              )
-             
-             # Render Markdown
+
+             # Render Markdown skills index
              skills_content = get_renderer('markdown').render(skill_file)
-             
-             # Define output paths
-             # rules_path = project_path / f"{project_name}-rules.md" # Replaced by .clinerules
-             skills_path = project_path / f"{project_name}-skills.md"
-             
-             # save_markdown(rules_path, rules_content) # Optional: keep generating rules separately? User didn't strictly forbid.
-             # I'll enable it for backward compat if output != rules.md
-             if output != f"{project_name}-rules.md":
-                 save_markdown(project_path / f"{project_name}-rules.md", rules_content)
-                 generated_files.append(project_path / f"{project_name}-rules.md")
 
-             save_markdown(skills_path, skills_content)
-             generated_files.append(skills_path)
+             # Write skills index into output directory
+             skills_index_path = output_dir / 'skills' / 'index.md'
+             save_markdown(skills_index_path, skills_content)
+             generated_files.append(skills_index_path)
 
-             # Handle exports
+             # Handle exports (into output_dir/skills/)
              if export_json:
                  json_content = get_renderer('json').render(skill_file)
-                 json_path = project_path / f"{project_name}-skills.json"
+                 json_path = output_dir / 'skills' / 'index.json'
                  json_path.write_text(json_content, encoding='utf-8')
                  generated_files.append(json_path)
 
              if export_yaml:
                  yaml_content = get_renderer('yaml').render(skill_file)
-                 yaml_path = project_path / f"{project_name}-skills.yaml"
+                 yaml_path = output_dir / 'skills' / 'index.yaml'
                  yaml_path.write_text(yaml_content, encoding='utf-8')
                  generated_files.append(yaml_path)
 
@@ -578,6 +668,12 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
                     click.echo(f"\nWARNING: Git commit failed: {e}")
                     click.echo(f"   Files were generated, you can commit manually")
         
+        # Save incremental cache
+        if inc_analyzer:
+            inc_analyzer.save_hash(inc_analyzer.compute_project_hash())
+            if verbose:
+                click.echo("   Saved incremental cache")
+
         click.echo(f"\nDone!")
 
     except READMENotFoundError as e:
@@ -606,5 +702,158 @@ def main(project_path, scan_all, commit, interactive, verbose, export_json, expo
         sys.exit(1)
 
 
+@cli.command(name='design')
+@click.argument('description')
+@click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory')
+@click.option('--output', '-o', type=click.Path(), default='DESIGN.md', help='Output file (default: DESIGN.md)')
+@click.option('--api-key', help='Gemini API Key (overrides GEMINI_API_KEY env var)')
+@click.option('--verbose/--quiet', default=True, help='Verbose output')
+def design(description, project_path, output, api_key, verbose):
+    """Generate a technical design document (Stage 1 of two-stage planning).
+
+    Examples:
+    \b
+        python main.py design "Add authentication to API"
+        python main.py design "Add rate limiting middleware" --output docs/DESIGN.md
+    """
+    project_path = Path(project_path).resolve()
+
+    if api_key:
+        os.environ['GEMINI_API_KEY'] = api_key
+
+    if verbose:
+        click.echo(f"Project Rules Generator v0.1.0 — Design Generator")
+        click.echo(f"Request: {description}")
+        click.echo(f"Project: {project_path}")
+
+    # Gather project context
+    enhanced_context = None
+    try:
+        from generator.parsers.enhanced_parser import EnhancedProjectParser
+        parser = EnhancedProjectParser(project_path)
+        enhanced_context = parser.extract_full_context()
+        if verbose:
+            meta = enhanced_context.get('metadata', {})
+            click.echo(f"Context: {meta.get('project_type', 'unknown')} ({', '.join(meta.get('tech_stack', []))})")
+    except Exception as exc:
+        if verbose:
+            click.echo(f"Context extraction skipped: {exc}")
+
+    from generator.design_generator import DesignGenerator
+
+    generator = DesignGenerator(api_key=os.getenv('GEMINI_API_KEY'))
+    if verbose:
+        click.echo("Generating design...")
+
+    design_obj = generator.generate_design(
+        description,
+        project_context=enhanced_context,
+        project_path=project_path,
+    )
+
+    design_md = design_obj.to_markdown()
+
+    output_path = Path(output)
+    if not output_path.is_absolute():
+        output_path = project_path / output_path
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(design_md, encoding='utf-8')
+
+    click.echo(f"\nDesign: {design_obj.title}")
+    click.echo(f"  Decisions: {len(design_obj.architecture_decisions)}")
+    click.echo(f"  API contracts: {len(design_obj.api_contracts)}")
+    click.echo(f"  Data models: {len(design_obj.data_models)}")
+    click.echo(f"  Success criteria: {len(design_obj.success_criteria)}")
+    click.echo(f"Written to: {output_path}")
+
+
+@cli.command(name='plan')
+@click.argument('task_description', required=False, default=None)
+@click.option('--from-design', type=click.Path(exists=True, dir_okay=False), default=None, help='Generate plan from a DESIGN.md file')
+@click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory')
+@click.option('--output', '-o', type=click.Path(), default='PLAN.md', help='Output file for the plan (default: PLAN.md)')
+@click.option('--api-key', help='Gemini API Key (overrides GEMINI_API_KEY env var)')
+@click.option('--verbose/--quiet', default=True, help='Verbose output')
+def plan(task_description, from_design, project_path, output, api_key, verbose):
+    """Break down a task into subtasks and generate PLAN.md.
+
+    Can generate from a task description or from an existing DESIGN.md.
+
+    Examples:
+    \b
+        python main.py plan "Add authentication to API"
+        python main.py plan --from-design DESIGN.md
+        python main.py plan "Refactor database layer" --output docs/PLAN.md
+    """
+    if not task_description and not from_design:
+        click.echo("Error: Provide a TASK_DESCRIPTION or --from-design.", err=True)
+        sys.exit(1)
+
+    project_path = Path(project_path).resolve()
+
+    if api_key:
+        os.environ['GEMINI_API_KEY'] = api_key
+
+    if verbose:
+        click.echo(f"Project Rules Generator v0.1.0 — Task Planner")
+        if from_design:
+            click.echo(f"From design: {from_design}")
+        else:
+            click.echo(f"Task: {task_description}")
+        click.echo(f"Project: {project_path}")
+
+    # Gather project context if available
+    enhanced_context = None
+    try:
+        from generator.parsers.enhanced_parser import EnhancedProjectParser
+        parser = EnhancedProjectParser(project_path)
+        enhanced_context = parser.extract_full_context()
+        if verbose:
+            meta = enhanced_context.get('metadata', {})
+            click.echo(f"Context: {meta.get('project_type', 'unknown')} ({', '.join(meta.get('tech_stack', []))})")
+    except Exception as exc:
+        if verbose:
+            click.echo(f"Context extraction skipped: {exc}")
+
+    from generator.task_decomposer import TaskDecomposer
+
+    decomposer = TaskDecomposer(api_key=os.getenv('GEMINI_API_KEY'))
+    if verbose:
+        click.echo("Decomposing task...")
+
+    if from_design:
+        subtasks = decomposer.from_design(
+            Path(from_design),
+            project_context=enhanced_context,
+        )
+        # Use the design title as user_task for the plan header
+        from generator.design_generator import Design
+        design_obj = Design.from_markdown(Path(from_design).read_text(encoding='utf-8'))
+        user_task_label = design_obj.title
+    else:
+        subtasks = decomposer.decompose(
+            task_description,
+            project_context=enhanced_context,
+            project_path=project_path,
+        )
+        user_task_label = task_description
+
+    plan_md = decomposer.generate_plan_md(subtasks, user_task=user_task_label)
+
+    output_path = Path(output)
+    if not output_path.is_absolute():
+        output_path = project_path / output_path
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(plan_md, encoding='utf-8')
+
+    click.echo(f"\nGenerated {len(subtasks)} subtasks")
+    click.echo(f"Plan written to: {output_path}")
+    click.echo(f"Estimated time: {sum(t.estimated_minutes for t in subtasks)} minutes")
+
+
+# Backward-compatible alias so existing code that imports `main` still works
+main = analyze
+
+
 if __name__ == '__main__':
-    main()
+    cli()

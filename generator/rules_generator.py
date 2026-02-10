@@ -96,6 +96,9 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
     workflow_section = _build_workflow_section(installation, usage, troubleshooting,
                                               test_framework, tech_stack)
 
+    # --- Build context strategy section ---
+    context_strategy = _build_context_strategy(structure, entry_points, project_type, test_info)
+
     template = f"""---
 project: {name}
 purpose: Coding & contribution rules for this workspace
@@ -139,6 +142,10 @@ This project uses: {tech_str}
 1. {priorities[0]}
 2. {priorities[1]}
 3. {priorities[2]}
+
+## CONTEXT STRATEGY
+
+{context_strategy}
 
 ## WORKFLOWS
 
@@ -244,9 +251,13 @@ def _build_test_section(test_framework: str, test_files: int,
                         test_info: Dict) -> str:
     """Build testing section from actual test analysis."""
     lines = []
+    test_cases = test_info.get('test_cases', 0)
     if test_framework:
         lines.append(f"- **Framework**: {test_framework}")
-        lines.append(f"- **Test files**: {test_files}")
+        counts = str(test_files)
+        if test_cases:
+            counts += f" ({test_cases} test cases)"
+        lines.append(f"- **Test files**: {counts}")
         test_patterns = test_info.get('patterns', [])
         if test_patterns:
             lines.append(f"- **Test types**: {', '.join(test_patterns)}")
@@ -352,6 +363,76 @@ def _build_workflow_section(installation: str, usage: str,
     sections.append('\n'.join(dev_lines))
 
     return '\n\n'.join(sections)
+
+
+def _build_context_strategy(structure: Dict, entry_points: List[str],
+                            project_type: str, test_info: Dict) -> str:
+    """Build context strategy section with file loading hints per task type."""
+    lines: List[str] = []
+
+    # --- File loading hints per task type ---
+    lines.append("### File Loading by Task Type")
+    lines.append("")
+    lines.append("| Task | Load first | Then load |")
+    lines.append("|------|-----------|-----------|")
+
+    # Bug fix
+    bug_first = "relevant module source"
+    bug_then = "corresponding test file"
+    if test_info.get('framework') == 'pytest':
+        bug_then = "corresponding `test_*.py` file"
+    lines.append(f"| Bug fix | {bug_first} | {bug_then} |")
+
+    # New feature
+    feat_first = "architecture overview"
+    if entry_points:
+        feat_first = f"`{entry_points[0]}`"
+    feat_then = "related modules"
+    lines.append(f"| New feature | {feat_first} | {feat_then} |")
+
+    # Refactor
+    lines.append("| Refactor | module + its dependents | test suite |")
+
+    # Test
+    test_first = "test directory"
+    if test_info.get('has_conftest'):
+        test_first = "`conftest.py` + test directory"
+    lines.append(f"| Writing tests | {test_first} | source module under test |")
+
+    lines.append("")
+
+    # --- Module groupings ---
+    if entry_points:
+        lines.append("### Module Groupings")
+        lines.append("")
+        for ep in entry_points:
+            # Derive module group from entry point
+            ep_stem = ep.replace('.py', '').replace('/', '.').replace('\\', '.')
+            lines.append(f"- **{ep_stem}**: `{ep}` and its imports")
+        lines.append("")
+
+    # --- Exclude list ---
+    lines.append("### Exclude from Context")
+    lines.append("")
+    exclude_patterns = [
+        "`**/*.pyc`",
+        "`**/__pycache__/**`",
+        "`**/.venv/**`",
+        "`**/node_modules/**`",
+        "`**/*-skills.md`",
+        "`**/*-skills.json`",
+        "`**/.clinerules*`",
+    ]
+    # Add project-type specific excludes
+    if project_type in ('django-app',):
+        exclude_patterns.append("`**/migrations/**`")
+    if 'docker' in project_type or any('docker' in p for p in structure.get('patterns', [])):
+        exclude_patterns.append("`**/docker-compose.override.yml`")
+
+    for pat in exclude_patterns:
+        lines.append(f"- {pat}")
+
+    return '\n'.join(lines)
 
 
 # --- Fallback for when enhanced context is unavailable ---

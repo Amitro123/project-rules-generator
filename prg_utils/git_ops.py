@@ -27,11 +27,21 @@ def stage_files(paths: List[Union[str, Path]], repo_path: Union[str, Path] = '.'
     """Stage files for commit."""
     repo = _posix(repo_path)
     for path in paths:
-        subprocess.run(
-            ['git', '-C', repo, 'add', _posix(path)],
-            capture_output=True,
-            check=True
-        )
+        try:
+            subprocess.run(
+                ['git', '-C', repo, 'add', _posix(path)],
+                capture_output=True,
+                check=True,
+                text=True
+            )
+        except subprocess.CalledProcessError as e:
+            # Check if failure is due to .gitignore
+            # git usually returns 1 and prints "The following paths are ignored..." to stderr
+            if "paths are ignored by" in e.stderr:
+                print(f"[IGNORED] Files generated successfully (ignored by .gitignore): {path}")
+                continue
+            # Re-raise real errors
+            raise e
 
 
 def commit_changes(message: str, repo_path: Union[str, Path] = '.',

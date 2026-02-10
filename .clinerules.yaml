@@ -31,3 +31,16 @@ skills_count:
   builtin: 3
   learned: 8
   total: 11
+context:
+  exclude:
+  - '**/*.pyc'
+  - '**/__pycache__/**'
+  - '**/.venv/**'
+  - '**/node_modules/**'
+  - '**/*-skills.md'
+  - '**/*-skills.json'
+  - '**/.clinerules*'
+  max_file_size: 50000
+  load_on_demand:
+  - tests/
+  - docs/

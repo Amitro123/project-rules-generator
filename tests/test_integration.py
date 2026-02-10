@@ -39,29 +39,29 @@ Install and run.
         
         # Run the generator
         runner = CliRunner()
-        result = runner.invoke(main, [str(project_dir), '--no-commit', '--verbose'])
+        result = runner.invoke(main, [str(project_dir), '--no-commit', '--verbose'], env={'PYTHONIOENCODING': 'utf-8'})
         
         # Check success
         assert result.exit_code == 0, f"Exit code {result.exit_code}.\nOutput:\n{result.output}\nException: {result.exception}"
         assert 'Generated files' in result.output
         assert 'Done!' in result.output
         
-        # Check files exist
-        rules_file = project_dir / 'my-test-project-rules.md'
-        skills_file = project_dir / 'my-test-project-skills.md'
-        
+        # Check files exist in .clinerules/ directory
+        rules_file = project_dir / '.clinerules' / 'rules.md'
+        skills_file = project_dir / '.clinerules' / 'skills' / 'index.md'
+
         assert rules_file.exists()
         assert skills_file.exists()
-        
+
         # Check rules file content
-        rules_content = rules_file.read_text()
+        rules_content = rules_file.read_text(encoding='utf-8')
         assert 'project: my-test-project' in rules_content
         assert '## DO' in rules_content
         # python should be detected from "Python 3.11"
         assert 'python' in rules_content.lower()
-        
+
         # Check skills file content
-        skills_content = skills_file.read_text()
+        skills_content = skills_file.read_text(encoding='utf-8')
         assert 'project: my-test-project' in skills_content
         assert '## CORE SKILLS' in skills_content
         assert 'cli-usability-auditor' in skills_content
@@ -103,11 +103,11 @@ Description.
 {tech_list}
 """)
             
-            result = runner.invoke(main, [str(project_dir), '--no-commit', '--quiet'])
+            result = runner.invoke(main, [str(project_dir), '--no-commit', '--quiet'], env={'PYTHONIOENCODING': 'utf-8'})
             assert result.exit_code == 0, f"Failed for {case['name']}"
             
             # Verify tech stack in output files
-            rules = (project_dir / f"{case['name']}-rules.md").read_text()
+            rules = (project_dir / '.clinerules' / 'rules.md').read_text(encoding='utf-8')
             for tech in case['tech_keys']:
                 assert tech in rules, f"Expected {tech} in {case['name']} rules"
     
@@ -121,16 +121,16 @@ Description.
         
         # First run
         runner = CliRunner()
-        runner.invoke(main, [str(project_dir), '--no-commit', '--quiet'])
+        runner.invoke(main, [str(project_dir), '--no-commit', '--quiet'], env={'PYTHONIOENCODING': 'utf-8'})
         
-        rules_file = project_dir / 'existing-project-rules.md'
-        first_content = rules_file.read_text()
-        
+        rules_file = project_dir / '.clinerules' / 'rules.md'
+        first_content = rules_file.read_text(encoding='utf-8')
+
         # Second run (should overwrite)
-        runner.invoke(main, [str(project_dir), '--no-commit', '--quiet'])
-        
-        second_content = rules_file.read_text()
-        
+        runner.invoke(main, [str(project_dir), '--no-commit', '--quiet'], env={'PYTHONIOENCODING': 'utf-8'})
+
+        second_content = rules_file.read_text(encoding='utf-8')
+
         # Files should exist and be similar
         assert rules_file.exists()
         assert 'project: existing-project' in second_content
@@ -139,24 +139,25 @@ Description.
         """Test with the bundled sample project."""
         runner = CliRunner()
         
-        # Clean up previously generated files for fresh test
-        for f in sample_project_path.glob('*.md'):
-            if f.name != 'README.md':
-                f.unlink()
+        # Clean up previously generated output for fresh test
+        import shutil
+        clinerules_dir = sample_project_path / '.clinerules'
+        if clinerules_dir.exists():
+            shutil.rmtree(clinerules_dir)
         
-        result = runner.invoke(main, [str(sample_project_path), '--no-commit'])
+        result = runner.invoke(main, [str(sample_project_path), '--no-commit'], env={'PYTHONIOENCODING': 'utf-8'})
         
         assert result.exit_code == 0
         
-        # Verify generated files
-        rules = sample_project_path / 'sample-project-rules.md'
-        skills = sample_project_path / 'sample-project-skills.md'
-        
+        # Verify generated files in .clinerules/ directory
+        rules = sample_project_path / '.clinerules' / 'rules.md'
+        skills = sample_project_path / '.clinerules' / 'skills' / 'index.md'
+
         assert rules.exists()
         assert skills.exists()
-        
+
         # Verify content quality
-        rules_content = rules.read_text()
+        rules_content = rules.read_text(encoding='utf-8')
         assert '## DO' in rules_content
         assert "## DON'T" in rules_content or "DON'T" in rules_content
         assert '## PRIORITIES' in rules_content

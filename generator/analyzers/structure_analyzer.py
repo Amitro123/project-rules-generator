@@ -237,13 +237,38 @@ class StructureAnalyzer:
         has_fixtures = len(fixture_dirs) > 0
         has_conftest = (self.project_path / 'tests' / 'conftest.py').exists()
 
+        # Count actual test functions/methods
+        test_cases = self._count_test_cases(test_files)
+
         return {
             'framework': framework,
             'test_files': len(test_files),
+            'test_cases': test_cases,
             'patterns': patterns,
             'has_fixtures': has_fixtures,
             'has_conftest': has_conftest,
         }
+
+    def _count_test_cases(self, test_files: List[Path]) -> int:
+        """Count test functions and methods across test files.
+
+        Counts top-level ``def test_*`` functions and ``def test_*`` methods
+        inside classes.  For JS/TS files it counts ``it(`` and ``test(`` calls.
+        """
+        count = 0
+        py_pattern = re.compile(r'^\s*(?:async\s+)?def\s+(test_\w+)\s*\(', re.MULTILINE)
+        js_pattern = re.compile(r'^\s*(?:it|test)\s*\(', re.MULTILINE)
+
+        for tf in test_files:
+            try:
+                content = tf.read_text(encoding='utf-8', errors='replace')
+            except Exception:
+                continue
+            if tf.suffix == '.py':
+                count += len(py_pattern.findall(content))
+            elif tf.suffix in ('.js', '.ts', '.jsx', '.tsx'):
+                count += len(js_pattern.findall(content))
+        return count
 
     def _score_pattern(self, pattern_def: Dict) -> int:
         """Score how well a pattern matches the project."""
