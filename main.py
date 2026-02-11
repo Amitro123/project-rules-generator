@@ -207,10 +207,10 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
     if provider is None:
         if api_key and api_key.startswith('gsk_'):
             provider = 'groq'
-        elif os.environ.get('GROQ_API_KEY') and not os.environ.get('GEMINI_API_KEY'):
-            provider = 'groq'
-        else:
+        elif os.environ.get('GEMINI_API_KEY') and not os.environ.get('GROQ_API_KEY'):
             provider = 'gemini'
+        else:
+            provider = 'groq'
         if verbose:
             click.echo(f"Auto-detected provider: {provider}")
 
@@ -894,10 +894,10 @@ def design(description, project_path, output, api_key, provider, verbose):
     if provider is None:
         if api_key and api_key.startswith('gsk_'):
             provider = 'groq'
-        elif os.environ.get('GROQ_API_KEY') and not os.environ.get('GEMINI_API_KEY'):
-            provider = 'groq'
-        else:
+        elif os.environ.get('GEMINI_API_KEY') and not os.environ.get('GROQ_API_KEY'):
             provider = 'gemini'
+        else:
+            provider = 'groq'
 
     # Set the correct API key based on provider
     if api_key:
@@ -1013,10 +1013,10 @@ def plan(task_description, from_design, from_readme, status, project_path, outpu
         if provider is None:
             if api_key and api_key.startswith('gsk_'):
                 provider = 'groq'
-            elif os.environ.get('GROQ_API_KEY') and not os.environ.get('GEMINI_API_KEY'):
-                provider = 'groq'
-            else:
+            elif os.environ.get('GEMINI_API_KEY') and not os.environ.get('GROQ_API_KEY'):
                 provider = 'gemini'
+            else:
+                provider = 'groq'
         
         if api_key:
             if provider == 'groq':
@@ -1063,10 +1063,10 @@ def plan(task_description, from_design, from_readme, status, project_path, outpu
     if provider is None:
         if api_key and api_key.startswith('gsk_'):
             provider = 'groq'
-        elif os.environ.get('GROQ_API_KEY') and not os.environ.get('GEMINI_API_KEY'):
-            provider = 'groq'
-        else:
+        elif os.environ.get('GEMINI_API_KEY') and not os.environ.get('GROQ_API_KEY'):
             provider = 'gemini'
+        else:
+            provider = 'groq'
 
     # Set the correct API key based on provider
     if api_key:
