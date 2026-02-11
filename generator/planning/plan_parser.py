@@ -124,21 +124,58 @@ class PlanParser:
         )
     
     def _parse_phases(self, content: str) -> List[PhaseStatus]:
-        """Parse phases from markdown content."""
+        """Parse phases from markdown content.
+        
+        Recognizes two formats:
+        1. Header-based tasks: ## N. Task Name
+        2. Checkbox-based tasks: - [ ] Task or - [x] Task
+        """
         phases = []
         
-        # Find all phase sections (## headers, not ###)
-        phase_pattern = r'##\s+(.+?)\n(.*?)(?=\n##(?!#)|\Z)'
-        phase_matches = re.finditer(phase_pattern, content, re.DOTALL)
+        # Try to find numbered header tasks first (## N. Task Name)
+        header_pattern = r'##\s+(\d+)\.\s+(.+?)(?:\n|$)'
+        header_matches = list(re.finditer(header_pattern, content))
         
-        for match in phase_matches:
-            phase_name = match.group(1).strip()
-            phase_content = match.group(2).strip()
+        if header_matches:
+            # Parse header-based format
+            for i, match in enumerate(header_matches):
+                task_num = match.group(1)
+                task_name = match.group(2).strip()
+                
+                # Extract content between this header and next
+                start_pos = match.end()
+                end_pos = header_matches[i + 1].start() if i + 1 < len(header_matches) else len(content)
+                task_content = content[start_pos:end_pos].strip()
+                
+                # Check if task is completed (look for [x] or ✓ in content)
+                is_completed = bool(re.search(r'\[x\]|✓|✅', task_content, re.IGNORECASE))
+                
+                # Create a single task for this phase
+                task = TaskStatus(
+                    description=task_name,
+                    completed=is_completed,
+                    subtasks_total=0,
+                    subtasks_completed=0
+                )
+                
+                phases.append(PhaseStatus(
+                    name=f"{task_num}. {task_name}",
+                    tasks=[task]
+                ))
+        else:
+            # Fall back to old checkbox-based parsing
+            # Find all phase sections (## headers, not ###)
+            phase_pattern = r'##\s+(.+?)\n(.*?)(?=\n##(?!#)|\Z)'
+            phase_matches = re.finditer(phase_pattern, content, re.DOTALL)
             
-            # Parse tasks from this phase
-            tasks = self._parse_tasks(phase_content)
-            
-            phases.append(PhaseStatus(name=phase_name, tasks=tasks))
+            for match in phase_matches:
+                phase_name = match.group(1).strip()
+                phase_content = match.group(2).strip()
+                
+                # Parse tasks from this phase
+                tasks = self._parse_tasks(phase_content)
+                
+                phases.append(PhaseStatus(name=phase_name, tasks=tasks))
         
         return phases
     
