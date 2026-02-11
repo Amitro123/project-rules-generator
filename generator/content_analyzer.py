@@ -411,52 +411,58 @@ Return JSON only: {{"scores":{{"structure":N,"clarity":N,"project_grounding":N,"
         Returns:
             Improved content as patch
         """
-        # Build improvement prompt
-        suggestions_text = '\n'.join(f"{i+1}. {s}" for i, s in enumerate(suggestions))
+        # Import here to avoid circular dependency
+        from generator.ai.prompts import get_improvement_prompt
         
-        prompt = f"""# Improve Documentation
-
-You are improving the file "{filepath}". Do NOT include this filename or any metadata in your output.
-
-**Current Content:**
-```markdown
-{content}
-```
-
-**Quality Issues (Score: {breakdown.total}/100):**
-- Structure: {breakdown.structure}/20
-- Clarity: {breakdown.clarity}/20
-- Project Grounding: {breakdown.project_grounding}/20
-- Actionability: {breakdown.actionability}/20
-- Consistency: {breakdown.consistency}/20
-
-**Specific Improvements Needed:**
-{suggestions_text}
-
-## Your Task
-
-Rewrite the content to address ALL the issues above. Focus on:
-1. Fixing the lowest-scoring criteria first
-2. Keeping the original intent and information
-3. Making it more actionable and specific
-4. Adding concrete examples where missing
-
-Return ONLY the improved markdown content. Do NOT include:
-- File paths or "**File:**" headers
-- Explanations or preamble
-- Anything other than the improved document content itself
-"""
+        # Build detailed improvement prompt with dimension-specific guidance
+        prompt = get_improvement_prompt(filepath, content, breakdown, suggestions)
         
         try:
-            improved = self.client.generate(prompt, temperature=0.5, max_tokens=3000)
+            improved = self.client.generate(prompt, temperature=0.5, max_tokens=4000)
+            
             # Clean up the response
             # Remove markdown code fences if present
-            improved = re.sub(r'^```(?:markdown)?\n', '', improved)
-            improved = re.sub(r'\n```$', '', improved)
+            improved = re.sub(r'^```(?:markdown)?\n', '', improved, flags=re.MULTILINE)
+            improved = re.sub(r'\n```\s*$', '', improved)
+            
             # Strip leaked metadata lines (e.g., **File:** path) that the AI may echo
-            improved = re.sub(r'^\*\*File:\*\*\s*.+\n*', '', improved)
-            improved = re.sub(r'^Filename:\s*.+\n*', '', improved)
+            improved = re.sub(r'^\*\*File:\*\*\s*.+\n*', '', improved, flags=re.MULTILINE)
+            improved = re.sub(r'^Filename:\s*.+\n*', '', improved, flags=re.MULTILINE)
+            
+            # Remove any explanatory preamble (e.g., "Here's the improved version:")
+            improved = re.sub(r'^(?:Here\'s|Here is).+improved.+:\s*\n*', '', improved, flags=re.MULTILINE | re.IGNORECASE)
+            
+            # 🚨 CRITICAL FIX: Remove leaked quality analysis sections
+            # The AI sometimes copies the analysis from the prompt into the output
+            # Pattern: ## Quality Analysis (Score: XX/100) ... followed by breakdown
+            improved = re.sub(
+                r'## Quality Analysis \(Score: \d+/100\).*?(?=\n##|\Z)',
+                '',
+                improved,
+                flags=re.DOTALL | re.MULTILINE
+            )
+            
+            # Remove "## Specific Issues to Fix" section
+            improved = re.sub(
+                r'## Specific Issues to Fix.*?(?=\n##|\Z)',
+                '',
+                improved,
+                flags=re.DOTALL | re.MULTILINE
+            )
+            
+            # Remove "## Improvement Guidelines" section
+            improved = re.sub(
+                r'## Improvement Guidelines.*?(?=\n##|\Z)',
+                '',
+                improved,
+                flags=re.DOTALL | re.MULTILINE
+            )
+            
+            # Clean up any trailing whitespace or multiple blank lines
+            improved = re.sub(r'\n{3,}', '\n\n', improved)
+            
             return improved.strip()
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to generate patch for {filepath}: {e}")
             # If AI fails, return original content
             return content
