@@ -69,7 +69,8 @@ class ContentAnalyzer:
     
     def __init__(self, provider: str = 'gemini', api_key: Optional[str] = None,
                  config: Optional[AnalyzerConfig] = None,
-                 allowed_base_path: Optional[Path] = None):
+                 allowed_base_path: Optional[Path] = None,
+                 client=None):
         """Initialize analyzer with AI client.
         
         Args:
@@ -77,8 +78,9 @@ class ContentAnalyzer:
             api_key: Optional API key (uses env var if not provided)
             config: Optional configuration (uses defaults if not provided)
             allowed_base_path: Base path for file operations (security)
+            client: Optional pre-configured AI client (for testing)
         """
-        self.client = create_ai_client(provider=provider, api_key=api_key)
+        self.client = client or create_ai_client(provider=provider, api_key=api_key)
         self.config = config or AnalyzerConfig()
         self.allowed_base_path = allowed_base_path.resolve() if allowed_base_path else Path.cwd().resolve()
         logger.info(f"ContentAnalyzer initialized with provider={provider}")

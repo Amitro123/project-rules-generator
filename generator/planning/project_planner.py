@@ -84,14 +84,15 @@ class Plan:
 class ProjectPlanner:
     """Generate project plans from README or manual queries."""
     
-    def __init__(self, provider: str = 'gemini', api_key: Optional[str] = None):
+    def __init__(self, provider: str = 'gemini', api_key: Optional[str] = None, client=None):
         """Initialize planner with AI client.
         
         Args:
             provider: AI provider ('gemini' or 'groq')
             api_key: Optional API key
+            client: Optional pre-configured AI client (for testing)
         """
-        self.client = create_ai_client(provider=provider, api_key=api_key)
+        self.client = client or create_ai_client(provider=provider, api_key=api_key)
     
     def generate_roadmap_from_readme(
         self, 
