@@ -881,7 +881,7 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
 @click.option('--api-key', help='API Key (overrides env var)')
 @click.option('--provider', type=click.Choice(['gemini', 'groq']), default=None, help='AI Provider (gemini, groq). Auto-detected if omitted.')
 @click.option('--verbose/--quiet', default=True, help='Verbose output')
-def design(description, project_path, output, api_key, verbose):
+def design(description, project_path, output, api_key, provider, verbose):
     """Generate a technical design document (Stage 1 of two-stage planning).
 
     Examples:
@@ -899,8 +899,12 @@ def design(description, project_path, output, api_key, verbose):
         else:
             provider = 'gemini'
 
+    # Set the correct API key based on provider
     if api_key:
-        os.environ['GEMINI_API_KEY'] = api_key
+        if provider == 'gemini':
+            os.environ['GEMINI_API_KEY'] = api_key
+        elif provider == 'groq':
+            os.environ['GROQ_API_KEY'] = api_key
 
     if verbose:
         click.echo(f"Project Rules Generator v0.1.0 — Design Generator")
@@ -1055,6 +1059,7 @@ def plan(task_description, from_design, from_readme, status, project_path, outpu
 
     project_path = Path(project_path).resolve()
 
+    # Detect provider
     if provider is None:
         if api_key and api_key.startswith('gsk_'):
             provider = 'groq'
@@ -1063,8 +1068,12 @@ def plan(task_description, from_design, from_readme, status, project_path, outpu
         else:
             provider = 'gemini'
 
+    # Set the correct API key based on provider
     if api_key:
-        os.environ['GEMINI_API_KEY'] = api_key
+        if provider == 'gemini':
+            os.environ['GEMINI_API_KEY'] = api_key
+        elif provider == 'groq':
+            os.environ['GROQ_API_KEY'] = api_key
 
     if verbose:
         click.echo(f"Project Rules Generator v0.1.0 — Task Planner")
