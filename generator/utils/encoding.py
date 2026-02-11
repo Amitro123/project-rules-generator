@@ -21,8 +21,10 @@ def normalize_mojibake(text: str) -> str:
         return text
     
     # Apply targeted replacements for known mojibake sequences
-    # ג€" is a corrupted em-dash (—) from UTF-8 encoding issues
-    cleaned = text.replace('ג€"', '—')
+    # Handle both literal string and Unicode character sequence
+    # ג€" (U+05D2 U+20AC U+201D) is a corrupted em-dash (—) from UTF-8 encoding issues
+    cleaned = text.replace('\u05d2\u20ac\u201d', '\u2014')  # Unicode sequence
+    cleaned = cleaned.replace('ג€"', '—')  # Literal string (for files)
     
     # Additional known mojibake patterns can be added here
     # Example: cleaned = cleaned.replace('â€™', "'")
