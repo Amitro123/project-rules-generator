@@ -2,6 +2,7 @@
 import os
 from typing import Optional
 from ..ai_client import AIClient
+from ...utils.encoding import normalize_mojibake
 
 try:
     from groq import Groq
@@ -35,6 +36,7 @@ class GroqClient(AIClient):
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
-            return completion.choices[0].message.content
+            # Clean encoding artifacts per AMIT_CODING_PREFERENCES.md
+            return normalize_mojibake(completion.choices[0].message.content)
         except Exception as e:
             raise RuntimeError(f"Groq generation failed: {e}")

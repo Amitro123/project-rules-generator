@@ -16,8 +16,16 @@ class TaskStatus:
     
     @property
     def is_blocking(self) -> bool:
-        """Check if this task is blocking progress."""
-        return not self.completed and self.subtasks_completed == self.subtasks_total
+        """Check if this task is blocking progress.
+        
+        A task is blocking only if:
+        - It is not completed
+        - It has subtasks (subtasks_total > 0)
+        - All its subtasks are completed
+        """
+        return (not self.completed and 
+                self.subtasks_total > 0 and 
+                self.subtasks_completed == self.subtasks_total)
 
 
 @dataclass
@@ -119,8 +127,8 @@ class PlanParser:
         """Parse phases from markdown content."""
         phases = []
         
-        # Find all phase sections (## headers)
-        phase_pattern = r'##\s+(.+?)\n(.*?)(?=\n##|\Z)'
+        # Find all phase sections (## headers, not ###)
+        phase_pattern = r'##\s+(.+?)\n(.*?)(?=\n##(?!#)|\Z)'
         phase_matches = re.finditer(phase_pattern, content, re.DOTALL)
         
         for match in phase_matches:

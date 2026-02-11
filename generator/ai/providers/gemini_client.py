@@ -2,6 +2,7 @@
 import os
 from typing import Optional
 from ..ai_client import AIClient
+from ...utils.encoding import normalize_mojibake
 
 try:
     from google import genai
@@ -36,6 +37,7 @@ class GeminiClient(AIClient):
                     max_output_tokens=max_tokens,
                 )
             )
-            return response.text
+            # Clean encoding artifacts per AMIT_CODING_PREFERENCES.md
+            return normalize_mojibake(response.text)
         except Exception as e:
             raise RuntimeError(f"Gemini generation failed: {e}")

@@ -1,6 +1,10 @@
-
 from pathlib import Path
 import os
+import sys
+
+# Add generator to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
+from generator.utils.encoding import normalize_mojibake
 
 def clean_file(path_str):
     path = Path(path_str)
@@ -12,12 +16,12 @@ def clean_file(path_str):
         content = path.read_text(encoding='utf-8')
         original_len = len(content)
         
-        # Apply fixes
-        new_content = content.replace('ג€”', '—').replace('ג', '')
+        # Apply targeted mojibake fixes (preserves legitimate Hebrew/Unicode)
+        new_content = normalize_mojibake(content)
         
         if len(new_content) != original_len:
             path.write_text(new_content, encoding='utf-8')
-            print(f"Fixed {path}: Replaced {original_len - len(new_content)} characters/artifacts")
+            print(f"Fixed {path}: Replaced {original_len - len(new_content)} mojibake artifacts")
         else:
             print(f"Checked {path}: No artifacts found")
             
