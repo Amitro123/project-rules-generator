@@ -2,6 +2,7 @@
 import os
 from typing import Optional
 from ..ai_client import AIClient
+from ...utils.encoding import normalize_mojibake
 
 try:
     from groq import Groq
@@ -24,7 +25,7 @@ class GroqClient(AIClient):
             
         self.client = Groq(api_key=self.api_key)
 
-    def generate(self, prompt: str, max_tokens: int = 2000, model: Optional[str] = None) -> str:
+    def generate(self, prompt: str, max_tokens: int = 2000, model: Optional[str] = None, temperature: float = 0.7) -> str:
         """Generate content using Groq."""
         try:
             completion = self.client.chat.completions.create(
@@ -32,9 +33,10 @@ class GroqClient(AIClient):
                 messages=[
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,
+                temperature=temperature,
                 max_tokens=max_tokens,
             )
-            return completion.choices[0].message.content
+            # Clean encoding artifacts per AMIT_CODING_PREFERENCES.md
+            return normalize_mojibake(completion.choices[0].message.content)
         except Exception as e:
             raise RuntimeError(f"Groq generation failed: {e}")

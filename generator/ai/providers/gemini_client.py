@@ -2,6 +2,7 @@
 import os
 from typing import Optional
 from ..ai_client import AIClient
+from ...utils.encoding import normalize_mojibake
 
 try:
     from google import genai
@@ -25,17 +26,18 @@ class GeminiClient(AIClient):
             
         self.client = genai.Client(api_key=self.api_key)
 
-    def generate(self, prompt: str, max_tokens: int = 2000, model: Optional[str] = None) -> str:
+    def generate(self, prompt: str, max_tokens: int = 2000, model: Optional[str] = None, temperature: float = 0.7) -> str:
         """Generate content using Gemini."""
         try:
             response = self.client.models.generate_content(
                 model=model or os.getenv('GEMINI_MODEL', self.DEFAULT_MODEL),
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    temperature=0.7,
+                    temperature=temperature,
                     max_output_tokens=max_tokens,
                 )
             )
-            return response.text
+            # Clean encoding artifacts per AMIT_CODING_PREFERENCES.md
+            return normalize_mojibake(response.text)
         except Exception as e:
             raise RuntimeError(f"Gemini generation failed: {e}")

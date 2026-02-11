@@ -37,3 +37,6 @@ AMIT_CODING_PREFERENCES.md
 CODE_REVIEW.md
 agent-prompt.md
 walkthrough.md
+
+# Cache files
+.clinerules/.prg-cache.json

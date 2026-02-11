@@ -13,6 +13,11 @@ from dotenv import load_dotenv
 # Load environment variables from .env file if present
 load_dotenv()
 
+# Ensure project root is in sys.path for 'src' resolution
+root_dir = Path(__file__).parent.resolve()
+if str(root_dir) not in sys.path:
+    sys.path.insert(0, str(root_dir))
+
 try:
     from tqdm import tqdm
 except ImportError:
@@ -145,12 +150,17 @@ def cli():
 @click.option('--with-skills', is_flag=True, default=True, help='Include skills in output')
 @click.option('--auto-generate-skills', is_flag=True, help='Auto-detect and generate skills (requires --ai)')
 @click.option('--api-key', help='API Key (overrides env var)')
-@click.option('--provider', type=click.Choice(['groq', 'gemini']), default='groq', help='AI Provider (default: groq - free tier)')
 @click.option('--constitution', is_flag=True, help='Generate constitution.md with project-specific coding principles')
 @click.option('--merge', is_flag=True, help='Preserve existing skill files, only add new ones')
 @click.option('--mode', type=click.Choice(['manual', 'ai', 'constitution']), default=None, help='Explicit mode (manual=no AI, ai=auto-generate+AI, constitution=adds constitution.md)')
 @click.option('--incremental', is_flag=True, help='Only regenerate changed sections (skip if nothing changed)')
-def analyze(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key, provider, constitution, merge, mode, incremental):
+@click.option('--ide', help='Register rules with IDE (antigravity, cline, cursor, vscode)')
+@click.option('--provider', type=click.Choice(['gemini', 'groq']), default=None, help='AI Provider (gemini, groq). Auto-detected from env vars if omitted.')
+@click.option('--add-skill', help='Add a skill (alias for create-skill)')
+@click.option('--remove-skill', help='Remove a learned skill')
+@click.option('--quality-check', is_flag=True, help='Analyze quality of generated .clinerules files')
+@click.option('--auto-fix', is_flag=True, help='Automatically fix low-quality files (requires --quality-check)')
+def analyze(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key, constitution, merge, mode, incremental, ide, provider, add_skill, remove_skill, quality_check, auto_fix):
     """Analyze project and generate rules.md and skills.md from README.md
 
     Examples:
@@ -193,6 +203,17 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
     else:
         setup_logging(verbose=False)
 
+    # Auto-detect provider from env vars if not explicitly set
+    if provider is None:
+        if api_key and api_key.startswith('gsk_'):
+            provider = 'groq'
+        elif os.environ.get('GROQ_API_KEY') and not os.environ.get('GEMINI_API_KEY'):
+            provider = 'groq'
+        else:
+            provider = 'gemini'
+        if verbose:
+            click.echo(f"Auto-detected provider: {provider}")
+
     # Handle API Key
     if api_key:
         if provider == 'gemini':
@@ -216,12 +237,17 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
         # Skills Manager Logic
         skills_dir = project_path / "skills"
         
-        if create_skill:
-            manager = SkillsManager()
+        # Skill Management (CLI Flags)
+        if create_skill or add_skill:
+            skill_name = create_skill or add_skill
+            # Place learned skills in the project output directory
+            learned_dir = output_dir / 'skills' / 'learned'
+            learned_dir.mkdir(parents=True, exist_ok=True)
+            manager = SkillsManager(learned_path=learned_dir)
             try:
                 path = manager.create_skill(
-                    create_skill, 
-                    from_readme=from_readme, 
+                    skill_name,
+                    from_readme=from_readme,
                     project_path=str(project_path),
                     use_ai=ai
                 )
@@ -231,6 +257,31 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                 sys.exit(1)
             sys.exit(0)
 
+        if remove_skill:
+            learned_dir = output_dir / 'skills' / 'learned'
+            manager = SkillsManager(learned_path=learned_dir)
+            try:
+                # Basic removal logic - check learned skills
+                import shutil
+                target = (manager.learned_path / remove_skill).resolve()
+
+                # Security check: prevent path traversal
+                try:
+                    target.relative_to(manager.learned_path.resolve())
+                except ValueError:
+                    click.echo(f"❌ Invalid skill path: {remove_skill}", err=True)
+                    sys.exit(1)
+
+                if target.exists():
+                    shutil.rmtree(target)
+                    click.echo(f"🗑️ Removed skill '{remove_skill}'")
+                else:
+                    click.echo(f"❌ Skill '{remove_skill}' not found in learned skills.", err=True)
+                    sys.exit(1)
+            except Exception as e:
+                click.echo(f"❌ Failed to remove skill: {e}", err=True)
+                sys.exit(1)
+            sys.exit(0)
         if list_skills:
             # Use SkillsManager for raw listing of available skills
             manager = SkillsManager()
@@ -697,6 +748,103 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
             inc_analyzer.save_hash(inc_analyzer.compute_project_hash())
             if verbose:
                 click.echo("   Saved incremental cache")
+        
+        # Quality Check (Phase 1 - Analyzer Agent)
+        if quality_check:
+            from generator.content_analyzer import ContentAnalyzer
+            from rich.console import Console
+            from rich.table import Table
+            
+            if verbose:
+                click.echo(f"\n📊 Running quality analysis...")
+            
+            analyzer = ContentAnalyzer(provider=provider, api_key=api_key)
+            
+            # Find all .clinerules files to analyze
+            files_to_check = []
+            if (output_dir / 'rules.md').exists():
+                files_to_check.append(output_dir / 'rules.md')
+            if (output_dir / 'constitution.md').exists():
+                files_to_check.append(output_dir / 'constitution.md')
+            if (output_dir / 'skills' / 'index.md').exists():
+                files_to_check.append(output_dir / 'skills' / 'index.md')
+            
+            if not files_to_check:
+                click.echo("⚠️  No files found to analyze")
+            else:
+                # Analyze each file
+                reports = []
+                for filepath in files_to_check:
+                    content = filepath.read_text(encoding='utf-8')
+                    report = analyzer.analyze(
+                        str(filepath.relative_to(output_dir)),
+                        content,
+                        project_path=project_path
+                    )
+                    reports.append((filepath, report))
+                
+                # Display results in table
+                console = Console()
+                table = Table(title="\n📊 Quality Analysis Results")
+                table.add_column("File", style="cyan")
+                table.add_column("Score", justify="right", style="magenta")
+                table.add_column("Status", style="green")
+                table.add_column("Top Issue", style="yellow")
+                
+                for filepath, report in reports:
+                    top_issue = report.suggestions[0] if report.suggestions else "None"
+                    if len(top_issue) > 40:
+                        top_issue = top_issue[:37] + "..."
+                    
+                    table.add_row(
+                        filepath.name,
+                        f"{report.score}/100",
+                        report.status,
+                        top_issue
+                    )
+                
+                console.print(table)
+                
+                # Show detailed breakdown if verbose
+                if verbose:
+                    for filepath, report in reports:
+                        if report.score < 85:
+                            click.echo(f"\n📋 {filepath.name} - Detailed Breakdown:")
+                            click.echo(f"   Structure: {report.breakdown.structure}/20")
+                            click.echo(f"   Clarity: {report.breakdown.clarity}/20")
+                            click.echo(f"   Project Grounding: {report.breakdown.project_grounding}/20")
+                            click.echo(f"   Actionability: {report.breakdown.actionability}/20")
+                            click.echo(f"   Consistency: {report.breakdown.consistency}/20")
+                            click.echo(f"\n   Suggestions:")
+                            for i, suggestion in enumerate(report.suggestions[:3], 1):
+                                click.echo(f"   {i}. {suggestion}")
+                
+                # Auto-fix if requested
+                if auto_fix:
+                    fixed_count = 0
+                    for filepath, report in reports:
+                        if report.score < 85 and report.patch:
+                            analyzer.apply_fix(filepath, report.patch)
+                            fixed_count += 1
+                            if verbose:
+                                click.echo(f"   ✅ Fixed: {filepath.name}")
+                    
+                    if fixed_count > 0:
+                        click.echo(f"\n✨ Auto-fixed {fixed_count} file(s)")
+                        # Re-add to git if commit is enabled
+                        if commit and is_git_repo(project_path):
+                            try:
+                                from prg_utils.git_ops import commit_files
+                                commit_files(
+                                    [fp for fp, _ in reports if _.score < 85],
+                                    "Auto-fix: Improved content quality",
+                                    project_path
+                                )
+                                click.echo("   Committed quality improvements")
+                            except Exception as e:
+                                click.echo(f"   ⚠️  Could not commit fixes: {e}")
+                    else:
+                        click.echo("\n✅ All files meet quality standards (85+)")
 
         click.echo(f"\nDone!")
 
@@ -730,9 +878,10 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
 @click.argument('description')
 @click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory')
 @click.option('--output', '-o', type=click.Path(), default='DESIGN.md', help='Output file (default: DESIGN.md)')
-@click.option('--api-key', help='Gemini API Key (overrides GEMINI_API_KEY env var)')
+@click.option('--api-key', help='API Key (overrides env var)')
+@click.option('--provider', type=click.Choice(['gemini', 'groq']), default=None, help='AI Provider (gemini, groq). Auto-detected if omitted.')
 @click.option('--verbose/--quiet', default=True, help='Verbose output')
-def design(description, project_path, output, api_key, verbose):
+def design(description, project_path, output, api_key, provider, verbose):
     """Generate a technical design document (Stage 1 of two-stage planning).
 
     Examples:
@@ -742,8 +891,20 @@ def design(description, project_path, output, api_key, verbose):
     """
     project_path = Path(project_path).resolve()
 
+    if provider is None:
+        if api_key and api_key.startswith('gsk_'):
+            provider = 'groq'
+        elif os.environ.get('GROQ_API_KEY') and not os.environ.get('GEMINI_API_KEY'):
+            provider = 'groq'
+        else:
+            provider = 'gemini'
+
+    # Set the correct API key based on provider
     if api_key:
-        os.environ['GEMINI_API_KEY'] = api_key
+        if provider == 'gemini':
+            os.environ['GEMINI_API_KEY'] = api_key
+        elif provider == 'groq':
+            os.environ['GROQ_API_KEY'] = api_key
 
     if verbose:
         click.echo(f"Project Rules Generator v0.1.0 — Design Generator")
@@ -794,29 +955,125 @@ def design(description, project_path, output, api_key, verbose):
 @cli.command(name='plan')
 @click.argument('task_description', required=False, default=None)
 @click.option('--from-design', type=click.Path(exists=True, dir_okay=False), default=None, help='Generate plan from a DESIGN.md file')
+@click.option('--from-readme', type=click.Path(exists=True, dir_okay=False), default=None, help='Generate roadmap from README.md')
+@click.option('--status', is_flag=True, help='Show progress on existing plans')
 @click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory')
-@click.option('--output', '-o', type=click.Path(), default='PLAN.md', help='Output file for the plan (default: PLAN.md)')
-@click.option('--api-key', help='Gemini API Key (overrides GEMINI_API_KEY env var)')
+@click.option('--output', '-o', type=click.Path(), default=None, help='Output file for the plan (default: auto-generated)')
+@click.option('--api-key', help='API Key (overrides env var)')
+@click.option('--provider', type=click.Choice(['gemini', 'groq']), default=None, help='AI Provider (gemini, groq). Auto-detected if omitted.')
+@click.option('--interactive', is_flag=True, help='Open files in IDE as tasks are listed')
+@click.option('--auto-execute', is_flag=True, help='Agent executes tasks automatically (requires --interactive)')
 @click.option('--verbose/--quiet', default=True, help='Verbose output')
-def plan(task_description, from_design, project_path, output, api_key, verbose):
+def plan(task_description, from_design, from_readme, status, project_path, output, api_key, provider, interactive, auto_execute, verbose):
     """Break down a task into subtasks and generate PLAN.md.
 
-    Can generate from a task description or from an existing DESIGN.md.
+    Can generate from a task description, README, or existing DESIGN.md.
 
     Examples:
     \b
-        python main.py plan "Add authentication to API"
-        python main.py plan --from-design DESIGN.md
-        python main.py plan "Refactor database layer" --output docs/PLAN.md
+        prg plan "Add Redis cache" --interactive
+        prg plan --from-readme README.md
+        prg plan --status
+        prg plan --from-design DESIGN.md
     """
+    project_path = Path(project_path).resolve()
+    
+    # Handle --status mode
+    if status:
+        from generator.planning import PlanParser
+        parser = PlanParser()
+        
+        # Find all plan files
+        plan_files = parser.find_plans(project_path)
+        
+        if not plan_files:
+            click.echo("No plan files found in project directory.")
+            click.echo("Tip: Generate a plan with 'prg plan <task>' or 'prg plan --from-readme README.md'")
+            sys.exit(0)
+        
+        # Show status for each plan
+        for plan_file in plan_files:
+            plan_status = parser.parse_plan(plan_file)
+            report = parser.format_status_report(plan_status)
+            click.echo(report)
+            click.echo()  # Blank line between plans
+        
+        sys.exit(0)
+    
+    # Handle --from-readme mode
+    if from_readme:
+        from generator.planning import ProjectPlanner
+        
+        if verbose:
+            click.echo(f"Project Rules Generator v0.1.0 — Roadmap Generator")
+            click.echo(f"From README: {from_readme}")
+            click.echo(f"Project: {project_path}")
+        
+        # Auto-detect provider
+        if provider is None:
+            if api_key and api_key.startswith('gsk_'):
+                provider = 'groq'
+            elif os.environ.get('GROQ_API_KEY') and not os.environ.get('GEMINI_API_KEY'):
+                provider = 'groq'
+            else:
+                provider = 'gemini'
+        
+        if api_key:
+            if provider == 'groq':
+                os.environ['GROQ_API_KEY'] = api_key
+            else:
+                os.environ['GEMINI_API_KEY'] = api_key
+        
+        if verbose:
+            click.echo(f"Generating roadmap with {provider}...")
+        
+        planner = ProjectPlanner(provider=provider, api_key=api_key)
+        plan_obj = planner.generate_roadmap_from_readme(
+            Path(from_readme),
+            project_path=project_path
+        )
+        
+        # Auto-generate output filename if not provided
+        if not output:
+            output = 'PROJECT-ROADMAP.md'
+        
+        output_path = Path(output)
+        if not output_path.is_absolute():
+            output_path = project_path / output_path
+        
+        plan_obj.save(output_path)
+        
+        click.echo(f"\n✅ Generated roadmap:")
+        click.echo(f"   Title: {plan_obj.title}")
+        click.echo(f"   Phases: {len(plan_obj.phases)}")
+        total_tasks = sum(len(p.tasks) for p in plan_obj.phases)
+        click.echo(f"   Tasks: {total_tasks}")
+        click.echo(f"   Saved to: {output_path}")
+        
+        sys.exit(0)
+    
+    # Original plan command logic (from task description or design)
     if not task_description and not from_design:
-        click.echo("Error: Provide a TASK_DESCRIPTION or --from-design.", err=True)
+        click.echo("Error: Provide a TASK_DESCRIPTION, --from-readme, --from-design, or --status.", err=True)
         sys.exit(1)
 
     project_path = Path(project_path).resolve()
 
+    # Detect provider
+    if provider is None:
+        if api_key and api_key.startswith('gsk_'):
+            provider = 'groq'
+        elif os.environ.get('GROQ_API_KEY') and not os.environ.get('GEMINI_API_KEY'):
+            provider = 'groq'
+        else:
+            provider = 'gemini'
+
+    # Set the correct API key based on provider
     if api_key:
-        os.environ['GEMINI_API_KEY'] = api_key
+        if provider == 'gemini':
+            os.environ['GEMINI_API_KEY'] = api_key
+        elif provider == 'groq':
+            os.environ['GROQ_API_KEY'] = api_key
 
     if verbose:
         click.echo(f"Project Rules Generator v0.1.0 — Task Planner")
@@ -864,6 +1121,10 @@ def plan(task_description, from_design, project_path, output, api_key, verbose):
 
     plan_md = decomposer.generate_plan_md(subtasks, user_task=user_task_label)
 
+    # Use default output if not provided
+    if not output:
+        output = 'PLAN.md'
+    
     output_path = Path(output)
     if not output_path.is_absolute():
         output_path = project_path / output_path
@@ -873,6 +1134,47 @@ def plan(task_description, from_design, project_path, output, api_key, verbose):
     click.echo(f"\nGenerated {len(subtasks)} subtasks")
     click.echo(f"Plan written to: {output_path}")
     click.echo(f"Estimated time: {sum(t.estimated_minutes for t in subtasks)} minutes")
+
+    # Interactive mode: open files in IDE for each subtask
+    if interactive:
+        import subprocess
+        import shutil
+
+        # Detect available editor
+        editor = os.environ.get('EDITOR') or os.environ.get('VISUAL')
+        if not editor:
+            for candidate in ['code', 'cursor', 'subl', 'vim', 'notepad']:
+                if shutil.which(candidate):
+                    editor = candidate
+                    break
+
+        click.echo(f"\n--- Interactive Mode (editor: {editor or 'none'}) ---")
+        for task in subtasks:
+            click.echo(f"\nTask {task.id}: {task.title}")
+            click.echo(f"  Goal: {task.goal}")
+            if task.files and editor:
+                for fpath in task.files:
+                    full_path = project_path / fpath
+                    action = "Open" if full_path.exists() else "Create"
+                    click.echo(f"  [{action}] {fpath}")
+                    if auto_execute and not full_path.exists():
+                        full_path.parent.mkdir(parents=True, exist_ok=True)
+                        full_path.write_text(f"# TODO: {task.title}\n", encoding='utf-8')
+                    try:
+                        subprocess.Popen([editor, str(full_path)])
+                    except Exception as e:
+                        click.echo(f"  Could not open {fpath}: {e}")
+            elif task.files:
+                for fpath in task.files:
+                    full_path = project_path / fpath
+                    action = "Open" if full_path.exists() else "Create"
+                    click.echo(f"  [{action}] {fpath} (no editor detected)")
+            if not auto_execute:
+                try:
+                    input("  Press Enter for next task...")
+                except (EOFError, KeyboardInterrupt):
+                    click.echo("\nAborted.")
+                    break
 
 
 # Backward-compatible alias so existing code that imports `main` still works

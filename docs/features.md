@@ -170,7 +170,7 @@ prg analyze . --constitution
 - Entry points: main.py
 
 ## Testing Standards
-- Framework: pytest (27 files, 160 tests)
+- Framework: pytest (32 files, 222 tests)
 ```
 
 **Use Case**: Creating onboarding documentation or a team standards reference.

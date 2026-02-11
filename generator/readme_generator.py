@@ -109,8 +109,8 @@ def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
     return readme_content
 
 
-def generate_readme_with_llm(user_input: Dict, context: Dict) -> str:
-    """Generate README using Gemini."""
+def generate_readme_with_llm(user_input: Dict, context: Dict, provider: str = 'gemini', api_key: Optional[str] = None) -> str:
+    """Generate README using AI."""
     try:
         from generator.llm_skill_generator import LLMSkillGenerator
 

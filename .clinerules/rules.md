@@ -52,7 +52,7 @@ This project uses: python, gemini, claude, click
 ## TESTING
 
 - **Framework**: pytest
-- **Test files**: 31 (218 test cases)
+- **Test files**: 34 (262 test cases)
 - **Test types**: unit, integration
 - **Fixtures**: shared via `conftest.py`
 - **Test data**: `tests/fixtures/` directory
@@ -69,7 +69,7 @@ pytest tests/test_specific.py -v
 ## PRIORITIES
 
 1. *Stop copy-pasting generic rules. Start with AI that knows your project.**
-2. Test coverage
+2. run: pip install project-rules-generator
 3. Documentation clarity
 
 ## CONTEXT STRATEGY
@@ -453,7 +453,7 @@ Understand *why* it breaks:
 ## Anti-Patterns
 ❌ Guessing without reproducing
 ❌ Fixing symptoms without finding root cause
-❌ precise line not identified
+❌ precise line not identified in stack trace
 ❌ Declaring "fixed" without verification
 
 

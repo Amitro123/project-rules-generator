@@ -10,7 +10,7 @@ class AIClient(ABC):
         self.api_key = api_key
         
     @abstractmethod
-    def generate(self, prompt: str, max_tokens: int = 2000, model: Optional[str] = None) -> str:
+    def generate(self, prompt: str, max_tokens: int = 2000, model: Optional[str] = None, temperature: float = 0.7) -> str:
         """Generate content from prompt."""
         pass
 

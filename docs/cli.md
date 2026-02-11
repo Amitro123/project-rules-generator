@@ -14,6 +14,8 @@ prg analyze [PROJECT_PATH] [OPTIONS]
 | `--output` | dir | `.clinerules/` | Custom output directory for generated rules. |
 | `--mode` | choice | `manual` | Analysis mode: `manual` (fast, local), `ai` (deep, requires key), `constitution` (principles only). |
 | `--incremental` | flag | `false` | Only regenerate sections that have changed (much faster). |
+| `--quality-check` 🆕 | flag | `false` | Score generated files (0-100) across 5 quality criteria. |
+| `--auto-fix` 🆕 | flag | `false` | Automatically improve files scoring below 85. Requires `--quality-check`. |
 | `--constitution` | flag | `false` | Generate `constitution.md` with high-level principles. |
 | `--auto-generate-skills` | flag | `false` | Enable AI skill matching and generation (requires `--ai`). |
 | `--ai` | flag | `false` | Use AI (LLM) for analysis. Implies `--mode ai`. |
@@ -50,6 +52,12 @@ prg plan <TASK_DESCRIPTION> [OPTIONS]
 
 | Flag | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `--output` | file | `PLAN.md` | Output file path for the plan. |
+| `[TASK_DESCRIPTION]` | argument | - | Task to plan (e.g., "Add Redis cache"). Optional if using `--from-design` or `--from-readme`. |
+| `--output` | file | auto | Output file path for the plan. Defaults to `PLAN.md` or `PROJECT-ROADMAP.md`. |
 | `--from-design` | file | - | Generate tasks from an existing `DESIGN.md` file. |
+| `--from-readme` 🆕 | file | - | Generate project roadmap from `README.md` features. |
+| `--status` 🆕 | flag | `false` | Show progress on existing plan files with visual progress bars. |
+| `--interactive` | flag | `false` | Open files in IDE as tasks are listed. |
+| `--auto-execute` | flag | `false` | Automatically create files and open them (requires `--interactive`). |
 | `--api-key` | str | `env` | AI API key for the planning agent. |
+| `--provider` | choice | auto | AI provider: `gemini` or `groq`. Auto-detected from API key if not specified. |

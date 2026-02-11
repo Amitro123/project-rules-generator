@@ -10,6 +10,7 @@ setup(
         'pydantic>=2.0.0',
         'tqdm>=4.66.0',
         'google-generativeai>=0.8.6',
+        'groq>=0.4.0',
         'python-dotenv>=1.0.0',
         'gitpython>=3.1.0',
         'rich>=13.0.0'

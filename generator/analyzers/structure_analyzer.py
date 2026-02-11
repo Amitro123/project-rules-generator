@@ -22,7 +22,7 @@ class StructureAnalyzer:
         'python-cli': {
             'markers': ['__main__.py', 'argparse', 'click', 'typer', 'fire'],
             'folders': ['src/cli', 'src/commands', 'commands', 'cli'],
-            'files': ['cli.py', '__main__.py'],
+            'files': ['cli.py', '__main__.py', 'main.py'],
             'imports': [r'import argparse', r'import click', r'import typer', r'from click import'],
         },
         'fastapi-api': {
@@ -146,6 +146,18 @@ class StructureAnalyzer:
         if scores:
             best = max(scores, key=scores.get)
             max_score = scores[best]
+
+            # If 'library' wins but a more specific application type has a
+            # strong signal (>= 2, i.e. confirmed), prefer the application type.
+            # 'library' is a generic fallback that matches packaging files
+            # (setup.py, pyproject.toml) which most Python projects have.
+            if best == 'library':
+                app_types = {k: v for k, v in scores.items()
+                             if k != 'library' and v >= 2}
+                if app_types:
+                    best = max(app_types, key=app_types.get)
+                    max_score = scores[best]
+
             # Confidence based on score strength
             confidence = min(1.0, max_score / 6.0)
         else:

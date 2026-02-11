@@ -27,7 +27,20 @@ Most rule generators give you static templates. **Project Rules Generator** read
 
 ---
 
-## � User Guide
+## How It Works
+
+```mermaid
+graph TB
+    A[prg analyze . --ide antigravity] --> B[.vscode/settings.json]
+    B --> C[Agent Loads Rules + Skills]
+    D[prg plan 'Add feature'] --> E[PLAN.md + Open Files]
+    E --> F[--interactive: Opens in IDE]
+    E --> G[--auto-execute: Agent runs tasks]
+```
+
+---
+
+##  User Guide
  
 ### 1. Basic Analysis
 **What it does:** Scans your project structure and `README.md` to generate base rules without AI. Fast and private.
@@ -78,7 +91,7 @@ prg --create-skill "database-migration" --ai
  
 ## 🌊 Common Workflows
  
-### � Initial Setup
+###  Initial Setup
 Run this once when setting up a new project or onboarding.
 ```bash
 # Full generation with Constitution and AI skills
@@ -116,6 +129,7 @@ prg . --export-json > team-skills.json
 | **Basic** (`prg .`) | 🚀 ~200ms | ❌ No | `.clinerules/rules.md` |
 | **Incremental** (`--incremental`) | ⚡ ~50ms | ❌ No | Updated changes only |
 | **Two-Stage Planning** | 🐢 ~60s | ✅ Yes | `DESIGN.md` + `PLAN.md` |
+| **Interactive Plan** (`--interactive`) | 🐢 ~60s | ✅ Yes | Opens files in IDE |
 | **Constitution** (`--constitution`) | 🚀 ~200ms | ❌ No | `constitution.md` |
 | **AI Skills** (`--ai`) | 🐢 ~30s | ✅ Yes (Gemini) | Custom `skills/*.md` |
 | **Full Workflow** | 🐢 ~35s | ✅ Yes | All of the above |
@@ -135,10 +149,20 @@ prg . --export-json > team-skills.json
 | `--output DIR` | Custom output directory | `.clinerules` |
 | `--list-skills` | Show your learned skills library | `False` |
 | `--export-json` | Export skills for team sharing | `False` |
- 
+
+### `prg plan` Flags
+
+| Flag | Description | Default |
+| :--- | :--- | :--- |
+| `TASK_DESCRIPTION` | What to build (e.g. "Add Redis cache") | — |
+| `--from-design` | Generate plan from a DESIGN.md file | — |
+| `--interactive` | Open files in IDE as tasks are listed | `False` |
+| `--auto-execute` | Agent creates files and opens them automatically | `False` |
+| `--provider` | AI provider (`gemini`, `groq`) | Auto-detect |
+
 ---
 
-## � Output Structure
+##  Output Structure
  
 All generated files are consolidated into a single `.clinerules/` directory inside your project:
  
@@ -150,7 +174,41 @@ All generated files are consolidated into a single `.clinerules/` directory insi
 └── skills/
     ├── builtin/          # Copied builtin skill files
     ├── learned/          # Copied learned skill files
-    └── index.md          # Skills catalog/registry
+    ├── index.md          # Skills catalog/registry
+    └── index.json        # Machine-readable skill definitions (when --export-json)
+```
+
+### 📄 JSON Artifacts (`--export-json`)
+When you run with `--export-json`, the tool generates `index.json`. This file contains structured data about every skill, including:
+- **Triggers**: When the skill should be activated.
+- **Process**: The step-by-step logic.
+- **Source**: Whether it's `builtin` or `learned`.
+
+**Why use it?**
+- **Team Sharing**: Import this JSON into other agent tools or dashboards.
+- **Meta-Analysis**: Use scripts to analyze your team's skill coverage.
+- **IDE Integration**: Some IDEs ingest JSON rules better than Markdown.
+
+### 🛡️ Special Rules Explained
+
+#### **Encoding Safety**
+*Required when using AI clients in Python.*
+
+**The Rule:**
+> "When handling AI responses, ALWAYS explicitly clean encoding artifacts and strip common corruptions."
+
+**Why?**
+AI models sometimes generate "ghost" characters like `ג€”` (a corrupted em-dash) or `ג` due to tokenization/encoding mismatches, especially on Windows terminals. These break downstream parsers.
+
+**Example Fix:**
+```python
+# ❌ BAD
+return response.text
+
+# ✅ GOOD (Project Standard)
+text = response.text.encode('utf-8', errors='replace').decode('utf-8')
+text = text.replace('ג€”', '—').replace('ג', '')
+return text.strip()
 ```
  
 ---
@@ -165,7 +223,7 @@ All generated files are consolidated into a single `.clinerules/` directory insi
  
 ---
  
-## � Installation
+##  Installation
  
 ### From Source (Current)
 ```bash
@@ -190,4 +248,4 @@ prg --version
 
 ---
 
-**Project Rules Generator** - Because generic "analyze code" skills aren't enough anymore.
+**Project Rules Generator** — Because generic "analyze code" skills aren't enough anymore.

@@ -46,5 +46,5 @@ Understand *why* it breaks:
 ## Anti-Patterns
 ❌ Guessing without reproducing
 ❌ Fixing symptoms without finding root cause
-❌ precise line not identified
+❌ precise line not identified in stack trace
 ❌ Declaring "fixed" without verification
