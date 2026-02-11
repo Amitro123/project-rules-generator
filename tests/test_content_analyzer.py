@@ -2,6 +2,7 @@
 
 import pytest
 from pathlib import Path
+from unittest.mock import Mock
 from generator.content_analyzer import (
     ContentAnalyzer,
     QualityReport,
@@ -77,8 +78,10 @@ class TestContentAnalyzer:
     
     @pytest.fixture
     def analyzer(self):
-        """Create analyzer instance (will use heuristic fallback in tests)."""
-        return ContentAnalyzer()
+        """Create analyzer instance with mock client (uses heuristic fallback)."""
+        mock_client = Mock()
+        mock_client.generate.return_value = None
+        return ContentAnalyzer(client=mock_client)
     
     def test_analyze_well_structured_content(self, analyzer):
         """Test analysis of well-structured content."""
@@ -205,7 +208,7 @@ uvicorn main:app
         test_file.write_text(original_content, encoding='utf-8')
         
         # Create analyzer with tmp_path as allowed base for security validation
-        analyzer = ContentAnalyzer(allowed_base_path=tmp_path)
+        analyzer = ContentAnalyzer(client=Mock(), allowed_base_path=tmp_path)
         
         improved_content = "# Improved\n\nBetter content with examples\n\n```bash\ncommand\n```"
         analyzer.apply_fix(test_file, improved_content)
@@ -263,7 +266,7 @@ class TestScoreExtraction:
     
     def test_extract_score_from_response(self):
         """Test extracting scores from formatted response."""
-        analyzer = ContentAnalyzer()
+        analyzer = ContentAnalyzer(client=Mock())
         response = """
 **SCORES:**
 Structure: 18
@@ -288,7 +291,7 @@ Consistency: 15
     
     def test_extract_score_clamping(self):
         """Test that scores are clamped to 0-20 range."""
-        analyzer = ContentAnalyzer()
+        analyzer = ContentAnalyzer(client=Mock())
         
         # Test upper bound
         response = "Structure: 25\nClarity: 30"

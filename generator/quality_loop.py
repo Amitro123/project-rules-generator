@@ -12,6 +12,34 @@ from generator.content_analyzer import ContentAnalyzer, QualityReport
 
 logger = logging.getLogger(__name__)
 
+# Markers that indicate prompt template content leaked into a patch.
+# If ANY of these appear in a generated patch, the patch is rejected.
+LEAK_MARKERS = [
+    "## Quality Analysis",
+    "## Improvement Guidelines",
+    "## Specific Issues to Fix",
+    "## Your Task",
+    "## Output Format",
+    "NEEDS IMPROVEMENT",
+    "## Structure Improvements",
+    "## Clarity Improvements",
+    "## Actionability Improvements",
+    "## Consistency Improvements",
+    "## Project Grounding Improvements",
+    "<document>",
+    "</document>",
+    "Fix these issues (current score:",
+    "Output the complete improved document",
+]
+
+
+def _patch_has_leakage(patch: str) -> bool:
+    """Check if a patch contains prompt leakage markers."""
+    for marker in LEAK_MARKERS:
+        if marker in patch:
+            return True
+    return False
+
 
 def improve_with_feedback(
     filepath: Path,
@@ -80,8 +108,8 @@ def improve_with_feedback(
             if verbose:
                 logger.info(f"  ✅ Target reached ({report.score}/100)")
             
-            # Apply final fix if we have a patch
-            if report.patch:
+            # Apply final fix if we have a clean patch
+            if report.patch and not _patch_has_leakage(report.patch):
                 analyzer.apply_fix(filepath, report.patch)
                 # Re-analyze to get final report
                 content = filepath.read_text(encoding='utf-8')
@@ -99,7 +127,14 @@ def improve_with_feedback(
             # No patch generated (shouldn't happen for low scores, but handle it)
             logger.warning(f"No patch generated for {filepath} (score={report.score})")
             break
-        
+
+        # Reject patches that contain leaked prompt content
+        if _patch_has_leakage(report.patch):
+            logger.warning(
+                f"Patch for {filepath} contains prompt leakage, skipping iteration {iteration}"
+            )
+            break
+
         # Apply the improvement
         try:
             analyzer.apply_fix(filepath, report.patch)
@@ -113,6 +148,22 @@ def improve_with_feedback(
             logger.error(f"Failed to apply patch at iteration {iteration}: {e}")
             break
     
+    # Re-score the actual file on disk after the loop ends.
+    # The last iteration may have applied a patch that was never re-scored,
+    # so the best_report could be stale.
+    try:
+        final_content = filepath.read_text(encoding='utf-8')
+        final_report = analyzer.analyze(
+            str(filepath.relative_to(filepath.parent.parent) if filepath.parent.parent.exists() else filepath.name),
+            final_content,
+            project_path=project_path
+        )
+        if final_report.score > best_score:
+            best_score = final_report.score
+            best_report = final_report
+    except Exception as e:
+        logger.warning(f"Final re-scoring failed for {filepath}: {e}")
+
     # Max iterations reached or error occurred
     if verbose:
         if best_score < target_score:
@@ -122,7 +173,7 @@ def improve_with_feedback(
             )
         else:
             logger.info(f"  ✅ Completed in {max_iterations} iterations")
-    
+
     return best_report or report
 
 

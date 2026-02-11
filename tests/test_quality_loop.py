@@ -89,8 +89,8 @@ class TestImproveWithFeedback:
             verbose=False
         )
         
-        # Should stop after 3 iterations even if target not reached
-        assert mock_analyzer.analyze.call_count == 3
+        # 3 loop iterations + 1 final re-score = 4 analyze calls
+        assert mock_analyzer.analyze.call_count == 4
         assert result.score == 75  # Best attempt
     
     def test_early_exit_on_high_initial_score(self, mock_analyzer, sample_file):
@@ -138,8 +138,8 @@ class TestImproveWithFeedback:
             verbose=False
         )
         
-        # Should stop after first iteration (no patch to apply)
-        assert mock_analyzer.analyze.call_count == 1
+        # 1 loop iteration + 1 final re-score = 2 analyze calls
+        assert mock_analyzer.analyze.call_count == 2
         assert mock_analyzer.apply_fix.call_count == 0
         assert result.score == 70
     
@@ -165,8 +165,9 @@ class TestImproveWithFeedback:
         )
         
         # Should handle error gracefully and return best report
+        # 1 loop iteration + 1 final re-score = 2 analyze calls
         assert result.score == 70
-        assert mock_analyzer.analyze.call_count == 1
+        assert mock_analyzer.analyze.call_count == 2
     
     def test_validates_input_parameters(self, mock_analyzer, sample_file):
         """Test input validation."""

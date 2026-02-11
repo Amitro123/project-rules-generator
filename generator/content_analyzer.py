@@ -189,6 +189,15 @@ class ContentAnalyzer:
         "\"suggestions\":[\"string\",\"string\",\"string\"]}"
     )
 
+    IMPROVEMENT_SYSTEM_PROMPT = (
+        "You are a technical documentation writer. "
+        "Rewrite the provided document to fix the listed quality issues. "
+        "Output ONLY the improved markdown content. "
+        "Do NOT include analysis scores, file paths, quality breakdowns, "
+        "improvement guidelines, XML tags, or any meta-commentary. "
+        "Start directly with the first markdown heading."
+    )
+
     def _build_analysis_prompt(self, filepath: str, content: str, project_path: Optional[Path]) -> str:
         """Build prompt for AI analysis."""
         project_context = self._get_project_context(project_path)
@@ -204,7 +213,7 @@ Criteria:
 
 File: {filepath}
 Content:
-{content[:3000]}
+{content[:self.config.max_content_length]}
 {project_context}
 
 Return JSON only: {{"scores":{{"structure":N,"clarity":N,"project_grounding":N,"actionability":N,"consistency":N}},"suggestions":["improvement1","improvement2","improvement3"]}}"""
@@ -224,40 +233,52 @@ Return JSON only: {{"scores":{{"structure":N,"clarity":N,"project_grounding":N,"
                 logger.warning(f"Failed to read README: {e}")
         return ""
     
-    def _get_scoring_criteria_text(self) -> str:
-        """Return scoring criteria as formatted text."""
-        return """## Scoring Criteria (20 points each, total 100)
+    def _build_project_context(self, project_path: Optional[Path]) -> Optional[str]:
+        """Build short project context string for improvement prompts.
 
-### 1. Structure (0-20)
-- Proper headers (H1, H2, H3 hierarchy)
-- Logical flow and organization
-- No empty sections
-- Clear table of contents if needed
+        Returns a compact block with real file paths, CLI commands, and
+        tech stack so the AI can reference them when improving content.
+        """
+        if not project_path:
+            return None
 
-### 2. Clarity (0-20)
-- Precise, concise language
-- No fluff or vague statements
-- Technical terms defined
-- Examples are clear
+        lines = []
 
-### 3. Project Grounding (0-20)
-- References actual files from the project
-- Mentions specific tools/commands used
-- Includes real paths, not placeholders
-- Context-aware recommendations
+        # Entry point
+        if (project_path / "main.py").exists():
+            lines.append("- Entry point: main.py")
 
-### 4. Actionability (0-20)
-- Clear "how to" instructions
-- Specific steps, not just theory
-- Concrete examples
-- Executable commands
+        # Key directories
+        for d in ("generator", "analyzer", "tests", "src"):
+            if (project_path / d).is_dir():
+                lines.append(f"- Module: {d}/")
 
-### 5. Consistency (0-20)
-- Terminology matches project conventions
-- Format consistent throughout
-- Style matches other documentation
-- No contradictions"""
-    
+        # CLI commands (from pyproject.toml or setup.py)
+        pyproject = project_path / "pyproject.toml"
+        if pyproject.exists():
+            try:
+                text = pyproject.read_text(encoding='utf-8')
+                if "prg" in text:
+                    lines.append("- CLI command: prg")
+            except Exception:
+                pass
+
+        # Test command
+        if (project_path / "tests").is_dir():
+            lines.append("- Run tests: pytest tests/ -v")
+
+        # README title (first line)
+        readme = project_path / "README.md"
+        if readme.exists():
+            try:
+                first_line = readme.read_text(encoding='utf-8').split('\n', 1)[0].strip('# \t')
+                if first_line:
+                    lines.append(f"- Project: {first_line}")
+            except Exception:
+                pass
+
+        return '\n'.join(lines) if lines else None
+
     def _parse_analysis_response(self, response: str) -> tuple[Optional[QualityBreakdown], List[str]]:
         """Parse AI response into breakdown and suggestions.
 
@@ -414,55 +435,99 @@ Return JSON only: {{"scores":{{"structure":N,"clarity":N,"project_grounding":N,"
         # Import here to avoid circular dependency
         from generator.ai.prompts import get_improvement_prompt
         
-        # Build detailed improvement prompt with dimension-specific guidance
-        prompt = get_improvement_prompt(filepath, content, breakdown, suggestions)
-        
+        # Truncate content to match what the analysis prompt sees.
+        # This ensures improvements target the scored portion rather than
+        # fixing unscored sections while leaving scored problems intact.
+        max_len = self.config.max_content_length
+        truncated = content[:max_len] if len(content) > max_len else content
+
+        # Build short project context so the AI can reference real files/commands
+        project_ctx = self._build_project_context(project_path)
+
+        prompt = get_improvement_prompt(
+            filepath, truncated, breakdown, suggestions,
+            project_context=project_ctx,
+        )
+
         try:
-            improved = self.client.generate(prompt, temperature=0.5, max_tokens=4000)
-            
-            # Clean up the response
-            # Remove markdown code fences if present
-            improved = re.sub(r'^```(?:markdown)?\n', '', improved, flags=re.MULTILINE)
-            improved = re.sub(r'\n```\s*$', '', improved)
-            
-            # Strip leaked metadata lines (e.g., **File:** path) that the AI may echo
-            improved = re.sub(r'^\*\*File:\*\*\s*.+\n*', '', improved, flags=re.MULTILINE)
-            improved = re.sub(r'^Filename:\s*.+\n*', '', improved, flags=re.MULTILINE)
-            
-            # Remove any explanatory preamble (e.g., "Here's the improved version:")
-            improved = re.sub(r'^(?:Here\'s|Here is).+improved.+:\s*\n*', '', improved, flags=re.MULTILINE | re.IGNORECASE)
-            
-            # 🚨 CRITICAL FIX: Remove leaked quality analysis sections
-            # The AI sometimes copies the analysis from the prompt into the output
-            # Pattern: ## Quality Analysis (Score: XX/100) ... followed by breakdown
-            improved = re.sub(
-                r'## Quality Analysis \(Score: \d+/100\).*?(?=\n##|\Z)',
-                '',
-                improved,
-                flags=re.DOTALL | re.MULTILINE
+            improved = self.client.generate(
+                prompt,
+                temperature=0.5,
+                max_tokens=self.config.patch_max_tokens,
+                system_message=self.IMPROVEMENT_SYSTEM_PROMPT,
             )
-            
-            # Remove "## Specific Issues to Fix" section
-            improved = re.sub(
-                r'## Specific Issues to Fix.*?(?=\n##|\Z)',
-                '',
-                improved,
-                flags=re.DOTALL | re.MULTILINE
-            )
-            
-            # Remove "## Improvement Guidelines" section
-            improved = re.sub(
-                r'## Improvement Guidelines.*?(?=\n##|\Z)',
-                '',
-                improved,
-                flags=re.DOTALL | re.MULTILINE
-            )
-            
-            # Clean up any trailing whitespace or multiple blank lines
-            improved = re.sub(r'\n{3,}', '\n\n', improved)
-            
+
+            improved = self._sanitize_patch(improved)
+
+            # If the original content was truncated, append the remainder
+            # so we don't silently drop the tail of the document.
+            if len(content) > max_len:
+                improved = improved.strip() + "\n\n" + content[max_len:]
+
             return improved.strip()
         except Exception as e:
             logger.warning(f"Failed to generate patch for {filepath}: {e}")
             # If AI fails, return original content
             return content
+
+    # Patterns that indicate prompt leakage in AI output
+    _LEAK_PATTERNS = [
+        # Echoed prompt sections (old and new prompt formats)
+        re.compile(r'^#{1,3}\s*Quality Analysis\b.*', re.MULTILINE),
+        re.compile(r'^#{1,3}\s*Specific Issues to Fix\b.*', re.MULTILINE),
+        re.compile(r'^#{1,3}\s*Improvement Guidelines\b.*', re.MULTILINE),
+        re.compile(r'^#{1,3}\s*Your Task\b.*', re.MULTILINE),
+        re.compile(r'^#{1,3}\s*Output Format\b.*', re.MULTILINE),
+        re.compile(r'^#{1,3}\s*Documentation Improvement Task\b.*', re.MULTILINE),
+        # Echoed delimiters / instructions
+        re.compile(r'^</?document>\s*$', re.MULTILINE),
+        re.compile(r'^Fix these issues \(current score:.*$', re.MULTILINE),
+        re.compile(r'^Output the complete improved document.*$', re.MULTILINE),
+        # Metadata lines
+        re.compile(r'^\*\*File:\*\*\s*.+$', re.MULTILINE),
+        re.compile(r'^Filename:\s*.+$', re.MULTILINE),
+        # Preamble
+        re.compile(r'^(?:Here\'s|Here is).+(?:improved|rewritten|updated).+:\s*$', re.MULTILINE | re.IGNORECASE),
+        # Score markers that shouldn't appear in output
+        re.compile(r'NEEDS IMPROVEMENT', re.IGNORECASE),
+    ]
+
+    # Section-level patterns: strip entire section until next heading or EOF
+    _LEAK_SECTION_PATTERNS = [
+        re.compile(r'#{1,3}\s*Quality Analysis\s*\(Score:.*?(?=\n#{1,3}\s|\Z)', re.DOTALL),
+        re.compile(r'#{1,3}\s*Specific Issues to Fix.*?(?=\n#{1,3}\s|\Z)', re.DOTALL),
+        re.compile(r'#{1,3}\s*Improvement Guidelines.*?(?=\n#{1,3}\s|\Z)', re.DOTALL),
+        re.compile(r'#{1,3}\s*Your Task.*?(?=\n#{1,3}\s|\Z)', re.DOTALL),
+        re.compile(r'#{1,3}\s*Output Format.*?(?=\n#{1,3}\s|\Z)', re.DOTALL),
+        re.compile(r'#{1,3}\s*Structure Improvements.*?(?=\n#{1,3}\s|\Z)', re.DOTALL),
+        re.compile(r'#{1,3}\s*Clarity Improvements.*?(?=\n#{1,3}\s|\Z)', re.DOTALL),
+        re.compile(r'#{1,3}\s*Project Grounding Improvements.*?(?=\n#{1,3}\s|\Z)', re.DOTALL),
+        re.compile(r'#{1,3}\s*Actionability Improvements.*?(?=\n#{1,3}\s|\Z)', re.DOTALL),
+        re.compile(r'#{1,3}\s*Consistency Improvements.*?(?=\n#{1,3}\s|\Z)', re.DOTALL),
+    ]
+
+    def _sanitize_patch(self, text: str) -> str:
+        """Remove prompt leakage and formatting artifacts from AI output.
+
+        Applies multiple cleanup passes:
+        1. Strip markdown code fences wrapping entire output
+        2. Remove leaked section-level prompt content
+        3. Remove individual leaked lines
+        4. Collapse excessive blank lines
+        """
+        # 1. Remove wrapping code fences
+        text = re.sub(r'^```(?:markdown)?\n', '', text, flags=re.MULTILINE)
+        text = re.sub(r'\n```\s*$', '', text)
+
+        # 2. Remove full leaked sections (greedy match to next heading)
+        for pattern in self._LEAK_SECTION_PATTERNS:
+            text = pattern.sub('', text)
+
+        # 3. Remove individual leaked lines
+        for pattern in self._LEAK_PATTERNS:
+            text = pattern.sub('', text)
+
+        # 4. Collapse excessive blank lines
+        text = re.sub(r'\n{3,}', '\n\n', text)
+
+        return text

@@ -16,10 +16,11 @@ class AnalyzerConfig:
     # AI parameters
     ai_temperature: float = 0.3
     ai_max_tokens: int = 2000
-    patch_max_tokens: int = 3000
-    
-    # Analysis limits
-    max_content_length: int = 3000
+    patch_max_tokens: int = 8000
+
+    # Analysis limits — Llama 3.1 8B has 128K context on Groq,
+    # so we can afford to analyze much more than the old 3000-char limit.
+    max_content_length: int = 12000
     max_readme_excerpt: int = 1000
     max_suggestions: int = 5
     
