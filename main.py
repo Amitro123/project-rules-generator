@@ -751,7 +751,7 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
         
         # Quality Check (Phase 1 - Analyzer Agent)
         if quality_check:
-            from src.ai.content_analyzer import ContentAnalyzer
+            from generator.content_analyzer import ContentAnalyzer
             from rich.console import Console
             from rich.table import Table
             
