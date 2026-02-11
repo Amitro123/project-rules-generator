@@ -113,7 +113,7 @@ def generate_readme_with_llm(user_input: Dict, context: Dict, provider: str = 'g
     """Generate README using AI."""
     try:
         from generator.llm_skill_generator import LLMSkillGenerator
-            
+
         # Format tech stack
         tech_detected = []
         for category in ['backend', 'frontend', 'database', 'languages']:
@@ -165,7 +165,7 @@ Generate a **professional, complete README.md** with these sections:
 Generate the complete README now:
 """
         
-        generator = LLMSkillGenerator(provider=provider, api_key=api_key)
+        generator = LLMSkillGenerator()
         return generator.generate_content(prompt, max_tokens=3000)
     except Exception as e:
         click.echo(f"⚠️  LLM generation failed: {e}", err=True)

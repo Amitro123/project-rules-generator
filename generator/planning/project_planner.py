@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Optional, Dict
 import re
 
-from src.ai.ai_client import AIClientFactory
+from generator.ai.ai_client import create_ai_client
 
 
 @dataclass
@@ -91,7 +91,7 @@ class ProjectPlanner:
             provider: AI provider ('gemini' or 'groq')
             api_key: Optional API key
         """
-        self.client = AIClientFactory.get_client(provider=provider, api_key=api_key)
+        self.client = create_ai_client(provider=provider, api_key=api_key)
     
     def generate_roadmap_from_readme(
         self, 
@@ -118,7 +118,7 @@ class ProjectPlanner:
         
         # Generate plan with AI
         try:
-            response = self.client.generate_content(prompt, temperature=0.5, max_tokens=3000)
+            response = self.client.generate(prompt, temperature=0.5, max_tokens=3000)
             plan = self._parse_roadmap_response(response, readme_content)
         except Exception:
             # Fallback to template-based roadmap
@@ -150,7 +150,7 @@ class ProjectPlanner:
         
         # Generate plan with AI
         try:
-            response = self.client.generate_content(prompt, temperature=0.5, max_tokens=2500)
+            response = self.client.generate(prompt, temperature=0.5, max_tokens=2500)
             plan = self._parse_task_response(response, query)
         except Exception:
             # Fallback to template-based plan

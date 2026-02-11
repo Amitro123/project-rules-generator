@@ -14,9 +14,9 @@ from typing import Dict, List, Optional
 import re
 import logging
 
-from src.ai.ai_client import AIClientFactory
-from src.config import AnalyzerConfig
-from src.exceptions import AIClientError, ValidationError, SecurityError, FileOperationError
+from generator.ai.ai_client import create_ai_client
+from generator.config import AnalyzerConfig
+from generator.exceptions import AIClientError, ValidationError, SecurityError, FileOperationError
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ class ContentAnalyzer:
             config: Optional configuration (uses defaults if not provided)
             allowed_base_path: Base path for file operations (security)
         """
-        self.client = AIClientFactory.get_client(provider=provider, api_key=api_key)
+        self.client = create_ai_client(provider=provider, api_key=api_key)
         self.config = config or AnalyzerConfig()
         self.allowed_base_path = allowed_base_path.resolve() if allowed_base_path else Path.cwd().resolve()
         logger.info(f"ContentAnalyzer initialized with provider={provider}")
@@ -116,9 +116,9 @@ class ContentAnalyzer:
             prompt = self._build_analysis_prompt(filepath, content, project_path)
             
             # Get AI analysis
-            response = self.client.generate_content(
-                prompt, 
-                temperature=self.config.ai_temperature, 
+            response = self.client.generate(
+                prompt,
+                temperature=self.config.ai_temperature,
                 max_tokens=self.config.ai_max_tokens
             )
             
@@ -416,7 +416,7 @@ Return ONLY the improved markdown content, no explanations.
 """
         
         try:
-            improved = self.client.generate_content(prompt, temperature=0.5, max_tokens=3000)
+            improved = self.client.generate(prompt, temperature=0.5, max_tokens=3000)
             # Clean up the response (remove markdown code fences if present)
             improved = re.sub(r'^```markdown\n', '', improved)
             improved = re.sub(r'\n```$', '', improved)

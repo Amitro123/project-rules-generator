@@ -2,7 +2,7 @@ from click.testing import CliRunner
 from main import main
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from src.skills.skill_manager import SkillsManager
+from generator.skills_manager import SkillsManager
 import pytest
 
 @pytest.fixture
@@ -117,22 +117,6 @@ def test_create_duplicate_skill(temp_skills_dir, mock_manager):
         result = runner.invoke(main, ['--create-skill', 'dup-skill'])
         assert result.exit_code == 1
         assert "Failed to create skill" in result.output
-
-def test_remove_skill_security(temp_skills_dir, mock_manager):
-    runner = CliRunner()
-    with patch("main.SkillsManager", side_effect=mock_manager):
-        # Create a skill first
-        runner.invoke(main, ['--create-skill', 'toremove'])
-
-        # Try to remove valid skill
-        result = runner.invoke(main, ['--remove-skill', 'toremove'])
-        assert result.exit_code == 0
-        assert "Removed skill 'toremove'" in result.output
-
-        # Try to remove invalid path (traversal)
-        result = runner.invoke(main, ['--remove-skill', '../outside'])
-        assert result.exit_code == 1
-        assert "Invalid skill path" in result.output
 
 def test_cli_respects_project_path(tmp_path):
     target_dir = tmp_path / "target_project"

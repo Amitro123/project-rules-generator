@@ -3,15 +3,27 @@
 import os
 from pathlib import Path
 from typing import Dict, Optional
-from src.ai.ai_client import AIClientFactory
 
-# GEMINI_AVAILABLE check removed as abstraction handles it
+from .ai.ai_client import create_ai_client
+
 
 class LLMSkillGenerator:
     """Generate actionable skills using LLM analysis."""
     
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = 'gemini'):
-        self.client = AIClientFactory.get_client(provider=provider, api_key=api_key, model_name=model_name)
+        self.api_key = api_key or os.getenv('GEMINI_API_KEY') or os.getenv('GROQ_API_KEY')
+        self.provider = provider
+        # If Groq key is present but no Gemini key, default to Groq
+        if not os.getenv('GEMINI_API_KEY') and os.getenv('GROQ_API_KEY'):
+            self.provider = 'groq'
+
+        try:
+            self.client = create_ai_client(self.provider, api_key=self.api_key)
+        except Exception as e:
+             # Fallback or re-raise with clear message
+             raise RuntimeError(f"Failed to initialize AI client ({self.provider}): {e}")
+
+        self.model_name = model_name
     
     def generate_skill(self, skill_name: str, context: Dict) -> str:
         """Generate complete skill from project context."""
@@ -20,10 +32,8 @@ class LLMSkillGenerator:
 
     def generate_content(self, prompt: str, max_tokens: int = 2000) -> str:
         """Generate content from prompt using the configured model."""
-        if not self.client:
-            raise RuntimeError("AI Client not initialized")
         try:
-            return self.client.generate_content(prompt, temperature=0.7, max_tokens=max_tokens)
+            return self.client.generate(prompt, max_tokens=max_tokens, model=self.model_name)
         except Exception as e:
             raise RuntimeError(f"LLM generation failed: {e}")
     

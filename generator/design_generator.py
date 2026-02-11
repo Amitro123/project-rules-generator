@@ -136,13 +136,24 @@ def _extract_bullets(text: str) -> List[str]:
     return [m.group(1).strip() for m in re.finditer(r'^-\s+(.+)', text, re.MULTILINE)]
 
 
-from src.ai.ai_client import AIClientFactory
-
 class DesignGenerator:
     """Generate a technical design document using AI or templates."""
 
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = 'gemini'):
-        self.client = AIClientFactory.get_client(provider=provider, api_key=api_key, model_name=model_name)
+        self.api_key = api_key or os.getenv('GEMINI_API_KEY') or os.getenv('GROQ_API_KEY')
+        self.provider = provider
+        # If Groq key is present but no Gemini key, default to Groq
+        if not os.getenv('GEMINI_API_KEY') and os.getenv('GROQ_API_KEY'):
+            self.provider = 'groq'
+
+        try:
+            from .ai.ai_client import create_ai_client
+            self.client = create_ai_client(self.provider, api_key=self.api_key)
+        except Exception as e:
+             self.client = None
+             print(f"Warning: Design AI client init failed: {e}")
+
+        self.model_name = model_name
 
     def generate_design(
         self,
@@ -218,7 +229,10 @@ Generate the design now:
     def _call_llm(self, prompt: str) -> str:
         if not self.client:
             return ''
-        return self.client.generate_content(prompt, temperature=0.5, max_tokens=3000)
+        try:
+            return self.client.generate(prompt, max_tokens=3000, model=self.model_name)
+        except Exception:
+            return ''
 
     def _parse_response(self, raw: str, user_request: str) -> Design:
         """Parse AI output into a Design. Falls back to template if empty."""

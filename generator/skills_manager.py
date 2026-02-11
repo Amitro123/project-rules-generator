@@ -6,9 +6,9 @@ class SkillsManager:
     """Manages skill discovery, creation, and loading."""
 
     def __init__(self, base_path: Optional[Path] = None, learned_path: Optional[Path] = None):
-        # Default to current directory (src/skills)
+        # Default to skills/ directory relative to this file (in generator package)
         if base_path is None:
-            self.base_path = Path(__file__).parent
+            self.base_path = Path(__file__).parent / "skills"
         else:
             self.base_path = base_path
 
@@ -76,7 +76,7 @@ class SkillsManager:
             try:
                 from generator.project_analyzer import ProjectAnalyzer
                 from generator.llm_skill_generator import LLMSkillGenerator
-                
+
                 print(f"🤖 Analyzing project context in {project_path}...")
                 analyzer = ProjectAnalyzer(Path(project_path))
                 context = analyzer.analyze()
@@ -84,6 +84,8 @@ class SkillsManager:
                 print("✨ Generating skill with AI...")
                 generator = LLMSkillGenerator()
                 content = generator.generate_skill(safe_name, context)
+            except ImportError as e:
+                print(f"[!] Warning: AI provider not available ({e}). Falling back to standard parsing.")
             except Exception as e:
                 print(f"[!] Warning: AI generation failed ({e}). Falling back to standard parsing.")
                 # Fallthrough

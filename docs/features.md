@@ -60,7 +60,16 @@ prg analyze . --mode ai --api-key YOUR_KEY
 ```
 
 **Use Case**: Create a comprehensive AI assistant that knows specifically how *your* team works.
-**Providers**: Gemini (free), Claude (paid).
+**Providers**: 
+- **Groq** (Default): Free tier, extremely fast (Llama 3.1 8b).
+- **Gemini**: Free tier available, high capacity (Gemini 2.0 Flash).
+- **Claude**: Paid, high quality.
+
+| Provider | Model | Speed | Cost |
+| :--- | :--- | :--- | :--- |
+| **Groq** | Llama 3.1 8b | ⚡⚡⚡ | Free |
+| **Gemini** | Gemini 2.0 Flash | ⚡⚡ | Free |
+| **Claude** | Sonnet 3.5 | ⚡ | Paid |
 
 ### Feature 3: Incremental Mode ⚡ NEW
 **What it does**: Only regenerates sections rules that have changed since the last run (3-5x faster on large projects).
