@@ -834,7 +834,6 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                         # Re-add to git if commit is enabled
                         if commit and is_git_repo(project_path):
                             try:
-                                from prg_utils.git_ops import commit_files
                                 commit_files(
                                     [fp for fp, _ in reports if _.score < 85],
                                     "Auto-fix: Improved content quality",
