@@ -11,6 +11,7 @@ Analyzes generated documentation for quality across 5 criteria:
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
+import json
 import re
 import logging
 
@@ -67,7 +68,7 @@ class QualityReport:
 class ContentAnalyzer:
     """Analyze .clinerules content for quality and generate improvements."""
     
-    def __init__(self, provider: str = 'gemini', api_key: Optional[str] = None,
+    def __init__(self, provider: str = 'groq', api_key: Optional[str] = None,
                  config: Optional[AnalyzerConfig] = None,
                  allowed_base_path: Optional[Path] = None,
                  client=None):
@@ -116,22 +117,22 @@ class ContentAnalyzer:
         try:
             # Build analysis prompt
             prompt = self._build_analysis_prompt(filepath, content, project_path)
-            
-            # Get AI analysis
+
+            # Get AI analysis with system message for structured output
             response = self.client.generate(
                 prompt,
                 temperature=self.config.ai_temperature,
-                max_tokens=self.config.ai_max_tokens
+                max_tokens=self.config.ai_max_tokens,
+                system_message=self.ANALYSIS_SYSTEM_PROMPT
             )
-            
-            # Only use AI response if it contains valid scores
-            if response and 'Structure:' in response:
+
+            if response:
                 breakdown, suggestions = self._parse_analysis_response(response)
-                logger.debug(f"AI analysis successful for {filepath}")
-        except (AIClientError, TimeoutError, ValueError) as e:
+                if breakdown is not None:
+                    logger.debug(f"AI analysis successful for {filepath}")
+        except (AIClientError, TimeoutError, ValueError, RuntimeError) as e:
             # AI unavailable or failed, will use heuristic below
             logger.warning(f"AI analysis failed for {filepath}: {e}, using heuristic")
-            pass
         
         # Use heuristic analysis if AI failed or returned invalid data
         if breakdown is None or breakdown.total == self.config.total_default_score:
@@ -180,43 +181,33 @@ class ContentAnalyzer:
         except Exception as e:
             raise FileOperationError(f"Failed to write to {filepath}: {e}")
     
+    ANALYSIS_SYSTEM_PROMPT = (
+        "You are a documentation quality analyzer. "
+        "You MUST respond with ONLY valid JSON, no markdown, no explanation. "
+        "JSON schema: {\"scores\":{\"structure\":int,\"clarity\":int,"
+        "\"project_grounding\":int,\"actionability\":int,\"consistency\":int},"
+        "\"suggestions\":[\"string\",\"string\",\"string\"]}"
+    )
+
     def _build_analysis_prompt(self, filepath: str, content: str, project_path: Optional[Path]) -> str:
         """Build prompt for AI analysis."""
         project_context = self._get_project_context(project_path)
-        scoring_criteria = self._get_scoring_criteria_text()
-        
-        prompt = f"""# Content Quality Analysis
 
-Analyze this AI agent documentation file for quality across 5 criteria.
+        prompt = f"""Analyze this documentation file for quality. Score each criterion 0-20.
 
-**File:** {filepath}
+Criteria:
+- structure: Headers, logical flow, no empty sections
+- clarity: Precise language, no fluff, terms defined
+- project_grounding: References actual files/tools/commands
+- actionability: Clear how-to steps, concrete examples
+- consistency: Terminology and format consistent throughout
 
-**Content:**
-```markdown
+File: {filepath}
+Content:
 {content[:3000]}
-```
 {project_context}
 
-{scoring_criteria}
-
-## Your Task
-
-Provide scores and specific suggestions in this format:
-
-**SCORES:**
-Structure: [0-20]
-Clarity: [0-20]
-Project Grounding: [0-20]
-Actionability: [0-20]
-Consistency: [0-20]
-
-**SUGGESTIONS:**
-1. [Specific improvement for lowest-scoring criterion]
-2. [Another specific improvement]
-3. [Another specific improvement]
-
-Be critical but constructive. Focus on actionable improvements.
-"""
+Return JSON only: {{"scores":{{"structure":N,"clarity":N,"project_grounding":N,"actionability":N,"consistency":N}},"suggestions":["improvement1","improvement2","improvement3"]}}"""
         return prompt
     
     def _get_project_context(self, project_path: Optional[Path]) -> str:
@@ -267,16 +258,46 @@ Be critical but constructive. Focus on actionable improvements.
 - Style matches other documentation
 - No contradictions"""
     
-    def _parse_analysis_response(self, response: str) -> tuple[QualityBreakdown, List[str]]:
-        """Parse AI response into breakdown and suggestions."""
-        
-        # Extract scores
+    def _parse_analysis_response(self, response: str) -> tuple[Optional[QualityBreakdown], List[str]]:
+        """Parse AI response into breakdown and suggestions.
+
+        Tries JSON parsing first, falls back to regex extraction.
+        Returns (None, []) if parsing fails entirely.
+        """
+        # Try JSON parsing first (preferred for Groq/Llama)
+        try:
+            # Strip markdown code fences if model wrapped JSON in them
+            cleaned = re.sub(r'^```(?:json)?\s*\n?', '', response.strip())
+            cleaned = re.sub(r'\n?```\s*$', '', cleaned)
+            data = json.loads(cleaned)
+
+            scores = data.get('scores', {})
+            clamp = lambda v: max(0, min(20, int(v)))
+            breakdown = QualityBreakdown(
+                structure=clamp(scores.get('structure', 10)),
+                clarity=clamp(scores.get('clarity', 10)),
+                project_grounding=clamp(scores.get('project_grounding', 10)),
+                actionability=clamp(scores.get('actionability', 10)),
+                consistency=clamp(scores.get('consistency', 10))
+            )
+            suggestions = [str(s) for s in data.get('suggestions', []) if s]
+            logger.debug("Parsed analysis response as JSON")
+            return breakdown, suggestions
+        except (json.JSONDecodeError, KeyError, TypeError):
+            logger.debug("JSON parse failed, trying regex fallback")
+
+        # Regex fallback for non-JSON responses
         structure = self._extract_score(response, "Structure")
         clarity = self._extract_score(response, "Clarity")
         project_grounding = self._extract_score(response, "Project Grounding")
         actionability = self._extract_score(response, "Actionability")
         consistency = self._extract_score(response, "Consistency")
-        
+
+        # Check if we actually found any real scores (not all defaults)
+        scores_found = [structure, clarity, project_grounding, actionability, consistency]
+        if all(s == 10 for s in scores_found):
+            return None, []
+
         breakdown = QualityBreakdown(
             structure=structure,
             clarity=clarity,
@@ -284,19 +305,25 @@ Be critical but constructive. Focus on actionable improvements.
             actionability=actionability,
             consistency=consistency
         )
-        
-        # Extract suggestions
+
+        # Extract suggestions from various formats
         suggestions = []
-        suggestion_section = re.search(r'\*\*SUGGESTIONS:\*\*(.*?)(?:\n\n|\Z)', response, re.DOTALL)
+        # Try **SUGGESTIONS:** section
+        suggestion_section = re.search(r'\*\*SUGGESTIONS:\*\*\s*(.*?)(?=\n\*\*[A-Z]|\Z)', response, re.DOTALL)
         if suggestion_section:
             lines = suggestion_section.group(1).strip().split('\n')
             for line in lines:
-                # Match numbered suggestions like "1. Fix headers"
                 match = re.match(r'^\d+\.\s*(.+)$', line.strip())
                 if match:
                     suggestions.append(match.group(1))
-        
-        return breakdown, suggestions
+        # Try bare numbered list if no section header found
+        if not suggestions:
+            for match in re.finditer(r'^\d+\.\s*(.+)$', response, re.MULTILINE):
+                suggestions.append(match.group(1))
+            # Deduplicate while preserving order
+            suggestions = list(dict.fromkeys(suggestions))
+
+        return breakdown, suggestions[:5]
     
     def _extract_score(self, response: str, criterion: str) -> int:
         """Extract score for a specific criterion from AI response."""
@@ -309,11 +336,11 @@ Be critical but constructive. Focus on actionable improvements.
     
     def _heuristic_analysis(self, filepath: str, content: str) -> tuple[QualityBreakdown, List[str]]:
         """Fallback heuristic analysis when AI is unavailable."""
-        
+
         suggestions = []
-        
-        # Structure analysis
-        structure_score = 15
+
+        # Structure analysis (base: 18/20)
+        structure_score = 18
         if not content.startswith('#'):
             structure_score -= 5
             suggestions.append("Add a main H1 header at the top")
@@ -323,36 +350,36 @@ Be critical but constructive. Focus on actionable improvements.
         if '\n\n\n\n' in content:
             structure_score -= 2
             suggestions.append("Remove excessive blank lines")
-        
-        # Clarity analysis
-        clarity_score = 15
+
+        # Clarity analysis (base: 18/20)
+        clarity_score = 18
         if len(content) < 200:
             clarity_score -= 5
             suggestions.append("Content is too brief, add more details")
         if content.count('TODO') > 0 or content.count('FIXME') > 0:
             clarity_score -= 3
             suggestions.append("Remove TODO/FIXME placeholders")
-        
-        # Project grounding analysis
-        grounding_score = 12
+
+        # Project grounding analysis (base: 16/20)
+        grounding_score = 16
         if '.py' not in content and '.js' not in content and '.md' not in content:
             grounding_score -= 5
             suggestions.append("Reference specific project files")
         if '`' not in content:
             grounding_score -= 3
             suggestions.append("Use code formatting for technical terms")
-        
-        # Actionability analysis
-        actionability_score = 13
+
+        # Actionability analysis (base: 16/20)
+        actionability_score = 16
         if content.count('```') < 2:
             actionability_score -= 4
             suggestions.append("Add code examples or command snippets")
         if not any(word in content.lower() for word in ['run', 'execute', 'create', 'update', 'install']):
             actionability_score -= 3
             suggestions.append("Add actionable verbs and instructions")
-        
-        # Consistency analysis
-        consistency_score = 14
+
+        # Consistency analysis (base: 17/20)
+        consistency_score = 17
         
         breakdown = QualityBreakdown(
             structure=structure_score,
@@ -389,7 +416,7 @@ Be critical but constructive. Focus on actionable improvements.
         
         prompt = f"""# Improve Documentation
 
-**File:** {filepath}
+You are improving the file "{filepath}". Do NOT include this filename or any metadata in your output.
 
 **Current Content:**
 ```markdown
@@ -414,14 +441,21 @@ Rewrite the content to address ALL the issues above. Focus on:
 3. Making it more actionable and specific
 4. Adding concrete examples where missing
 
-Return ONLY the improved markdown content, no explanations.
+Return ONLY the improved markdown content. Do NOT include:
+- File paths or "**File:**" headers
+- Explanations or preamble
+- Anything other than the improved document content itself
 """
         
         try:
             improved = self.client.generate(prompt, temperature=0.5, max_tokens=3000)
-            # Clean up the response (remove markdown code fences if present)
-            improved = re.sub(r'^```markdown\n', '', improved)
+            # Clean up the response
+            # Remove markdown code fences if present
+            improved = re.sub(r'^```(?:markdown)?\n', '', improved)
             improved = re.sub(r'\n```$', '', improved)
+            # Strip leaked metadata lines (e.g., **File:** path) that the AI may echo
+            improved = re.sub(r'^\*\*File:\*\*\s*.+\n*', '', improved)
+            improved = re.sub(r'^Filename:\s*.+\n*', '', improved)
             return improved.strip()
         except Exception:
             # If AI fails, return original content

@@ -25,14 +25,16 @@ class GroqClient(AIClient):
             
         self.client = Groq(api_key=self.api_key)
 
-    def generate(self, prompt: str, max_tokens: int = 2000, model: Optional[str] = None, temperature: float = 0.7) -> str:
+    def generate(self, prompt: str, max_tokens: int = 2000, model: Optional[str] = None, temperature: float = 0.7, system_message: Optional[str] = None) -> str:
         """Generate content using Groq."""
         try:
+            messages = []
+            if system_message:
+                messages.append({"role": "system", "content": system_message})
+            messages.append({"role": "user", "content": prompt})
             completion = self.client.chat.completions.create(
                 model=model or self.DEFAULT_MODEL,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
+                messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
             )

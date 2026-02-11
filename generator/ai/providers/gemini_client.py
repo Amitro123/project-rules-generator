@@ -26,12 +26,13 @@ class GeminiClient(AIClient):
             
         self.client = genai.Client(api_key=self.api_key)
 
-    def generate(self, prompt: str, max_tokens: int = 2000, model: Optional[str] = None, temperature: float = 0.7) -> str:
+    def generate(self, prompt: str, max_tokens: int = 2000, model: Optional[str] = None, temperature: float = 0.7, system_message: Optional[str] = None) -> str:
         """Generate content using Gemini."""
         try:
+            full_prompt = f"{system_message}\n\n{prompt}" if system_message else prompt
             response = self.client.models.generate_content(
                 model=model or os.getenv('GEMINI_MODEL', self.DEFAULT_MODEL),
-                contents=prompt,
+                contents=full_prompt,
                 config=types.GenerateContentConfig(
                     temperature=temperature,
                     max_output_tokens=max_tokens,
