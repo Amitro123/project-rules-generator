@@ -30,7 +30,7 @@ This project uses: python, gemini, claude, click
 
 ## DEPENDENCIES
 
-**Python** (10 packages): click, pyyaml, pathspec, pydantic, tqdm, google-generativeai, python-dotenv, gitpython, rich, tomli
+**Python** (11 packages): click, pyyaml, pathspec, pydantic, tqdm, google-generativeai, groq, python-dotenv, gitpython, rich, tomli
 
 ## DO (must follow)
 
