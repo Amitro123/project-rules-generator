@@ -30,11 +30,7 @@ This project uses: python, gemini, claude, click
 
 ## DEPENDENCIES
 
-<<<<<<< HEAD
-**Python** (11 packages): click, pyyaml, pathspec, pydantic, tqdm, google-generativeai, groq, python-dotenv, gitpython, rich, tomli
-=======
 **Python** (10 packages): click, pyyaml, pathspec, pydantic, tqdm, google-generativeai, python-dotenv, gitpython, rich, tomli
->>>>>>> main
 
 ## DO (must follow)
 
@@ -56,11 +52,7 @@ This project uses: python, gemini, claude, click
 ## TESTING
 
 - **Framework**: pytest
-<<<<<<< HEAD
-- **Test files**: 34 (240 test cases)
-=======
-- **Test files**: 31 (218 test cases)
->>>>>>> main
+- **Test files**: 34 (262 test cases)
 - **Test types**: unit, integration
 - **Fixtures**: shared via `conftest.py`
 - **Test data**: `tests/fixtures/` directory
@@ -77,11 +69,7 @@ pytest tests/test_specific.py -v
 ## PRIORITIES
 
 1. *Stop copy-pasting generic rules. Start with AI that knows your project.**
-<<<<<<< HEAD
 2. run: pip install project-rules-generator
-=======
-2. Test coverage
->>>>>>> main
 3. Documentation clarity
 
 ## CONTEXT STRATEGY
@@ -465,11 +453,7 @@ Understand *why* it breaks:
 ## Anti-Patterns
 ❌ Guessing without reproducing
 ❌ Fixing symptoms without finding root cause
-<<<<<<< HEAD
 ❌ precise line not identified in stack trace
-=======
-❌ precise line not identified
->>>>>>> main
 ❌ Declaring "fixed" without verification
 
 

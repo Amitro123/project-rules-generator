@@ -980,7 +980,7 @@ def plan(task_description, from_design, from_readme, status, project_path, outpu
     
     # Handle --status mode
     if status:
-        from src.planning import PlanParser
+        from generator.planning import PlanParser
         parser = PlanParser()
         
         # Find all plan files
@@ -1002,7 +1002,7 @@ def plan(task_description, from_design, from_readme, status, project_path, outpu
     
     # Handle --from-readme mode
     if from_readme:
-        from src.planning import ProjectPlanner
+        from generator.planning import ProjectPlanner
         
         if verbose:
             click.echo(f"Project Rules Generator v0.1.0 — Roadmap Generator")
