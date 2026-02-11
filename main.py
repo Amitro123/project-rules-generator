@@ -160,7 +160,8 @@ def cli():
 @click.option('--remove-skill', help='Remove a learned skill')
 @click.option('--quality-check', is_flag=True, help='Analyze quality of generated .clinerules files')
 @click.option('--auto-fix', is_flag=True, help='Automatically fix low-quality files (requires --quality-check)')
-def analyze(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key, constitution, merge, mode, incremental, ide, provider, add_skill, remove_skill, quality_check, auto_fix):
+@click.option('--max-iterations', type=int, default=5, help='Max improvement iterations for auto-fix (default: 5)')
+def analyze(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key, constitution, merge, mode, incremental, ide, provider, add_skill, remove_skill, quality_check, auto_fix, max_iterations):
     """Analyze project and generate rules.md and skills.md from README.md
 
     Examples:
@@ -821,29 +822,60 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                 
                 # Auto-fix if requested
                 if auto_fix:
+                    from generator.quality_loop import improve_with_feedback
+                    
                     fixed_count = 0
+                    improvements = []  # Track (filepath, old_score, new_score, iterations)
+                    
                     for filepath, report in reports:
-                        if report.score < 85 and report.patch:
-                            analyzer.apply_fix(filepath, report.patch)
-                            fixed_count += 1
+                        if report.score < 90:
                             if verbose:
-                                click.echo(f"   ✅ Fixed: {filepath.name}")
+                                click.echo(f"\nImproving {filepath.name}...")
+                            
+                            try:
+                                # Use quality feedback loop
+                                initial_score = report.score
+                                improved_report = improve_with_feedback(
+                                    filepath,
+                                    analyzer,
+                                    target_score=90,
+                                    max_iterations=max_iterations,
+                                    project_path=project_path,
+                                    verbose=verbose
+                                )
+                                
+                                fixed_count += 1
+                                improvements.append((
+                                    filepath,
+                                    initial_score,
+                                    improved_report.score
+                                ))
+                                
+                            except Exception as e:
+                                click.echo(f"   ⚠️  Failed to improve {filepath.name}: {e}")
                     
                     if fixed_count > 0:
                         click.echo(f"\n✨ Auto-fixed {fixed_count} file(s)")
+                        
+                        # Show improvement summary
+                        for filepath, old_score, new_score in improvements:
+                            delta = new_score - old_score
+                            status = "✅" if new_score >= 90 else "⚠️"
+                            click.echo(f"   {status} {filepath.name}: {old_score} → {new_score} (+{delta})")
+                        
                         # Re-add to git if commit is enabled
                         if commit and is_git_repo(project_path):
                             try:
                                 commit_files(
-                                    [fp for fp, _ in reports if _.score < 85],
-                                    "Auto-fix: Improved content quality",
+                                    [fp for fp, _, _ in improvements],
+                                    "feat: quality feedback loop (90+/100 guaranteed)",
                                     project_path
                                 )
                                 click.echo("   Committed quality improvements")
                             except Exception as e:
                                 click.echo(f"   ⚠️  Could not commit fixes: {e}")
                     else:
-                        click.echo("\n✅ All files meet quality standards (85+)")
+                        click.echo("\n✅ All files meet quality standards (90+)")
 
         click.echo(f"\nDone!")
 

@@ -1,5 +1,5 @@
-# AMIT CODING PREFERENCES v1.0
-Session: 2026-02-05 - Generating Rules
+# AMIT CODING PREFERENCES v1.1
+Session: 2026-02-11 - Quality Feedback Loop Implementation
 Learned:
 
 ## ❌ Rejected
@@ -19,4 +19,8 @@ Learned:
 - **Testing Mocks**: Verify mock targets against actual function signatures to avoid AttributeErrors.
 - **Instantiation**: In factory functions (like `setup_orchestrator`), ensure objects are assigned to variables before use.
 - **Src Layout**: When using `src/` layout, ALWAYS include `"src"` in `pyproject.toml` `packages` AND ensure `src/__init__.py` exists. Add `sys.path` injection in entry points for robustness.
-- **Encoding Safety**: When handling AI responses, ALWAYS explicitly clean encoding artifacts (e.g., `.encode('utf-8', errors='replace').decode('utf-8')`) and strip common corruptions like `ג€”` (em dash artifact) before processing.
+- **Encoding Safety**: When handling AI responses, ALWAYS explicitly clean encoding artifacts (e.g., `.encode('utf-8', errors='replace').decode('utf-8')`) and strip common corruptions like `ג€"` (em dash artifact) before processing.
+- **Iterative Improvement**: When implementing feedback loops, always include: (1) early exit on target reached, (2) max_iterations safety limit, (3) best attempt tracking, (4) comprehensive error handling.
+- **Test Security**: When testing file operations with ContentAnalyzer, pass `allowed_base_path=tmp_path` to avoid security check failures in tests.
+- **CLI Flags**: When adding new CLI options, update both the decorator AND the function signature to avoid parameter mismatch errors.
+- **Quality Thresholds**: Raise quality bars progressively (85 → 90) to ensure continuous improvement without breaking existing workflows.
