@@ -1,61 +1,225 @@
----
-project: project-rules-generator
-purpose: Coding & contribution rules for this workspace
-version: 2.0
-generated: auto
-project_type: python-cli
----
+# Project Rules Generator
+==========================
 
-## CONTEXT
+## Project Overview
+-------------------
 
-> The First AI That Learns Your Coding Style
+### Project Information
 
-This project uses: python, gemini, claude, click
+* **Project Name**: project-rules-generator
+* **Purpose**: Establish coding and contribution rules for this workspace
+* **Version**: 2.0
+* **Generated**: Automatically
+* **Project Type**: Python Command-Line Interface (CLI)
 
-## ARCHITECTURE
+## Context
+---------
 
-- **Project type**: python-cli
-- **Entry points**: main.py
-- **Structural patterns**: python-cli, pytest-tests
-- **Languages**: python
+### Project Description
 
-## FILE STRUCTURE
+The project utilizes AI technologies to learn and adapt to your coding style, enhancing development efficiency and productivity. This project leverages Python, Gemini, Claude, and Click to achieve its goals.
 
-**Entry points:**
-- `main.py`
+### Technologies Used
 
-**Detected patterns:**
-- python-cli
-- pytest-tests
+* **Python**: A high-level, interpreted programming language used for general-purpose programming.
+* **Gemini**: An AI-powered platform for building conversational interfaces.
+* **Claude**: An AI development platform that enables the creation of custom AI models.
+* **Click**: A Python package for creating command-line interfaces (CLI).
 
-## DEPENDENCIES
+## Architecture
+-------------
 
-**Python** (11 packages): click, pyyaml, pathspec, pydantic, tqdm, google-generativeai, groq, python-dotenv, gitpython, rich, tomli
+### Project Structure
 
-## DO (must follow)
+* **Project Type**: Python CLI
+* **Entry Points**: `main.py`
+* **Structural Patterns**: Python CLI, Pytest Tests
+* **Languages**: Python
 
-- Run `pytest` before committing; add tests for new features
-- Use type hints on all public function signatures
-- Use Pydantic models for data validation (not raw dicts)
-- Use Click decorators for CLI arguments — don't parse sys.argv manually
-- Follow existing project structure and naming conventions
-- Keep module imports at file top; use absolute imports within the project
+## File Structure
+-----------------
 
-## DON'T
+### Entry Points
 
-- Don't use `print()` for logging — use the `logging` module
-- Don't catch bare `Exception` — catch specific exceptions
-- Don't use `sys.exit()` in library code — raise exceptions, let Click handle exit
-- Don't commit secrets, API keys, or `.env` files
-- Don't add dependencies without checking license compatibility
+* **`main.py`**: The primary entry point of the project, responsible for executing the CLI.
 
-## TESTING
+### Detected Patterns
 
-- **Framework**: pytest
-- **Test files**: 35 (272 test cases)
-- **Test types**: unit, integration
-- **Fixtures**: shared via `conftest.py`
-- **Test data**: `tests/fixtures/` directory
+* **Python CLI**: A pattern used for creating command-line interfaces.
+* **Pytest Tests**: A pattern used for writing unit tests and integration tests.
+
+## Dependencies
+-------------
+
+### Python Packages
+
+* **Click**: A package for creating command-line interfaces.
+* **PyYAML**: A package for parsing and generating YAML files.
+* **PathSpec**: A package for working with file paths.
+* **Pydantic**: A package for data validation and modeling.
+* **TQDM**: A package for progress bars.
+* **Google-GenerativeAI**: A package for AI-powered text generation.
+* **Groq**: A package for querying and manipulating data.
+* **Python-Dotenv**: A package for loading environment variables from files.
+* **GitPython**: A package for interacting with Git repositories.
+* **Rich**: A package for formatting and displaying text.
+* **Tomli**: A package for parsing and generating TOML files.
+
+## Rules
+--------
+
+### Table of Contents
+
+* [Do (Must Follow)](#do-must-follow)
+* [Don't (Must Avoid)](#dont-must-avoid)
+
+### Do (Must Follow)
+#### 1. Run `pytest` before committing
+
+* **Step-by-Step Guide**:
+  1. Open your terminal or command prompt.
+  2. Navigate to the project directory.
+  3. Run `pytest` to execute all tests.
+  4. Check the test results and fix any failures.
+  5. Commit your changes once all tests pass.
+
+#### 2. Use type hints on all public function signatures
+
+* **Example**:
+  ```python
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+* **Step-by-Step Guide**:
+  1. Identify public functions in your code.
+  2. Add type hints to function signatures.
+  3. Use the `str` type for string parameters and return types.
+
+#### 3. Use Pydantic models for data validation
+
+* **Example**:
+  ```python
+from pydantic import BaseModel
+
+class User(BaseModel):
+    name: str
+    email: str
+* **Step-by-Step Guide**:
+  1. Install Pydantic using pip.
+  2. Define Pydantic models for data validation.
+  3. Use Pydantic models to validate data in your code.
+
+#### 4. Use Click decorators for CLI arguments
+
+* **Example**:
+  ```python
+import click
+
+@click.command()
+@click.option("--name", help="Your name")
+def greet(name):
+    print(f"Hello, {name}!")
+* **Step-by-Step Guide**:
+  1. Install Click using pip.
+  2. Define Click decorators for CLI arguments.
+  3. Use Click decorators to define CLI arguments and options.
+
+#### 5. Follow existing project structure and naming conventions
+
+* **Example**:
+  ```python
+# Existing project structure
+project/
+main.py
+models/
+user.py
+__init__.py
+* **Step-by-Step Guide**:
+  1. Familiarize yourself with the existing project structure.
+  2. Adhere to the established project structure and naming conventions.
+
+#### 6. Keep module imports at file top
+
+* **Example**:
+  ```python
+# Correct import placement
+import os
+import sys
+
+# Incorrect import placement
+def main():
+    import os
+    import sys
+* **Step-by-Step Guide**:
+  1. Identify module imports in your code.
+  2. Place module imports at the top of each file.
+
+### Don't (Must Avoid)
+#### 1. Avoid using global variables
+
+* **Example**:
+  ```python
+x = 5  # Global variable
+
+def add(y):
+    return x + y
+* **Step-by-Step Guide**:
+  1. Identify global variables in your code.
+  2. Replace global variables with function arguments or return values.
+
+#### 2. Avoid using mutable default arguments
+
+* **Example**:
+  ```python
+def greet(name, options={}):
+    options['greeting'] = 'Hello'
+    print(options)
+* **Step-by-Step Guide**:
+  1. Identify mutable default arguments in your code.
+  2. Use immutable default arguments instead.
+
+#### 3. Avoid using `print` statements for debugging
+
+* **Example**:
+  ```python
+# Incorrect debugging code
+print(x)
+* **Step-by-Step Guide**:
+  1. Identify `print` statements in your code.
+  2. Use a debugger or logging statements instead.
+
+on't
+
+* **Don't use `print()` for logging**: Use the `logging` module for logging instead of `print()`.
+* **Don't catch bare `Exception`**: Catch specific exceptions instead of bare `Exception`.
+* **Don't use `sys.exit()` in library code**: Raise exceptions instead of using `sys.exit()` in library code.
+* **Don't commit secrets, API keys, or `.env` files**: Keep sensitive information out of version control.
+* **Don't add dependencies without checking license compatibility**: Ensure that new dependencies have compatible licenses.
+
+## Testing
+---------
+
+### Testing Framework
+
+* **Pytest**: A testing framework for Python.
+
+### Test Files
+
+* 35 test files (272 test cases)
+
+### Test Types
+
+* **Unit Tests**: Test individual units of code.
+* **Integration Tests**: Test interactions between multiple units of code.
+
+### Fixtures
+
+* **Shared via `conftest.py`**: Shared fixtures are defined in `conftest.py`.
+
+### Test Data
+
+* **`tests/fixtures/` directory**: Test data is stored in the `tests/fixtures/` directory.
+
+### Running Tests
 
 ```bash
 # Run all tests
@@ -64,73 +228,76 @@ pytest
 pytest --cov
 # Run specific test file
 pytest tests/test_specific.py -v
-```
 
-## PRIORITIES
+## Priorities
+-------------
 
-1. *Stop copy-pasting generic rules. Start with AI that knows your project.**
-2. run: pip install project-rules-generator
-3. Documentation clarity
+1. **Improve AI-powered project rules**: Develop AI-powered project rules that adapt to your coding style.
+2. **Enhance documentation clarity**: Improve documentation clarity and organization.
+3. **Install project rules generator**: Install the project rules generator using pip.
 
-## CONTEXT STRATEGY
+## Context Strategy
+------------------
 
 ### File Loading by Task Type
 
 | Task | Load first | Then load |
 |------|-----------|-----------|
-| Bug fix | relevant module source | corresponding `test_*.py` file |
-| New feature | `main.py` | related modules |
-| Refactor | module + its dependents | test suite |
-| Writing tests | `conftest.py` + test directory | source module under test |
+| Bug fix | Relevant module source | Corresponding `test_*.py` file |
+| New feature | `main.py` | Related modules |
+| Refactor | Module + its dependents | Test suite |
+| Writing tests | `conftest.py` + test directory | Source module under test |
 
 ### Module Groupings
 
-- **main**: `main.py` and its imports
+* **`main`**: `main.py` and its imports
 
 ### Exclude from Context
 
-- `**/*.pyc`
-- `**/__pycache__/**`
-- `**/.venv/**`
-- `**/node_modules/**`
-- `**/*-skills.md`
-- `**/*-skills.json`
-- `**/.clinerules*`
+* **`**/*.pyc`**: Exclude compiled Python files.
+* **`**/__pycache__/**`: Exclude Python cache directories.
+* **`**/.venv/**`: Exclude virtual environment directories.
+* **`**/node_modules/**`: Exclude Node.js module directories.
+* **`**/*-skills.md`**: Exclude skills documentation files.
+* **`**/*-skills.json`**: Exclude skills JSON files.
+* **`**/.clinerules*`**: Exclude Clinerules files.
 
-## WORKFLOWS
+## Workflows
+------------
 
 ### Setup
+
 ### From Source (Current)
+
 ```bash
-git clone https://github.com/Amitro123/project-rules-generator
+git clone https://
+
+github.com/Amitro123/project-rules-generator
 cd project-rules-generator
 pip install -e .
-```
- 
+
 ### Verify
+
 ```bash
 prg --version
-```
- 
----
 
 ### Development
+
 ```bash
 git checkout -b feat/descriptive-name
 # Write code + tests, then run:
 pytest
 git add .
 git commit -m "feat: descriptive message"
-```
 
----
-_Generated by project-rules-generator (enhanced analysis)_
+## Agent Skills
+--------------
 
+### Active Skill Triggers
 
-# 🧠 Agent Skills
+* **brainstorming** (builtin): User says: "I want to"
 
-## Active Skill Triggers
-- **brainstorming** (builtin): User says: "I want to add...", "Let's build...", "I'm thinking about...", Before any code is written, When requirements are unclear
+ add...", "Let's build...", "I'm thinking about...", Before any code is written, When requirements are unclear
 - **writing-skills** (builtin): User says: "Create a skill for...", "We should formalize...", Repetitive pattern identified, Project has unique workflow in README
 - **requesting-code-review** (builtin): Task/feature complete, User says: "Ready for review", "Can you review?", Before creating PR/merge request
 - **subagent-driven-development** (builtin): PLAN.md exists and user approves execution, User says: "Execute the plan", "Let's go", "Start implementation"
@@ -551,4 +718,3 @@ Create `PLAN.md` in project root with all tasks.
 ❌ Missing file paths
 ❌ Tasks that take > 10 minutes
 ❌ Unclear dependencies
-
