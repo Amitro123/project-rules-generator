@@ -2,8 +2,8 @@
 import pytest
 from unittest.mock import MagicMock, patch
 import os
-from src.ai.providers.gemini_client import GeminiClient
-from src.ai.providers.groq_client import GroqClient
+from generator.ai.providers.gemini_client import GeminiClient
+from generator.ai.providers.groq_client import GroqClient
 
 class TestEncodingFix:
     def test_gemini_client_encoding_fix(self):
@@ -17,7 +17,7 @@ class TestEncodingFix:
             mock_instance.models.generate_content.return_value = mock_response
             
             client = GeminiClient(api_key="dummy")
-            result = client.generate_content("test prompt")
+            result = client.generate("test prompt")
             
             # Assert artifacts are removed and replaced correctly
             assert result == "Some content — with artifacts"
@@ -37,7 +37,7 @@ class TestEncodingFix:
             mock_instance.chat.completions.create.return_value = mock_chat_completion
             
             client = GroqClient(api_key="dummy")
-            result = client.generate_content("test prompt")
+            result = client.generate("test prompt")
             
             # Assert artifacts are removed and replaced correctly
             assert result == "Groq content — with artifacts"

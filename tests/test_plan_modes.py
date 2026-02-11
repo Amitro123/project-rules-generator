@@ -2,7 +2,7 @@
 
 import pytest
 from pathlib import Path
-from src.planning import (
+from generator.planning import (
     ProjectPlanner,
     Plan,
     Phase,

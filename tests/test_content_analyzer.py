@@ -2,7 +2,7 @@
 
 import pytest
 from pathlib import Path
-from src.ai.content_analyzer import (
+from generator.content_analyzer import (
     ContentAnalyzer,
     QualityReport,
     QualityBreakdown
