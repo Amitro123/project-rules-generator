@@ -160,7 +160,7 @@ def cli():
 @click.option('--remove-skill', help='Remove a learned skill')
 @click.option('--quality-check', is_flag=True, help='Analyze quality of generated .clinerules files')
 @click.option('--auto-fix', is_flag=True, help='Automatically fix low-quality files (requires --quality-check)')
-@click.option('--max-iterations', type=int, default=5, help='Max improvement iterations for auto-fix (default: 5)')
+@click.option('--max-iterations', type=int, default=3, help='Max improvement iterations for auto-fix (default: 3)')
 def analyze(project_path, scan_all, commit, interactive, verbose, export_json, export_yaml, save_learned, include_pack, external_packs_dir, list_skills, create_skill, from_readme, ai, output, with_skills, auto_generate_skills, api_key, constitution, merge, mode, incremental, ide, provider, add_skill, remove_skill, quality_check, auto_fix, max_iterations):
     """Analyze project and generate rules.md and skills.md from README.md
 
@@ -828,7 +828,7 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                     improvements = []  # Track (filepath, old_score, new_score, iterations)
                     
                     for filepath, report in reports:
-                        if report.score < 90:
+                        if report.score < 85:
                             if verbose:
                                 click.echo(f"\nImproving {filepath.name}...")
                             
@@ -838,7 +838,7 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                                 improved_report = improve_with_feedback(
                                     filepath,
                                     analyzer,
-                                    target_score=90,
+                                    target_score=85,
                                     max_iterations=max_iterations,
                                     project_path=project_path,
                                     verbose=verbose
@@ -860,7 +860,7 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                         # Show improvement summary
                         for filepath, old_score, new_score in improvements:
                             delta = new_score - old_score
-                            status = "✅" if new_score >= 90 else "⚠️"
+                            status = "✅" if new_score >= 85 else "⚠️"
                             click.echo(f"   {status} {filepath.name}: {old_score} → {new_score} (+{delta})")
                         
                         # Re-add to git if commit is enabled
@@ -868,14 +868,14 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                             try:
                                 commit_files(
                                     [fp for fp, _, _ in improvements],
-                                    "feat: quality feedback loop (90+/100 guaranteed)",
+                                    "feat: safe quality loop (max 3 iters)",
                                     project_path
                                 )
                                 click.echo("   Committed quality improvements")
                             except Exception as e:
                                 click.echo(f"   ⚠️  Could not commit fixes: {e}")
                     else:
-                        click.echo("\n✅ All files meet quality standards (90+)")
+                        click.echo("\n✅ All files meet quality standards (85+)")
 
         click.echo(f"\nDone!")
 

@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 def improve_with_feedback(
     filepath: Path,
     analyzer: ContentAnalyzer,
-    target_score: int = 90,
-    max_iterations: int = 5,
+    target_score: int = 85,
+    max_iterations: int = 3,
     project_path: Optional[Path] = None,
     verbose: bool = False
 ) -> QualityReport:
@@ -32,8 +32,8 @@ def improve_with_feedback(
     Args:
         filepath: Path to file to improve
         analyzer: ContentAnalyzer instance to use
-        target_score: Target quality score (default: 90)
-        max_iterations: Maximum improvement iterations (default: 5)
+        target_score: Target quality score (default: 85)
+        max_iterations: Maximum improvement iterations (default: 3)
         project_path: Optional project root for context
         verbose: Whether to print progress messages
         
@@ -129,8 +129,8 @@ def improve_with_feedback(
 def batch_improve_with_feedback(
     filepaths: list[Path],
     analyzer: ContentAnalyzer,
-    target_score: int = 90,
-    max_iterations: int = 5,
+    target_score: int = 85,
+    max_iterations: int = 3,
     project_path: Optional[Path] = None,
     verbose: bool = False
 ) -> dict[Path, QualityReport]:
@@ -139,8 +139,8 @@ def batch_improve_with_feedback(
     Args:
         filepaths: List of file paths to improve
         analyzer: ContentAnalyzer instance to use
-        target_score: Target quality score (default: 90)
-        max_iterations: Maximum improvement iterations per file (default: 5)
+        target_score: Target quality score (default: 85)
+        max_iterations: Maximum improvement iterations per file (default: 3)
         project_path: Optional project root for context
         verbose: Whether to print progress messages
         
