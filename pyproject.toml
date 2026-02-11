@@ -25,7 +25,8 @@ dependencies = [
     "pathspec>=0.11.0",
     "pydantic>=2.0.0",
     "tqdm>=4.66.0",
-    "google-generativeai>=0.3.0"
+    "google-generativeai>=0.3.0",
+    "groq>=0.4.0"
 ]
 
 [project.scripts]
