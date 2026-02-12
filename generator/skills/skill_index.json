@@ -408,6 +408,76 @@
           "pattern": "import httpx"
         }
       ]
+    },
+    "chrome-extension": {
+      "builtin": ["code-review"],
+      "learned": [
+        "chrome-extension/manifest-patterns",
+        "chrome-extension/content-scripts",
+        "chrome-extension/message-passing"
+      ],
+      "triggers": [
+        {
+          "type": "file",
+          "pattern": "manifest.json"
+        },
+        {
+          "type": "file",
+          "pattern": "background.js"
+        },
+        {
+          "type": "file",
+          "pattern": "content.js"
+        },
+        {
+          "type": "file",
+          "pattern": "popup.html"
+        }
+      ]
+    },
+    "gitpython": {
+      "builtin": ["code-review"],
+      "learned": [
+        "gitpython/repo-operations",
+        "gitpython/diff-patterns",
+        "gitpython/branch-management"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "gitpython"
+        },
+        {
+          "type": "import",
+          "pattern": "from git import"
+        },
+        {
+          "type": "import",
+          "pattern": "import git"
+        }
+      ]
+    },
+    "mcp": {
+      "builtin": ["code-review"],
+      "learned": [
+        "mcp/tool-integration",
+        "mcp/server-communication",
+        "mcp/protocol-patterns"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "mcp"
+        },
+        {
+          "type": "import",
+          "pattern": "from mcp"
+        },
+        {
+          "type": "import",
+          "pattern": "import mcp"
+        }
+      ]
     }
   }
 }

@@ -662,6 +662,7 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                          tech_stack=project_tech,
                          output_dir=output_dir,
                          project_name=project_name,
+                         project_path=project_path,
                      )
                      if generated_skills and verbose:
                          click.echo(f"   Generated {len(generated_skills)} project-specific skills:")
@@ -694,25 +695,55 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                      if skill_path and skill_path.exists():
                          shutil.copy2(skill_path, dest)
                      elif not dest.exists():
-                         # Materialize a stub .md for referenced skills with no file
+                         # Materialize a context-aware stub for referenced skills with no file
                          parts = skill_ref.split('/')
                          category = parts[1] if len(parts) >= 3 else 'general'
                          title = ref_name.replace('-', ' ').title()
-                         stub = (
-                             f"# {title}\n\n"
-                             f"**Category:** {category}\n\n"
-                             f"## Purpose\n\n"
-                             f"Patterns and best practices for {ref_name.replace('-', ' ')}.\n\n"
-                             f"## Auto-Trigger\n\n"
-                             f"- Working with {category} code\n\n"
-                             f"## Guidelines\n\n"
-                             f"- Follow project conventions\n"
-                             f"- Add tests for new functionality\n"
-                             f"- Handle errors gracefully\n"
-                         )
+
+                         # Extract README context for this skill's tech category
+                         stub_context_lines = []
+                         if readme_path and readme_path.exists():
+                             stub_context_lines = skills_manager._extract_tech_context(
+                                 category, readme_path.read_text(encoding='utf-8', errors='replace')
+                             )
+
+                         if stub_context_lines:
+                             # Build a context-aware stub
+                             purpose = skills_manager._summarize_purpose(
+                                 category, stub_context_lines, project_name
+                             )
+                             guidelines = skills_manager._build_guidelines(category, stub_context_lines)
+                             stub = (
+                                 f"# {title}\n\n"
+                                 f"**Project:** {project_name}\n"
+                                 f"**Category:** {category}\n\n"
+                                 f"## Purpose\n\n{purpose}\n\n"
+                                 f"## Auto-Trigger\n\n"
+                                 f"- Working with {category} integration code\n"
+                                 f"- Editing files that import or configure {category}\n\n"
+                                 f"## Guidelines\n\n{guidelines}\n\n"
+                                 f"## Project Context (from README)\n\n"
+                             )
+                             for ctx_line in stub_context_lines[:5]:
+                                 stub += f"> {ctx_line}\n"
+                         else:
+                             # Minimal stub — no context available
+                             stub = (
+                                 f"# {title}\n\n"
+                                 f"**Project:** {project_name}\n"
+                                 f"**Category:** {category}\n\n"
+                                 f"## Purpose\n\n"
+                                 f"Integration patterns for {ref_name.replace('-', ' ')} in {project_name}.\n\n"
+                                 f"## Auto-Trigger\n\n"
+                                 f"- Working with {category} code\n\n"
+                                 f"## Guidelines\n\n"
+                                 f"- Refer to project README for {category} usage patterns\n"
+                                 f"- Handle errors with proper retries and fallbacks\n"
+                             )
                          dest.write_text(stub, encoding='utf-8')
                          if verbose:
-                             click.echo(f"   📄 Stub: {dest_name}")
+                             label = "📝 Stub+" if stub_context_lines else "📄 Stub"
+                             click.echo(f"   {label}: {dest_name}")
 
              # Write rules.md into output directory (with incremental merge if applicable)
              rules_path = output_dir / 'rules.md'

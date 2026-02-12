@@ -11,11 +11,24 @@ class LLMSkillGenerator:
     """Generate actionable skills using LLM analysis."""
     
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = 'gemini'):
-        self.api_key = api_key or os.getenv('GEMINI_API_KEY') or os.getenv('GROQ_API_KEY')
         self.provider = provider
-        # If Groq key is present but no Gemini key, default to Groq
-        if not os.getenv('GEMINI_API_KEY') and os.getenv('GROQ_API_KEY'):
-            self.provider = 'groq'
+        
+        # 1. Use explicit key if provided
+        if api_key:
+            self.api_key = api_key
+        # 2. Or select based on provider
+        elif self.provider == 'groq':
+            self.api_key = os.getenv('GROQ_API_KEY')
+        elif self.provider == 'gemini':
+            self.api_key = os.getenv('GEMINI_API_KEY')
+        else:
+            self.api_key = None
+
+        # 3. Auto-switch to Groq if default 'gemini' is used but only Groq key is available
+        # (Only if provider wasn't explicitly locked presumably, but here we only know 'gemini' was passed)
+        if self.provider == 'gemini' and not self.api_key and os.getenv('GROQ_API_KEY'):
+             self.provider = 'groq'
+             self.api_key = os.getenv('GROQ_API_KEY')
 
         try:
             self.client = create_ai_client(self.provider, api_key=self.api_key)

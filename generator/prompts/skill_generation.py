@@ -18,52 +18,14 @@ CODE EXAMPLES FROM THIS PROJECT:
 AVAILABLE TOOLS:
 {tools}
 
-RULES FOR HIGH-QUALITY SKILLS:
+CRITICAL RULES — FOLLOW EXACTLY:
 1. Be SPECIFIC to this project's tech stack and patterns
-2. Include ACTUAL code examples from the project — never invent examples
-3. Reference ACTUAL file paths and line numbers
+2. NEVER invent file paths, line numbers, or code examples. If no code examples are provided above, write GENERAL best-practice patterns WITHOUT fake "File:" references
+3. NEVER invent library names or packages that are not listed in the dependencies above
 4. Every action item MUST be a runnable command (not prose)
-5. Only include anti-patterns you can prove exist in the codebase
+5. Only include anti-patterns you can prove exist from the context above
 6. Include a "Tools" section listing runnable check/fix commands
-
-EXAMPLE OF EXCELLENT SKILL:
-### fastapi-auth-patterns
-Secure authentication patterns for FastAPI using JWT tokens with refresh rotation.
-
-**Context:** This project uses FastAPI with Pydantic models and SQLAlchemy ORM. Authentication is critical for the /api/v1/users endpoints.
-
-**Triggers:** ["adding authenticated endpoint", "modifying token logic", "permission check"]
-
-**When to use:**
-- Adding new authenticated endpoints
-- Modifying token refresh logic
-- Updating user permission checks
-
-**Check for:**
-1. Missing `Depends(get_current_user)` on protected routes
-2. Token expiry not validated before database queries
-
-**Good pattern (from this project):**
-```python
-# File: src/api/routes/users.py:12
-@router.get("/me", response_model=UserResponse)
-async def get_current_user_profile(
-    current_user: User = Depends(get_current_active_user)
-):
-    return current_user
-```
-
-**Tools:**
-```bash
-check: ruff check --select S src/api/
-test:  pytest tests/test_auth.py -v
-lint:  mypy src/api/routes/ --strict
-```
-
-**Action items:**
-1. `ruff check --select S src/api/routes/admin.py` — find unprotected routes
-2. `pytest tests/test_auth.py -v` — verify auth coverage
-3. `grep -rn "router\\." src/api/routes/ | grep -v "Depends"` — find routes missing auth
+7. If you don't have enough context for a section, write a SHORT general guideline rather than fabricating specifics
 
 NOW GENERATE SKILL FOR: {skill_topic}
 Topic Description: {topic_description}
@@ -76,9 +38,9 @@ EXCLUDE FILES (never load these):
 
 OUTPUT FORMAT (markdown):
 ### {{skill_name}}
-[One-line description]
+[One-line description grounded in this project's actual tech stack]
 
-**Context:** [Why this skill matters for THIS project]
+**Context:** [Why this skill matters for THIS project — reference only known tech]
 
 **Triggers:** [list of short phrases that should activate this skill]
 
@@ -91,24 +53,23 @@ OUTPUT FORMAT (markdown):
 - [Specific scenario 2]
 
 **Check for:**
-1. [Specific issue with code example from the project]
-2. [Specific missing pattern found in the project]
+1. [Common issue related to this skill topic]
+2. [Missing pattern to look for]
 
-**Good pattern (from this project):**
+**Good pattern:**
 ```
-# File: [actual file path]:[line]
-[actual code snippet from the project]
+[Best-practice code pattern. ONLY reference actual project files if they were provided in CODE EXAMPLES above. Otherwise show a generic pattern WITHOUT any File: path.]
 ```
 
 **Tools:**
 ```bash
-check: [runnable command to check for issues]
-test:  [runnable command to verify correctness]
-lint:  [runnable command for static analysis]
+check: [runnable command]
+test:  [runnable command]
+lint:  [runnable command]
 ```
 
 **Action items:**
-1. `[runnable command]` — [what it fixes]
+1. `[runnable command]` — [what it checks]
 2. `[runnable command]` — [what it verifies]
 """
 
@@ -345,7 +306,7 @@ def _detect_relevant_files(skill_topic: str, context: Dict[str, Any],
 def _format_code_examples(examples: List[Dict[str, Any]]) -> str:
     """Format code examples for the prompt."""
     if not examples:
-        return 'No code examples extracted.'
+        return 'No code examples were found for this skill topic. DO NOT invent fake file paths or code — use general best-practice patterns instead.'
 
     parts = []
     for ex in examples[:5]:  # Limit to 5 examples

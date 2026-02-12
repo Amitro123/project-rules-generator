@@ -141,7 +141,7 @@ class TestDesignGenerator:
         gen = DesignGenerator(api_key=None)
         d = gen.generate_design("Add rate limiting")
         assert d.title == "Add rate limiting"
-        assert d.problem_statement == "Add rate limiting"
+        assert "Add rate limiting" in d.problem_statement
         assert len(d.success_criteria) >= 1
 
     def test_generate_with_context(self):

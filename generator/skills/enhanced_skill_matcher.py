@@ -118,6 +118,14 @@ class EnhancedSkillMatcher:
             'anthropic': 'api-integration',
             'gemini': 'api-integration',
             'langchain': 'api-integration',
+            'chrome': 'chrome-extension',
+            'chrome-extension': 'chrome-extension',
+            'gitpython': 'gitpython',
+            'mcp': 'mcp',
+            'httpx': 'api-integration',
+            'aiohttp': 'api-integration',
+            'requests': 'api-integration',
+            'uvicorn': 'fastapi',
         }
         return mappings.get(tech.lower(), tech.lower())
 

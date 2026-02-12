@@ -9,6 +9,8 @@ try:
     from google.genai import types
     GEMINI_AVAILABLE = True
 except ImportError:
+    genai = None
+    types = None
     GEMINI_AVAILABLE = False
 
 class GeminiClient(AIClient):

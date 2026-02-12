@@ -185,6 +185,7 @@ class SkillsManager:
         tech_stack: List[str],
         output_dir: Path,
         project_name: str = "",
+        project_path: Optional[Path] = None,
     ) -> List[str]:
         """Generate project-specific learned skills from README and tech stack.
 
@@ -196,6 +197,7 @@ class SkillsManager:
             tech_stack: Detected tech names, e.g. ['fastapi', 'perplexity', 'websocket']
             output_dir: .clinerules output directory (writes to output_dir/skills/learned/)
             project_name: Project name for context in generated skills
+            project_path: Project root for hallucination detection
 
         Returns:
             List of generated skill filenames (stems).
@@ -210,8 +212,8 @@ class SkillsManager:
         for skill_name, skill_content in skill_templates.items():
             dest = learned_dir / f"{skill_name}.md"
             if dest.exists():
-                # Overwrite if existing file is a generic stub
-                if self._is_generic_stub(dest):
+                # Overwrite if existing file is a generic stub or hallucinated
+                if self._is_generic_stub(dest, project_path=project_path):
                     dest.write_text(skill_content, encoding='utf-8')
                     generated.append(skill_name)
             else:
@@ -221,13 +223,20 @@ class SkillsManager:
         return generated
 
     @staticmethod
-    def _is_generic_stub(filepath: Path) -> bool:
-        """Check if a skill file is a generic stub that should be overwritten."""
+    def _is_generic_stub(filepath: Path, project_path: Optional[Path] = None) -> bool:
+        """Check if a skill file is a generic stub or contains hallucinations.
+
+        Detects:
+        1. Generic template markers (empty boilerplate)
+        2. Hallucinated file paths (src/ references to non-existent dirs)
+        3. Fabricated library imports not in project dependencies
+        """
         try:
             content = filepath.read_text(encoding='utf-8', errors='replace')
         except Exception:
             return False
-        # Markers of generic/template content that has no real project context
+
+        # 1. Generic stub markers
         stub_markers = [
             'Follow project conventions',
             'Patterns and best practices for',
@@ -237,7 +246,34 @@ class SkillsManager:
             'Working with general code',
             'Add tests for new functionality',
         ]
-        return any(marker in content for marker in stub_markers)
+        if any(marker in content for marker in stub_markers):
+            return True
+
+        # 2. Hallucinated file path detection
+        # Look for "File: src/..." or "src/something.py" references
+        hallucinated_paths = re.findall(r'(?:File:\s*)?src/[\w/]+\.py(?::\d+)?', content)
+        if hallucinated_paths and project_path:
+            src_dir = project_path / 'src'
+            if not src_dir.exists():
+                # src/ directory doesn't exist — these are fabricated paths
+                return True
+
+        # 3. Detect fake file path patterns in code blocks (common hallucination)
+        # e.g., "# File: src/main.py:25" in code examples
+        file_refs = re.findall(r'#\s*File:\s*(\S+)', content)
+        if file_refs and project_path:
+            fake_count = 0
+            for ref in file_refs:
+                # Strip line number suffix
+                ref_path = ref.split(':')[0]
+                full_path = project_path / ref_path
+                if not full_path.exists():
+                    fake_count += 1
+            # If majority of file refs are fake, it's hallucinated
+            if fake_count > 0 and fake_count >= len(file_refs) / 2:
+                return True
+
+        return False
 
     # Tech name → preferred skill filename
     TECH_SKILL_NAMES = {
@@ -271,6 +307,12 @@ class SkillsManager:
         'langchain': 'langchain-chains',
         'httpx': 'httpx-client',
         'requests': 'requests-client',
+        'chrome': 'chrome-extension',
+        'chrome-extension': 'chrome-extension',
+        'gitpython': 'gitpython-ops',
+        'mcp': 'mcp-protocol',
+        'uvicorn': 'uvicorn-server',
+        'aiohttp': 'aiohttp-client',
     }
 
     def _derive_project_skills(
@@ -350,6 +392,9 @@ class SkillsManager:
             'perplexity': {'perplexity', 'sonar'},
             'openai': {'openai', 'gpt-4', 'gpt-3', 'chatgpt'},
             'pytorch': {'pytorch', 'torch'},
+            'chrome': {'chrome', 'chrome extension', 'manifest.json', 'background.js', 'content script'},
+            'gitpython': {'gitpython', 'git diff', 'git operations', 'repo.git'},
+            'mcp': {'mcp', 'model context protocol', 'mcp server', 'mcp tool'},
         }
         if tech_lower in alias_map:
             aliases = alias_map[tech_lower]
