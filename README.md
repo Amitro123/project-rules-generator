@@ -160,6 +160,15 @@ prg . --export-json > team-skills.json
 | `--auto-execute` | Agent creates files and opens them automatically | `False` |
 | `--provider` | AI provider (`gemini`, `groq`) | Auto-detect |
 
+### Task Automation 🆕
+
+| Command | Description |
+| :--- | :--- |
+| `prg start "task"` | **Full Workflow**: Plan → Tasks → Preflight → Auto-Fix → Ready. |
+| `prg setup "task"` | Setup only (generates plan & tasks) without execution prompt. |
+| `prg exec tasks/001-*.md` | Execute specific task file. Options: `--complete` or `--skip`. |
+| `prg status` | Show progress table (reads `TASKS.yaml` or falls back to `PlanParser`). |
+
 ---
 
 ##  Output Structure

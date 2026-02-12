@@ -1495,6 +1495,246 @@ def review(filepath, project_path, output, provider, api_key, verbose):
     click.echo(f"\nCritique written to: {output}")
 
 
+# ---------------------------------------------------------------------------
+# Shared helpers for provider detection (used by design/plan/review/start)
+# ---------------------------------------------------------------------------
+
+def _detect_provider(provider, api_key):
+    """Auto-detect AI provider from api_key prefix or environment variables."""
+    if provider is not None:
+        return provider
+    if api_key and api_key.startswith('gsk_'):
+        return 'groq'
+    if os.environ.get('GEMINI_API_KEY') and not os.environ.get('GROQ_API_KEY'):
+        return 'gemini'
+    return 'groq'
+
+
+def _set_api_key(provider, api_key):
+    """Set the correct environment variable for the detected provider."""
+    if not api_key:
+        return
+    if provider == 'gemini':
+        os.environ['GEMINI_API_KEY'] = api_key
+    elif provider == 'groq':
+        os.environ['GROQ_API_KEY'] = api_key
+
+
+# ---------------------------------------------------------------------------
+# Agent workflow commands: start, setup, exec, status
+# ---------------------------------------------------------------------------
+
+@cli.command(name='start')
+@click.argument('task_description')
+@click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory')
+@click.option('--provider', type=click.Choice(['gemini', 'groq']), default=None, help='AI Provider')
+@click.option('--api-key', help='API Key (overrides env var)')
+@click.option('--verbose/--quiet', default=True, help='Verbose output')
+def start(task_description, project_path, provider, api_key, verbose):
+    """Full agent workflow: plan -> tasks -> preflight -> auto-fix -> ready.
+
+    Examples:
+    \b
+        prg start "Add Redis cache"
+        prg start "Add auth middleware" --provider groq
+    """
+    provider = _detect_provider(provider, api_key)
+    _set_api_key(provider, api_key)
+
+    from generator.planning.workflow import AgentWorkflow
+
+    workflow = AgentWorkflow(
+        project_path=Path(project_path).resolve(),
+        task_description=task_description,
+        provider=provider,
+        api_key=api_key,
+        verbose=verbose,
+    )
+
+    try:
+        workflow.run_full()
+    except Exception as e:
+        click.echo(f"Workflow failed: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command(name='setup')
+@click.argument('task_description')
+@click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory')
+@click.option('--provider', type=click.Choice(['gemini', 'groq']), default=None, help='AI Provider')
+@click.option('--api-key', help='API Key (overrides env var)')
+@click.option('--verbose/--quiet', default=True, help='Verbose output')
+def setup(task_description, project_path, provider, api_key, verbose):
+    """Setup workflow: plan -> tasks -> preflight -> auto-fix (no execution).
+
+    Examples:
+    \b
+        prg setup "Add Redis cache"
+        prg setup "Add auth middleware" --provider groq
+    """
+    provider = _detect_provider(provider, api_key)
+    _set_api_key(provider, api_key)
+
+    from generator.planning.workflow import AgentWorkflow
+
+    workflow = AgentWorkflow(
+        project_path=Path(project_path).resolve(),
+        task_description=task_description,
+        provider=provider,
+        api_key=api_key,
+        verbose=verbose,
+    )
+
+    try:
+        manifest = workflow.run_setup()
+        click.echo(f"\nSetup complete: {len(manifest.tasks)} tasks created.")
+        click.echo(f"Run 'prg status' to see progress or 'prg exec tasks/<file>' to begin.")
+    except Exception as e:
+        click.echo(f"Setup failed: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command(name='exec')
+@click.argument('task_file', type=click.Path(dir_okay=False))
+@click.option('--complete', is_flag=True, help='Mark the task as done')
+@click.option('--skip', is_flag=True, help='Skip the task')
+@click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory')
+def exec_task(task_file, complete, skip, project_path):
+    """Start or complete a task from the manifest.
+
+    Examples:
+    \b
+        prg exec tasks/001-research-redis.md
+        prg exec tasks/001-research-redis.md --complete
+        prg exec tasks/002-implement-cache.md --skip
+    """
+    project_path = Path(project_path).resolve()
+    tasks_yaml = project_path / "tasks" / "TASKS.yaml"
+
+    if not tasks_yaml.exists():
+        click.echo("No TASKS.yaml found. Run 'prg setup <task>' first.", err=True)
+        sys.exit(1)
+
+    from generator.planning.task_creator import TaskManifest
+    from generator.planning.task_executor import TaskExecutor
+
+    manifest = TaskManifest.from_yaml(tasks_yaml)
+    executor = TaskExecutor(manifest)
+
+    # Find the task by filename
+    task_filename = Path(task_file).name
+    entry = None
+    for t in manifest.tasks:
+        if t.file == task_filename:
+            entry = t
+            break
+
+    if entry is None:
+        click.echo(f"Task file '{task_filename}' not found in TASKS.yaml.", err=True)
+        sys.exit(1)
+
+    try:
+        if complete:
+            executor.complete_task(entry.id)
+            click.echo(f"Task #{entry.id} '{entry.title}' marked as done.")
+        elif skip:
+            executor.skip_task(entry.id)
+            click.echo(f"Task #{entry.id} '{entry.title}' skipped.")
+        else:
+            executor.execute_single(entry.id)
+            click.echo(f"Task #{entry.id} '{entry.title}' started.")
+            click.echo(f"  File: tasks/{entry.file}")
+            if entry.dependencies:
+                dep_str = ", ".join(f"#{d}" for d in entry.dependencies)
+                click.echo(f"  Deps: {dep_str}")
+            click.echo(f"\nWhen done, run: prg exec {task_file} --complete")
+    except ValueError as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+    executor.save(tasks_yaml)
+
+    # Show progress
+    summary = executor.get_progress_summary()
+    click.echo(
+        f"\nProgress: {summary['done']}/{summary['total']} done ({summary['percent']}%), "
+        f"~{summary['est_remaining_minutes']} min remaining"
+    )
+
+    nxt = executor.get_next_task()
+    if nxt:
+        click.echo(f"Next: #{nxt.id} {nxt.title} -> prg exec tasks/{nxt.file}")
+
+
+@cli.command(name='status')
+@click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory')
+def status(project_path):
+    """Show progress on current tasks or plans.
+
+    Examples:
+    \b
+        prg status
+        prg status --project-path ./my-project
+    """
+    project_path = Path(project_path).resolve()
+    tasks_yaml = project_path / "tasks" / "TASKS.yaml"
+
+    # Prefer TASKS.yaml if it exists
+    if tasks_yaml.exists():
+        from generator.planning.task_creator import TaskManifest
+        from generator.planning.task_executor import TaskExecutor
+
+        manifest = TaskManifest.from_yaml(tasks_yaml)
+        executor = TaskExecutor(manifest)
+        summary = executor.get_progress_summary()
+
+        click.echo(f"Task Progress: {manifest.task_description}")
+        click.echo(f"{'=' * 50}")
+        click.echo(
+            f"Overall: {summary['done']}/{summary['total']} done ({summary['percent']}%)"
+        )
+        click.echo(f"Estimated remaining: ~{summary['est_remaining_minutes']} min")
+        click.echo()
+
+        for entry in manifest.tasks:
+            if entry.status.value == "done":
+                icon = "[x]"
+            elif entry.status.value == "in_progress":
+                icon = "[>]"
+            elif entry.status.value == "skipped":
+                icon = "[-]"
+            elif entry.status.value == "blocked":
+                icon = "[!]"
+            else:
+                icon = "[ ]"
+            click.echo(f"  {icon} #{entry.id} {entry.title} (~{entry.estimated_minutes}m)")
+
+        nxt = executor.get_next_task()
+        if nxt:
+            click.echo(f"\nNext: #{nxt.id} {nxt.title}")
+            click.echo(f"  Run: prg exec tasks/{nxt.file}")
+        elif summary['done'] == summary['total']:
+            click.echo("\nAll tasks complete!")
+        return
+
+    # Fallback to PlanParser for PLAN.md files
+    from generator.planning import PlanParser
+
+    parser = PlanParser()
+    plan_files = parser.find_plans(project_path)
+
+    if not plan_files:
+        click.echo("No tasks or plans found.")
+        click.echo("Tip: Run 'prg setup <task>' or 'prg plan <task>' first.")
+        sys.exit(0)
+
+    for plan_file in plan_files:
+        plan_status = parser.parse_plan(plan_file)
+        report = parser.format_status_report(plan_status)
+        click.echo(report)
+        click.echo()
+
+
 # Backward-compatible alias so existing code that imports `main` still works
 main = analyze
 

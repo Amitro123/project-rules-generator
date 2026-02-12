@@ -61,3 +61,58 @@ prg plan <TASK_DESCRIPTION> [OPTIONS]
 | `--auto-execute` | flag | `false` | Automatically create files and open them (requires `--interactive`). |
 | `--api-key` | str | `env` | AI API key for the planning agent. |
 | `--provider` | choice | auto | AI provider: `gemini` or `groq`. Auto-detected from API key if not specified. |
+
+## Task Automation 🆕
+
+Reduce cognitive load by letting the agent manage the task lifecycle.
+
+### `prg start`
+
+Runs the **full workflow** from idea to execution readiness.
+
+```bash
+prg start "Refactor auth middleware to use JWT"
+```
+
+**Steps:**
+1.  **Plan**: Generates `PLAN.md` using the Two-Stage Planning agent.
+2.  **Tasks**: Breaks plan into `tasks/001-init.md`, `tasks/002-impl.md`, etc.
+3.  **Preflight**: Checks for missing dependencies or potential conflicts.
+4.  **Auto-Fix**: Attempts to fix preflight issues automatically.
+5.  **Ready**: Prepares the environment for the first task.
+
+### `prg setup`
+
+Same as `start`, but stops after generating tasks. Useful if you want to inspect manual work before execution.
+
+```bash
+prg setup "Refactor auth middleware"
+```
+
+### `prg exec`
+
+Execute, complete, or skip a specific task file.
+
+```bash
+# Execute a task (opens context, sets up instructions)
+prg exec tasks/001-setup-jwt.md
+
+# Mark a task as complete manually
+prg exec tasks/001-setup-jwt.md --complete
+
+# Skip a task
+prg exec tasks/001-setup-jwt.md --skip
+```
+
+### `prg status`
+
+Shows a high-level progress table of the current sprint.
+
+```bash
+prg status
+```
+
+**Output:**
+- Reads from `TASKS.yaml` (new format) or falls back to parsing `PLAN.md`.
+- Displays: Task ID, Status (Pending/In Progress/Done), Description.
+

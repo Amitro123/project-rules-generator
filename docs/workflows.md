@@ -49,7 +49,35 @@ Here are the most common ways to use Project Rules Generator in your daily devel
     prg analyze . --incremental
     ```
 
-## 3. Team Onboarding
+## 3. Task-Driven Development 🆕
+
+**Goal**: Automate the "Plan → Execute → Verify" loop.
+
+1.  **Start a New Task**:
+    ```bash
+    prg start "Implement User Profile API"
+    ```
+    *   Generates `PLAN.md`
+    *   Creates grouped task files in `tasks/`
+    *   Runs pre-checks
+
+2.  **Execute Tasks**:
+    The agent will guide you, or you can run tasks manually:
+    ```bash
+    prg exec tasks/001-database-schema.md
+    ```
+
+3.  **Check Progress**:
+    ```bash
+    prg status
+    ```
+
+4.  **Finish**:
+    ```bash
+    prg analyze . --incremental   # Update rules with new patterns
+    ```
+
+## 4. Team Onboarding
 
 **Goal**: Harmonize coding standards across your team.
 
@@ -65,7 +93,7 @@ Here are the most common ways to use Project Rules Generator in your daily devel
     git commit -m "docs: add AI coding rules"
     ```
 
-## 4. CI/CD Integration
+## 5. CI/CD Integration
 
 **Goal**: Ensure rules clearly reflect the current state of the main branch.
 
