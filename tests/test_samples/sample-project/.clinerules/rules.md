@@ -10,11 +10,12 @@ project_type: python-cli
 
 A demo project for testing the rules generator. This shows basic functionality.
 
-This project uses: python, fastapi, docker
+This project uses: python, fastapi, docker, pydantic
 
 ## ARCHITECTURE
 
 - **Project type**: python-cli
+- **Languages**: python
 
 ## FILE STRUCTURE
 
@@ -22,7 +23,7 @@ Standard project layout.
 
 ## DEPENDENCIES
 
-No dependency files found.
+**Python** (1 packages): sample-project
 
 ## DO (must follow)
 

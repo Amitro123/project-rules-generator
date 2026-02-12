@@ -279,6 +279,54 @@ class DependencyParser:
         return None
 
     @staticmethod
+    def parse_readme_pip_install(readme_path: Path) -> List[Dict[str, str]]:
+        """Extract dependencies from `pip install ...` commands in README.
+
+        Fallback for projects with no requirements.txt / pyproject.toml.
+        Parses lines like:
+            pip install fastapi uvicorn openai gitpython websockets
+            pip3 install -r requirements.txt  (skipped — file reference)
+            pip install fastapi[all]>=0.100.0
+        """
+        deps = []
+        try:
+            content = readme_path.read_text(encoding='utf-8', errors='replace')
+        except Exception:
+            return deps
+
+        # Match pip/pip3 install commands (may be inside code blocks)
+        for match in re.finditer(
+            r'(?:pip3?|python -m pip)\s+install\s+(.+)',
+            content,
+        ):
+            args_str = match.group(1).strip()
+            # Skip file/url references
+            if args_str.startswith(('-r ', '--requirement', 'git+', 'http')):
+                continue
+
+            for token in args_str.split():
+                # Skip flags
+                if token.startswith('-'):
+                    continue
+                # Parse: package[extras]>=version
+                pkg_match = re.match(
+                    r'^([a-zA-Z0-9_.-]+)'
+                    r'(?:\[([^\]]+)\])?'
+                    r'(?:(==|>=|<=|~=|!=|>|<)([a-zA-Z0-9._*-]+))?',
+                    token,
+                )
+                if pkg_match:
+                    deps.append({
+                        'name': pkg_match.group(1).lower().replace('_', '-'),
+                        'version': pkg_match.group(4) or '',
+                        'constraint': pkg_match.group(3) or '',
+                        'raw': token,
+                        'source': 'readme',
+                    })
+
+        return deps
+
+    @staticmethod
     def detect_system_dependencies(project_path: Path) -> List[str]:
         """Detect system-level dependencies from code and docs."""
         system_deps = []

@@ -9,7 +9,7 @@ version: 1.0
 
 ## PROJECT CONTEXT
 - **Type**: Web App
-- **Tech Stack**: python, fastapi, docker
+- **Tech Stack**: python, fastapi, docker, pydantic
 - **Domain**: A demo project for testing the rules generator. This shows basic functionality....
 
 ## CORE SKILLS

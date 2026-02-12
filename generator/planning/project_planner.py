@@ -8,9 +8,20 @@ Supports two modes:
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Dict
+import logging
 import re
 
 from generator.ai.ai_client import create_ai_client
+
+logger = logging.getLogger(__name__)
+
+ROADMAP_SYSTEM_PROMPT = (
+    "You are a project planner. Generate a roadmap using ONLY the provided "
+    "README content and extracted features. Do NOT reference external projects, "
+    "tools, frameworks, or integrations not explicitly mentioned in the README. "
+    "Do NOT invent project names, product names, or service names. "
+    "Every task and phase must trace back to content in the README."
+)
 
 
 @dataclass
@@ -119,12 +130,15 @@ class ProjectPlanner:
         
         # Generate plan with AI
         try:
-            response = self.client.generate(prompt, temperature=0.5, max_tokens=3000)
+            response = self.client.generate(
+                prompt, temperature=0.5, max_tokens=3000,
+                system_message=ROADMAP_SYSTEM_PROMPT
+            )
             plan = self._parse_roadmap_response(response, readme_content)
         except Exception:
             # Fallback to template-based roadmap
             plan = self._generate_template_roadmap(features, readme_content)
-        
+
         return plan
     
     def generate_task_plan(
@@ -221,28 +235,26 @@ class ProjectPlanner:
         features: List[str],
         project_path: Optional[Path]
     ) -> str:
-        """Build prompt for roadmap generation."""
+        """Build prompt for roadmap generation with strict context isolation."""
         features_list = "\n".join(f"- {f}" for f in features) if features else "No features listed"
-        
-        prompt = f"""# Generate Project Roadmap
 
-**README Content:**
-```
+        prompt = f"""Generate a project roadmap using ONLY the content below.
+
+<readme>
 {readme_content[:2000]}
-```
+</readme>
 
-**Extracted Features:**
+<extracted_features>
 {features_list}
+</extracted_features>
 
-## Your Task
+BANNED: Do not reference any project, tool, service, or framework not mentioned in the README above. Do not invent names.
 
-Create a comprehensive project roadmap organized into logical phases.
+Format the roadmap exactly as:
 
-**Format:**
-```markdown
-# Project Roadmap: [Project Name]
+# Project Roadmap: [Project Name from README]
 
-[Brief description of the roadmap purpose]
+[Brief description]
 
 ---
 
@@ -256,16 +268,14 @@ Create a comprehensive project roadmap organized into logical phases.
 
 ## Phase 2: [Phase Name]
 ...
-```
 
-**Requirements:**
+Requirements:
 1. Organize features into 3-5 logical phases
 2. Each phase should have 3-7 tasks
 3. Add 2-4 subtasks for complex tasks
 4. Use clear, actionable language
 5. Order phases by dependency (foundation first)
-
-Generate the roadmap now:
+6. Every task must trace back to the README content
 """
         return prompt
     
@@ -313,20 +323,46 @@ Generate the plan now:
 """
         return prompt
     
+    def _detect_hallucinations(self, roadmap_text: str, readme_content: str) -> List[str]:
+        """Find capitalized multi-word terms in roadmap that don't appear in README."""
+        hallucinated = []
+        readme_lower = readme_content.lower()
+
+        # Find capitalized terms that look like proper nouns / project names
+        # Match PascalCase, hyphenated names, or multi-word capitalized phrases
+        candidates = set(re.findall(r'\b[A-Z][a-zA-Z]+-[A-Z][a-zA-Z]+\b', roadmap_text))  # e.g. DevLens-AI
+        candidates |= set(re.findall(r'\b[A-Z][a-z]+[A-Z][a-zA-Z]+\b', roadmap_text))  # e.g. GithubAgent
+
+        for term in candidates:
+            if term.lower() not in readme_lower:
+                hallucinated.append(term)
+
+        return hallucinated
+
     def _parse_roadmap_response(self, response: str, readme_content: str) -> Plan:
         """Parse AI response into Plan object."""
+        # Check for hallucinated terms before accepting the response
+        hallucinations = self._detect_hallucinations(response, readme_content)
+        if hallucinations:
+            logger.warning(
+                "Hallucinated terms detected in roadmap: %s. Falling back to template.",
+                ", ".join(hallucinations)
+            )
+            features = self._extract_features_from_readme(readme_content)
+            return self._generate_template_roadmap(features, readme_content)
+
         # Extract title
         title_match = re.search(r'^#\s+(.+)$', response, re.MULTILINE)
         title = title_match.group(1) if title_match else "Project Roadmap"
-        
+
         # Extract description (text between title and first phase)
         desc_match = re.search(r'^#\s+.+\n+(.+?)(?=\n##)', response, re.DOTALL | re.MULTILINE)
         description = desc_match.group(1).strip() if desc_match else ""
         description = description.replace('---', '').strip()
-        
+
         # Extract phases
         phases = self._extract_phases_from_markdown(response)
-        
+
         return Plan(title=title, description=description, phases=phases)
     
     def _parse_task_response(self, response: str, query: str) -> Plan:

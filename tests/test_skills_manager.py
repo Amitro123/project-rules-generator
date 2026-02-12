@@ -50,8 +50,7 @@ def test_list_skills(temp_skills_dir, mock_manager):
     with patch("main.SkillsManager", side_effect=mock_manager):
         result = runner.invoke(main, ['--list-skills'])
         assert result.exit_code == 0
-        assert "Available Skills" in result.output
-        assert "Builtin" in result.output
+        assert "Skills" in result.output
         assert "brainstorming" in result.output
 
 def test_create_skill(temp_skills_dir, mock_manager):

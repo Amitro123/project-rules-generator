@@ -181,6 +181,14 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
         constitution = True
     # mode == 'manual' changes nothing (no AI)
 
+    # When provider is explicitly set (implying AI intent) and mode isn't
+    # manual, auto-enable enhanced features so a fresh project gets
+    # constitution.md + clinerules.yaml + project-specific learned skills.
+    if provider is not None and mode != 'manual':
+        auto_generate_skills = True
+        ai = True
+        constitution = True
+
     # Create output directory structure
     output_dir = project_path / output
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -284,18 +292,63 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                 sys.exit(1)
             sys.exit(0)
         if list_skills:
-            # Use SkillsManager for raw listing of available skills
+            # Project-aware skill listing: read from YAML config + scan directories
+            yaml_path = output_dir / 'clinerules.yaml'
+            yaml_skills = {'builtin': [], 'learned': []}
+            if yaml_path.exists():
+                try:
+                    yaml_data = yaml.safe_load(yaml_path.read_text(encoding='utf-8')) or {}
+                    for ref in yaml_data.get('skills', {}).get('builtin', []):
+                        name = Path(ref).stem
+                        if name not in yaml_skills['builtin']:
+                            yaml_skills['builtin'].append(name)
+                    for ref in yaml_data.get('skills', {}).get('learned', []):
+                        name = Path(ref).stem
+                        if name not in yaml_skills['learned']:
+                            yaml_skills['learned'].append(name)
+                except Exception:
+                    pass
+
+            # Scan project-local .clinerules/skills/ directory
+            project_skills_dir = output_dir / 'skills'
+            for subdir in ('builtin', 'learned'):
+                skill_subdir = project_skills_dir / subdir
+                if skill_subdir.exists():
+                    for f in sorted(skill_subdir.iterdir()):
+                        if f.is_file() and f.suffix in ('.md', '.yaml', '.yml'):
+                            name = f.stem
+                            if name not in yaml_skills[subdir]:
+                                yaml_skills[subdir].append(name)
+
+            # Display project skills (primary view)
+            builtin_count = len(yaml_skills['builtin'])
+            learned_count = len(yaml_skills['learned'])
+            total = builtin_count + learned_count
+            click.echo(f"\nProject Skills ({total} found):")
+
+            if yaml_skills['builtin']:
+                click.echo(f"\n📁 Builtin ({builtin_count}):")
+                for skill in sorted(yaml_skills['builtin']):
+                    click.echo(f"  - {skill}")
+
+            if yaml_skills['learned']:
+                click.echo(f"\n📁 Learned ({learned_count}):")
+                for skill in sorted(yaml_skills['learned']):
+                    click.echo(f"  - {skill}")
+
+            if not total:
+                click.echo("  No project skills found. Run 'prg analyze .' first.")
+
+            # Also show global skills catalog (secondary)
             manager = SkillsManager()
-            skills_map = manager.list_skills()
-
-            total_skills = sum(len(s) for s in skills_map.values())
-            click.echo(f"\nAvailable Skills ({total_skills} found):")
-
-            for category, skills in skills_map.items():
-                if skills:
-                    click.echo(f"\n📁 {category.title()}:")
+            global_skills = manager.list_skills()
+            global_total = sum(len(s) for s in global_skills.values())
+            if global_total:
+                click.echo(f"\n📂 Global Catalog ({global_total} available):")
+                for category, skills in global_skills.items():
                     for skill in skills:
-                        click.echo(f"  - {skill}")
+                        click.echo(f"  - [{category}] {skill}")
+
             sys.exit(0)
 
         # Load External Packs
@@ -497,9 +550,14 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                      # Step 4: Generate high-quality skills with LLM for learned skills
                      if ai:
                          extractor = CodeExampleExtractor()
+                         llm_auth_failed = False
 
                          for skill_ref in sorted(enhanced_selected_skills):
                              if not skill_ref.startswith('learned/'):
+                                 continue
+
+                             # Fail fast: stop LLM attempts after auth failure
+                             if llm_auth_failed:
                                  continue
 
                              # Check if skill already exists
@@ -525,14 +583,7 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
 
                              try:
                                  from generator.llm_skill_generator import LLMSkillGenerator
-                                 # Determine provider from flags/env (defaulting to groq if not set, handled in main but here we need to pass it)
-                                 # We need to pass 'provider' from analyze() args to here.
-                                 # For now, let's look at env or default.
-                                 # Actually, let's update analyze() signature to accept provider!
-                                 # But for this step, let's infer or default.
-                                 # Wait, I should update analyze() signature in this same tool call! 
-                                 # I will add 'provider' to analyze args.
-                                 current_provider = kwargs.get('provider', 'groq') 
+                                 current_provider = kwargs.get('provider', 'groq')
                                  llm_gen = LLMSkillGenerator(provider=current_provider)
                                  skill_content = llm_gen.generate_content(prompt, max_tokens=2000)
 
@@ -545,7 +596,12 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                                  )
                                  click.echo(f"   💾 Generated: {skill_ref}")
                              except Exception as e:
+                                 err_str = str(e)
                                  click.echo(f"   ⚠️  Failed to generate {skill_ref}: {e}")
+                                 # Fail fast on auth errors — no point retrying
+                                 if 'invalid_api_key' in err_str or '401' in err_str or 'authentication' in err_str.lower():
+                                     click.echo(f"   ❌ API key invalid — skipping remaining LLM generations")
+                                     llm_auth_failed = True
 
                  except Exception as e:
                      click.echo(f"Warning: Enhanced auto-generation failed: {e}")
@@ -596,6 +652,22 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                  if verbose:
                      click.echo(f"   Generated clinerules.yaml ({len(enhanced_selected_skills)} skills)")
 
+                 # Generate project-specific learned skills from README
+                 # (runs BEFORE stub creation so project context takes priority)
+                 if readme_path and readme_path.exists():
+                     readme_text = readme_path.read_text(encoding='utf-8', errors='replace')
+                     project_tech = project_data.get('tech_stack', [])
+                     generated_skills = skills_manager.generate_from_readme(
+                         readme_content=readme_text,
+                         tech_stack=project_tech,
+                         output_dir=output_dir,
+                         project_name=project_name,
+                     )
+                     if generated_skills and verbose:
+                         click.echo(f"   Generated {len(generated_skills)} project-specific skills:")
+                         for s in generated_skills:
+                             click.echo(f"     - {s}")
+
                  # Copy skill files into output_dir/skills/
                  import shutil
                  existing_skill_files = set()
@@ -610,19 +682,37 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
 
                  for skill_ref in sorted(enhanced_selected_skills):
                      skill_path = SkillPathManager.get_skill_path(skill_ref)
+                     ref_name = skill_ref.split('/')[-1]
+                     dest_name = f"{ref_name}.md" if not ref_name.endswith('.md') else ref_name
+                     if skill_ref.startswith('builtin/'):
+                         dest = output_dir / 'skills' / 'builtin' / dest_name
+                     elif skill_ref.startswith('learned/'):
+                         dest = output_dir / 'skills' / 'learned' / dest_name
+                     else:
+                         continue
+
                      if skill_path and skill_path.exists():
-                         # Use the skill name from the ref as filename, not the
-                         # resolved path name (which may be generic "SKILL.md"
-                         # for directory-style builtin skills).
-                         ref_name = skill_ref.split('/')[-1]
-                         dest_name = f"{ref_name}.md" if not ref_name.endswith('.md') else ref_name
-                         if skill_ref.startswith('builtin/'):
-                             dest = output_dir / 'skills' / 'builtin' / dest_name
-                         elif skill_ref.startswith('learned/'):
-                             dest = output_dir / 'skills' / 'learned' / dest_name
-                         else:
-                             continue
                          shutil.copy2(skill_path, dest)
+                     elif not dest.exists():
+                         # Materialize a stub .md for referenced skills with no file
+                         parts = skill_ref.split('/')
+                         category = parts[1] if len(parts) >= 3 else 'general'
+                         title = ref_name.replace('-', ' ').title()
+                         stub = (
+                             f"# {title}\n\n"
+                             f"**Category:** {category}\n\n"
+                             f"## Purpose\n\n"
+                             f"Patterns and best practices for {ref_name.replace('-', ' ')}.\n\n"
+                             f"## Auto-Trigger\n\n"
+                             f"- Working with {category} code\n\n"
+                             f"## Guidelines\n\n"
+                             f"- Follow project conventions\n"
+                             f"- Add tests for new functionality\n"
+                             f"- Handle errors gracefully\n"
+                         )
+                         dest.write_text(stub, encoding='utf-8')
+                         if verbose:
+                             click.echo(f"   📄 Stub: {dest_name}")
 
              # Write rules.md into output directory (with incremental merge if applicable)
              rules_path = output_dir / 'rules.md'
@@ -633,6 +723,14 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                  )
              save_markdown(rules_path, unified_content)
              generated_files.append(rules_path)
+
+             # Generate rules.json alongside rules.md
+             from generator.rules_generator import rules_to_json
+             rules_json_path = output_dir / 'rules.json'
+             rules_json_path.write_text(rules_to_json(unified_content), encoding='utf-8')
+             generated_files.append(rules_json_path)
+             if verbose:
+                 click.echo(f"   Generated rules.json")
              pbar.update(1)
 
              # Orchestrated skill generation
@@ -1073,14 +1171,40 @@ def plan(task_description, from_design, from_readme, status, project_path, outpu
             output_path = project_path / output_path
         
         plan_obj.save(output_path)
-        
+
+        # Write structured task manifest for roadmaps too
+        import json
+        from datetime import datetime
+        tasks_path = output_path.with_name('TASKS.json')
+        task_id = 0
+        roadmap_tasks = []
+        for phase in plan_obj.phases:
+            for task in phase.tasks:
+                task_id += 1
+                roadmap_tasks.append({
+                    "id": task_id,
+                    "phase": phase.name,
+                    "title": task.description,
+                    "subtasks": task.subtasks,
+                    "completed": task.completed,
+                    "status": "done" if task.completed else "pending"
+                })
+        tasks_data = {
+            "plan_file": output_path.name,
+            "created": datetime.now().isoformat(),
+            "task": plan_obj.title,
+            "tasks": roadmap_tasks
+        }
+        tasks_path.write_text(json.dumps(tasks_data, indent=2), encoding='utf-8')
+
         click.echo(f"\n✅ Generated roadmap:")
         click.echo(f"   Title: {plan_obj.title}")
         click.echo(f"   Phases: {len(plan_obj.phases)}")
         total_tasks = sum(len(p.tasks) for p in plan_obj.phases)
         click.echo(f"   Tasks: {total_tasks}")
         click.echo(f"   Saved to: {output_path}")
-        
+        click.echo(f"   Tasks manifest: {tasks_path}")
+
         sys.exit(0)
     
     # Original plan command logic (from task description or design)
@@ -1162,8 +1286,32 @@ def plan(task_description, from_design, from_readme, status, project_path, outpu
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(plan_md, encoding='utf-8')
 
+    # Write structured task manifest alongside the plan
+    import json
+    from datetime import datetime
+    tasks_path = output_path.with_name('TASKS.json')
+    tasks_data = {
+        "plan_file": output_path.name,
+        "created": datetime.now().isoformat(),
+        "task": user_task_label,
+        "tasks": [
+            {
+                "id": t.id,
+                "title": t.title,
+                "goal": t.goal,
+                "files": t.files,
+                "dependencies": t.dependencies,
+                "estimated_minutes": t.estimated_minutes,
+                "status": "pending"
+            }
+            for t in subtasks
+        ]
+    }
+    tasks_path.write_text(json.dumps(tasks_data, indent=2), encoding='utf-8')
+
     click.echo(f"\nGenerated {len(subtasks)} subtasks")
     click.echo(f"Plan written to: {output_path}")
+    click.echo(f"Tasks manifest: {tasks_path}")
     click.echo(f"Estimated time: {sum(t.estimated_minutes for t in subtasks)} minutes")
 
     # Interactive mode: open files in IDE for each subtask
@@ -1206,6 +1354,114 @@ def plan(task_description, from_design, from_readme, status, project_path, outpu
                 except (EOFError, KeyboardInterrupt):
                     click.echo("\nAborted.")
                     break
+
+
+@cli.command(name='review')
+@click.argument('filepath', type=click.Path(exists=True, dir_okay=False))
+@click.option('--project-path', type=click.Path(exists=True, file_okay=False), default='.', help='Project directory for README context')
+@click.option('--output', '-o', type=click.Path(), default=None, help='Output file (default: CRITIQUE.md next to input)')
+@click.option('--provider', type=click.Choice(['gemini', 'groq']), default=None, help='AI Provider (gemini, groq). Auto-detected if omitted.')
+@click.option('--api-key', help='API Key (overrides env var)')
+@click.option('--verbose/--quiet', default=True, help='Verbose output')
+def review(filepath, project_path, output, provider, api_key, verbose):
+    """Review a generated artifact for quality and hallucinations.
+
+    Examples:
+    \b
+        prg review TEST-ROADMAP.md
+        prg review TEST-ROADMAP.md -o CRITIQUE.md
+        prg review PROJECT-ROADMAP.md --project-path ./my-project
+    """
+    filepath = Path(filepath).resolve()
+    project_path = Path(project_path).resolve()
+
+    # Auto-detect provider
+    if provider is None:
+        if api_key and api_key.startswith('gsk_'):
+            provider = 'groq'
+        elif os.environ.get('GEMINI_API_KEY') and not os.environ.get('GROQ_API_KEY'):
+            provider = 'gemini'
+        else:
+            provider = 'groq'
+
+    if api_key:
+        if provider == 'gemini':
+            os.environ['GEMINI_API_KEY'] = api_key
+        elif provider == 'groq':
+            os.environ['GROQ_API_KEY'] = api_key
+
+    if verbose:
+        click.echo(f"Project Rules Generator v0.1.0 — Self-Review")
+        click.echo(f"Reviewing: {filepath}")
+        click.echo(f"Provider: {provider}")
+
+    from generator.planning import SelfReviewer
+
+    reviewer = SelfReviewer(provider=provider, api_key=api_key)
+
+    try:
+        report = reviewer.review(filepath, project_path=project_path)
+    except Exception as e:
+        click.echo(f"Review failed: {e}", err=True)
+        sys.exit(1)
+
+    # Display summary
+    try:
+        from rich.console import Console
+        from rich.table import Table
+
+        console = Console()
+        table = Table(title="Review Summary")
+        table.add_column("Field", style="cyan")
+        table.add_column("Value", style="white")
+
+        table.add_row("Verdict", report.verdict)
+        table.add_row("Strengths", str(len(report.strengths)))
+        table.add_row("Issues", str(len(report.issues)))
+        table.add_row("Hallucinations", str(len(report.hallucinations)))
+        console.print(table)
+
+        if report.strengths and verbose:
+            click.echo("\nStrengths:")
+            for s in report.strengths:
+                click.echo(f"  + {s}")
+
+        if report.issues:
+            click.echo("\nIssues:")
+            for i in report.issues:
+                click.echo(f"  - {i}")
+
+        if report.hallucinations:
+            click.echo("\nHallucinations:")
+            for h in report.hallucinations:
+                click.echo(f"  ! {h}")
+
+        if report.action_plan and verbose:
+            click.echo("\nAction Plan:")
+            for a in report.action_plan:
+                click.echo(f"  [ ] {a}")
+    except ImportError:
+        # Fallback without rich
+        click.echo(f"\nVerdict: {report.verdict}")
+        click.echo(f"Strengths: {len(report.strengths)}")
+        click.echo(f"Issues: {len(report.issues)}")
+        click.echo(f"Hallucinations: {len(report.hallucinations)}")
+        for i in report.issues:
+            click.echo(f"  - {i}")
+        for h in report.hallucinations:
+            click.echo(f"  ! {h}")
+
+    # Write output
+    if not output:
+        output = filepath.parent / "CRITIQUE.md"
+    else:
+        output = Path(output)
+        if not output.is_absolute():
+            output = Path.cwd() / output
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(report.to_markdown(), encoding='utf-8')
+    click.echo(f"\nCritique written to: {output}")
 
 
 # Backward-compatible alias so existing code that imports `main` still works

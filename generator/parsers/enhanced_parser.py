@@ -130,6 +130,18 @@ class EnhancedProjectParser:
             result['node'] = parsed.get('dependencies', [])
             result['node_dev'] = parsed.get('dev_dependencies', [])
 
+        # Fallback: extract from README pip install commands when no deps found
+        if not result['python']:
+            readme_files = ['README.md', 'README.rst', 'README.txt', 'README']
+            for filename in readme_files:
+                readme_path = self.path / filename
+                if readme_path.exists():
+                    readme_deps = self._dep_parser.parse_readme_pip_install(readme_path)
+                    if readme_deps:
+                        result['python'] = readme_deps
+                        logger.info(f"Extracted {len(readme_deps)} deps from {filename} pip install commands")
+                    break
+
         # System dependencies
         result['system'] = self._dep_parser.detect_system_dependencies(self.path)
 
@@ -201,6 +213,9 @@ class EnhancedProjectParser:
             'google-generativeai': 'gemini', 'google-genai': 'gemini',
             'openai': 'openai', 'anthropic': 'anthropic',
             'langchain': 'langchain', 'langchain-core': 'langchain',
+            'websockets': 'websocket', 'httpx': 'httpx', 'aiohttp': 'aiohttp',
+            'uvicorn': 'uvicorn', 'gitpython': 'gitpython', 'mcp': 'mcp',
+            'groq': 'groq', 'perplexity': 'perplexity',
         }
         for dep_name, tech_name in dep_to_tech.items():
             if dep_name in python_dep_names:

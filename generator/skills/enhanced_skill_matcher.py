@@ -51,6 +51,9 @@ class EnhancedSkillMatcher:
         """
         selected: Set[str] = set()
 
+        # Track whether ANY dependency-based trigger fired
+        any_trigger_fired = False
+
         for tech in detected_tech:
             tech_key = self._normalize_tech_key(tech)
             tech_skills = self.index.get('skills', {}).get(tech_key, {})
@@ -65,7 +68,17 @@ class EnhancedSkillMatcher:
             # Check triggers for learned skills
             triggers = tech_skills.get('triggers', [])
             if self._check_any_trigger(triggers, project_context):
-                # Tech is confirmed - add all its learned skills
+                any_trigger_fired = True
+                for skill_path in tech_skills.get('learned', []):
+                    selected.add(f'learned/{skill_path}')
+
+        # Fallback: if no triggers fired (e.g. 0 deps parsed), add learned
+        # skills for all detected tech anyway — the tech was confirmed by
+        # README detection, just not by dependency files.
+        if not any_trigger_fired:
+            for tech in detected_tech:
+                tech_key = self._normalize_tech_key(tech)
+                tech_skills = self.index.get('skills', {}).get(tech_key, {})
                 for skill_path in tech_skills.get('learned', []):
                     selected.add(f'learned/{skill_path}')
 
@@ -97,6 +110,14 @@ class EnhancedSkillMatcher:
             'transformers': 'ml-pipeline',
             'sqlalchemy': 'sqlalchemy',
             'celery': 'celery',
+            'perplexity': 'api-integration',
+            'groq': 'api-integration',
+            'mistral': 'api-integration',
+            'cohere': 'api-integration',
+            'openai': 'api-integration',
+            'anthropic': 'api-integration',
+            'gemini': 'api-integration',
+            'langchain': 'api-integration',
         }
         return mappings.get(tech.lower(), tech.lower())
 

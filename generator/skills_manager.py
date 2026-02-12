@@ -179,6 +179,284 @@ class SkillsManager:
         skill_file.write_text(content, encoding='utf-8')
         return target_dir
 
+    def generate_from_readme(
+        self,
+        readme_content: str,
+        tech_stack: List[str],
+        output_dir: Path,
+        project_name: str = "",
+    ) -> List[str]:
+        """Generate project-specific learned skills from README and tech stack.
+
+        Derives skill names from the actual technologies detected in the project
+        instead of using generic category names.
+
+        Args:
+            readme_content: Raw README text
+            tech_stack: Detected tech names, e.g. ['fastapi', 'perplexity', 'websocket']
+            output_dir: .clinerules output directory (writes to output_dir/skills/learned/)
+            project_name: Project name for context in generated skills
+
+        Returns:
+            List of generated skill filenames (stems).
+        """
+        learned_dir = output_dir / 'skills' / 'learned'
+        learned_dir.mkdir(parents=True, exist_ok=True)
+
+        # Map tech to project-specific skill definitions
+        skill_templates = self._derive_project_skills(tech_stack, readme_content, project_name)
+
+        generated = []
+        for skill_name, skill_content in skill_templates.items():
+            dest = learned_dir / f"{skill_name}.md"
+            if dest.exists():
+                # Overwrite if existing file is a generic stub
+                if self._is_generic_stub(dest):
+                    dest.write_text(skill_content, encoding='utf-8')
+                    generated.append(skill_name)
+            else:
+                dest.write_text(skill_content, encoding='utf-8')
+                generated.append(skill_name)
+
+        return generated
+
+    @staticmethod
+    def _is_generic_stub(filepath: Path) -> bool:
+        """Check if a skill file is a generic stub that should be overwritten."""
+        try:
+            content = filepath.read_text(encoding='utf-8', errors='replace')
+        except Exception:
+            return False
+        # Markers of generic/template content that has no real project context
+        stub_markers = [
+            'Follow project conventions',
+            'Patterns and best practices for',
+            '[One sentence: what problem does this solve]',
+            '[When should agent activate this skill]',
+            '[Step-by-step instructions]',
+            'Working with general code',
+            'Add tests for new functionality',
+        ]
+        return any(marker in content for marker in stub_markers)
+
+    # Tech name → preferred skill filename
+    TECH_SKILL_NAMES = {
+        'fastapi': 'fastapi-endpoints',
+        'flask': 'flask-routes',
+        'django': 'django-views',
+        'express': 'express-routes',
+        'react': 'react-components',
+        'vue': 'vue-components',
+        'pytest': 'pytest-testing',
+        'jest': 'jest-testing',
+        'docker': 'docker-deployment',
+        'sqlalchemy': 'sqlalchemy-models',
+        'celery': 'celery-tasks',
+        'pydantic': 'pydantic-validation',
+        'click': 'click-cli',
+        'typer': 'typer-cli',
+        'websocket': 'websocket-handler',
+        'websockets': 'websocket-handler',
+        'graphql': 'graphql-schema',
+        'redis': 'redis-caching',
+        'mongodb': 'mongodb-queries',
+        'postgresql': 'postgresql-queries',
+        'pytorch': 'pytorch-training',
+        'tensorflow': 'tensorflow-models',
+        'openai': 'openai-api',
+        'anthropic': 'anthropic-api',
+        'groq': 'groq-api',
+        'gemini': 'gemini-api',
+        'perplexity': 'perplexity-api',
+        'langchain': 'langchain-chains',
+        'httpx': 'httpx-client',
+        'requests': 'requests-client',
+    }
+
+    def _derive_project_skills(
+        self,
+        tech_stack: List[str],
+        readme_content: str,
+        project_name: str,
+    ) -> Dict[str, str]:
+        """Derive project-specific skill names and content from tech stack.
+
+        Extracts actual context from the README for each technology instead
+        of using generic templates.
+        """
+        skills = {}
+        seen_names = set()
+
+        for tech in tech_stack:
+            tech_lower = tech.lower().strip()
+            skill_name = self.TECH_SKILL_NAMES.get(tech_lower)
+            if not skill_name or skill_name in seen_names:
+                continue
+            seen_names.add(skill_name)
+
+            # Extract README context for this specific tech
+            context_lines = self._extract_tech_context(tech, readme_content)
+            title = skill_name.replace('-', ' ').title()
+
+            purpose = self._summarize_purpose(tech, context_lines, project_name)
+            triggers = self._build_triggers(tech, context_lines)
+            guidelines = self._build_guidelines(tech, context_lines)
+
+            content = f"# {title}\n\n"
+            content += f"**Project:** {project_name or 'this project'}\n\n"
+            content += f"## Purpose\n\n{purpose}\n\n"
+            content += f"## Auto-Trigger\n\n{triggers}\n\n"
+            content += f"## Guidelines\n\n{guidelines}\n"
+
+            if context_lines:
+                content += f"\n## Project Context (from README)\n\n"
+                for line in context_lines:
+                    content += f"> {line}\n"
+
+            skills[skill_name] = content
+
+        return skills
+
+    @staticmethod
+    def _clean_markdown(text: str) -> str:
+        """Strip markdown formatting from a line."""
+        s = text.strip()
+        # Remove leading list markers and arrows
+        s = re.sub(r'^[-*→>]\s*', '', s)
+        s = re.sub(r'^→+\s*', '', s)
+        # Remove bold/italic markers
+        s = s.replace('**', '').replace('*', '')
+        # Remove link syntax [text](url) → text
+        s = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', s)
+        # Remove badge images ![alt](url)
+        s = re.sub(r'!\[[^\]]*\]\([^)]+\)', '', s)
+        # Remove inline code backticks (keep content)
+        s = s.replace('`', '')
+        # Collapse multiple spaces
+        s = re.sub(r'\s{2,}', ' ', s).strip()
+        return s
+
+    def _extract_tech_context(self, tech: str, readme_content: str) -> List[str]:
+        """Extract lines from README that mention a specific technology."""
+        lines = readme_content.split('\n')
+        context = []
+        tech_lower = tech.lower()
+
+        # Also match common aliases
+        aliases = {tech_lower}
+        alias_map = {
+            'fastapi': {'fastapi', 'fast api'},
+            'websocket': {'websocket', 'websockets', 'web socket'},
+            'perplexity': {'perplexity', 'sonar'},
+            'openai': {'openai', 'gpt-4', 'gpt-3', 'chatgpt'},
+            'pytorch': {'pytorch', 'torch'},
+        }
+        if tech_lower in alias_map:
+            aliases = alias_map[tech_lower]
+
+        for i, line in enumerate(lines):
+            line_lower = line.lower()
+            if any(alias in line_lower for alias in aliases):
+                stripped = line.strip()
+                # Skip code fence lines, table separators, empty
+                if not stripped or stripped.startswith('```') or stripped.startswith('|--'):
+                    continue
+                if stripped not in context:
+                    context.append(stripped)
+                    # Also grab the next line if it's a continuation
+                    if i + 1 < len(lines):
+                        next_line = lines[i + 1].strip()
+                        if (next_line and not next_line.startswith('#')
+                                and not next_line.startswith('```')
+                                and next_line not in context):
+                            context.append(next_line)
+
+        return context[:10]
+
+    def _summarize_purpose(self, tech: str, context_lines: List[str], project_name: str) -> str:
+        """Build a purpose statement from extracted context."""
+        if not context_lines:
+            return f"Integration patterns for {tech} in {project_name or 'this project'}."
+
+        # Find the most descriptive line — skip commands, tables, arrows-only
+        best = ""
+        for line in context_lines:
+            clean = self._clean_markdown(line)
+            # Skip non-descriptive lines
+            if (clean.startswith('#') or clean.startswith('|')
+                    or clean.startswith('pip ') or clean.startswith('npm ')
+                    or clean.startswith('uvicorn ') or clean.startswith('docker ')
+                    or len(clean) < 10):
+                continue
+            # Prefer lines that look like prose (has spaces, no excessive arrows)
+            arrow_count = clean.count('→') + clean.count('->')
+            if arrow_count > 2:
+                continue
+            if len(clean) > len(best):
+                best = clean
+
+        if best:
+            return f"How {project_name or 'this project'} uses {tech}: {best}"
+        return f"Integration patterns for {tech} in {project_name or 'this project'}."
+
+    def _build_triggers(self, tech: str, context_lines: List[str]) -> str:
+        """Build auto-trigger rules from context."""
+        triggers = []
+
+        # Extract file types and patterns mentioned in context
+        for line in context_lines:
+            # Look for file references
+            files = re.findall(r'(\w+\.(?:py|js|ts|jsx|tsx|yaml|yml|json|toml))', line)
+            for f in files:
+                trigger = f"- Editing or creating `{f}`"
+                if trigger not in triggers:
+                    triggers.append(trigger)
+
+            # Look for command/import patterns
+            imports = re.findall(r'(?:import|from)\s+(\w+)', line)
+            for imp in imports:
+                if imp.lower() in tech.lower() or tech.lower() in imp.lower():
+                    trigger = f"- Files importing `{imp}`"
+                    if trigger not in triggers:
+                        triggers.append(trigger)
+
+        # Always add the base trigger
+        triggers.append(f"- Working with {tech} integration code")
+        triggers.append(f"- Editing files that import or configure {tech}")
+
+        return '\n'.join(triggers)
+
+    def _build_guidelines(self, tech: str, context_lines: List[str]) -> str:
+        """Build guidelines from extracted project context."""
+        guidelines = []
+
+        for line in context_lines:
+            clean = self._clean_markdown(line)
+            # Skip non-actionable lines
+            if (not clean or clean.startswith('#') or clean.startswith('|')
+                    or len(clean) < 10):
+                continue
+            # Skip raw shell commands
+            if re.match(r'^(pip |npm |yarn |uvicorn |docker |git clone|cd |mkdir )', clean):
+                continue
+            # Skip lines that are mostly arrows/diagrams
+            if clean.count('→') + clean.count('->') > 2:
+                continue
+
+            # Lines describing architecture, config, or usage are useful
+            if ':' in clean and len(clean) < 200:
+                guidelines.append(f"- {clean}")
+            elif re.search(r'(model|endpoint|config|api|key|token|port|host|stream|async|route|setup)', clean, re.I):
+                guidelines.append(f"- {clean}")
+
+        if not guidelines:
+            guidelines.append(f"- Follow project patterns for {tech} usage")
+
+        guidelines.append(f"- Handle {tech} errors with proper retries and fallbacks")
+        guidelines.append(f"- Add tests for {tech} integration code")
+
+        return '\n'.join(guidelines[:8])
+
     def get_all_skills_content(self) -> Dict[str, Dict]:
         """Get full content of all skills for export."""
         skills_content = {

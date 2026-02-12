@@ -94,9 +94,22 @@ TECH_KEYWORDS = [
     'pytorch', 'tensorflow', 'sklearn', 'transformers',
     'docker', 'kubernetes', 'redis', 'postgres', 'mongodb',
     'gemini', 'openai', 'anthropic', 'claude', 'gpt', 'langchain',
+    'perplexity', 'groq', 'mistral', 'cohere',
     'ffmpeg', 'opencv', 'pillow', 'moviepy', 'whisper',
     'click', 'argparse', 'typer', 'fire',
-    'terraform', 'helm', 'aws', 'gcp', 'azure'
+    'terraform', 'helm', 'aws', 'gcp', 'azure',
+    # Web/realtime
+    'websocket', 'graphql', 'grpc',
+    # HTTP clients
+    'httpx', 'aiohttp',
+    # Python ecosystem
+    'pydantic', 'uvicorn', 'celery', 'sqlalchemy',
+    # Git/VCS
+    'gitpython',
+    # Chrome/browser
+    'chrome',
+    # Protocols/tools
+    'mcp',
 ]
 
 
@@ -228,6 +241,10 @@ def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List
         'anthropic': ['anthropic'],
         'claude': ['anthropic'],
         'langchain': ['langchain'],
+        'perplexity': ['perplexity', 'perplexity-ai', 'pplx'],
+        'groq': ['groq'],
+        'mistral': ['mistral', 'mistralai'],
+        'cohere': ['cohere'],
         'ffmpeg': ['ffmpeg'],
         'opencv': ['opencv', 'cv2'],
         'pillow': ['pillow', 'pil'],
@@ -244,6 +261,18 @@ def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List
         'aws': ['boto3', 'aws-cdk', 'aws'],
         'gcp': ['google-cloud', 'gcp'],
         'azure': ['azure'],
+        'websocket': ['websockets', 'websocket', 'socket.io'],
+        'graphql': ['graphql', 'ariadne', 'strawberry'],
+        'grpc': ['grpcio', 'grpc'],
+        'httpx': ['httpx'],
+        'aiohttp': ['aiohttp'],
+        'pydantic': ['pydantic'],
+        'uvicorn': ['uvicorn'],
+        'celery': ['celery'],
+        'sqlalchemy': ['sqlalchemy'],
+        'gitpython': ['gitpython'],
+        'chrome': ['chrome', 'manifest'],
+        'mcp': ['mcp'],
     }
 
     # Check each README-detected tech against deps

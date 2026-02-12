@@ -365,6 +365,49 @@
           "pattern": "celery.py"
         }
       ]
+    },
+    "api-integration": {
+      "builtin": ["code-review", "systematic-debugging"],
+      "learned": [
+        "api-integration/api-client-patterns",
+        "api-integration/retry-error-handling",
+        "api-integration/rate-limiting",
+        "api-integration/response-parsing"
+      ],
+      "triggers": [
+        {
+          "type": "dependency",
+          "package": "httpx"
+        },
+        {
+          "type": "dependency",
+          "package": "requests"
+        },
+        {
+          "type": "dependency",
+          "package": "aiohttp"
+        },
+        {
+          "type": "dependency",
+          "package": "openai"
+        },
+        {
+          "type": "dependency",
+          "package": "anthropic"
+        },
+        {
+          "type": "dependency",
+          "package": "groq"
+        },
+        {
+          "type": "import",
+          "pattern": "import requests"
+        },
+        {
+          "type": "import",
+          "pattern": "import httpx"
+        }
+      ]
     }
   }
 }
