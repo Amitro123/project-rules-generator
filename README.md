@@ -159,6 +159,7 @@ prg . --export-json > team-skills.json
 | `--interactive` | Open files in IDE as tasks are listed | `False` |
 | `--auto-execute` | Agent creates files and opens them automatically | `False` |
 | `--provider` | AI provider (`gemini`, `groq`) | Auto-detect |
+| `agent "query"` | Simulate auto-trigger matching | — |
 
 ### Task Automation 🆕
 
@@ -181,12 +182,45 @@ All generated files are consolidated into a single `.clinerules/` directory insi
 ├── constitution.md       # Code principles (when --constitution)
 ├── clinerules.yaml       # Lightweight YAML skill references
 └── skills/
-    ├── builtin/          # Copied builtin skill files
-    ├── learned/          # Copied learned skill files
-    ├── index.md          # Skills catalog/registry
-    └── index.json        # Machine-readable skill definitions (when --export-json)
+    ├── project/          # Project-specific overrides (Highest Priority)
+    ├── learned/          # Global learned skills (Medium Priority)
+    └── builtin/          # Core PRG skills (Lowest Priority)
+```
+ 
+
+### 🎯 Smart Skill Orchestration 🆕
+
+PRG doesn't just list skills; it helps agents use them automatically.
+
+#### 1. Auto-Triggers
+Every skill can define an `## Auto-Trigger` section with phrases that activate it.
+When you run `prg analyze`, these triggers are extracted into a high-speed lookup file: `.clinerules/auto-triggers.json`.
+
+**Example Skill (`readme-improver.md`):**
+```markdown
+## Auto-Trigger
+- "improve README"
+- "add badges"
+- "documentation is missing"
 ```
 
+#### 2. Agent Integration (`prg agent`)
+Agents can query this system to find the right tool for the job without hallucinating.
+
+```bash
+$ prg agent "I need to improve the documentation"
+🎯 Auto-trigger: readme-improver
+```
+
+#### 3. 3-Layer Architecture
+PRG resolves skills in this order:
+1.  **Project (`.clinerules/skills/project/`)**: High priority overrides.
+2.  **Global Learned (`~/.project-rules-generator/learned/`)**: Your personal library.
+3.  **Builtin (`~/.project-rules-generator/builtin/`)**: Default best practices.
+
+**Resolution Logic:**
+When an agent requests a skill (e.g., `fastapi`), PRG looks in `project` -> `learned` -> `builtin`.
+ 
 ### 📄 JSON Artifacts (`--export-json`)
 When you run with `--export-json`, the tool generates `index.json`. This file contains structured data about every skill, including:
 - **Triggers**: When the skill should be activated.

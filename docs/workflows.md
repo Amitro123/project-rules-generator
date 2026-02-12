@@ -106,3 +106,21 @@ Add this step to your GitHub Actions workflow (e.g., `.github/workflows/update-r
     prg analyze . --incremental --no-commit
     git diff .clinerules/  # Fail if rules are out of sync, or auto-commit
 ```
+
+## 6. Agent-Driven Development 🧠 🆕
+
+**Goal**: Build autonomous agents that call the right skills for you.
+
+1.  **Analyze Project**:
+    Extract all skill triggers.
+    ```bash
+    prg analyze .
+    ```
+2.  **Query Skills**:
+    Simulate an agent request to find the best tool.
+    ```bash
+    prg agent "I need to fix a bug"
+    # Output: systematic-debugging
+    ```
+3.  **Execute**:
+    Feed the skill content to your primary agent (e.g. Cline, Cursor).

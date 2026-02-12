@@ -116,3 +116,21 @@ prg status
 - Reads from `TASKS.yaml` (new format) or falls back to parsing `PLAN.md`.
 - Displays: Task ID, Status (Pending/In Progress/Done), Description.
 
+## Agent Commands
+
+### `prg agent`
+
+Simulate the auto-trigger matching engine.
+
+```bash
+prg agent "I need to fix a bug"
+```
+
+**Output:**
+```
+🎯 Auto-trigger: systematic-debugging
+```
+
+**Use Case:**
+Verify which skill will be selected for a given user query. Useful for debugging triggers or integrating PRG into other agent loops.
+

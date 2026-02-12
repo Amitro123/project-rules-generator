@@ -202,3 +202,22 @@ Available skills:
 ```
 
 **Use Case**: Customize exactly which workflows the AI uses for your specific project needs.
+
+### Feature 8: Smart Skill Orchestration 🧠 NEW
+**What it does**: A sophisticated system that layers skills (Project > Learned > Builtin) and automatically triggers them based on user intent.
+
+**Layered Architecture**:
+1.  **Project-Specific** (`.clinerules/skills/project/`): Highest priority. Custom overrides for this repo.
+2.  **Global Learned** (`~/.project-rules-generator/learned/`): Medium priority. Your personal library.
+3.  **Builtin** (`~/.project-rules-generator/builtin/`): Lowest priority. Default best practices.
+
+**Auto-Triggers**:
+Skills can define activation phrases in an `## Auto-Trigger` section. PRG extracts these to `.clinerules/auto-triggers.json` for instant lookup.
+
+**Command**:
+```bash
+prg agent "I need to fix a bug"
+# Output: 🎯 Auto-trigger: systematic-debugging
+```
+
+**Use Case**: Building autonomous agents that know *exactly* which tool to use for a specific request, without hallucinating.

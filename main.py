@@ -192,8 +192,21 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
     # Create output directory structure
     output_dir = project_path / output
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / 'skills' / 'builtin').mkdir(parents=True, exist_ok=True)
-    (output_dir / 'skills' / 'learned').mkdir(parents=True, exist_ok=True)
+    
+    # Initialize Skills Manager with project context
+    from generator.skills_manager import SkillsManager
+    skills_manager = SkillsManager(project_path=project_path)
+    
+    # Setup .clinerules/skills structure (symlinks/copies)
+    try:
+        skills_manager.setup_project_structure()
+        if verbose:
+            click.echo("✅ Skills structure initialized (Global -> Project)")
+    except Exception as e:
+        if verbose:
+            click.echo(f"⚠️  Skills structure setup warning: {e}")
+        # Non-fatal, might just be symlink issues, meaningful error printed inside manager
+
 
     # Incremental mode: check for changes before doing heavy work
     inc_analyzer = IncrementalAnalyzer(project_path, output_dir) if incremental else None
@@ -250,9 +263,9 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
         if create_skill or add_skill:
             skill_name = create_skill or add_skill
             # Place learned skills in the project output directory
-            learned_dir = output_dir / 'skills' / 'learned'
-            learned_dir.mkdir(parents=True, exist_ok=True)
-            manager = SkillsManager(learned_path=learned_dir)
+            # Place learned skills in the project output directory
+            # Now we use global SkillsManager which handles pathing
+            manager = SkillsManager(project_path=project_path)
             try:
                 path = manager.create_skill(
                     skill_name,
@@ -292,63 +305,39 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                 sys.exit(1)
             sys.exit(0)
         if list_skills:
-            # Project-aware skill listing: read from YAML config + scan directories
-            yaml_path = output_dir / 'clinerules.yaml'
-            yaml_skills = {'builtin': [], 'learned': []}
-            if yaml_path.exists():
-                try:
-                    yaml_data = yaml.safe_load(yaml_path.read_text(encoding='utf-8')) or {}
-                    for ref in yaml_data.get('skills', {}).get('builtin', []):
-                        name = Path(ref).stem
-                        if name not in yaml_skills['builtin']:
-                            yaml_skills['builtin'].append(name)
-                    for ref in yaml_data.get('skills', {}).get('learned', []):
-                        name = Path(ref).stem
-                        if name not in yaml_skills['learned']:
-                            yaml_skills['learned'].append(name)
-                except Exception:
-                    pass
+            # Re-initialize to ensure we have the latest structure
+            manager = SkillsManager(project_path=project_path)
+            skills = manager.list_skills()
+            
+            # Group by type for display
+            display_groups = {'project': [], 'learned': [], 'builtin': []}
+            
+            for name, data in skills.items():
+                stype = data['type']
+                if stype in display_groups:
+                    display_groups[stype].append(name)
+            
+            total = len(skills)
+            click.echo(f"\nAvailable Skills ({total}):")
+            
+            if display_groups['project']:
+                click.echo(f"\n📁 Project Overrides ({len(display_groups['project'])}):")
+                for s in sorted(display_groups['project']):
+                    click.echo(f"  - {s} (Local)")
 
-            # Scan project-local .clinerules/skills/ directory
-            project_skills_dir = output_dir / 'skills'
-            for subdir in ('builtin', 'learned'):
-                skill_subdir = project_skills_dir / subdir
-                if skill_subdir.exists():
-                    for f in sorted(skill_subdir.iterdir()):
-                        if f.is_file() and f.suffix in ('.md', '.yaml', '.yml'):
-                            name = f.stem
-                            if name not in yaml_skills[subdir]:
-                                yaml_skills[subdir].append(name)
+            if display_groups['learned']:
+                click.echo(f"\n🧠 Global Learned ({len(display_groups['learned'])}):")
+                for s in sorted(display_groups['learned']):
+                    click.echo(f"  - {s}")
 
-            # Display project skills (primary view)
-            builtin_count = len(yaml_skills['builtin'])
-            learned_count = len(yaml_skills['learned'])
-            total = builtin_count + learned_count
-            click.echo(f"\nProject Skills ({total} found):")
-
-            if yaml_skills['builtin']:
-                click.echo(f"\n📁 Builtin ({builtin_count}):")
-                for skill in sorted(yaml_skills['builtin']):
-                    click.echo(f"  - {skill}")
-
-            if yaml_skills['learned']:
-                click.echo(f"\n📁 Learned ({learned_count}):")
-                for skill in sorted(yaml_skills['learned']):
-                    click.echo(f"  - {skill}")
-
+            if display_groups['builtin']:
+                click.echo(f"\n🛠️  Global Builtin ({len(display_groups['builtin'])}):")
+                for s in sorted(display_groups['builtin']):
+                    click.echo(f"  - {s}")
+            
             if not total:
-                click.echo("  No project skills found. Run 'prg analyze .' first.")
-
-            # Also show global skills catalog (secondary)
-            manager = SkillsManager()
-            global_skills = manager.list_skills()
-            global_total = sum(len(s) for s in global_skills.values())
-            if global_total:
-                click.echo(f"\n📂 Global Catalog ({global_total} available):")
-                for category, skills in global_skills.items():
-                    for skill in skills:
-                        click.echo(f"  - [{category}] {skill}")
-
+                 click.echo("  No skills found.")
+            
             sys.exit(0)
 
         # Load External Packs
@@ -610,31 +599,36 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
                          traceback.print_exc()
 
              # Extract Triggers
-             triggers = []
+             triggers_dict = {}
              if with_skills:
-                 triggers = skills_manager.extract_auto_triggers()
+                 triggers_dict = skills_manager.extract_all_triggers()
              pbar.update(1)
              
              pbar.set_description("Unified Export (.clinerules/)")
              # Build Unified Content
              unified_content = rules_content + "\n\n# 🧠 Agent Skills\n\n"
 
-             if triggers:
+             if triggers_dict:
                  unified_content += "## Active Skill Triggers\n"
-                 for t in triggers:
-                     unified_content += f"- **{t['skill']}** ({t['category']}): {', '.join(t['conditions'])}\n"
+                 for skill, phrases in triggers_dict.items():
+                     # We don't have category easily available in the dict, but that's fine for now
+                     unified_content += f"- **{skill}**: {', '.join(phrases)}\n"
                  unified_content += "\n"
 
                  # Embed full skill content (optional, but requested 'Unified')
                  # For .clinerules, having the full context is good.
                  unified_content += "## Skill Definitions\n"
                  all_skills = skills_manager.get_all_skills_content()
-                 for t in triggers:
-                     skill_name = t['skill']
-                     category = t['category']
-                     if skill_name in all_skills.get(category, {}):
-                         content = all_skills[category][skill_name]['content']
-                         unified_content += f"\n### Skill: {skill_name}\n{content}\n"
+                 for skill_name in triggers_dict:
+                     # Find which category this skill belongs to
+                     found_content = None
+                     for category in ['project', 'learned', 'builtin']:
+                         if category in all_skills and skill_name in all_skills[category]:
+                             found_content = all_skills[category][skill_name]['content']
+                             break
+                     
+                     if found_content:
+                         unified_content += f"\n### Skill: {skill_name}\n{found_content}\n"
 
              # If enhanced matching was done, also generate lightweight clinerules
              if enhanced_selected_skills:
@@ -759,6 +753,11 @@ def analyze(project_path, scan_all, commit, interactive, verbose, export_json, e
              from generator.rules_generator import rules_to_json
              rules_json_path = output_dir / 'rules.json'
              rules_json_path.write_text(rules_to_json(unified_content), encoding='utf-8')
+
+             # [New] Save Auto-Triggers for Agent
+             if verbose:
+                 click.echo("Generating auto-triggers...")
+             skills_manager.save_triggers_json(output_dir)
              generated_files.append(rules_json_path)
              if verbose:
                  click.echo(f"   Generated rules.json")
@@ -1739,5 +1738,25 @@ def status(project_path):
 main = analyze
 
 
-if __name__ == '__main__':
-    cli()
+@cli.command(name='agent')
+@click.argument('query')
+def agent_command(query):
+    """
+    Simulate agent auto-trigger matching for a query.
+    
+    Example: prg agent "audit my api"
+    """
+    from agent.agent_executor import AgentExecutor
+    import os
+    
+    # Assume current directory is project root
+    project_path = Path(os.getcwd())
+    executor = AgentExecutor(project_path)
+    
+    matched_skill = executor.match_skill(query)
+    
+    if matched_skill:
+        click.echo(f"🎯 Auto-trigger: {matched_skill}")
+    else:
+        click.echo("No matching skill found.")
+
