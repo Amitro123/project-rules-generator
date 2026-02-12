@@ -1,0 +1,115 @@
+{
+  "project": "project-rules-generator",
+  "purpose": "Coding & contribution rules for this workspace",
+  "version": "2.0",
+  "generated": "auto",
+  "project_type": "python-cli",
+  "rules": {
+    "do": [
+      "Run `pytest` before committing; add tests for new features",
+      "Use type hints on all public function signatures",
+      "Use Pydantic models for data validation (not raw dicts)",
+      "Use Click decorators for CLI arguments — don't parse sys.argv manually",
+      "Store API keys in `.env` or environment variables — never hardcode (gemini, groq)",
+      "Add retry logic with exponential backoff for external API calls",
+      "Validate and type-check API responses before using them",
+      "Follow existing project structure and naming conventions",
+      "Keep module imports at file top; use absolute imports within the project"
+    ],
+    "dont": [
+      "Don't use `print()` for logging — use the `logging` module",
+      "Don't catch bare `Exception` — catch specific exceptions",
+      "Don't use `sys.exit()` in library code — raise exceptions, let Click handle exit",
+      "Don't log or print full API responses in production (may contain PII)",
+      "Don't ignore rate-limit headers from API providers",
+      "Don't commit secrets, API keys, or `.env` files",
+      "Don't add dependencies without checking license compatibility"
+    ]
+  },
+  "priorities": [],
+  "rules_count": 16,
+  "architecture": [
+    "**Project type**: python-cli",
+    "**Entry points**: main.py",
+    "**Structural patterns**: python-cli, pytest-tests",
+    "**Languages**: python"
+  ],
+  "file_structure": [
+    "`main.py`",
+    "python-cli",
+    "pytest-tests"
+  ],
+  "testing": [
+    "**Framework**: pytest",
+    "**Test files**: 40 (337 test cases)",
+    "**Test types**: unit, integration",
+    "**Fixtures**: shared via `conftest.py`",
+    "**Test data**: `tests/fixtures/` directory"
+  ],
+  "context_strategy": [
+    "**main**: `main.py` and its imports",
+    "`**/*.pyc`",
+    "`**/__pycache__/**`",
+    "`**/.venv/**`",
+    "`**/node_modules/**`",
+    "`**/*-skills.md`",
+    "`**/*-skills.json`",
+    "`**/.clinerules*`"
+  ],
+  "active_skill_triggers": [
+    "**brainstorming**: i want to add..., let's build..., i'm thinking about..., any code is written, requirements are unclear",
+    "**writing-skills**: create a skill for..., we should formalize..., repetitive pattern identified, project has unique workflow in readme",
+    "**requesting-code-review**: task/feature complete, ready for review, can you review?, creating pr/merge request",
+    "**subagent-driven-development**: plan.md exists and user approves execution, execute the plan, let's go, start implementation",
+    "**systematic-debugging**: bug, error, not working, failing test, ci/cd failure, exception in logs",
+    "**test-driven-development**: new feature implementation, bug fix, refactoring",
+    "**writing-plans**: design approval (design.md exists), let's implement this, create a plan, starting implementation"
+  ],
+  "auto-trigger": [
+    "After design approval (DESIGN.md exists)",
+    "User says: \"Let's implement this\", \"Create a plan\"",
+    "Before starting implementation"
+  ],
+  "pre-review_checklist": [
+    "✓ Read every line you changed",
+    "✓ Remove debug statements",
+    "✓ Check for commented-out code",
+    "✓ Verify no secrets/credentials",
+    "✓ All tests pass locally",
+    "✓ New tests for new features",
+    "✓ Edge cases covered",
+    "✓ No skipped/ignored tests without reason",
+    "✓ Follows project style guide",
+    "✓ Functions < 50 lines",
+    "✓ No TODO/FIXME without ticket reference",
+    "✓ Docstrings for public APIs",
+    "✓ README updated if needed",
+    "✓ API docs updated",
+    "✓ CHANGELOG.md entry added",
+    "✓ Comments explain \"why\", not \"what\"",
+    "✓ No unnecessary dependencies added",
+    "✓ If new deps: justify in PR description",
+    "✓ Lock file updated",
+    "✓ No obvious performance issues",
+    "✓ Database queries optimized",
+    "✓ No N+1 queries",
+    "✓ No SQL injection vectors",
+    "✓ User input sanitized",
+    "✓ Authentication/authorization checked",
+    "✓ No sensitive data in logs"
+  ],
+  "code_review_self-assessment": [
+    "[✓] All tests pass",
+    "[✓] No debug code",
+    "[✓] Documentation updated",
+    "[file] (+lines, -lines)"
+  ],
+  "5-phase_process": [
+    "**Binary Search**: Comment out half the code",
+    "**Trace Backwards**: From error to source",
+    "**Instrumentation**: Log state before/after suspected lines",
+    "Check assumptions",
+    "Verify data types",
+    "Review recent changes"
+  ]
+}
