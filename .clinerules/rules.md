@@ -57,7 +57,7 @@ This project uses: python, gemini, claude, groq, click, pydantic, gitpython
 ## TESTING
 
 - **Framework**: pytest
-- **Test files**: 41 (342 test cases)
+- **Test files**: 41 (347 test cases)
 - **Test types**: unit, integration
 - **Fixtures**: shared via `conftest.py`
 - **Test data**: `tests/fixtures/` directory
@@ -73,8 +73,8 @@ pytest tests/test_specific.py -v
 
 ## PRIORITIES
 
-1. *Stop copy-pasting generic rules. Start with AI that knows your project.**
-2. run: pip install project-rules-generator
+1. run: pip install project-rules-generator
+2. run: prg . --incremental --no-commit
 3. Documentation clarity
 
 ## CONTEXT STRATEGY
