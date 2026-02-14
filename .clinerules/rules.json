@@ -57,7 +57,9 @@
     "`**/.clinerules*`"
   ],
   "auto-trigger": [
-    "User mentions: \"readme\", \"skill\""
+    "After design approval (DESIGN.md exists)",
+    "User says: \"Let's implement this\", \"Create a plan\"",
+    "Before starting implementation"
   ],
   "pre-review_checklist": [
     "✓ Read every line you changed",
