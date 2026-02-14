@@ -63,7 +63,9 @@ class TaskExecutor:
         """Return a dict with progress metrics."""
         total = len(self.manifest.tasks)
         done = sum(1 for t in self.manifest.tasks if t.status == TaskFileStatus.done)
-        skipped = sum(1 for t in self.manifest.tasks if t.status == TaskFileStatus.skipped)
+        skipped = sum(
+            1 for t in self.manifest.tasks if t.status == TaskFileStatus.skipped
+        )
         in_progress = sum(
             1 for t in self.manifest.tasks if t.status == TaskFileStatus.in_progress
         )

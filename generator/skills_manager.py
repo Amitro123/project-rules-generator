@@ -1,8 +1,10 @@
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 from generator.skill_discovery import SkillDiscovery
-from generator.skill_parser import SkillParser
 from generator.skill_generator import SkillGenerator
+from generator.skill_parser import SkillParser
+
 
 class SkillsManager:
     """
@@ -13,7 +15,7 @@ class SkillsManager:
     def __init__(self, project_path: Optional[Path] = None):
         """
         Initialize SkillsManager with Global and Project layers.
-        
+
         Layers:
         1. Project (.clinerules/skills/project) - Metric overrides
         2. Global Learned (~/.project-rules-generator/learned) - User's shared skills
@@ -21,7 +23,7 @@ class SkillsManager:
         """
         self.discovery = SkillDiscovery(project_path)
         self.generator = SkillGenerator(self.discovery)
-        
+
         # Expose paths for backward compatibility if accessed directly
         self.project_path = self.discovery.project_path
         self.global_root = self.discovery.global_root
@@ -46,7 +48,13 @@ class SkillsManager:
         """Find the active skill file based on priority."""
         return self.discovery.resolve_skill(skill_name)
 
-    def create_skill(self, name: str, from_readme: Optional[str] = None, project_path: Optional[str] = None, use_ai: bool = False) -> Path:
+    def create_skill(
+        self,
+        name: str,
+        from_readme: Optional[str] = None,
+        project_path: Optional[str] = None,
+        use_ai: bool = False,
+    ) -> Path:
         """Create a new learned skill in the GLOBAL cache."""
         return self.generator.create_skill(name, from_readme, project_path, use_ai)
 
@@ -59,7 +67,9 @@ class SkillsManager:
         project_path: Optional[Path] = None,
     ) -> List[str]:
         """Generate project-specific learned skills from README and tech stack."""
-        return self.generator.generate_from_readme(readme_content, tech_stack, output_dir, project_name, project_path)
+        return self.generator.generate_from_readme(
+            readme_content, tech_stack, output_dir, project_name, project_path
+        )
 
     def get_all_skills_content(self) -> Dict[str, Dict]:
         """Get full content of all skills for export (Project > Learned > Builtin)."""
@@ -74,3 +84,13 @@ class SkillsManager:
         """Save extracted triggers to .clinerules/auto-triggers.json"""
         triggers = self.extract_all_triggers()
         SkillParser.save_triggers_json(triggers, output_dir)
+
+    def _extract_tech_context(self, tech: str, readme_content: str) -> List[str]:
+        """Delegate to SkillParser."""
+        return SkillParser.extract_tech_context(tech, readme_content)
+
+    def _summarize_purpose(
+        self, tech: str, context_lines: List[str], project_name: str
+    ) -> str:
+        """Delegate to SkillParser."""
+        return SkillParser.summarize_purpose(tech, context_lines, project_name)

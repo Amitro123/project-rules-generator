@@ -13,7 +13,9 @@ class ArchitectureDecision(BaseModel):
 
     title: str = Field(description="Decision title, e.g. 'Auth Method'")
     choice: str = Field(description="Chosen approach, e.g. 'JWT tokens'")
-    alternatives: List[str] = Field(default_factory=list, description="Rejected alternatives")
+    alternatives: List[str] = Field(
+        default_factory=list, description="Rejected alternatives"
+    )
     pros: List[str] = Field(default_factory=list, description="Benefits of the choice")
     cons: List[str] = Field(default_factory=list, description="Drawbacks / risks")
 
@@ -24,105 +26,125 @@ class Design(BaseModel):
     title: str = Field(description="Design title")
     problem_statement: str = Field(description="What problem this solves")
     architecture_decisions: List[ArchitectureDecision] = Field(default_factory=list)
-    api_contracts: List[str] = Field(default_factory=list, description="API endpoint specs")
-    data_models: List[str] = Field(default_factory=list, description="Data model descriptions")
-    success_criteria: List[str] = Field(default_factory=list, description="Definition of done")
+    api_contracts: List[str] = Field(
+        default_factory=list, description="API endpoint specs"
+    )
+    data_models: List[str] = Field(
+        default_factory=list, description="Data model descriptions"
+    )
+    success_criteria: List[str] = Field(
+        default_factory=list, description="Definition of done"
+    )
 
     def to_markdown(self) -> str:
         """Render the design as a DESIGN.md markdown document."""
         lines = [
-            f'# Design: {self.title}',
-            '',
-            '## Problem Statement',
+            f"# Design: {self.title}",
+            "",
+            "## Problem Statement",
             self.problem_statement,
-            '',
+            "",
         ]
 
         if self.architecture_decisions:
-            lines += ['## Architecture Decisions', '']
+            lines += ["## Architecture Decisions", ""]
             for dec in self.architecture_decisions:
-                alt_str = f' (vs {", ".join(dec.alternatives)})' if dec.alternatives else ''
-                lines.append(f'- **{dec.title}**: {dec.choice}{alt_str}')
+                alt_str = (
+                    f' (vs {", ".join(dec.alternatives)})' if dec.alternatives else ""
+                )
+                lines.append(f"- **{dec.title}**: {dec.choice}{alt_str}")
                 for pro in dec.pros:
-                    lines.append(f'  - Pro: {pro}')
+                    lines.append(f"  - Pro: {pro}")
                 for con in dec.cons:
-                    lines.append(f'  - Con: {con}')
-            lines.append('')
+                    lines.append(f"  - Con: {con}")
+            lines.append("")
 
         if self.api_contracts:
-            lines += ['## API Contracts', '']
+            lines += ["## API Contracts", ""]
             for contract in self.api_contracts:
-                lines.append(f'- {contract}')
-            lines.append('')
+                lines.append(f"- {contract}")
+            lines.append("")
 
         if self.data_models:
-            lines += ['## Data Models', '']
+            lines += ["## Data Models", ""]
             for model in self.data_models:
-                lines.append(f'- {model}')
-            lines.append('')
+                lines.append(f"- {model}")
+            lines.append("")
 
         if self.success_criteria:
-            lines += ['## Success Criteria', '']
+            lines += ["## Success Criteria", ""]
             for criterion in self.success_criteria:
-                lines.append(f'- {criterion}')
-            lines.append('')
+                lines.append(f"- {criterion}")
+            lines.append("")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     @classmethod
-    def from_markdown(cls, text: str) -> 'Design':
+    def from_markdown(cls, text: str) -> "Design":
         """Parse a DESIGN.md back into a Design object."""
-        title = ''
-        problem = ''
+        title = ""
+        problem = ""
         decisions: List[ArchitectureDecision] = []
         api_contracts: List[str] = []
         data_models: List[str] = []
         success_criteria: List[str] = []
 
         # Extract title
-        m = re.search(r'^#\s+Design:\s*(.+)', text, re.MULTILINE)
+        m = re.search(r"^#\s+Design:\s*(.+)", text, re.MULTILINE)
         if m:
             title = m.group(1).strip()
 
         # Split into sections by ## headings
         sections: Dict[str, str] = {}
-        current_section = ''
-        for line in text.split('\n'):
-            if line.startswith('## '):
+        current_section = ""
+        for line in text.split("\n"):
+            if line.startswith("## "):
                 current_section = line[3:].strip()
-                sections[current_section] = ''
+                sections[current_section] = ""
             elif current_section:
-                sections[current_section] += line + '\n'
+                sections[current_section] += line + "\n"
 
-        problem = sections.get('Problem Statement', '').strip()
+        problem = sections.get("Problem Statement", "").strip()
 
         # Parse architecture decisions
-        arch_text = sections.get('Architecture Decisions', '')
+        arch_text = sections.get("Architecture Decisions", "")
         if arch_text:
             for m in re.finditer(
-                r'-\s+\*\*(.+?)\*\*:\s*(.+?)(?=\n-\s+\*\*|\Z)',
-                arch_text, re.DOTALL
+                r"-\s+\*\*(.+?)\*\*:\s*(.+?)(?=\n-\s+\*\*|\Z)", arch_text, re.DOTALL
             ):
                 dec_title = m.group(1).strip()
                 dec_body = m.group(2).strip()
                 # Extract choice (before any " (vs ...)")
-                choice_m = re.match(r'(.+?)(?:\s*\(vs\s+(.+?)\))?$', dec_body.split('\n')[0])
-                choice = choice_m.group(1).strip() if choice_m else dec_body.split('\n')[0]
-                alts = [a.strip() for a in choice_m.group(2).split(',')] if choice_m and choice_m.group(2) else []
-                pros = re.findall(r'Pro:\s*(.+)', dec_body)
-                cons = re.findall(r'Con:\s*(.+)', dec_body)
-                decisions.append(ArchitectureDecision(
-                    title=dec_title, choice=choice,
-                    alternatives=alts, pros=pros, cons=cons,
-                ))
+                choice_m = re.match(
+                    r"(.+?)(?:\s*\(vs\s+(.+?)\))?$", dec_body.split("\n")[0]
+                )
+                choice = (
+                    choice_m.group(1).strip() if choice_m else dec_body.split("\n")[0]
+                )
+                alts = (
+                    [a.strip() for a in choice_m.group(2).split(",")]
+                    if choice_m and choice_m.group(2)
+                    else []
+                )
+                pros = re.findall(r"Pro:\s*(.+)", dec_body)
+                cons = re.findall(r"Con:\s*(.+)", dec_body)
+                decisions.append(
+                    ArchitectureDecision(
+                        title=dec_title,
+                        choice=choice,
+                        alternatives=alts,
+                        pros=pros,
+                        cons=cons,
+                    )
+                )
 
         # Parse bullet lists
-        api_contracts = _extract_bullets(sections.get('API Contracts', ''))
-        data_models = _extract_bullets(sections.get('Data Models', ''))
-        success_criteria = _extract_bullets(sections.get('Success Criteria', ''))
+        api_contracts = _extract_bullets(sections.get("API Contracts", ""))
+        data_models = _extract_bullets(sections.get("Data Models", ""))
+        success_criteria = _extract_bullets(sections.get("Success Criteria", ""))
 
         return cls(
-            title=title or 'Untitled Design',
+            title=title or "Untitled Design",
             problem_statement=problem,
             architecture_decisions=decisions,
             api_contracts=api_contracts,
@@ -133,43 +155,53 @@ class Design(BaseModel):
 
 def _extract_bullets(text: str) -> List[str]:
     """Pull top-level bullet items from markdown text."""
-    return [m.group(1).strip() for m in re.finditer(r'^-\s+(.+)', text, re.MULTILINE)]
+    return [m.group(1).strip() for m in re.finditer(r"^-\s+(.+)", text, re.MULTILINE)]
 
 
 class DesignGenerator:
     """Generate a technical design document using AI or templates."""
 
-    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = 'groq'):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model_name: Optional[str] = None,
+        provider: str = "groq",
+    ):
         """Initialize design generator with AI client.
-        
+
         Args:
             api_key: Optional API key (auto-detects from environment)
             model_name: Optional model name override
             provider: AI provider ('gemini' or 'groq'), defaults to 'groq'
         """
         # Auto-detect provider if not explicitly set
-        if provider is None or provider == 'groq':
+        if provider is None or provider == "groq":
             # Default to Groq to avoid API key errors
-            if os.getenv('GROQ_API_KEY'):
-                self.provider = 'groq'
-                self.api_key = api_key or os.getenv('GROQ_API_KEY')
-            elif os.getenv('GEMINI_API_KEY'):
-                self.provider = 'gemini'
-                self.api_key = api_key or os.getenv('GEMINI_API_KEY')
+            if os.getenv("GROQ_API_KEY"):
+                self.provider = "groq"
+                self.api_key = api_key or os.getenv("GROQ_API_KEY")
+            elif os.getenv("GEMINI_API_KEY"):
+                self.provider = "gemini"
+                self.api_key = api_key or os.getenv("GEMINI_API_KEY")
             else:
-                self.provider = 'groq'
+                self.provider = "groq"
                 self.api_key = api_key
         else:
             self.provider = provider
-            self.api_key = api_key or os.getenv(f'{provider.upper()}_API_KEY')
+            self.api_key = api_key or os.getenv(f"{provider.upper()}_API_KEY")
 
+        # Only initialize AI client if an API key is available; otherwise fallback deterministically
         try:
             from .ai.ai_client import create_ai_client
-            self.client = create_ai_client(self.provider, api_key=self.api_key)
-            print(f"Design generator using: {self.provider}")
+
+            if self.api_key:
+                self.client = create_ai_client(self.provider, api_key=self.api_key)
+                print(f"Design generator using: {self.provider}")
+            else:
+                self.client = None
         except Exception as e:
-             self.client = None
-             print(f"Warning: Design AI client init failed: {e}")
+            self.client = None
+            print(f"Warning: Design AI client init failed: {e}")
 
         self.model_name = model_name
 
@@ -200,19 +232,19 @@ class DesignGenerator:
         """Build a comprehensive prompt for production-quality design generation."""
         # Extract project context
         tech_stack = []
-        project_type = 'unknown'
+        project_type = "unknown"
         entry_points = []
-        
+
         if project_context:
-            meta = project_context.get('metadata', {})
-            tech_stack = meta.get('tech_stack', [])
-            project_type = meta.get('project_type', 'unknown')
-            structure = project_context.get('structure', {})
-            entry_points = structure.get('entry_points', [])
-        
-        tech_str = ', '.join(tech_stack) if tech_stack else 'Python'
-        entry_str = ', '.join(entry_points[:3]) if entry_points else 'N/A'
-        
+            meta = project_context.get("metadata", {})
+            tech_stack = meta.get("tech_stack", [])
+            project_type = meta.get("project_type", "unknown")
+            structure = project_context.get("structure", {})
+            entry_points = structure.get("entry_points", [])
+
+        tech_str = ", ".join(tech_stack) if tech_stack else "Python"
+        entry_str = ", ".join(entry_points[:3]) if entry_points else "N/A"
+
         return f"""You are a Senior Software Architect with 10+ years of experience in {tech_str}.
 
 Generate a COMPLETE, PRODUCTION-READY technical design document for the following request.
@@ -388,15 +420,19 @@ NOW generate the complete design following this structure. Be specific, detailed
     def _call_llm(self, prompt: str) -> str:
         if not self.client:
             print("Warning: No AI client available")
-            return ''
+            return ""
         try:
-            result = self.client.generate(prompt, max_tokens=8000, model=self.model_name, temperature=0.7)
+            result = self.client.generate(
+                prompt, max_tokens=8000, model=self.model_name, temperature=0.7
+            )
             if not result or len(result.strip()) < 100:
-                print(f"Warning: LLM returned short/empty response ({len(result)} chars)")
+                print(
+                    f"Warning: LLM returned short/empty response ({len(result)} chars)"
+                )
             return result
         except Exception as e:
             print(f"Error calling LLM: {e}")
-            return ''
+            return ""
 
     def _parse_response(self, raw: str, user_request: str) -> Design:
         """Parse AI output into a Design. Falls back to comprehensive template if empty."""
@@ -409,83 +445,91 @@ NOW generate the complete design following this structure. Be specific, detailed
         # Fallback: Generate comprehensive template-based design
         # This demonstrates production-quality output structure
         return self._generate_comprehensive_template(user_request)
-    
+
     def _generate_comprehensive_template(self, user_request: str) -> Design:
         """Generate a comprehensive design template when AI is unavailable.
-        
+
         This creates a production-quality design structure that demonstrates
         all the sections a senior architect would include.
         """
         # Extract key terms from request for customization
-        is_cache = 'cache' in user_request.lower() or 'redis' in user_request.lower()
-        is_api = 'api' in user_request.lower() or 'endpoint' in user_request.lower()
-        is_auth = 'auth' in user_request.lower() or 'login' in user_request.lower()
-        
+        is_cache = "cache" in user_request.lower() or "redis" in user_request.lower()
+        is_api = "api" in user_request.lower() or "endpoint" in user_request.lower()
+        is_auth = "auth" in user_request.lower() or "login" in user_request.lower()
+
         # Create comprehensive architecture decisions
         decisions = []
-        
+
         if is_cache:
-            decisions.append(ArchitectureDecision(
-                title="Cache Technology",
-                choice="Redis",
-                alternatives=["Memcached", "In-memory dict", "Database caching"],
-                pros=[
-                    "Persistent storage with configurable TTL",
-                    "Rich data structures (strings, hashes, lists, sets)",
-                    "Built-in pub/sub for cache invalidation",
-                    "Widely adopted with strong Python support (redis-py)"
-                ],
-                cons=[
-                    "Additional infrastructure dependency",
-                    "Network latency for cache operations",
-                    "Requires monitoring and maintenance"
-                ]
-            ))
-            decisions.append(ArchitectureDecision(
-                title="Cache Strategy",
-                choice="Cache-aside pattern",
-                alternatives=["Write-through", "Write-behind"],
-                pros=[
-                    "Application controls cache logic explicitly",
-                    "Cache failures don't break the application",
-                    "Easy to implement and reason about"
-                ],
-                cons=[
-                    "Potential cache stampede on cold start",
-                    "Requires manual cache invalidation logic"
-                ]
-            ))
+            decisions.append(
+                ArchitectureDecision(
+                    title="Cache Technology",
+                    choice="Redis",
+                    alternatives=["Memcached", "In-memory dict", "Database caching"],
+                    pros=[
+                        "Persistent storage with configurable TTL",
+                        "Rich data structures (strings, hashes, lists, sets)",
+                        "Built-in pub/sub for cache invalidation",
+                        "Widely adopted with strong Python support (redis-py)",
+                    ],
+                    cons=[
+                        "Additional infrastructure dependency",
+                        "Network latency for cache operations",
+                        "Requires monitoring and maintenance",
+                    ],
+                )
+            )
+            decisions.append(
+                ArchitectureDecision(
+                    title="Cache Strategy",
+                    choice="Cache-aside pattern",
+                    alternatives=["Write-through", "Write-behind"],
+                    pros=[
+                        "Application controls cache logic explicitly",
+                        "Cache failures don't break the application",
+                        "Easy to implement and reason about",
+                    ],
+                    cons=[
+                        "Potential cache stampede on cold start",
+                        "Requires manual cache invalidation logic",
+                    ],
+                )
+            )
         else:
-            decisions.append(ArchitectureDecision(
-                title="Implementation Approach",
-                choice="Modular design with dependency injection",
-                alternatives=["Monolithic implementation", "Microservice"],
+            decisions.append(
+                ArchitectureDecision(
+                    title="Implementation Approach",
+                    choice="Modular design with dependency injection",
+                    alternatives=["Monolithic implementation", "Microservice"],
+                    pros=[
+                        "Testable components with clear interfaces",
+                        "Easy to mock dependencies in tests",
+                        "Flexible for future changes",
+                    ],
+                    cons=[
+                        "More upfront design work",
+                        "Slightly more complex initial setup",
+                    ],
+                )
+            )
+
+        decisions.append(
+            ArchitectureDecision(
+                title="Error Handling",
+                choice="Graceful degradation with fallback",
+                alternatives=["Fail fast", "Retry with exponential backoff"],
                 pros=[
-                    "Testable components with clear interfaces",
-                    "Easy to mock dependencies in tests",
-                    "Flexible for future changes"
+                    "System remains available even if component fails",
+                    "Better user experience during partial outages",
+                    "Easier to debug with clear error paths",
                 ],
                 cons=[
-                    "More upfront design work",
-                    "Slightly more complex initial setup"
-                ]
-            ))
-        
-        decisions.append(ArchitectureDecision(
-            title="Error Handling",
-            choice="Graceful degradation with fallback",
-            alternatives=["Fail fast", "Retry with exponential backoff"],
-            pros=[
-                "System remains available even if component fails",
-                "Better user experience during partial outages",
-                "Easier to debug with clear error paths"
-            ],
-            cons=[
-                "May mask underlying issues",
-                "Requires careful logging to track degraded states"
-            ]
-        ))
-        
+                    "May mask underlying issues",
+                    "Requires careful logging to track degraded states",
+                ],
+            )
+        )
+
         # Create data models
         data_models = []
         if is_cache:
@@ -521,11 +565,12 @@ class {user_request.split()[0].title()}Config(BaseModel):
     timeout_seconds: int = Field(default=30, ge=1)
     max_retries: int = Field(default=3, ge=0)
 ```""")
-        
+
         # Create API contracts
         api_contracts = []
         if is_cache:
-            api_contracts.append("""### `get_cached(key: str, fetch_fn: Callable[[], T]) -> T`
+            api_contracts.append(
+                """### `get_cached(key: str, fetch_fn: Callable[[], T]) -> T`
 
 **Purpose**: Retrieve value from cache or fetch and cache it
 
@@ -545,7 +590,8 @@ def fetch_user(user_id: int) -> User:
     return db.query(User).get(user_id)
 
 user = get_cached(f"user:{user_id}", lambda: fetch_user(user_id))
-```""")
+```"""
+            )
             api_contracts.append("""### `invalidate_cache(pattern: str) -> int`
 
 **Purpose**: Remove cache entries matching pattern
@@ -561,7 +607,8 @@ user = get_cached(f"user:{user_id}", lambda: fetch_user(user_id))
 count = invalidate_cache("user:*")
 ```""")
         else:
-            api_contracts.append(f"""### `execute_{user_request.split()[0].lower()}(params: dict) -> Result`
+            api_contracts.append(
+                f"""### `execute_{user_request.split()[0].lower()}(params: dict) -> Result`
 
 **Purpose**: Execute the {user_request} operation
 
@@ -573,30 +620,35 @@ count = invalidate_cache("user:*")
 **Raises**:
 - `ValidationError`: If params are invalid
 - `OperationError`: If execution fails
-""")
-        
+"""
+            )
+
         # Create success criteria
         criteria = []
         if is_cache:
-            criteria.extend([
-                "**Performance**: API response time reduced by 50% (from 200ms to <100ms)",
-                "**Reliability**: Cache hit rate > 80% after 1 hour of operation",
-                "**Quality**: Test coverage > 85% for cache layer",
-                "**Maintainability**: All public functions have comprehensive docstrings"
-            ])
+            criteria.extend(
+                [
+                    "**Performance**: API response time reduced by 50% (from 200ms to <100ms)",
+                    "**Reliability**: Cache hit rate > 80% after 1 hour of operation",
+                    "**Quality**: Test coverage > 85% for cache layer",
+                    "**Maintainability**: All public functions have comprehensive docstrings",
+                ]
+            )
         else:
-            criteria.extend([
-                f"**Functionality**: {user_request} works as specified",
-                "**Quality**: Test coverage > 80%",
-                "**Performance**: Operation completes in < 1 second",
-                "**Maintainability**: Code follows project style guide"
-            ])
-        
+            criteria.extend(
+                [
+                    f"**Functionality**: {user_request} works as specified",
+                    "**Quality**: Test coverage > 80%",
+                    "**Performance**: Operation completes in < 1 second",
+                    "**Maintainability**: Code follows project style guide",
+                ]
+            )
+
         return Design(
             title=user_request,
             problem_statement=f"{user_request}. This enhancement will improve system performance, reliability, and user experience by implementing a robust, well-tested solution following industry best practices.",
             architecture_decisions=decisions,
             api_contracts=api_contracts,
             data_models=data_models,
-            success_criteria=criteria
+            success_criteria=criteria,
         )

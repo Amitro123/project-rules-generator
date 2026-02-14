@@ -149,6 +149,7 @@ prg . --export-json > team-skills.json
 | `--output DIR` | Custom output directory | `.clinerules` |
 | `--list-skills` | Show your learned skills library | `False` |
 | `--export-json` | Export skills for team sharing | `False` |
+| `--eval-opik` | Log traces to Comet Opik | `False` |
 
 ### `prg plan` Flags
 

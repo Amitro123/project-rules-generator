@@ -1,19 +1,17 @@
 """Tests for task file creator (agent workflow)."""
-import pytest
-from pathlib import Path
 
-from generator.task_decomposer import SubTask
 from generator.planning.task_creator import (
     TaskCreator,
     TaskEntry,
     TaskFileStatus,
     TaskManifest,
 )
-
+from generator.task_decomposer import SubTask
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 def _sample_subtasks():
     """Create a list of sample SubTasks for testing."""
@@ -55,6 +53,7 @@ def _sample_subtasks():
 # TaskFileStatus
 # ---------------------------------------------------------------------------
 
+
 class TestTaskFileStatus:
 
     def test_enum_values(self):
@@ -72,12 +71,16 @@ class TestTaskFileStatus:
 # TaskEntry
 # ---------------------------------------------------------------------------
 
+
 class TestTaskEntry:
 
     def test_to_dict(self):
         entry = TaskEntry(
-            id=1, file="001-research.md", title="Research",
-            dependencies=[],  estimated_minutes=3,
+            id=1,
+            file="001-research.md",
+            title="Research",
+            dependencies=[],
+            estimated_minutes=3,
         )
         d = entry.to_dict()
         assert d["id"] == 1
@@ -87,9 +90,12 @@ class TestTaskEntry:
 
     def test_roundtrip(self):
         entry = TaskEntry(
-            id=2, file="002-impl.md", title="Implement",
+            id=2,
+            file="002-impl.md",
+            title="Implement",
             status=TaskFileStatus.in_progress,
-            dependencies=[1], estimated_minutes=5,
+            dependencies=[1],
+            estimated_minutes=5,
             started_at="2025-01-01T00:00:00",
         )
         d = entry.to_dict()
@@ -102,6 +108,7 @@ class TestTaskEntry:
 # ---------------------------------------------------------------------------
 # TaskManifest
 # ---------------------------------------------------------------------------
+
 
 class TestTaskManifest:
 
@@ -126,7 +133,8 @@ class TestTaskManifest:
     def test_yaml_roundtrip(self, tmp_path):
         entry = TaskEntry(id=1, file="001-a.md", title="A", estimated_minutes=3)
         m = TaskManifest(
-            plan_file="PLAN.md", task_description="Test",
+            plan_file="PLAN.md",
+            task_description="Test",
             tasks=[entry],
         )
         yaml_path = tmp_path / "TASKS.yaml"
@@ -144,6 +152,7 @@ class TestTaskManifest:
 # TaskCreator
 # ---------------------------------------------------------------------------
 
+
 class TestTaskCreator:
 
     def test_subtask_to_filename(self):
@@ -160,9 +169,13 @@ class TestTaskCreator:
 
     def test_render_task_md(self):
         st = SubTask(
-            id=1, title="Research", goal="Understand patterns",
-            files=["docs/x.md"], changes=["Add notes"],
-            tests=["pytest"], dependencies=[],
+            id=1,
+            title="Research",
+            goal="Understand patterns",
+            files=["docs/x.md"],
+            changes=["Add notes"],
+            tests=["pytest"],
+            dependencies=[],
             estimated_minutes=3,
         )
         md = TaskCreator._render_task_md(st)

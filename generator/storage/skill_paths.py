@@ -1,7 +1,7 @@
 """Manage builtin and learned skill locations."""
 
-import shutil
 import logging
+import shutil
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -37,9 +37,12 @@ class SkillPathManager:
 
         synced_count = 0
         for skill_item in cls.BUILTIN_SOURCE.iterdir():
-            if skill_item.is_file() and skill_item.suffix in ('.md', '.yaml', '.yml'):
+            if skill_item.is_file() and skill_item.suffix in (".md", ".yaml", ".yml"):
                 target = cls.GLOBAL_BUILTIN / skill_item.name
-                if not target.exists() or skill_item.stat().st_mtime > target.stat().st_mtime:
+                if (
+                    not target.exists()
+                    or skill_item.stat().st_mtime > target.stat().st_mtime
+                ):
                     shutil.copy2(skill_item, target)
                     synced_count += 1
                     logger.info(f"Synced builtin: {skill_item.name}")
@@ -49,17 +52,22 @@ class SkillPathManager:
                 target_dir = cls.GLOBAL_BUILTIN / skill_item.name
                 target_dir.mkdir(exist_ok=True)
 
-                for sub_file in skill_item.rglob('*'):
+                for sub_file in skill_item.rglob("*"):
                     if sub_file.is_file():
                         rel = sub_file.relative_to(skill_item)
                         target_file = target_dir / rel
                         target_file.parent.mkdir(parents=True, exist_ok=True)
-                        if not target_file.exists() or sub_file.stat().st_mtime > target_file.stat().st_mtime:
+                        if (
+                            not target_file.exists()
+                            or sub_file.stat().st_mtime > target_file.stat().st_mtime
+                        ):
                             shutil.copy2(sub_file, target_file)
                             synced_count += 1
 
         if synced_count > 0:
-            logger.info(f"Synced {synced_count} builtin skill files to {cls.GLOBAL_BUILTIN}")
+            logger.info(
+                f"Synced {synced_count} builtin skill files to {cls.GLOBAL_BUILTIN}"
+            )
 
     @classmethod
     def save_learned_skill(cls, skill: Dict, category: str) -> Path:
@@ -78,17 +86,19 @@ class SkillPathManager:
         category_dir = cls.GLOBAL_LEARNED / category
         category_dir.mkdir(parents=True, exist_ok=True)
 
-        skill_name = skill.get('name', 'unnamed-skill')
-        skill_content = skill.get('content', '')
+        skill_name = skill.get("name", "unnamed-skill")
+        skill_content = skill.get("content", "")
 
         # Determine file extension based on content
-        if skill_content.strip().startswith('---') or skill_content.strip().startswith('name:'):
-            ext = '.yaml'
+        if skill_content.strip().startswith("---") or skill_content.strip().startswith(
+            "name:"
+        ):
+            ext = ".yaml"
         else:
-            ext = '.md'
+            ext = ".md"
 
         skill_path = category_dir / f"{skill_name}{ext}"
-        skill_path.write_text(skill_content, encoding='utf-8')
+        skill_path.write_text(skill_content, encoding="utf-8")
 
         logger.info(f"Saved learned skill: {skill_path}")
         return skill_path
@@ -96,10 +106,10 @@ class SkillPathManager:
     @classmethod
     def get_learned_skill(cls, category: str, name: str) -> Optional[str]:
         """Load a learned skill's content."""
-        for ext in ('.md', '.yaml', '.yml'):
+        for ext in (".md", ".yaml", ".yml"):
             path = cls.GLOBAL_LEARNED / category / f"{name}{ext}"
             if path.exists():
-                return path.read_text(encoding='utf-8', errors='replace')
+                return path.read_text(encoding="utf-8", errors="replace")
         return None
 
     @classmethod
@@ -113,9 +123,9 @@ class SkillPathManager:
             if category_dir.is_dir():
                 skills = []
                 for f in category_dir.iterdir():
-                    if f.is_file() and f.suffix in ('.md', '.yaml', '.yml'):
+                    if f.is_file() and f.suffix in (".md", ".yaml", ".yml"):
                         skills.append(f.stem)
-                    elif f.is_dir() and (f / 'SKILL.md').exists():
+                    elif f.is_dir() and (f / "SKILL.md").exists():
                         skills.append(f.name)
                 if skills:
                     result[category_dir.name] = sorted(skills)
@@ -130,9 +140,9 @@ class SkillPathManager:
             return skills
 
         for item in cls.GLOBAL_BUILTIN.iterdir():
-            if item.is_file() and item.suffix in ('.md', '.yaml', '.yml'):
+            if item.is_file() and item.suffix in (".md", ".yaml", ".yml"):
                 skills.append(item.stem)
-            elif item.is_dir() and (item / 'SKILL.md').exists():
+            elif item.is_dir() and (item / "SKILL.md").exists():
                 skills.append(item.name)
 
         return sorted(skills)
@@ -148,37 +158,37 @@ class SkillPathManager:
         Returns:
             Path to the skill file, or None if not found
         """
-        parts = skill_ref.split('/')
+        parts = skill_ref.split("/")
 
         if len(parts) < 2:
             return None
 
         source_type = parts[0]
 
-        if source_type == 'builtin':
+        if source_type == "builtin":
             name = parts[-1]
             base = cls.GLOBAL_BUILTIN
             # Check various extensions and structures
-            for ext in ('.md', '.yaml', '.yml'):
+            for ext in (".md", ".yaml", ".yml"):
                 path = base / f"{name}{ext}"
                 if path.exists():
                     return path
             # Check directory style
-            dir_path = base / name / 'SKILL.md'
+            dir_path = base / name / "SKILL.md"
             if dir_path.exists():
                 return dir_path
 
-        elif source_type == 'learned':
+        elif source_type == "learned":
             if len(parts) >= 3:
                 category = parts[1]
                 name = parts[2]
             else:
-                category = ''
+                category = ""
                 name = parts[1]
 
             base = cls.GLOBAL_LEARNED
             if category:
-                for ext in ('.md', '.yaml', '.yml'):
+                for ext in (".md", ".yaml", ".yml"):
                     path = base / category / f"{name}{ext}"
                     if path.exists():
                         return path
@@ -186,7 +196,7 @@ class SkillPathManager:
                 # Search all categories
                 for cat_dir in base.iterdir():
                     if cat_dir.is_dir():
-                        for ext in ('.md', '.yaml', '.yml'):
+                        for ext in (".md", ".yaml", ".yml"):
                             path = cat_dir / f"{name}{ext}"
                             if path.exists():
                                 return path

@@ -47,16 +47,16 @@ def improve_with_feedback(
     target_score: int = 85,
     max_iterations: int = 3,
     project_path: Optional[Path] = None,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> QualityReport:
     """Iteratively improve content until target score is reached.
-    
+
     This function implements a feedback loop that:
     1. Analyzes current content quality
     2. If score < target, generates improved version
     3. Applies the improvement and re-analyzes
     4. Repeats until target reached or max iterations exceeded
-    
+
     Args:
         filepath: Path to file to improve
         analyzer: ContentAnalyzer instance to use
@@ -64,10 +64,10 @@ def improve_with_feedback(
         max_iterations: Maximum improvement iterations (default: 3)
         project_path: Optional project root for context
         verbose: Whether to print progress messages
-        
+
     Returns:
         QualityReport with final score (>= target_score or best attempt)
-        
+
     Raises:
         FileNotFoundError: If filepath doesn't exist
         ValueError: If target_score or max_iterations are invalid
@@ -79,49 +79,57 @@ def improve_with_feedback(
         raise ValueError(f"target_score must be 0-100, got {target_score}")
     if max_iterations < 1:
         raise ValueError(f"max_iterations must be >= 1, got {max_iterations}")
-    
+
     # Read initial content
-    content = filepath.read_text(encoding='utf-8')
-    
+    content = filepath.read_text(encoding="utf-8")
+
     # Track best attempt in case we don't reach target
     best_report = None
     best_score = 0
-    
+
     for iteration in range(1, max_iterations + 1):
         # Analyze current content
         report = analyzer.analyze(
-            str(filepath.relative_to(filepath.parent.parent) if filepath.parent.parent.exists() else filepath.name),
+            str(
+                filepath.relative_to(filepath.parent.parent)
+                if filepath.parent.parent.exists()
+                else filepath.name
+            ),
             content,
-            project_path=project_path
+            project_path=project_path,
         )
-        
+
         # Update best attempt
         if report.score > best_score:
             best_score = report.score
             best_report = report
-        
+
         if verbose:
             logger.info(f"  Iteration {iteration}/{max_iterations}: {report.score}/100")
-        
+
         # Check if target reached
         if report.score >= target_score:
             if verbose:
                 logger.info(f"  ✅ Target reached ({report.score}/100)")
-            
+
             # Apply final fix if we have a clean patch
             if report.patch and not _patch_has_leakage(report.patch):
                 analyzer.apply_fix(filepath, report.patch)
                 # Re-analyze to get final report
-                content = filepath.read_text(encoding='utf-8')
+                content = filepath.read_text(encoding="utf-8")
                 final_report = analyzer.analyze(
-                    str(filepath.relative_to(filepath.parent.parent) if filepath.parent.parent.exists() else filepath.name),
+                    str(
+                        filepath.relative_to(filepath.parent.parent)
+                        if filepath.parent.parent.exists()
+                        else filepath.name
+                    ),
                     content,
-                    project_path=project_path
+                    project_path=project_path,
                 )
                 return final_report
-            
+
             return report
-        
+
         # Generate improvement if we haven't reached target
         if not report.patch:
             # No patch generated (shouldn't happen for low scores, but handle it)
@@ -139,24 +147,28 @@ def improve_with_feedback(
         try:
             analyzer.apply_fix(filepath, report.patch)
             # Read updated content for next iteration
-            content = filepath.read_text(encoding='utf-8')
-            
+            content = filepath.read_text(encoding="utf-8")
+
             if verbose:
-                logger.info(f"  Applied improvement patch")
-                
+                logger.info("  Applied improvement patch")
+
         except Exception as e:
             logger.error(f"Failed to apply patch at iteration {iteration}: {e}")
             break
-    
+
     # Re-score the actual file on disk after the loop ends.
     # The last iteration may have applied a patch that was never re-scored,
     # so the best_report could be stale.
     try:
-        final_content = filepath.read_text(encoding='utf-8')
+        final_content = filepath.read_text(encoding="utf-8")
         final_report = analyzer.analyze(
-            str(filepath.relative_to(filepath.parent.parent) if filepath.parent.parent.exists() else filepath.name),
+            str(
+                filepath.relative_to(filepath.parent.parent)
+                if filepath.parent.parent.exists()
+                else filepath.name
+            ),
             final_content,
-            project_path=project_path
+            project_path=project_path,
         )
         if final_report.score > best_score:
             best_score = final_report.score
@@ -183,10 +195,10 @@ def batch_improve_with_feedback(
     target_score: int = 85,
     max_iterations: int = 3,
     project_path: Optional[Path] = None,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> dict[Path, QualityReport]:
     """Improve multiple files with feedback loop.
-    
+
     Args:
         filepaths: List of file paths to improve
         analyzer: ContentAnalyzer instance to use
@@ -194,16 +206,16 @@ def batch_improve_with_feedback(
         max_iterations: Maximum improvement iterations per file (default: 3)
         project_path: Optional project root for context
         verbose: Whether to print progress messages
-        
+
     Returns:
         Dictionary mapping filepath to final QualityReport
     """
     results = {}
-    
+
     for filepath in filepaths:
         if verbose:
             logger.info(f"\nImproving {filepath.name}...")
-        
+
         try:
             report = improve_with_feedback(
                 filepath,
@@ -211,15 +223,15 @@ def batch_improve_with_feedback(
                 target_score=target_score,
                 max_iterations=max_iterations,
                 project_path=project_path,
-                verbose=verbose
+                verbose=verbose,
             )
             results[filepath] = report
-            
+
             if verbose:
                 logger.info(f"  Final score: {report.score}/100")
-                
+
         except Exception as e:
             logger.error(f"Failed to improve {filepath}: {e}")
             # Continue with other files
-            
+
     return results

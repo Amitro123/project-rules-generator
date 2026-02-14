@@ -1,9 +1,9 @@
 """Self-review agent for critiquing generated artifacts."""
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
-import re
 
 from generator.ai.ai_client import create_ai_client
 
@@ -18,6 +18,7 @@ REVIEW_SYSTEM_PROMPT = (
 @dataclass
 class ReviewReport:
     """Result of a self-review critique."""
+
     verdict: str  # "Pass", "Needs Revision", "Major Issues"
     strengths: List[str] = field(default_factory=list)
     issues: List[str] = field(default_factory=list)
@@ -26,7 +27,7 @@ class ReviewReport:
 
     def to_markdown(self) -> str:
         """Render as CRITIQUE.md content."""
-        lines = [f"# Review Report", ""]
+        lines = ["# Review Report", ""]
         lines.append(f"**Verdict:** {self.verdict}")
         lines.append("")
 
@@ -60,10 +61,14 @@ class ReviewReport:
 class SelfReviewer:
     """Critique generated artifacts for quality and hallucinations."""
 
-    def __init__(self, provider: str = 'groq', api_key: Optional[str] = None, client=None):
+    def __init__(
+        self, provider: str = "groq", api_key: Optional[str] = None, client=None
+    ):
         self.client = client or create_ai_client(provider=provider, api_key=api_key)
 
-    def review(self, filepath: Path, project_path: Optional[Path] = None) -> ReviewReport:
+    def review(
+        self, filepath: Path, project_path: Optional[Path] = None
+    ) -> ReviewReport:
         """Critique a generated artifact.
 
         Args:
@@ -73,21 +78,23 @@ class SelfReviewer:
         Returns:
             ReviewReport with verdict, issues, and hallucination list
         """
-        content = filepath.read_text(encoding='utf-8')
+        content = filepath.read_text(encoding="utf-8")
 
         # Gather README context
         readme_excerpt = ""
         if project_path:
             readme_path = Path(project_path) / "README.md"
             if readme_path.exists():
-                readme_excerpt = readme_path.read_text(encoding='utf-8')[:2000]
+                readme_excerpt = readme_path.read_text(encoding="utf-8")[:2000]
 
         prompt = self._build_review_prompt(content, readme_excerpt)
 
         try:
             response = self.client.generate(
-                prompt, temperature=0.3, max_tokens=2000,
-                system_message=REVIEW_SYSTEM_PROMPT
+                prompt,
+                temperature=0.3,
+                max_tokens=2000,
+                system_message=REVIEW_SYSTEM_PROMPT,
             )
             report = self._parse_review(response)
         except Exception:
@@ -151,7 +158,7 @@ ACTION_PLAN:
         action_plan = []
 
         # Extract verdict
-        verdict_match = re.search(r'VERDICT:\s*(.+)', response)
+        verdict_match = re.search(r"VERDICT:\s*(.+)", response)
         if verdict_match:
             raw = verdict_match.group(1).strip()
             if "Pass" in raw:
@@ -168,7 +175,11 @@ ACTION_PLAN:
         action_plan = self._extract_section(response, "ACTION_PLAN")
 
         # Clean up "None" entries
-        hallucinations = [h for h in hallucinations if h.lower() not in ("none", "n/a", "none detected")]
+        hallucinations = [
+            h
+            for h in hallucinations
+            if h.lower() not in ("none", "n/a", "none detected")
+        ]
 
         return ReviewReport(
             verdict=verdict,
@@ -180,16 +191,16 @@ ACTION_PLAN:
 
     def _extract_section(self, text: str, header: str) -> List[str]:
         """Extract bullet items under a section header."""
-        pattern = rf'{header}:\s*\n((?:\s*-\s+.+\n?)+)'
+        pattern = rf"{header}:\s*\n((?:\s*-\s+.+\n?)+)"
         match = re.search(pattern, text)
         if not match:
             return []
 
         items = []
-        for line in match.group(1).split('\n'):
+        for line in match.group(1).split("\n"):
             line = line.strip()
-            if line.startswith('-'):
-                item = line.lstrip('-').strip()
+            if line.startswith("-"):
+                item = line.lstrip("-").strip()
                 if item:
                     items.append(item)
         return items
@@ -203,8 +214,8 @@ ACTION_PLAN:
         readme_lower = readme_content.lower()
 
         # Find capitalized compound names (DevLens-AI, GithubAgent, etc.)
-        candidates = set(re.findall(r'\b[A-Z][a-zA-Z]+-[A-Z][a-zA-Z]+\b', content))
-        candidates |= set(re.findall(r'\b[A-Z][a-z]+[A-Z][a-zA-Z]+\b', content))
+        candidates = set(re.findall(r"\b[A-Z][a-zA-Z]+-[A-Z][a-zA-Z]+\b", content))
+        candidates |= set(re.findall(r"\b[A-Z][a-z]+[A-Z][a-zA-Z]+\b", content))
 
         for term in candidates:
             if term.lower() not in readme_lower:
@@ -218,12 +229,12 @@ ACTION_PLAN:
         strengths = []
 
         # Check basic structure
-        if content.startswith('#'):
+        if content.startswith("#"):
             strengths.append("Has a title heading")
         else:
             issues.append("Missing title heading")
 
-        phase_count = len(re.findall(r'^## ', content, re.MULTILINE))
+        phase_count = len(re.findall(r"^## ", content, re.MULTILINE))
         if phase_count >= 3:
             strengths.append(f"Has {phase_count} phases")
         elif phase_count > 0:
@@ -231,7 +242,7 @@ ACTION_PLAN:
         else:
             issues.append("No phase sections found")
 
-        task_count = len(re.findall(r'- \[ \]', content))
+        task_count = len(re.findall(r"- \[ \]", content))
         if task_count >= 5:
             strengths.append(f"Contains {task_count} tasks")
         else:

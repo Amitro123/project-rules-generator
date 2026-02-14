@@ -1,12 +1,15 @@
 """Generate {project}-rules.md files."""
+
 import json
 import re
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
-def generate_rules(project_data: Dict[str, Any], config: Dict[str, Any],
-                   enhanced_context: Optional[Dict[str, Any]] = None) -> str:
+def generate_rules(
+    project_data: Dict[str, Any],
+    config: Dict[str, Any],
+    enhanced_context: Optional[Dict[str, Any]] = None,
+) -> str:
     """Generate {project}-rules.md content.
 
     When enhanced_context is provided (from EnhancedProjectParser), produces
@@ -26,42 +29,43 @@ def generate_rules(project_data: Dict[str, Any], config: Dict[str, Any],
     return _generate_basic_rules(project_data, config)
 
 
-def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any],
-                             ctx: Dict[str, Any]) -> str:
+def _generate_enhanced_rules(
+    project_data: Dict[str, Any], config: Dict[str, Any], ctx: Dict[str, Any]
+) -> str:
     """Generate rules grounded in actual project analysis."""
-    name = project_data['name']
-    max_desc = config.get('generation', {}).get('max_description_length', 200)
-    description = project_data['description'][:max_desc]
-    tech_stack = project_data['tech_stack']
-    tech_str = ', '.join(tech_stack) if tech_stack else 'standard tools'
+    name = project_data["name"]
+    max_desc = config.get("generation", {}).get("max_description_length", 200)
+    description = project_data["description"][:max_desc]
+    tech_stack = project_data["tech_stack"]
+    tech_str = ", ".join(tech_stack) if tech_stack else "standard tools"
 
-    metadata = ctx.get('metadata', {})
-    project_type = metadata.get('project_type', 'unknown')
-    languages = metadata.get('languages', [])
-    has_tests = metadata.get('has_tests', False)
+    metadata = ctx.get("metadata", {})
+    project_type = metadata.get("project_type", "unknown")
+    languages = metadata.get("languages", [])
+    has_tests = metadata.get("has_tests", False)
 
-    deps = ctx.get('dependencies', {})
-    python_deps = [d['name'] for d in deps.get('python', [])]
-    node_deps = [d['name'] for d in deps.get('node', [])]
+    deps = ctx.get("dependencies", {})
+    python_deps = [d["name"] for d in deps.get("python", [])]
+    node_deps = [d["name"] for d in deps.get("node", [])]
 
-    structure = ctx.get('structure', {})
-    entry_points = structure.get('entry_points', [])
+    structure = ctx.get("structure", {})
+    entry_points = structure.get("entry_points", [])
     # Only show primary type + test pattern, filter false-positive secondary detections
-    raw_patterns = structure.get('patterns', [])
-    patterns = [p for p in raw_patterns if p == project_type or p.endswith('-tests')]
+    raw_patterns = structure.get("patterns", [])
+    patterns = [p for p in raw_patterns if p == project_type or p.endswith("-tests")]
 
-    test_info = ctx.get('test_patterns', {})
-    test_framework = test_info.get('framework', '')
-    test_files = test_info.get('test_files', 0)
+    test_info = ctx.get("test_patterns", {})
+    test_framework = test_info.get("framework", "")
+    test_files = test_info.get("test_files", 0)
 
-    readme_data = ctx.get('readme', {})
-    installation = readme_data.get('installation', '')
-    usage = readme_data.get('usage', '')
-    troubleshooting = readme_data.get('troubleshooting', '')
+    readme_data = ctx.get("readme", {})
+    installation = readme_data.get("installation", "")
+    usage = readme_data.get("usage", "")
+    troubleshooting = readme_data.get("troubleshooting", "")
 
     # --- Build architecture section ---
     arch_lines = []
-    if project_type != 'unknown':
+    if project_type != "unknown":
         arch_lines.append(f"- **Project type**: {project_type}")
     if entry_points:
         arch_lines.append(f"- **Entry points**: {', '.join(entry_points)}")
@@ -69,20 +73,21 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
         arch_lines.append(f"- **Structural patterns**: {', '.join(patterns)}")
     if languages:
         arch_lines.append(f"- **Languages**: {', '.join(languages)}")
-    arch_section = '\n'.join(arch_lines) if arch_lines else '- Standard project layout'
+    arch_section = "\n".join(arch_lines) if arch_lines else "- Standard project layout"
 
     # --- Build DO rules from actual analysis ---
-    do_rules = _build_do_rules(tech_stack, python_deps, node_deps, project_type,
-                               test_framework, structure)
+    do_rules = _build_do_rules(
+        tech_stack, python_deps, node_deps, project_type, test_framework, structure
+    )
 
     # --- Build DON'T rules from actual analysis ---
     dont_rules = _build_dont_rules(tech_stack, python_deps, project_type, structure)
 
     # --- Build priorities from features ---
-    features = project_data.get('features', [])
+    features = project_data.get("features", [])
     priorities = features[:3] if features else []
     while len(priorities) < 3:
-        defaults = ['Code quality', 'Test coverage', 'Documentation clarity']
+        defaults = ["Code quality", "Test coverage", "Documentation clarity"]
         priorities.append(defaults[len(priorities)])
 
     # --- Build test section ---
@@ -95,11 +100,14 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
     file_structure = _build_file_structure(structure, entry_points, patterns)
 
     # --- Build workflow section from README ---
-    workflow_section = _build_workflow_section(installation, usage, troubleshooting,
-                                              test_framework, tech_stack)
+    workflow_section = _build_workflow_section(
+        installation, usage, troubleshooting, test_framework, tech_stack
+    )
 
     # --- Build context strategy section ---
-    context_strategy = _build_context_strategy(structure, entry_points, project_type, test_info)
+    context_strategy = _build_context_strategy(
+        structure, entry_points, project_type, test_info
+    )
 
     template = f"""---
 project: {name}
@@ -159,18 +167,25 @@ _Generated by project-rules-generator (enhanced analysis)_
     return template
 
 
-def _build_do_rules(tech_stack: List[str], python_deps: List[str],
-                    node_deps: List[str], project_type: str,
-                    test_framework: str, structure: Dict) -> str:
+def _build_do_rules(
+    tech_stack: List[str],
+    python_deps: List[str],
+    node_deps: List[str],
+    project_type: str,
+    test_framework: str,
+    structure: Dict,
+) -> str:
     """Build DO rules specific to this project's tech."""
     rules = []
 
     # Test framework
-    if test_framework == 'pytest':
+    if test_framework == "pytest":
         rules.append("- Run `pytest` before committing; add tests for new features")
-        if 'conftest' in str(structure):
-            rules.append("- Use shared fixtures from `conftest.py` — don't duplicate test setup")
-    elif test_framework == 'jest':
+        if "conftest" in str(structure):
+            rules.append(
+                "- Use shared fixtures from `conftest.py` — don't duplicate test setup"
+            )
+    elif test_framework == "jest":
         rules.append("- Run `npx jest` before committing; add tests for new features")
     elif test_framework:
         rules.append(f"- Run `{test_framework}` tests before committing")
@@ -178,110 +193,154 @@ def _build_do_rules(tech_stack: List[str], python_deps: List[str],
         rules.append("- Write tests for new features and bug fixes")
 
     # Python-specific
-    if 'python' in tech_stack:
+    if "python" in tech_stack:
         rules.append("- Use type hints on all public function signatures")
-        if 'pydantic' in python_deps:
+        if "pydantic" in python_deps:
             rules.append("- Use Pydantic models for data validation (not raw dicts)")
-        if 'click' in python_deps:
-            rules.append("- Use Click decorators for CLI arguments — don't parse sys.argv manually")
-        if 'typer' in python_deps:
+        if "click" in python_deps:
+            rules.append(
+                "- Use Click decorators for CLI arguments — don't parse sys.argv manually"
+            )
+        if "typer" in python_deps:
             rules.append("- Use Typer for CLI commands — keep command functions thin")
 
     # FastAPI-specific
-    if 'fastapi' in python_deps or project_type == 'fastapi-api':
+    if "fastapi" in python_deps or project_type == "fastapi-api":
         rules.append("- Use `Depends()` for dependency injection in route handlers")
         rules.append("- Define Pydantic response models for all endpoints")
 
     # Django-specific
-    if project_type == 'django-app':
+    if project_type == "django-app":
         rules.append("- Run `python manage.py makemigrations` after model changes")
         rules.append("- Use Django ORM — don't write raw SQL without justification")
 
     # Flask-specific
-    if 'flask' in python_deps:
+    if "flask" in python_deps:
         rules.append("- Use Blueprints for route organization in Flask")
 
     # React/TS-specific
-    if 'react' in node_deps or 'react' in tech_stack:
+    if "react" in node_deps or "react" in tech_stack:
         rules.append("- Use functional components with hooks — no class components")
-        rules.append("- Keep components under 200 lines; extract sub-components when needed")
-    if 'typescript' in tech_stack or 'typescript' in node_deps:
+        rules.append(
+            "- Keep components under 200 lines; extract sub-components when needed"
+        )
+    if "typescript" in tech_stack or "typescript" in node_deps:
         rules.append("- Use TypeScript strict mode; avoid `any` type")
 
     # Docker
-    if 'docker' in tech_stack:
+    if "docker" in tech_stack:
         rules.append("- Use multi-stage Docker builds; keep final image minimal")
 
     # AI / API integration
-    ai_techs = [t for t in tech_stack if t in ('perplexity', 'groq', 'mistral', 'cohere', 'openai', 'anthropic', 'gemini', 'langchain')]
+    ai_techs = [
+        t
+        for t in tech_stack
+        if t
+        in (
+            "perplexity",
+            "groq",
+            "mistral",
+            "cohere",
+            "openai",
+            "anthropic",
+            "gemini",
+            "langchain",
+        )
+    ]
     if ai_techs:
-        rules.append(f"- Store API keys in `.env` or environment variables — never hardcode ({', '.join(ai_techs)})")
-        rules.append("- Add retry logic with exponential backoff for external API calls")
+        rules.append(
+            f"- Store API keys in `.env` or environment variables — never hardcode ({', '.join(ai_techs)})"
+        )
+        rules.append(
+            "- Add retry logic with exponential backoff for external API calls"
+        )
         rules.append("- Validate and type-check API responses before using them")
 
     # Generic structure
     rules.append("- Follow existing project structure and naming conventions")
-    if any(ep.endswith('.py') for ep in structure.get('entry_points', [])):
-        rules.append("- Keep module imports at file top; use absolute imports within the project")
+    if any(ep.endswith(".py") for ep in structure.get("entry_points", [])):
+        rules.append(
+            "- Keep module imports at file top; use absolute imports within the project"
+        )
 
-    return '\n'.join(rules)
+    return "\n".join(rules)
 
 
-def _build_dont_rules(tech_stack: List[str], python_deps: List[str],
-                      project_type: str, structure: Dict) -> str:
+def _build_dont_rules(
+    tech_stack: List[str], python_deps: List[str], project_type: str, structure: Dict
+) -> str:
     """Build DON'T rules specific to this project."""
     rules = []
 
-    if 'python' in tech_stack:
+    if "python" in tech_stack:
         rules.append("- Don't use `print()` for logging — use the `logging` module")
         rules.append("- Don't catch bare `Exception` — catch specific exceptions")
-        if 'click' in python_deps:
-            rules.append("- Don't use `sys.exit()` in library code — raise exceptions, let Click handle exit")
+        if "click" in python_deps:
+            rules.append(
+                "- Don't use `sys.exit()` in library code — raise exceptions, let Click handle exit"
+            )
 
-    if 'fastapi' in python_deps or project_type == 'fastapi-api':
+    if "fastapi" in python_deps or project_type == "fastapi-api":
         rules.append("- Don't use sync functions for I/O in async route handlers")
-        rules.append("- Don't skip Pydantic validation by accessing `request.json()` directly")
+        rules.append(
+            "- Don't skip Pydantic validation by accessing `request.json()` directly"
+        )
 
-    if 'react' in tech_stack:
+    if "react" in tech_stack:
         rules.append("- Don't mutate state directly — use setState/dispatch")
         rules.append("- Don't use `useEffect` without dependency arrays")
 
-    if 'docker' in tech_stack:
+    if "docker" in tech_stack:
         rules.append("- Don't include dev dependencies in production Docker image")
 
-    ai_techs = [t for t in tech_stack if t in ('perplexity', 'groq', 'mistral', 'cohere', 'openai', 'anthropic', 'gemini', 'langchain')]
+    ai_techs = [
+        t
+        for t in tech_stack
+        if t
+        in (
+            "perplexity",
+            "groq",
+            "mistral",
+            "cohere",
+            "openai",
+            "anthropic",
+            "gemini",
+            "langchain",
+        )
+    ]
     if ai_techs:
-        rules.append("- Don't log or print full API responses in production (may contain PII)")
+        rules.append(
+            "- Don't log or print full API responses in production (may contain PII)"
+        )
         rules.append("- Don't ignore rate-limit headers from API providers")
 
     # Always
     rules.append("- Don't commit secrets, API keys, or `.env` files")
     rules.append("- Don't add dependencies without checking license compatibility")
 
-    return '\n'.join(rules)
+    return "\n".join(rules)
 
 
-def _build_test_section(test_framework: str, test_files: int,
-                        test_info: Dict) -> str:
+def _build_test_section(test_framework: str, test_files: int, test_info: Dict) -> str:
     """Build testing section from actual test analysis."""
     lines = []
-    test_cases = test_info.get('test_cases', 0)
+    test_cases = test_info.get("test_cases", 0)
     if test_framework:
         lines.append(f"- **Framework**: {test_framework}")
         counts = str(test_files)
         if test_cases:
             counts += f" ({test_cases} test cases)"
         lines.append(f"- **Test files**: {counts}")
-        test_patterns = test_info.get('patterns', [])
+        test_patterns = test_info.get("patterns", [])
         if test_patterns:
             lines.append(f"- **Test types**: {', '.join(test_patterns)}")
-        if test_info.get('has_conftest'):
+        if test_info.get("has_conftest"):
             lines.append("- **Fixtures**: shared via `conftest.py`")
-        if test_info.get('has_fixtures'):
+        if test_info.get("has_fixtures"):
             lines.append("- **Test data**: `tests/fixtures/` directory")
 
         # Run commands
-        if test_framework == 'pytest':
+        if test_framework == "pytest":
             lines.append("\n```bash")
             lines.append("# Run all tests")
             lines.append("pytest")
@@ -290,7 +349,7 @@ def _build_test_section(test_framework: str, test_files: int,
             lines.append("# Run specific test file")
             lines.append("pytest tests/test_specific.py -v")
             lines.append("```")
-        elif test_framework == 'jest':
+        elif test_framework == "jest":
             lines.append("\n```bash")
             lines.append("npx jest")
             lines.append("npx jest --coverage")
@@ -298,27 +357,32 @@ def _build_test_section(test_framework: str, test_files: int,
     else:
         lines.append("- No test framework detected")
 
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 def _build_dep_section(python_deps: List[str], node_deps: List[str]) -> str:
     """Build dependency section from parsed deps."""
     lines = []
     if python_deps:
-        lines.append(f"**Python** ({len(python_deps)} packages): {', '.join(python_deps[:15])}")
+        lines.append(
+            f"**Python** ({len(python_deps)} packages): {', '.join(python_deps[:15])}"
+        )
         if len(python_deps) > 15:
             lines.append(f"  ... and {len(python_deps) - 15} more")
     if node_deps:
-        lines.append(f"**Node** ({len(node_deps)} packages): {', '.join(node_deps[:15])}")
+        lines.append(
+            f"**Node** ({len(node_deps)} packages): {', '.join(node_deps[:15])}"
+        )
         if len(node_deps) > 15:
             lines.append(f"  ... and {len(node_deps) - 15} more")
     if not lines:
         lines.append("No dependency files found.")
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
-def _build_file_structure(structure: Dict, entry_points: List[str],
-                          patterns: List[str]) -> str:
+def _build_file_structure(
+    structure: Dict, entry_points: List[str], patterns: List[str]
+) -> str:
     """Build file structure section."""
     lines = []
     if entry_points:
@@ -331,22 +395,26 @@ def _build_file_structure(structure: Dict, entry_points: List[str],
             lines.append(f"- {p}")
     if not lines:
         lines.append("Standard project layout.")
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 def _sanitize_readme_section(text: str, max_len: int = 500) -> str:
     """Trim README section content and ensure code blocks are balanced."""
     text = text[:max_len].strip()
     # Count code fences - if odd, the last block is unclosed, so close it
-    fence_count = text.count('```')
+    fence_count = text.count("```")
     if fence_count % 2 != 0:
-        text += '\n```'
+        text += "\n```"
     return text
 
 
-def _build_workflow_section(installation: str, usage: str,
-                            troubleshooting: str, test_framework: str,
-                            tech_stack: List[str]) -> str:
+def _build_workflow_section(
+    installation: str,
+    usage: str,
+    troubleshooting: str,
+    test_framework: str,
+    tech_stack: List[str],
+) -> str:
     """Build workflow section from README content."""
     sections = []
 
@@ -357,30 +425,33 @@ def _build_workflow_section(installation: str, usage: str,
         sections.append(f"### Usage\n{_sanitize_readme_section(usage)}")
 
     if troubleshooting:
-        sections.append(f"### Troubleshooting\n{_sanitize_readme_section(troubleshooting, 300)}")
+        sections.append(
+            f"### Troubleshooting\n{_sanitize_readme_section(troubleshooting, 300)}"
+        )
 
     # Dev workflow
     dev_lines = ["### Development"]
     dev_lines.append("```bash")
     dev_lines.append("git checkout -b feat/descriptive-name")
-    if test_framework == 'pytest':
+    if test_framework == "pytest":
         dev_lines.append("# Write code + tests, then run:")
         dev_lines.append("pytest")
-    elif test_framework == 'jest':
+    elif test_framework == "jest":
         dev_lines.append("# Write code + tests, then run:")
         dev_lines.append("npx jest")
     else:
         dev_lines.append("# Write code + tests")
-    dev_lines.append('git add .')
+    dev_lines.append("git add .")
     dev_lines.append('git commit -m "feat: descriptive message"')
     dev_lines.append("```")
-    sections.append('\n'.join(dev_lines))
+    sections.append("\n".join(dev_lines))
 
-    return '\n\n'.join(sections)
+    return "\n\n".join(sections)
 
 
-def _build_context_strategy(structure: Dict, entry_points: List[str],
-                            project_type: str, test_info: Dict) -> str:
+def _build_context_strategy(
+    structure: Dict, entry_points: List[str], project_type: str, test_info: Dict
+) -> str:
     """Build context strategy section with file loading hints per task type."""
     lines: List[str] = []
 
@@ -393,7 +464,7 @@ def _build_context_strategy(structure: Dict, entry_points: List[str],
     # Bug fix
     bug_first = "relevant module source"
     bug_then = "corresponding test file"
-    if test_info.get('framework') == 'pytest':
+    if test_info.get("framework") == "pytest":
         bug_then = "corresponding `test_*.py` file"
     lines.append(f"| Bug fix | {bug_first} | {bug_then} |")
 
@@ -409,7 +480,7 @@ def _build_context_strategy(structure: Dict, entry_points: List[str],
 
     # Test
     test_first = "test directory"
-    if test_info.get('has_conftest'):
+    if test_info.get("has_conftest"):
         test_first = "`conftest.py` + test directory"
     lines.append(f"| Writing tests | {test_first} | source module under test |")
 
@@ -421,7 +492,7 @@ def _build_context_strategy(structure: Dict, entry_points: List[str],
         lines.append("")
         for ep in entry_points:
             # Derive module group from entry point
-            ep_stem = ep.replace('.py', '').replace('/', '.').replace('\\', '.')
+            ep_stem = ep.replace(".py", "").replace("/", ".").replace("\\", ".")
             lines.append(f"- **{ep_stem}**: `{ep}` and its imports")
         lines.append("")
 
@@ -438,36 +509,47 @@ def _build_context_strategy(structure: Dict, entry_points: List[str],
         "`**/.clinerules*`",
     ]
     # Add project-type specific excludes
-    if project_type in ('django-app',):
+    if project_type in ("django-app",):
         exclude_patterns.append("`**/migrations/**`")
-    if 'docker' in project_type or any('docker' in p for p in structure.get('patterns', [])):
+    if "docker" in project_type or any(
+        "docker" in p for p in structure.get("patterns", [])
+    ):
         exclude_patterns.append("`**/docker-compose.override.yml`")
 
     for pat in exclude_patterns:
         lines.append(f"- {pat}")
 
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 # --- Fallback for when enhanced context is unavailable ---
 
+
 def _generate_basic_rules(project_data: Dict[str, Any], config: Dict[str, Any]) -> str:
     """Generate basic rules without enhanced context (fallback)."""
-    name = project_data['name']
-    description = project_data['description'][:config.get('generation', {}).get('max_description_length', 200)]
-    tech_stack = project_data['tech_stack']
-    features = project_data['features']
+    name = project_data["name"]
+    description = project_data["description"][
+        : config.get("generation", {}).get("max_description_length", 200)
+    ]
+    tech_stack = project_data["tech_stack"]
+    features = project_data["features"]
 
-    tech_str = ', '.join(tech_stack) if tech_stack else 'standard tools'
+    tech_str = ", ".join(tech_stack) if tech_stack else "standard tools"
 
     priorities = []
     if features:
         priorities = features[:3]
     else:
-        priorities = ['Code quality', 'Documentation clarity', 'Test coverage']
+        priorities = ["Code quality", "Documentation clarity", "Test coverage"]
 
     while len(priorities) < 3:
-        defaults = ['Code quality', 'Documentation clarity', 'Test coverage', 'Security', 'Performance']
+        defaults = [
+            "Code quality",
+            "Documentation clarity",
+            "Test coverage",
+            "Security",
+            "Performance",
+        ]
         next_default = defaults[len(priorities)]
         if next_default not in priorities:
             priorities.append(next_default)
@@ -565,42 +647,42 @@ def rules_to_json(rules_md: str) -> str:
     data: Dict[str, Any] = {}
 
     # Extract YAML frontmatter
-    fm_match = re.match(r'^---\n(.*?)\n---', rules_md, re.DOTALL)
+    fm_match = re.match(r"^---\n(.*?)\n---", rules_md, re.DOTALL)
     if fm_match:
-        for line in fm_match.group(1).split('\n'):
-            if ':' in line:
-                key, val = line.split(':', 1)
+        for line in fm_match.group(1).split("\n"):
+            if ":" in line:
+                key, val = line.split(":", 1)
                 data[key.strip()] = val.strip()
 
     # Extract sections
     sections: Dict[str, List[str]] = {}
     current_section = None
-    for line in rules_md.split('\n'):
-        header = re.match(r'^##\s+(.+)$', line)
+    for line in rules_md.split("\n"):
+        header = re.match(r"^##\s+(.+)$", line)
         if header:
             current_section = header.group(1).strip()
             sections[current_section] = []
-        elif current_section and line.strip().startswith('-'):
-            item = line.strip().lstrip('-').strip()
+        elif current_section and line.strip().startswith("-"):
+            item = line.strip().lstrip("-").strip()
             if item:
                 sections[current_section].append(item)
 
     # Build structured output
-    do_rules = sections.get('DO (must follow)', [])
+    do_rules = sections.get("DO (must follow)", [])
     dont_rules = sections.get("DON'T", [])
 
-    data['rules'] = {
-        'do': do_rules,
-        'dont': dont_rules,
+    data["rules"] = {
+        "do": do_rules,
+        "dont": dont_rules,
     }
-    data['priorities'] = sections.get('PRIORITIES', [])
-    data['rules_count'] = len(do_rules) + len(dont_rules)
+    data["priorities"] = sections.get("PRIORITIES", [])
+    data["rules_count"] = len(do_rules) + len(dont_rules)
 
     # Include other sections as metadata
-    skip = {'DO (must follow)', "DON'T", 'PRIORITIES'}
+    skip = {"DO (must follow)", "DON'T", "PRIORITIES"}
     for section_name, items in sections.items():
         if section_name not in skip and items:
-            key = section_name.lower().replace(' ', '_')
+            key = section_name.lower().replace(" ", "_")
             data[key] = items
 
     return json.dumps(data, indent=2, ensure_ascii=False)

@@ -15,6 +15,7 @@ prg analyze [PROJECT_PATH] [OPTIONS]
 | `--mode` | choice | `manual` | Analysis mode: `manual` (fast, local), `ai` (deep, requires key), `constitution` (principles only). |
 | `--incremental` | flag | `false` | Only regenerate sections that have changed (much faster). |
 | `--quality-check` 🆕 | flag | `false` | Score generated files (0-100) across 5 quality criteria. |
+| `--eval-opik` 🆕 | flag | `false` | Log generation traces to Comet Opik (requires `OPIK_API_KEY`). |
 | `--auto-fix` 🆕 | flag | `false` | Automatically improve files scoring below 85. Requires `--quality-check`. |
 | `--constitution` | flag | `false` | Generate `constitution.md` with high-level principles. |
 | `--auto-generate-skills` | flag | `false` | Enable AI skill matching and generation (requires `--ai`). |
@@ -133,4 +134,16 @@ prg agent "I need to fix a bug"
 
 **Use Case:**
 Verify which skill will be selected for a given user query. Useful for debugging triggers or integrating PRG into other agent loops.
+
+
+### `prg leaderboard`
+
+Open the Comet Opik dashboard to check quality metrics.
+
+```bash
+prg leaderboard
+```
+
+**Output:**
+Opens `https://www.comet.com/opik/dashboard` in your default browser.
 

@@ -1,6 +1,6 @@
 """Tests for task decomposition (Feature 4)."""
+
 import pytest
-from pathlib import Path
 from click.testing import CliRunner
 
 from generator.task_decomposer import SubTask, TaskDecomposer
@@ -49,18 +49,21 @@ class TestTaskDecomposer:
 
         assert len(tasks) >= 1
         assert tasks[0].id == 1
-        assert 'authentication' in tasks[0].title.lower() or 'authentication' in tasks[0].goal.lower()
+        assert (
+            "authentication" in tasks[0].title.lower()
+            or "authentication" in tasks[0].goal.lower()
+        )
 
     def test_decompose_with_project_context(self):
         """Context should not crash the decomposer."""
         ctx = {
-            'metadata': {
-                'project_type': 'fastapi-api',
-                'tech_stack': ['python', 'fastapi'],
-                'has_tests': True,
+            "metadata": {
+                "project_type": "fastapi-api",
+                "tech_stack": ["python", "fastapi"],
+                "has_tests": True,
             },
-            'structure': {
-                'entry_points': ['app/main.py'],
+            "structure": {
+                "entry_points": ["app/main.py"],
             },
         }
         decomposer = TaskDecomposer(api_key=None)
@@ -74,33 +77,46 @@ class TestGeneratePlanMd:
 
     def test_basic_plan(self):
         tasks = [
-            SubTask(id=1, title="Create module", goal="New auth module", files=["auth.py"],
-                    changes=["Add JWT logic"], tests=["test auth"], estimated_minutes=5),
-            SubTask(id=2, title="Write tests", goal="Cover auth", files=["tests/test_auth.py"],
-                    dependencies=[1], estimated_minutes=3),
+            SubTask(
+                id=1,
+                title="Create module",
+                goal="New auth module",
+                files=["auth.py"],
+                changes=["Add JWT logic"],
+                tests=["test auth"],
+                estimated_minutes=5,
+            ),
+            SubTask(
+                id=2,
+                title="Write tests",
+                goal="Cover auth",
+                files=["tests/test_auth.py"],
+                dependencies=[1],
+                estimated_minutes=3,
+            ),
         ]
         md = TaskDecomposer.generate_plan_md(tasks, user_task="Add auth")
 
-        assert '# PLAN' in md
-        assert 'Add auth' in md
-        assert '## 1. Create module' in md
-        assert '## 2. Write tests' in md
-        assert '`auth.py`' in md
-        assert '#1' in md  # dependency reference
-        assert '8 minutes' in md  # 5 + 3
+        assert "# PLAN" in md
+        assert "Add auth" in md
+        assert "## 1. Create module" in md
+        assert "## 2. Write tests" in md
+        assert "`auth.py`" in md
+        assert "#1" in md  # dependency reference
+        assert "8 minutes" in md  # 5 + 3
 
     def test_plan_without_user_task(self):
         tasks = [SubTask(id=1, title="Do thing", goal="A goal", estimated_minutes=2)]
         md = TaskDecomposer.generate_plan_md(tasks)
 
-        assert '# PLAN' in md
+        assert "# PLAN" in md
         # The header should not have a "> **Goal:**" blockquote when user_task is empty
-        assert '> **Goal:**' not in md
+        assert "> **Goal:**" not in md
 
     def test_plan_empty_tasks(self):
         md = TaskDecomposer.generate_plan_md([], user_task="Test")
-        assert '# PLAN' in md
-        assert '0' in md  # 0 subtasks
+        assert "# PLAN" in md
+        assert "0" in md  # 0 subtasks
 
 
 class TestParseResponse:
@@ -135,7 +151,7 @@ Estimated: 4
         assert len(tasks) == 2
         assert tasks[0].id == 1
         assert tasks[0].title == "Set up database"
-        assert 'db/schema.py' in tasks[0].files
+        assert "db/schema.py" in tasks[0].files
         assert tasks[1].dependencies == [1]
         assert tasks[1].estimated_minutes == 4
 
@@ -148,7 +164,9 @@ Estimated: 4
 
     def test_parse_malformed_response_returns_fallback(self):
         decomposer = TaskDecomposer(api_key=None)
-        tasks = decomposer._parse_response("Just some random text\nwith no structure", "Fallback task")
+        tasks = decomposer._parse_response(
+            "Just some random text\nwith no structure", "Fallback task"
+        )
 
         assert len(tasks) >= 1
 
@@ -178,8 +196,8 @@ Users need secure access to API endpoints.
 - All endpoints require auth except /auth/*
 - Tokens expire after 24h
 """
-        path = tmp_path / 'DESIGN.md'
-        path.write_text(design_md, encoding='utf-8')
+        path = tmp_path / "DESIGN.md"
+        path.write_text(design_md, encoding="utf-8")
         return path
 
     def test_from_design_creates_tasks(self, tmp_path):
@@ -189,8 +207,8 @@ Users need secure access to API endpoints.
 
         assert len(tasks) >= 2
         # Should have tasks for architecture decision, data model, API contracts, verification
-        titles = ' '.join(t.title.lower() for t in tasks)
-        assert 'auth' in titles or 'implement' in titles
+        titles = " ".join(t.title.lower() for t in tasks)
+        assert "auth" in titles or "implement" in titles
 
     def test_from_design_includes_verification_task(self, tmp_path):
         design_path = self._write_design(tmp_path)
@@ -199,7 +217,7 @@ Users need secure access to API endpoints.
 
         # Last task should verify success criteria
         last = tasks[-1]
-        assert 'verif' in last.title.lower() or 'criteria' in last.title.lower()
+        assert "verif" in last.title.lower() or "criteria" in last.title.lower()
         assert len(last.tests) >= 1
 
     def test_from_design_tasks_have_dependencies(self, tmp_path):
@@ -213,12 +231,12 @@ Users need secure access to API endpoints.
 
     def test_from_design_minimal(self, tmp_path):
         """A design with only a problem statement still produces at least one task."""
-        (tmp_path / 'DESIGN.md').write_text(
-            '# Design: Quick Fix\n\n## Problem Statement\nFix the bug.\n',
-            encoding='utf-8',
+        (tmp_path / "DESIGN.md").write_text(
+            "# Design: Quick Fix\n\n## Problem Statement\nFix the bug.\n",
+            encoding="utf-8",
         )
         decomposer = TaskDecomposer(api_key=None)
-        tasks = decomposer.from_design(tmp_path / 'DESIGN.md')
+        tasks = decomposer.from_design(tmp_path / "DESIGN.md")
         assert len(tasks) >= 1
 
 
@@ -227,47 +245,61 @@ class TestPlanCLI:
 
     def test_plan_command_in_help(self):
         runner = CliRunner()
-        result = runner.invoke(cli, ['plan', '--help'])
+        result = runner.invoke(cli, ["plan", "--help"])
 
         assert result.exit_code == 0
-        assert '--from-design' in result.output
-        assert '--output' in result.output
+        assert "--from-design" in result.output
+        assert "--output" in result.output
 
     def test_plan_generates_file(self, tmp_path):
         """Plan command should create a PLAN.md file."""
-        (tmp_path / 'README.md').write_text('# Test Project\n\nA project.')
+        (tmp_path / "README.md").write_text("# Test Project\n\nA project.")
 
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            'plan', 'Add user authentication',
-            '--project-path', str(tmp_path),
-            '--output', 'PLAN.md',
-            '--verbose',
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "plan",
+                "Add user authentication",
+                "--project-path",
+                str(tmp_path),
+                "--output",
+                "PLAN.md",
+                "--verbose",
+            ],
+        )
 
-        assert result.exit_code == 0, f"Exit {result.exit_code}: {result.output}\n{result.exception}"
-        plan_path = tmp_path / 'PLAN.md'
+        assert (
+            result.exit_code == 0
+        ), f"Exit {result.exit_code}: {result.output}\n{result.exception}"
+        plan_path = tmp_path / "PLAN.md"
         assert plan_path.exists()
-        content = plan_path.read_text(encoding='utf-8')
-        assert '# PLAN' in content
-        assert 'authentication' in content.lower()
+        content = plan_path.read_text(encoding="utf-8")
+        assert "# PLAN" in content
+        assert "authentication" in content.lower()
 
     def test_plan_custom_output(self, tmp_path):
-        (tmp_path / 'README.md').write_text('# Test\n\nDesc.')
+        (tmp_path / "README.md").write_text("# Test\n\nDesc.")
 
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            'plan', 'Refactor database',
-            '--project-path', str(tmp_path),
-            '--output', 'docs/PLAN.md',
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "plan",
+                "Refactor database",
+                "--project-path",
+                str(tmp_path),
+                "--output",
+                "docs/PLAN.md",
+            ],
+        )
 
         assert result.exit_code == 0
-        assert (tmp_path / 'docs' / 'PLAN.md').exists()
+        assert (tmp_path / "docs" / "PLAN.md").exists()
 
     def test_plan_from_design_flag(self, tmp_path):
         """Plan from a DESIGN.md file."""
-        (tmp_path / 'README.md').write_text('# Test\n\nDesc.')
+        (tmp_path / "README.md").write_text("# Test\n\nDesc.")
         design_md = (
             "# Design: Auth System\n\n"
             "## Problem Statement\nNeed auth.\n\n"
@@ -277,30 +309,42 @@ class TestPlanCLI:
             "## Success Criteria\n"
             "- All endpoints require auth\n"
         )
-        design_path = tmp_path / 'DESIGN.md'
-        design_path.write_text(design_md, encoding='utf-8')
+        design_path = tmp_path / "DESIGN.md"
+        design_path.write_text(design_md, encoding="utf-8")
 
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            'plan',
-            '--from-design', str(design_path),
-            '--project-path', str(tmp_path),
-            '--output', 'PLAN.md',
-            '--verbose',
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "plan",
+                "--from-design",
+                str(design_path),
+                "--project-path",
+                str(tmp_path),
+                "--output",
+                "PLAN.md",
+                "--verbose",
+            ],
+        )
 
-        assert result.exit_code == 0, f"Exit {result.exit_code}: {result.output}\n{result.exception}"
-        plan_path = tmp_path / 'PLAN.md'
+        assert (
+            result.exit_code == 0
+        ), f"Exit {result.exit_code}: {result.output}\n{result.exception}"
+        plan_path = tmp_path / "PLAN.md"
         assert plan_path.exists()
-        content = plan_path.read_text(encoding='utf-8')
-        assert '# PLAN' in content
-        assert 'Auth System' in content
+        content = plan_path.read_text(encoding="utf-8")
+        assert "# PLAN" in content
+        assert "Auth System" in content
 
     def test_plan_requires_task_or_design(self, tmp_path):
         """Plan without task or --from-design should fail."""
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            'plan',
-            '--project-path', str(tmp_path),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "plan",
+                "--project-path",
+                str(tmp_path),
+            ],
+        )
         assert result.exit_code != 0

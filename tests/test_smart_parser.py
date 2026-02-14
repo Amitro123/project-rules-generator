@@ -1,5 +1,3 @@
-
-import pytest
 import sys
 from pathlib import Path
 
@@ -8,9 +6,11 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 
 from analyzer.readme_parser import (
-    extract_purpose, extract_tech_stack, 
-    extract_auto_triggers, extract_process_steps, 
-    extract_anti_patterns
+    extract_anti_patterns,
+    extract_auto_triggers,
+    extract_process_steps,
+    extract_purpose,
+    extract_tech_stack,
 )
 
 SAMPLE_README = """
@@ -42,12 +42,14 @@ This is a description of the project.
 - Solution: Restart it.
 """
 
+
 def test_extract_purpose():
     purpose = extract_purpose(SAMPLE_README)
     assert "This is a description of the project" in purpose
 
+
 def test_extract_tech_stack():
-    # SAMPLE_README doesn't have keywords from TECH_KEYWORDS except maybe 'python' in code block if we didn't strip it? 
+    # SAMPLE_README doesn't have keywords from TECH_KEYWORDS except maybe 'python' in code block if we didn't strip it?
     # But extract_tech_stack strips code blocks!
     # Let's add a tech keyword in text
     readme = SAMPLE_README + "\nBuilt with Python and FastAPI."
@@ -55,11 +57,13 @@ def test_extract_tech_stack():
     assert "python" in tech
     assert "fastapi" in tech
 
+
 def test_extract_auto_triggers():
     readme = "Built with Python."
     triggers = extract_auto_triggers(readme, "my-skill")
-    assert any("my" in t and "skill" in t for t in triggers) # User mentions
+    assert any("my" in t and "skill" in t for t in triggers)  # User mentions
     assert "Working in backend code: *.py" in triggers
+
 
 def test_extract_process_steps():
     # Should extract from Installation or Quick Start
@@ -70,15 +74,16 @@ def test_extract_process_steps():
     assert any("pip install my-project" in s for s in steps)
     assert any("Run setup" in s for s in steps)
 
+
 def test_extract_anti_patterns(tmp_path):
     """Anti-patterns are only returned when grounded in actual project files."""
     # Without project_path, no anti-patterns
-    patterns = extract_anti_patterns("dummy", ['ffmpeg', 'redis'])
+    patterns = extract_anti_patterns("dummy", ["ffmpeg", "redis"])
     assert len(patterns) == 0, "Should return nothing without project_path"
 
     # With project_path and actual code using ffmpeg without a guard
-    (tmp_path / 'processor.py').write_text(
+    (tmp_path / "processor.py").write_text(
         'import subprocess\nsubprocess.run(["ffmpeg", "-i", f])\n'
     )
-    patterns = extract_anti_patterns("dummy", ['ffmpeg'], project_path=tmp_path)
+    patterns = extract_anti_patterns("dummy", ["ffmpeg"], project_path=tmp_path)
     assert any("FFmpeg" in p or "ffmpeg" in p for p in patterns)

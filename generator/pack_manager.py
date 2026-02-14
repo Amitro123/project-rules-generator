@@ -1,16 +1,18 @@
 import logging
 from pathlib import Path
-from typing import List, Optional, Dict, Any
-from .types import SkillPack
+from typing import Any, Dict, List, Optional
+
 from .importers import get_importer_for_path
+from .types import SkillPack
 
 logger = logging.getLogger(__name__)
+
 
 def load_external_packs(
     include_packs: List[str],
     config_packs: Optional[Dict[str, Any]] = None,
     external_packs_dir: Optional[str] = None,
-    verbose: bool = False
+    verbose: bool = False,
 ) -> List[SkillPack]:
     """
     Load external skill packs from CLI arguments and config.
@@ -19,8 +21,8 @@ def load_external_packs(
 
     # Combine CLI packs and config packs
     packs_to_load = list(include_packs)
-    if config_packs and config_packs.get('sources'):
-         packs_to_load.extend(config_packs['sources'])
+    if config_packs and config_packs.get("sources"):
+        packs_to_load.extend(config_packs["sources"])
 
     if not packs_to_load:
         return external_packs
@@ -52,7 +54,7 @@ def load_external_packs(
                     external_packs.append(pack)
                     logger.info(f"Loaded {pack.name} ({len(pack.skills)} skills)")
                 else:
-                     logger.warning(f"No skills found in {pack_ref}")
+                    logger.warning(f"No skills found in {pack_ref}")
             except Exception as e:
                 logger.error(f"Failed to load {pack_ref}: {e}")
         else:

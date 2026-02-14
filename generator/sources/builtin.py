@@ -1,36 +1,42 @@
+import logging
+import os
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
+from ..skill_templates import load_skill_from_yaml
 from ..types import Skill, SkillNeed
 from .base import SkillSource
-from ..skill_templates import load_skill_from_yaml
-import os
-import logging
 
 logger = logging.getLogger("project_rules_generator")
 
+
 class BuiltinSkillsSource(SkillSource):
     """Source that loads skills from the project's templates directory."""
-    
+
     def __init__(self, config: Dict[str, Any], templates_dir: Path = None):
         super().__init__(config)
-        
+
         # Determine path from config or default or injected
         if templates_dir:
-             self.templates_path = templates_dir
+            self.templates_path = templates_dir
         else:
-             cfg_path = config.get('skill_sources', {}).get('builtin', {}).get('path', 'templates/skills')
-             # Resolve relative to project root (assuming we are running from project root or package)
-             # Better approach: If relative, assume relative to this file's package parent
-             if not os.path.isabs(cfg_path):
-                 # generator/sources/builtin.py -> generator/sources -> generator -> project_root -> (cfg_path)
-                 # This logic depends on where the code is installed. 
-                 # For dev mode (current structure), templates is at project root.
-                 # Let's try to find it relative to current file's grandparent
-                 current_file = Path(__file__).resolve()
-                 project_root = current_file.parent.parent.parent
-                 self.templates_path = project_root / cfg_path
-             else:
-                 self.templates_path = Path(cfg_path)
+            cfg_path = (
+                config.get("skill_sources", {})
+                .get("builtin", {})
+                .get("path", "templates/skills")
+            )
+            # Resolve relative to project root (assuming we are running from project root or package)
+            # Better approach: If relative, assume relative to this file's package parent
+            if not os.path.isabs(cfg_path):
+                # generator/sources/builtin.py -> generator/sources -> generator -> project_root -> (cfg_path)
+                # This logic depends on where the code is installed.
+                # For dev mode (current structure), templates is at project root.
+                # Let's try to find it relative to current file's grandparent
+                current_file = Path(__file__).resolve()
+                project_root = current_file.parent.parent.parent
+                self.templates_path = project_root / cfg_path
+            else:
+                self.templates_path = Path(cfg_path)
 
     @property
     def name(self) -> str:
@@ -38,22 +44,22 @@ class BuiltinSkillsSource(SkillSource):
 
     @property
     def priority(self) -> int:
-        order = self.config.get('skill_sources', {}).get('preference_order', [])
-        if 'builtin' in order:
+        order = self.config.get("skill_sources", {}).get("preference_order", [])
+        if "builtin" in order:
             # Return inverted index (0 = highest priority)
-            return len(order) - order.index('builtin')
-        return 0 # Default low priority
+            return len(order) - order.index("builtin")
+        return 0  # Default low priority
 
     def _scan_skills(self) -> List[Skill]:
         if not self.templates_path.exists():
             return []
 
         all_skills = []
-        for yaml_file in self.templates_path.glob('*.yaml'):
+        for yaml_file in self.templates_path.glob("*.yaml"):
             try:
                 skills = load_skill_from_yaml(yaml_file)
                 for s in skills:
-                    s.source = "builtin" # tag source
+                    s.source = "builtin"  # tag source
                     all_skills.append(s)
             except Exception as e:
                 logger.warning(f"Failed to load builtin skill {yaml_file}: {e}")
@@ -77,17 +83,17 @@ class BuiltinSkillsSource(SkillSource):
                 if skill.name == need.name:
                     found_skills.append(skill)
                     continue
-                
+
                 # Loose match: need name in skill name (e.g. 'fastapi' in 'fastapi-expert')
                 if need.name.lower() in skill.name.lower():
                     found_skills.append(skill)
                     continue
-                
+
                 # Category match
                 # If the need name matches the skill category (e.g. need.name='core' matches skill.category='core')
                 if skill.category == need.name:
-                     found_skills.append(skill)
-                     continue
+                    found_skills.append(skill)
+                    continue
 
         return found_skills
 

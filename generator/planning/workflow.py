@@ -118,7 +118,9 @@ class AgentWorkflow:
         """Generate PLAN.md via TaskDecomposer."""
         from generator.task_decomposer import TaskDecomposer
 
-        api_key = self.api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
+        api_key = (
+            self.api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
+        )
         decomposer = TaskDecomposer(api_key=api_key)
 
         # Gather project context
@@ -167,7 +169,7 @@ class AgentWorkflow:
 
     def _parse_plan_subtasks(self, plan_path: Path):
         """Extract SubTask objects from an existing PLAN.md."""
-        from generator.task_decomposer import SubTask, TaskDecomposer
+        from generator.task_decomposer import TaskDecomposer
 
         content = plan_path.read_text(encoding="utf-8")
         # Reuse the decomposer's parser
@@ -191,8 +193,6 @@ class AgentWorkflow:
         try:
             from analyzer.readme_parser import parse_readme
             from generator.rules_generator import generate_rules
-            from generator.skills_generator import generate_skills
-            from prg_utils.file_ops import save_markdown
 
             readme_text = readme_path.read_text(encoding="utf-8")
             parsed = parse_readme(readme_text)
@@ -203,6 +203,7 @@ class AgentWorkflow:
 
             # Write rules.json
             import json
+
             rules_path = output_dir / "rules.json"
             rules_path.write_text(json.dumps(rules, indent=2), encoding="utf-8")
 

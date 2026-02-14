@@ -1,5 +1,6 @@
 """Parsers subpackage for enhanced project context extraction."""
-from .enhanced_parser import EnhancedProjectParser
-from .dependency_parser import DependencyParser
 
-__all__ = ['EnhancedProjectParser', 'DependencyParser']
+from .dependency_parser import DependencyParser
+from .enhanced_parser import EnhancedProjectParser
+
+__all__ = ["EnhancedProjectParser", "DependencyParser"]

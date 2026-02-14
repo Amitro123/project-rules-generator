@@ -12,18 +12,40 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install pytest pytest-cov
-        
-    - name: Run tests
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+        # Ensure quality tools are present even if not in req files
+        pip install pytest pytest-cov ruff black isort mypy
+
+    - name: Lint (ruff)
       run: |
-        pytest tests/
+        ruff check . --output-format=github
+
+    - name: Format check (black)
+      run: |
+        black --check .
+
+    - name: Import order check (isort)
+      run: |
+        isort --profile black --check-only .
+
+    - name: Type check (mypy)
+      run: |
+        mypy . --install-types --non-interactive --ignore-missing-imports
+
+    - name: Run tests
+      env:
+        # Avoid hitting external APIs during tests
+        GEMINI_API_KEY: ""
+        GROQ_API_KEY: ""
+      run: |
+        pytest -q --maxfail=1 --disable-warnings --cov=.

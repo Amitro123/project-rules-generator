@@ -1,68 +1,68 @@
 """Template management for rules and skills generation."""
+
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
 import yaml
 
 
-def load_template(template_name: str, templates_dir: str = "templates") -> Dict[str, Any]:
+def load_template(
+    template_name: str, templates_dir: str = "templates"
+) -> Dict[str, Any]:
     """Load a YAML template file.
-    
+
     Args:
         template_name: Name of template (e.g., 'rules' or 'skills')
         templates_dir: Directory containing templates
-        
+
     Returns:
         Template structure as dict
     """
     template_path = Path(templates_dir) / f"{template_name}_template.yaml"
-    
+
     if template_path.exists():
-        with open(template_path, 'r', encoding='utf-8') as f:
+        with open(template_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
-    
+
     # Return default templates if file doesn't exist
     return get_default_template(template_name)
 
 
 def get_default_template(template_type: str) -> Dict[str, Any]:
     """Get default template structure."""
-    
-    if template_type == 'rules':
+
+    if template_type == "rules":
         return {
-            'structure': {
-                'frontmatter': ['project', 'purpose', 'version'],
-                'sections': [
-                    'CONTEXT',
-                    'DO (must follow)',
+            "structure": {
+                "frontmatter": ["project", "purpose", "version"],
+                "sections": [
+                    "CONTEXT",
+                    "DO (must follow)",
                     "DON'T",
-                    'PRIORITIES',
-                    'WORKFLOWS'
-                ]
+                    "PRIORITIES",
+                    "WORKFLOWS",
+                ],
             },
-            'placeholders': {
-                'description': '{{description}}',
-                'tech_stack': '{{tech_stack}}',
-                'features': '{{features}}',
-                'project_name': '{{project_name}}'
-            }
+            "placeholders": {
+                "description": "{{description}}",
+                "tech_stack": "{{tech_stack}}",
+                "features": "{{features}}",
+                "project_name": "{{project_name}}",
+            },
         }
-    
-    elif template_type == 'skills':
+
+    elif template_type == "skills":
         return {
-            'structure': {
-                'frontmatter': ['project', 'purpose'],
-                'sections': [
-                    'CORE SKILLS',
-                    'PROJECT-SPECIFIC SKILLS',
-                    'USAGE'
-                ]
+            "structure": {
+                "frontmatter": ["project", "purpose"],
+                "sections": ["CORE SKILLS", "PROJECT-SPECIFIC SKILLS", "USAGE"],
             },
-            'placeholders': {
-                'domain': '{{domain}}',
-                'project_name': '{{project_name}}'
-            }
+            "placeholders": {
+                "domain": "{{domain}}",
+                "project_name": "{{project_name}}",
+            },
         }
-    
+
     return {}
 
 

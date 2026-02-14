@@ -1,11 +1,10 @@
 """Parse dependency files from multiple ecosystems."""
 
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Dict, List, Optional
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class DependencyParser:
         """
         deps = []
         try:
-            content = file_path.read_text(encoding='utf-8', errors='replace')
+            content = file_path.read_text(encoding="utf-8", errors="replace")
         except Exception as e:
             logger.warning(f"Failed to read {file_path}: {e}")
             return deps
@@ -47,52 +46,63 @@ class DependencyParser:
             line = line.strip()
 
             # Skip blanks, comments, options, recursive includes
-            if not line or line.startswith('#') or line.startswith('-r') or line.startswith('--'):
+            if (
+                not line
+                or line.startswith("#")
+                or line.startswith("-r")
+                or line.startswith("--")
+            ):
                 continue
 
             # Editable installs
-            if line.startswith('-e'):
+            if line.startswith("-e"):
                 raw = line[2:].strip()
                 # Extract package name from git URL
-                match = re.search(r'#egg=(.+)', raw)
+                match = re.search(r"#egg=(.+)", raw)
                 name = match.group(1) if match else raw
-                deps.append({
-                    'name': name.lower(),
-                    'version': '',
-                    'constraint': 'editable',
-                    'raw': line,
-                })
+                deps.append(
+                    {
+                        "name": name.lower(),
+                        "version": "",
+                        "constraint": "editable",
+                        "raw": line,
+                    }
+                )
                 continue
 
             # Standard: package[extras]>=version
             match = re.match(
-                r'^([a-zA-Z0-9_.-]+)'       # package name
-                r'(?:\[([^\]]+)\])?'          # optional extras
-                r'(?:(==|>=|<=|~=|!=|>|<)'    # constraint operator
-                r'([a-zA-Z0-9._*-]+))?'       # version
-                r'(.*)$',                      # remainder (env markers etc.)
-                line
+                r"^([a-zA-Z0-9_.-]+)"  # package name
+                r"(?:\[([^\]]+)\])?"  # optional extras
+                r"(?:(==|>=|<=|~=|!=|>|<)"  # constraint operator
+                r"([a-zA-Z0-9._*-]+))?"  # version
+                r"(.*)$",  # remainder (env markers etc.)
+                line,
             )
             if match:
-                name = match.group(1).lower().replace('_', '-')
-                extras = match.group(2) or ''
-                constraint = match.group(3) or ''
-                version = match.group(4) or ''
-                deps.append({
-                    'name': name,
-                    'version': version,
-                    'constraint': constraint,
-                    'extras': extras,
-                    'raw': line,
-                })
+                name = match.group(1).lower().replace("_", "-")
+                extras = match.group(2) or ""
+                constraint = match.group(3) or ""
+                version = match.group(4) or ""
+                deps.append(
+                    {
+                        "name": name,
+                        "version": version,
+                        "constraint": constraint,
+                        "extras": extras,
+                        "raw": line,
+                    }
+                )
             else:
                 # Fallback: treat entire line as package name
-                deps.append({
-                    'name': line.lower().split('[')[0].split(';')[0].strip(),
-                    'version': '',
-                    'constraint': '',
-                    'raw': line,
-                })
+                deps.append(
+                    {
+                        "name": line.lower().split("[")[0].split(";")[0].strip(),
+                        "version": "",
+                        "constraint": "",
+                        "raw": line,
+                    }
+                )
 
         return deps
 
@@ -111,11 +121,11 @@ class DependencyParser:
             }
         """
         result = {
-            'project_name': '',
-            'python_requires': '',
-            'dependencies': [],
-            'dev_dependencies': [],
-            'build_system': '',
+            "project_name": "",
+            "python_requires": "",
+            "dependencies": [],
+            "dev_dependencies": [],
+            "build_system": "",
         }
 
         if tomllib is None:
@@ -124,58 +134,74 @@ class DependencyParser:
             return DependencyParser._parse_pyproject_fallback(file_path)
 
         try:
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 data = tomllib.load(f)
         except Exception as e:
             logger.warning(f"Failed to parse {file_path}: {e}")
             return result
 
         # Project metadata
-        project = data.get('project', {})
-        result['project_name'] = project.get('name', '')
-        result['python_requires'] = project.get('requires-python', '')
+        project = data.get("project", {})
+        result["project_name"] = project.get("name", "")
+        result["python_requires"] = project.get("requires-python", "")
 
         # Main dependencies
-        for dep_str in project.get('dependencies', []):
+        for dep_str in project.get("dependencies", []):
             parsed = DependencyParser._parse_pep508(dep_str)
             if parsed:
-                result['dependencies'].append(parsed)
+                result["dependencies"].append(parsed)
 
         # Optional/dev dependencies
-        optional = project.get('optional-dependencies', {})
+        optional = project.get("optional-dependencies", {})
         for group_name, group_deps in optional.items():
             for dep_str in group_deps:
                 parsed = DependencyParser._parse_pep508(dep_str)
                 if parsed:
-                    parsed['group'] = group_name
-                    result['dev_dependencies'].append(parsed)
+                    parsed["group"] = group_name
+                    result["dev_dependencies"].append(parsed)
 
         # Poetry-style dependencies
-        poetry = data.get('tool', {}).get('poetry', {})
+        poetry = data.get("tool", {}).get("poetry", {})
         if poetry:
-            for name, spec in poetry.get('dependencies', {}).items():
-                if name.lower() == 'python':
-                    result['python_requires'] = spec if isinstance(spec, str) else str(spec)
+            for name, spec in poetry.get("dependencies", {}).items():
+                if name.lower() == "python":
+                    result["python_requires"] = (
+                        spec if isinstance(spec, str) else str(spec)
+                    )
                     continue
-                version = spec if isinstance(spec, str) else spec.get('version', '') if isinstance(spec, dict) else ''
-                result['dependencies'].append({
-                    'name': name.lower(),
-                    'version': version.lstrip('^~>=<! '),
-                    'constraint': '',
-                    'raw': f"{name} = {spec}",
-                })
-            for name, spec in poetry.get('group', {}).get('dev', {}).get('dependencies', {}).items():
-                version = spec if isinstance(spec, str) else spec.get('version', '') if isinstance(spec, dict) else ''
-                result['dev_dependencies'].append({
-                    'name': name.lower(),
-                    'version': version.lstrip('^~>=<! '),
-                    'constraint': '',
-                    'raw': f"{name} = {spec}",
-                })
+                version = (
+                    spec
+                    if isinstance(spec, str)
+                    else spec.get("version", "") if isinstance(spec, dict) else ""
+                )
+                result["dependencies"].append(
+                    {
+                        "name": name.lower(),
+                        "version": version.lstrip("^~>=<! "),
+                        "constraint": "",
+                        "raw": f"{name} = {spec}",
+                    }
+                )
+            for name, spec in (
+                poetry.get("group", {}).get("dev", {}).get("dependencies", {}).items()
+            ):
+                version = (
+                    spec
+                    if isinstance(spec, str)
+                    else spec.get("version", "") if isinstance(spec, dict) else ""
+                )
+                result["dev_dependencies"].append(
+                    {
+                        "name": name.lower(),
+                        "version": version.lstrip("^~>=<! "),
+                        "constraint": "",
+                        "raw": f"{name} = {spec}",
+                    }
+                )
 
         # Build system
-        build = data.get('build-system', {})
-        result['build_system'] = build.get('build-backend', '')
+        build = data.get("build-system", {})
+        result["build_system"] = build.get("build-backend", "")
 
         return result
 
@@ -183,27 +209,27 @@ class DependencyParser:
     def _parse_pyproject_fallback(file_path: Path) -> Dict:
         """Fallback parsing when tomllib is not available."""
         result = {
-            'project_name': '',
-            'python_requires': '',
-            'dependencies': [],
-            'dev_dependencies': [],
-            'build_system': '',
+            "project_name": "",
+            "python_requires": "",
+            "dependencies": [],
+            "dev_dependencies": [],
+            "build_system": "",
         }
         try:
-            content = file_path.read_text(encoding='utf-8', errors='replace')
+            content = file_path.read_text(encoding="utf-8", errors="replace")
             # Extract name
             match = re.search(r'name\s*=\s*["\']([^"\']+)["\']', content)
             if match:
-                result['project_name'] = match.group(1)
+                result["project_name"] = match.group(1)
 
             # Extract dependencies from dependencies = [...] block
-            dep_match = re.search(r'dependencies\s*=\s*\[(.*?)\]', content, re.DOTALL)
+            dep_match = re.search(r"dependencies\s*=\s*\[(.*?)\]", content, re.DOTALL)
             if dep_match:
                 dep_block = dep_match.group(1)
                 for dep_str in re.findall(r'["\']([^"\']+)["\']', dep_block):
                     parsed = DependencyParser._parse_pep508(dep_str)
                     if parsed:
-                        result['dependencies'].append(parsed)
+                        result["dependencies"].append(parsed)
         except Exception as e:
             logger.warning(f"Fallback pyproject.toml parsing failed: {e}")
 
@@ -224,38 +250,42 @@ class DependencyParser:
             }
         """
         result = {
-            'project_name': '',
-            'dependencies': [],
-            'dev_dependencies': [],
-            'scripts': {},
-            'engines': {},
+            "project_name": "",
+            "dependencies": [],
+            "dev_dependencies": [],
+            "scripts": {},
+            "engines": {},
         }
 
         try:
-            data = json.loads(file_path.read_text(encoding='utf-8', errors='replace'))
+            data = json.loads(file_path.read_text(encoding="utf-8", errors="replace"))
         except Exception as e:
             logger.warning(f"Failed to parse {file_path}: {e}")
             return result
 
-        result['project_name'] = data.get('name', '')
-        result['scripts'] = data.get('scripts', {})
-        result['engines'] = data.get('engines', {})
+        result["project_name"] = data.get("name", "")
+        result["scripts"] = data.get("scripts", {})
+        result["engines"] = data.get("engines", {})
 
-        for name, version in data.get('dependencies', {}).items():
-            result['dependencies'].append({
-                'name': name.lower(),
-                'version': version.lstrip('^~>=<! '),
-                'constraint': '',
-                'raw': f'"{name}": "{version}"',
-            })
+        for name, version in data.get("dependencies", {}).items():
+            result["dependencies"].append(
+                {
+                    "name": name.lower(),
+                    "version": version.lstrip("^~>=<! "),
+                    "constraint": "",
+                    "raw": f'"{name}": "{version}"',
+                }
+            )
 
-        for name, version in data.get('devDependencies', {}).items():
-            result['dev_dependencies'].append({
-                'name': name.lower(),
-                'version': version.lstrip('^~>=<! '),
-                'constraint': '',
-                'raw': f'"{name}": "{version}"',
-            })
+        for name, version in data.get("devDependencies", {}).items():
+            result["dev_dependencies"].append(
+                {
+                    "name": name.lower(),
+                    "version": version.lstrip("^~>=<! "),
+                    "constraint": "",
+                    "raw": f'"{name}": "{version}"',
+                }
+            )
 
         return result
 
@@ -263,18 +293,18 @@ class DependencyParser:
     def _parse_pep508(dep_str: str) -> Optional[Dict[str, str]]:
         """Parse a PEP 508 dependency string like 'fastapi>=0.100.0'."""
         match = re.match(
-            r'^([a-zA-Z0-9_.-]+)'
-            r'(?:\[([^\]]+)\])?'
-            r'\s*(?:(==|>=|<=|~=|!=|>|<)\s*([a-zA-Z0-9._*-]+))?',
-            dep_str.strip()
+            r"^([a-zA-Z0-9_.-]+)"
+            r"(?:\[([^\]]+)\])?"
+            r"\s*(?:(==|>=|<=|~=|!=|>|<)\s*([a-zA-Z0-9._*-]+))?",
+            dep_str.strip(),
         )
         if match:
             return {
-                'name': match.group(1).lower().replace('_', '-'),
-                'version': match.group(4) or '',
-                'constraint': match.group(3) or '',
-                'extras': match.group(2) or '',
-                'raw': dep_str.strip(),
+                "name": match.group(1).lower().replace("_", "-"),
+                "version": match.group(4) or "",
+                "constraint": match.group(3) or "",
+                "extras": match.group(2) or "",
+                "raw": dep_str.strip(),
             }
         return None
 
@@ -290,39 +320,41 @@ class DependencyParser:
         """
         deps = []
         try:
-            content = readme_path.read_text(encoding='utf-8', errors='replace')
+            content = readme_path.read_text(encoding="utf-8", errors="replace")
         except Exception:
             return deps
 
         # Match pip/pip3 install commands (may be inside code blocks)
         for match in re.finditer(
-            r'(?:pip3?|python -m pip)\s+install\s+(.+)',
+            r"(?:pip3?|python -m pip)\s+install\s+(.+)",
             content,
         ):
             args_str = match.group(1).strip()
             # Skip file/url references
-            if args_str.startswith(('-r ', '--requirement', 'git+', 'http')):
+            if args_str.startswith(("-r ", "--requirement", "git+", "http")):
                 continue
 
             for token in args_str.split():
                 # Skip flags
-                if token.startswith('-'):
+                if token.startswith("-"):
                     continue
                 # Parse: package[extras]>=version
                 pkg_match = re.match(
-                    r'^([a-zA-Z0-9_.-]+)'
-                    r'(?:\[([^\]]+)\])?'
-                    r'(?:(==|>=|<=|~=|!=|>|<)([a-zA-Z0-9._*-]+))?',
+                    r"^([a-zA-Z0-9_.-]+)"
+                    r"(?:\[([^\]]+)\])?"
+                    r"(?:(==|>=|<=|~=|!=|>|<)([a-zA-Z0-9._*-]+))?",
                     token,
                 )
                 if pkg_match:
-                    deps.append({
-                        'name': pkg_match.group(1).lower().replace('_', '-'),
-                        'version': pkg_match.group(4) or '',
-                        'constraint': pkg_match.group(3) or '',
-                        'raw': token,
-                        'source': 'readme',
-                    })
+                    deps.append(
+                        {
+                            "name": pkg_match.group(1).lower().replace("_", "-"),
+                            "version": pkg_match.group(4) or "",
+                            "constraint": pkg_match.group(3) or "",
+                            "raw": token,
+                            "source": "readme",
+                        }
+                    )
 
         return deps
 
@@ -331,28 +363,30 @@ class DependencyParser:
         """Detect system-level dependencies from code and docs."""
         system_deps = []
         system_markers = {
-            'ffmpeg': [r'\bffmpeg\b', r'subprocess.*ffmpeg', r'import ffmpeg'],
-            'imagemagick': [r'\bconvert\b.*image', r'imagemagick'],
-            'graphviz': [r'\bgraphviz\b', r'import graphviz'],
-            'tesseract': [r'\btesseract\b', r'pytesseract'],
-            'redis-server': [r'redis://', r'redis\.Redis'],
-            'postgresql': [r'postgresql://', r'psycopg'],
-            'mysql': [r'mysql://', r'pymysql'],
+            "ffmpeg": [r"\bffmpeg\b", r"subprocess.*ffmpeg", r"import ffmpeg"],
+            "imagemagick": [r"\bconvert\b.*image", r"imagemagick"],
+            "graphviz": [r"\bgraphviz\b", r"import graphviz"],
+            "tesseract": [r"\btesseract\b", r"pytesseract"],
+            "redis-server": [r"redis://", r"redis\.Redis"],
+            "postgresql": [r"postgresql://", r"psycopg"],
+            "mysql": [r"mysql://", r"pymysql"],
         }
 
         # Scan Python files and README
-        scan_files = list(project_path.glob('*.py'))
-        scan_files.extend(project_path.glob('**/*.py'))
-        readme_files = list(project_path.glob('README*'))
+        scan_files = list(project_path.glob("*.py"))
+        scan_files.extend(project_path.glob("**/*.py"))
+        readme_files = list(project_path.glob("README*"))
         scan_files.extend(readme_files)
 
         # Limit scanning to avoid performance issues
         scan_files = scan_files[:50]
 
-        combined_content = ''
+        combined_content = ""
         for f in scan_files:
             try:
-                combined_content += f.read_text(encoding='utf-8', errors='replace')[:2000]
+                combined_content += f.read_text(encoding="utf-8", errors="replace")[
+                    :2000
+                ]
             except Exception:
                 continue
 

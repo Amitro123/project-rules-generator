@@ -1,28 +1,44 @@
 """Tests for task executor (status tracker)."""
+
 import pytest
 
 from generator.planning.task_creator import TaskEntry, TaskFileStatus, TaskManifest
 from generator.planning.task_executor import TaskExecutor
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 def _make_manifest(statuses=None):
     """Build a TaskManifest with 3 tasks in a dependency chain: 1 -> 2 -> 3."""
     if statuses is None:
         statuses = ["pending", "pending", "pending"]
     tasks = [
-        TaskEntry(id=1, file="001-a.md", title="Research",
-                  status=TaskFileStatus(statuses[0]),
-                  dependencies=[], estimated_minutes=3),
-        TaskEntry(id=2, file="002-b.md", title="Implement",
-                  status=TaskFileStatus(statuses[1]),
-                  dependencies=[1], estimated_minutes=5),
-        TaskEntry(id=3, file="003-c.md", title="Test",
-                  status=TaskFileStatus(statuses[2]),
-                  dependencies=[2], estimated_minutes=4),
+        TaskEntry(
+            id=1,
+            file="001-a.md",
+            title="Research",
+            status=TaskFileStatus(statuses[0]),
+            dependencies=[],
+            estimated_minutes=3,
+        ),
+        TaskEntry(
+            id=2,
+            file="002-b.md",
+            title="Implement",
+            status=TaskFileStatus(statuses[1]),
+            dependencies=[1],
+            estimated_minutes=5,
+        ),
+        TaskEntry(
+            id=3,
+            file="003-c.md",
+            title="Test",
+            status=TaskFileStatus(statuses[2]),
+            dependencies=[2],
+            estimated_minutes=4,
+        ),
     ]
     return TaskManifest(
         plan_file="PLAN.md",
@@ -34,6 +50,7 @@ def _make_manifest(statuses=None):
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestTaskExecutor:
 

@@ -1,23 +1,25 @@
 """Tests for agent workflow orchestrator and CLI integration."""
-import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+
+from unittest.mock import patch
+
 from click.testing import CliRunner
 
+from generator.planning.task_creator import TaskEntry, TaskManifest
 from generator.planning.workflow import AgentWorkflow
-from generator.planning.task_creator import TaskManifest, TaskEntry, TaskFileStatus
 from generator.task_decomposer import SubTask
 from main import cli
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _setup_project(tmp_path, with_readme=True, with_plan=False, with_tasks=False):
     """Create a minimal project directory."""
     if with_readme:
-        (tmp_path / "README.md").write_text("# Test Project\nFastAPI + Redis\n", encoding="utf-8")
+        (tmp_path / "README.md").write_text(
+            "# Test Project\nFastAPI + Redis\n", encoding="utf-8"
+        )
 
     if with_plan:
         plan_content = """# PLAN
@@ -54,9 +56,16 @@ def _setup_project(tmp_path, with_readme=True, with_plan=False, with_tasks=False
             plan_file="PLAN.md",
             task_description="Add cache",
             tasks=[
-                TaskEntry(id=1, file="001-research.md", title="Research", estimated_minutes=3),
-                TaskEntry(id=2, file="002-implement.md", title="Implement",
-                          dependencies=[1], estimated_minutes=5),
+                TaskEntry(
+                    id=1, file="001-research.md", title="Research", estimated_minutes=3
+                ),
+                TaskEntry(
+                    id=2,
+                    file="002-implement.md",
+                    title="Implement",
+                    dependencies=[1],
+                    estimated_minutes=5,
+                ),
             ],
         )
         manifest.save(tasks_dir / "TASKS.yaml")
@@ -68,14 +77,26 @@ def _setup_project(tmp_path, with_readme=True, with_plan=False, with_tasks=False
 
 def _mock_subtasks():
     return [
-        SubTask(id=1, title="Research caching", goal="Understand caching", estimated_minutes=3),
-        SubTask(id=2, title="Implement cache", goal="Add cache", dependencies=[1], estimated_minutes=5),
+        SubTask(
+            id=1,
+            title="Research caching",
+            goal="Understand caching",
+            estimated_minutes=3,
+        ),
+        SubTask(
+            id=2,
+            title="Implement cache",
+            goal="Add cache",
+            dependencies=[1],
+            estimated_minutes=5,
+        ),
     ]
 
 
 # ---------------------------------------------------------------------------
 # AgentWorkflow unit tests
 # ---------------------------------------------------------------------------
+
 
 class TestAgentWorkflow:
 
@@ -132,6 +153,7 @@ class TestAgentWorkflow:
 # CLI integration tests
 # ---------------------------------------------------------------------------
 
+
 class TestCLICommands:
 
     def test_status_no_tasks(self, tmp_path):
@@ -149,20 +171,30 @@ class TestCLICommands:
 
     def test_exec_no_manifest(self, tmp_path):
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            "exec", "tasks/001-x.md",
-            "--project-path", str(tmp_path),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "exec",
+                "tasks/001-x.md",
+                "--project-path",
+                str(tmp_path),
+            ],
+        )
         assert result.exit_code != 0
         assert "No TASKS.yaml" in result.output
 
     def test_exec_start_task(self, tmp_path):
         _setup_project(tmp_path, with_tasks=True)
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            "exec", "tasks/001-research.md",
-            "--project-path", str(tmp_path),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "exec",
+                "tasks/001-research.md",
+                "--project-path",
+                str(tmp_path),
+            ],
+        )
         assert result.exit_code == 0
         assert "started" in result.output
 
@@ -170,45 +202,72 @@ class TestCLICommands:
         # First start a task
         _setup_project(tmp_path, with_tasks=True)
         runner = CliRunner()
-        runner.invoke(cli, [
-            "exec", "tasks/001-research.md",
-            "--project-path", str(tmp_path),
-        ])
+        runner.invoke(
+            cli,
+            [
+                "exec",
+                "tasks/001-research.md",
+                "--project-path",
+                str(tmp_path),
+            ],
+        )
         # Then complete it
-        result = runner.invoke(cli, [
-            "exec", "tasks/001-research.md", "--complete",
-            "--project-path", str(tmp_path),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "exec",
+                "tasks/001-research.md",
+                "--complete",
+                "--project-path",
+                str(tmp_path),
+            ],
+        )
         assert result.exit_code == 0
         assert "done" in result.output
 
     def test_exec_skip_task(self, tmp_path):
         _setup_project(tmp_path, with_tasks=True)
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            "exec", "tasks/001-research.md", "--skip",
-            "--project-path", str(tmp_path),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "exec",
+                "tasks/001-research.md",
+                "--skip",
+                "--project-path",
+                str(tmp_path),
+            ],
+        )
         assert result.exit_code == 0
         assert "skipped" in result.output
 
     def test_exec_blocked_task(self, tmp_path):
         _setup_project(tmp_path, with_tasks=True)
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            "exec", "tasks/002-implement.md",
-            "--project-path", str(tmp_path),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "exec",
+                "tasks/002-implement.md",
+                "--project-path",
+                str(tmp_path),
+            ],
+        )
         assert result.exit_code != 0
         assert "blocked" in result.output
 
     def test_exec_unknown_file(self, tmp_path):
         _setup_project(tmp_path, with_tasks=True)
         runner = CliRunner()
-        result = runner.invoke(cli, [
-            "exec", "tasks/999-nope.md",
-            "--project-path", str(tmp_path),
-        ])
+        result = runner.invoke(
+            cli,
+            [
+                "exec",
+                "tasks/999-nope.md",
+                "--project-path",
+                str(tmp_path),
+            ],
+        )
         assert result.exit_code != 0
         assert "not found" in result.output
 
@@ -216,8 +275,19 @@ class TestCLICommands:
         _setup_project(tmp_path, with_tasks=True)
         runner = CliRunner()
         # Start and complete task 1
-        runner.invoke(cli, ["exec", "tasks/001-research.md", "--project-path", str(tmp_path)])
-        runner.invoke(cli, ["exec", "tasks/001-research.md", "--complete", "--project-path", str(tmp_path)])
+        runner.invoke(
+            cli, ["exec", "tasks/001-research.md", "--project-path", str(tmp_path)]
+        )
+        runner.invoke(
+            cli,
+            [
+                "exec",
+                "tasks/001-research.md",
+                "--complete",
+                "--project-path",
+                str(tmp_path),
+            ],
+        )
         # Check status
         result = runner.invoke(cli, ["status", "--project-path", str(tmp_path)])
         assert "1/2 done" in result.output
