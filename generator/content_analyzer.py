@@ -83,20 +83,40 @@ class ContentAnalyzer:
         if not content.strip():
             raise ValidationError("Content cannot be empty")
 
-        breakdown = self._heuristic_breakdown(filepath, content)
+        is_skills_index = filepath.endswith("skills/index.md") or filepath.endswith("skills\\index.md")
+
+        if is_skills_index:
+            breakdown = self._skills_breakdown(content)
+        else:
+            breakdown = self._heuristic_breakdown(filepath, content)
+            
         score = min(100, max(0, breakdown.total))
 
         suggestions: List[str] = []
-        if breakdown.structure < 16:
-            suggestions.append("Improve document structure with clear headers")
-        if breakdown.actionability < 16:
-            suggestions.append("Add actionable examples or code blocks")
-        if breakdown.project_grounding < 12:
-            suggestions.append("Reference specific project files or commands")
-        if breakdown.clarity < 15:
-            suggestions.append("Clarify explanations and expand details")
-        if breakdown.consistency < 15:
-            suggestions.append("Ensure consistent formatting and sections")
+        if is_skills_index:
+             # Specialized suggestions for skills
+            if breakdown.structure < 16:
+                suggestions.append("Ensure specific sections: Project Context, Core Skills, Usage")
+            if breakdown.actionability < 16:
+                suggestions.append("Add usage examples and clear 'Triggers' for each skill")
+            if breakdown.project_grounding < 12:
+                suggestions.append("Reference specific project tools (e.g. pytest) or paths (src/)")
+            if breakdown.clarity < 15:
+                 suggestions.append("Use concise, clear skill names and descriptions")
+            if breakdown.consistency < 15:
+                suggestions.append("Ensure all skills follow the same format (e.g. all have triggers)")
+        else:
+            # Generic suggestions
+            if breakdown.structure < 16:
+                suggestions.append("Improve document structure with clear headers")
+            if breakdown.actionability < 16:
+                suggestions.append("Add actionable examples or code blocks")
+            if breakdown.project_grounding < 12:
+                suggestions.append("Reference specific project files or commands")
+            if breakdown.clarity < 15:
+                suggestions.append("Clarify explanations and expand details")
+            if breakdown.consistency < 15:
+                suggestions.append("Ensure consistent formatting and sections")
 
         # Optionally create a patch proposal (only when clearly below target)
         patch = None
@@ -118,8 +138,52 @@ class ContentAnalyzer:
 
         if self.opik and getattr(self.opik, "enabled", False):
             try:
+                # Determine doc_type from filepath
+                filename = Path(filepath).name.lower()
+                if "rules" in filename:
+                    doc_type = "rules"
+                elif "constitution" in filename:
+                    doc_type = "constitution"
+                elif "skill" in filename:
+                    doc_type = "skills"
+                else:
+                    doc_type = "other"
+
+                # Prepare metrics
+                metrics = {
+                    "score_total": score,
+                    "score_structure": breakdown.structure,
+                    "score_clarity": breakdown.clarity,
+                    "score_project_grounding": breakdown.project_grounding,
+                    "score_actionability": breakdown.actionability,
+                    "score_consistency": breakdown.consistency,
+                }
+
+            # Prepare breakdown dict for output
+                import dataclasses
+
+                breakdown_dict = dataclasses.asdict(breakdown)
+
+                output_props = {
+                    "score_total": score,
+                    "score_breakdown": breakdown_dict,
+                    "status": "Good"
+                    if score >= 80
+                    else ("Needs Improvement" if score >= 65 else "Poor"),
+                    "top_issue": suggestions[0] if suggestions else None,
+                    "suggestions": suggestions,
+                }
+
                 self.opik.track_evaluation(
-                    content, "analysis", metadata={"filepath": filepath, "score": score}
+                    content,
+                    "analysis",
+                    metadata={
+                        "filepath": str(filepath),
+                        "doc_type": doc_type,
+                        "score": score,
+                    },
+                    metrics=metrics,
+                    output_props=output_props,
                 )
             except Exception:
                 pass
@@ -130,6 +194,72 @@ class ContentAnalyzer:
             breakdown=breakdown,
             suggestions=suggestions,
             patch=patch,
+        )
+
+    def _skills_breakdown(self, content: str) -> QualityBreakdown:
+        text = content if isinstance(content, str) else str(content)
+        
+        # Structure: Look for Project Context, Core Skills, Agent Skills
+        has_context = bool(re.search(r"^##\s+PROJECT CONTEXT", text, flags=re.MULTILINE | re.IGNORECASE))
+        has_skills = bool(re.search(r"^##\s+(CORE|AGENT)?\s*SKILLS", text, flags=re.MULTILINE | re.IGNORECASE))
+        has_usage = bool(re.search(r"^##\s+USAGE", text, flags=re.MULTILINE | re.IGNORECASE))
+        
+        # Check for consistent skill format (### skill-name)
+        skill_headers = re.findall(r"^###\s+[\w\-]+", text, flags=re.MULTILINE)
+        skill_count = len(skill_headers)
+        
+        structure_score = 5
+        if has_context: structure_score += 5
+        if has_skills: structure_score += 5
+        if has_usage: structure_score += 5
+        structure_score = max(0, min(20, structure_score))
+
+        # Clarity: Concise descriptions and clear naming
+        # Reward short, focused descriptions (1-2 sentences)
+        clarity_score = 20
+        # Deduct if skills are missing descriptions
+        # (This is a simplified heuristic; robust checking would parse each block)
+        if skill_count > 0:
+             # Check if we have roughly enough paragraphs for the skills
+             paragraphs = len([p for p in text.split("\n\n") if p.strip()])
+             if paragraphs < skill_count * 2: # Very rough proxy
+                 clarity_score -= 5
+        else:
+            clarity_score = 10 # No skills found??
+
+        clarity_score = max(0, min(20, clarity_score))
+        
+        # Project Grounding: References to src, rules, tests, or standard tools
+        grounding_score = 5
+        refs = len(re.findall(r"\b(src|tests?|\.clinerules|pytest|analyze-code|refactor|git)\b", text, flags=re.IGNORECASE))
+        grounding_score += min(15, refs * 2) # Cap at 20 total
+        grounding_score = max(0, min(20, grounding_score))
+
+        # Actionability: Triggers, Inputs, Outputs, Examples
+        actionability_score = 5
+        has_triggers = bool(re.search(r"\*\*Triggers:\*\*", text, flags=re.IGNORECASE))
+        has_tools = bool(re.search(r"\*\*Tools:\*\*", text, flags=re.IGNORECASE))
+        has_examples = "```bash" in text or "```python" in text
+        
+        if has_triggers: actionability_score += 5
+        if has_tools: actionability_score += 5
+        if has_examples: actionability_score += 5
+        actionability_score = max(0, min(20, actionability_score))
+
+        # Consistency: Unified format
+        consistency_score = 20
+        # If we have skills, check if they all look similar? 
+        # Hard to do with regex alone, but we can check if triggers count matches skill count approx
+        trigger_count = len(re.findall(r"\*\*Triggers:\*\*", text, flags=re.IGNORECASE))
+        if skill_count > 0 and trigger_count < skill_count:
+             consistency_score -= 5
+        
+        return QualityBreakdown(
+            structure=structure_score,
+            clarity=clarity_score,
+            project_grounding=grounding_score,
+            actionability=actionability_score,
+            consistency=consistency_score,
         )
 
     def _heuristic_breakdown(self, filepath: str, content: str) -> QualityBreakdown:

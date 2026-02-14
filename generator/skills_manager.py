@@ -31,6 +31,8 @@ class SkillsManager:
         self.global_learned = self.discovery.global_learned
         self.project_skills_root = self.discovery.project_skills_root
         self.project_local_dir = self.discovery.project_local_dir
+        self.project_builtin_link = self.discovery.project_builtin_link
+        self.project_learned_link = self.discovery.project_learned_link
 
     def ensure_global_structure(self):
         """Ensure global cache directories exist and are synced."""
@@ -94,3 +96,79 @@ class SkillsManager:
     ) -> str:
         """Delegate to SkillParser."""
         return SkillParser.summarize_purpose(tech, context_lines, project_name)
+
+    def generate_perfect_index(self):
+        """
+        Auto-generate .clinerules/skills/index.md from all available skills.
+        Follows the Perfect Format: Name, Description, Triggers, When to use, Tools, Command, I/O.
+        """
+        # 1. Get all skills
+        all_skills = self.discovery.list_skills()
+        
+        # 2. Sort skills by type and then name for consistent output
+        sorted_skills = []
+        for name, data in all_skills.items():
+            sorted_skills.append((name, data))
+        sorted_skills.sort(key=lambda x: (x[1]['type'], x[0]))
+
+        # 3. Build Index Content
+        index_content = [
+            "---",
+            f"project: {self.discovery.project_path.name if self.discovery.project_path else 'Unknown'}",
+            "purpose: Agent skills for this project",
+            "type: agent-skills",
+            "detected_type: agent",
+            "confidence: 1.00",
+            "version: 1.0",
+            "---",
+            "",
+            "## PROJECT CONTEXT",
+            "- **Type**: Agent",
+            f"- **Domain**: Auto-generated skills index for {self.discovery.project_path.name if self.discovery.project_path else 'this project'}",
+            "",
+            "## SKILLS INDEX",
+            ""
+        ]
+
+        # 4. Process each skill
+        current_type = None
+        for name, data in sorted_skills:
+            # Add section header if type changes
+            skill_type = data['type'].upper()
+            if skill_type != current_type:
+                index_content.append(f"### {skill_type} SKILLS")
+                index_content.append("")
+                current_type = skill_type
+
+            # Parse content
+            content = data.get('content', '')
+            # If content is missing (failed load), try to read file
+            if not content and 'path' in data:
+                try:
+                    content = Path(data['path']).read_text(encoding='utf-8')
+                except Exception:
+                    continue
+            
+            parsed = SkillParser.parse_skill_md(content, name)
+            
+            # Format using Mandatory Template
+            skill_block = [
+                f"#### {name}",
+                f"{parsed['description']}",
+                "",
+                f"**Triggers:** {', '.join(parsed['triggers']) if parsed['triggers'] else 'N/A'}",
+                f"**When to use:** {parsed['when_to_use']}" if parsed['when_to_use'] else None,
+                f"**Tools:** {', '.join(parsed['tools'])}",
+                f"**Command:** {parsed['command']}",
+                f"**Input/Output:** {parsed['input_output']}",
+                ""
+            ]
+            # Filter None values
+            index_content.extend([line for line in skill_block if line is not None])
+
+        # 5. Write to .clinerules/skills/index.md
+        output_path = self.discovery.project_skills_root / "index.md"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text("\n".join(index_content), encoding="utf-8")
+        
+        return output_path

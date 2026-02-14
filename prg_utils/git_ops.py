@@ -95,3 +95,71 @@ def commit_files(
 
     stage_files(paths, repo_path)
     return commit_changes(message, repo_path, user_name, user_email)
+
+
+def create_branch(name: str, repo_path: Union[str, Path] = ".") -> None:
+    """Create a new git branch."""
+    subprocess.run(
+        ["git", "-C", _posix(repo_path), "checkout", "-b", name],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+
+
+def checkout(name: str, repo_path: Union[str, Path] = ".") -> None:
+    """Checkout a branch."""
+    subprocess.run(
+        ["git", "-C", _posix(repo_path), "checkout", name],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+
+
+def merge_branch(name: str, repo_path: Union[str, Path] = ".") -> None:
+    """Merge a branch into the current one."""
+    subprocess.run(
+        ["git", "-C", _posix(repo_path), "merge", name],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+
+
+def delete_branch(name: str, force: bool = False, repo_path: Union[str, Path] = ".") -> None:
+    """Delete a branch."""
+    flag = "-D" if force else "-d"
+    subprocess.run(
+        ["git", "-C", _posix(repo_path), "branch", flag, name],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+
+
+def rollback_to_head(repo_path: Union[str, Path] = ".") -> None:
+    """Hard reset to HEAD and clean untracked files."""
+    repo = _posix(repo_path)
+    subprocess.run(
+        ["git", "-C", repo, "reset", "--hard", "HEAD"],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+    subprocess.run(
+        ["git", "-C", repo, "clean", "-fd"],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+
+def get_current_branch(repo_path: Union[str, Path] = ".") -> str:
+    """Get the name of the current branch."""
+    result = subprocess.run(
+        ["git", "-C", _posix(repo_path), "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+    return result.stdout.strip()

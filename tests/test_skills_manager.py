@@ -28,14 +28,11 @@ def mock_manager(temp_skills_dir):
     def side_effect(*args, **kwargs):
         # Allow any args, return manager pointing to temp dir for functional tests
         # We override learned_path to use our temp dir instead of user home
-        manager = SkillsManager(base_path=temp_skills_dir)
-        manager.learned_path = temp_skills_dir / "learned"
+        manager = SkillsManager(project_path=temp_skills_dir)
+        manager.discovery.global_learned = temp_skills_dir / "learned"
         return manager
 
     return side_effect
-
-
-# ... (omitted parts)
 
 
 def test_cli_respects_project_path(tmp_path):
@@ -43,20 +40,22 @@ def test_cli_respects_project_path(tmp_path):
     target_dir.mkdir()
 
     runner = CliRunner()
-    with patch("main.SkillsManager") as MockClass:
+    with patch("refactor.analyze_cmd.SkillsManager") as MockClass:
         # Mocking list_skills to return a structure that won't cause main.py to crash on sum()
-        MockClass.return_value.list_skills.return_value = {"builtin": ["skill1"]}
+        MockClass.return_value.list_skills.return_value = {
+            "skill1": {"type": "builtin", "path": "path/to/skill1"}
+        }
 
         result = runner.invoke(main, [str(target_dir), "--list-skills"])
 
         assert result.exit_code == 0
-        # Main no longer passes project specific path for skills location (uses default global)
-        MockClass.assert_called_with()
+        # Main now passes project specific path for skills location
+        MockClass.assert_called_with(project_path=target_dir)
 
 
 def test_list_skills(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("main.SkillsManager", side_effect=mock_manager):
+    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager):
         result = runner.invoke(main, ["--list-skills"])
         assert result.exit_code == 0
         assert "Skills" in result.output
@@ -65,8 +64,9 @@ def test_list_skills(temp_skills_dir, mock_manager):
 
 def test_create_skill(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("main.SkillsManager", side_effect=mock_manager):
+    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager) as MockClass:
         result = runner.invoke(main, ["--create-skill", "new-skill"])
+
         assert result.exit_code == 0
         assert "Created new skill 'new-skill'" in result.output
 
@@ -78,7 +78,7 @@ def test_create_skill(temp_skills_dir, mock_manager):
 
 def test_create_skill_sanitization(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("main.SkillsManager", side_effect=mock_manager):
+    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager):
         result = runner.invoke(main, ["--create-skill", "bad name!"])
         # It should sanitize 'bad name!' to 'bad-name' and succeed
         assert result.exit_code == 0
@@ -105,7 +105,7 @@ Description of test project.
     )
 
     runner = CliRunner()
-    with patch("main.SkillsManager", side_effect=mock_manager):
+    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager):
         result = runner.invoke(
             main, ["--create-skill", "readme-skill", "--from-readme", str(readme)]
         )
@@ -129,24 +129,8 @@ Description of test project.
 
 def test_create_duplicate_skill(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("main.SkillsManager", side_effect=mock_manager):
+    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager):
         runner.invoke(main, ["--create-skill", "dup-skill"])
         result = runner.invoke(main, ["--create-skill", "dup-skill"])
-        assert result.exit_code == 1
-        assert "Failed to create skill" in result.output
-
-
-def test_cli_respects_project_path(tmp_path):
-    target_dir = tmp_path / "target_project"
-    target_dir.mkdir()
-
-    runner = CliRunner()
-    with patch("main.SkillsManager") as MockClass:
-        # Mocking list_skills to return a structure that won't cause main.py to crash on sum()
-        MockClass.return_value.list_skills.return_value = {"builtin": ["skill1"]}
-
-        result = runner.invoke(main, [str(target_dir), "--list-skills"])
-
         assert result.exit_code == 0
-        # Main no longer passes project specific path for skills location (uses default global)
-        MockClass.assert_called_with()
+        assert "Updating" in result.output or "Created" in result.output

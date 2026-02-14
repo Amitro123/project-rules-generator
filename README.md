@@ -166,7 +166,8 @@ prg . --export-json > team-skills.json
 
 | Command | Description |
 | :--- | :--- |
-| `prg start "task"` | **Full Workflow**: Plan → Tasks → Preflight → Auto-Fix → Ready. |
+| `prg autopilot` | **Autonomous Agent**: Full Discovery (Analyze/Rules) → Planning → Execution loop. |
+| `prg start "task"` | **Fast Setup**: Plan → Tasks → Preflight → Auto-Fix → Ready for work. |
 | `prg setup "task"` | Setup only (generates plan & tasks) without execution prompt. |
 | `prg exec tasks/001-*.md` | Execute specific task file. Options: `--complete` or `--skip`. |
 | `prg status` | Show progress table (reads `TASKS.yaml` or falls back to `PlanParser`). |

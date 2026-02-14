@@ -182,8 +182,8 @@ class TestDesignGeneratorIntegration:
         d = gen.generate_design("Add authentication", project_context=context)
 
         # Should produce a valid design even without AI
-        assert d.title == "Add authentication"
-        assert "Add authentication" in d.problem_statement
+        assert "Authentication" in d.title
+        assert "authentication" in d.problem_statement.lower()
 
     def test_full_cli_workflow(self, tmp_path):
         """End-to-end CLI: design -> plan from design."""

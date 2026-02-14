@@ -33,21 +33,23 @@ class TestSkillsIntegration(unittest.TestCase):
 
     def test_extract_auto_triggers(self):
         """Test extraction of auto-triggers from skills."""
-        manager = SkillsManager(base_path=self.test_dir)
+        manager = SkillsManager(project_path=self.test_dir)
         # We need to make sure manager.builtin_path points to our test dir
-        manager.builtin_path = self.test_dir / "builtin"
+        manager.discovery.global_builtin = self.test_dir / "builtin"
+        manager.discovery.global_learned = self.test_dir / "learned"
+        manager.discovery.package_builtin = self.test_dir / "pkg_builtin"
 
-        triggers = manager.extract_auto_triggers()
+        triggers = manager.extract_all_triggers()
 
         self.assertEqual(len(triggers), 1)
-        self.assertEqual(triggers[0]["skill"], "dummy-skill")
-        self.assertIn("User mentions: dummy", triggers[0]["conditions"])
-        self.assertIn("Project phase: testing", triggers[0]["conditions"])
+        self.assertIn("dummy-skill", triggers)
+        self.assertIn("user mentions: dummy", triggers["dummy-skill"])
+        self.assertIn("project phase: testing", triggers["dummy-skill"])
 
     def test_get_all_skills_content(self):
         """Test retrieval of all skills content."""
-        manager = SkillsManager(base_path=self.test_dir)
-        manager.builtin_path = self.test_dir / "builtin"
+        manager = SkillsManager(project_path=self.test_dir)
+        manager.discovery.global_builtin = self.test_dir / "builtin"
 
         content = manager.get_all_skills_content()
 

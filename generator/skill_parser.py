@@ -250,3 +250,94 @@ class SkillParser:
             output_file.write_text(json.dumps(triggers, indent=2), encoding="utf-8")
         except Exception as e:
             print(f"[Warning] Failed to save auto-triggers.json: {e}")
+
+    @staticmethod
+    def parse_skill_md(content: str, filename: str) -> Dict:
+        """
+        Parse a skill markdown file to extract structured components.
+        Returns a dict with: name, description, triggers, when_to_use, tools, command, io
+        """
+        parsed = {
+            "name": filename.replace(".md", ""),
+            "description": "",
+            "triggers": [],
+            "when_to_use": "",
+            "tools": ["read", "exec"],  # Safe default
+            "command": "",
+            "input_output": "",
+        }
+        
+        lines = content.split("\n")
+        
+        # 1. Extract Description (First non-header paragraph)
+        for line in lines:
+            clean = line.strip()
+            if not clean or clean.startswith("#") or clean.startswith("---") or clean.startswith(">"):
+                continue
+            parsed["description"] = clean
+            break
+            
+        # 2. Extract Sections using Regex for robustness
+        # Triggers
+        triggers_match = re.search(r"##\s+Triggers\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
+        if triggers_match:
+            raw_triggers = triggers_match.group(1).strip()
+            # Parse list items
+            parsed["triggers"] = [
+                line.strip("- *").strip() 
+                for line in raw_triggers.split("\n") 
+                if line.strip().startswith("-") or line.strip().startswith("*")
+            ]
+        
+        # When to Use
+        when_match = re.search(r"##\s+When to use\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
+        if when_match:
+            parsed["when_to_use"] = when_match.group(1).strip()
+            
+        # Tools
+        tools_match = re.search(r"##\s+Tools\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
+        if tools_match:
+            raw_tools = tools_match.group(1).strip()
+            # Extract tools if commas or newlines
+            tools_list = re.findall(r"\b\w+\b", raw_tools)
+            if tools_list:
+                parsed["tools"] = tools_list
+                
+        # Command / Usage
+        usage_match = re.search(r"##\s+(?:Command|Usage)\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
+        if usage_match:
+            parsed["command"] = usage_match.group(1).strip()
+            
+        # Input / Output
+        io_match = re.search(r"##\s+(?:Input/Output|I/O)\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
+        if io_match:
+            parsed["input_output"] = io_match.group(1).strip()
+        else:
+            # Fallback: check separate Input and Output sections
+            input_match = re.search(r"##\s+Input\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
+            output_match = re.search(r"##\s+Output\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
+            parts = []
+            if input_match:
+                parts.append(f"Input: {input_match.group(1).strip()}")
+            if output_match:
+                parts.append(f"Output: {output_match.group(1).strip()}")
+            if parts:
+                parsed["input_output"] = " / ".join(parts)
+
+        # 3. Smart Defaults (Fill gaps)
+        if not parsed["triggers"] and parsed["when_to_use"]:
+            # Infer triggers from 'When to use' bullets
+            parsed["triggers"] = [
+                line.strip("- *").strip().lower()
+                for line in parsed["when_to_use"].split("\n")
+                if line.strip().startswith("-")
+            ]
+            
+        if not parsed["command"]:
+            # Default command pattern
+            parsed["command"] = f"`prg {parsed['name']}`"
+            
+        if not parsed["input_output"]:
+            parsed["input_output"] = "Standard CLI I/O"
+            
+        return parsed

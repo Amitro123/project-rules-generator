@@ -28,6 +28,7 @@ class SubTask(BaseModel):
     estimated_minutes: int = Field(
         default=5, ge=1, le=10, description="Time estimate (2-5 min target)"
     )
+    type: str = Field(default="py", description="Task file extension (e.g. py, md)")
 
 
 class TaskDecomposer:
@@ -51,6 +52,32 @@ class TaskDecomposer:
         raw = self._call_llm(prompt)
         tasks = self._parse_response(raw, user_task)
         return self._ensure_minimum_tasks(tasks, user_task)
+
+    def from_plan(
+        self,
+        plan_path: Path,
+    ) -> List[SubTask]:
+        """Parse an existing PLAN.md and convert it back to SubTasks."""
+        from generator.planning.plan_parser import PlanParser
+        
+        parser = PlanParser()
+        status = parser.parse_plan(plan_path)
+        
+        tasks: List[SubTask] = []
+        task_id = 1
+        for phase in status.phases:
+            for task_status in phase.tasks:
+                tasks.append(
+                    SubTask(
+                        id=task_id,
+                        title=task_status.description,
+                        goal=task_status.description,
+                        estimated_minutes=5,
+                        dependencies=[task_id - 1] if task_id > 1 else [],
+                    )
+                )
+                task_id += 1
+        return tasks
 
     def from_design(
         self,

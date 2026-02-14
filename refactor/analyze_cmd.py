@@ -207,6 +207,11 @@ def setup_orchestrator(config):
     default=3,
     help="Max improvement iterations for auto-fix (default: 3)",
 )
+@click.option(
+    "--generate-index",
+    is_flag=True,
+    help="Auto-generate skills/index.md from available skills",
+)
 def analyze(
     project_path,
     scan_all,
@@ -238,10 +243,24 @@ def analyze(
     eval_opik,
     auto_fix,
     max_iterations,
+    generate_index,
 ):
     """Analyze project and generate rules.md and skills.md from README.md"""
     project_path = Path(project_path).resolve()
     cleanup_awesome_skills()
+    
+    # Initialize Skills Manager with project context
+    skills_manager = SkillsManager(project_path=project_path)
+
+    # Handle --generate-index flag (standalone action)
+    if generate_index:
+        try:
+            index_path = skills_manager.generate_perfect_index()
+            click.echo(f"✅ Perfect index.md generated at: {index_path}")
+            sys.exit(0)
+        except Exception as e:
+            click.echo(f"❌ Failed to generate index.md: {e}", err=True)
+            sys.exit(1)
 
     # Handle --mode shortcut
     if mode == "ai":

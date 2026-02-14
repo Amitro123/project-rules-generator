@@ -438,8 +438,11 @@ def plan(
     help="AI Provider (gemini, groq). Auto-detected if omitted.",
 )
 @click.option("--api-key", help="API Key (overrides env var)")
+@click.option(
+    "--tasks", is_flag=True, help="Generate executable tasks from review"
+)
 @click.option("--verbose/--quiet", default=True, help="Verbose output")
-def review(filepath, project_path, output, provider, api_key, verbose):
+def review(filepath, project_path, output, provider, api_key, tasks, verbose):
     """Review a generated artifact for quality and hallucinations."""
     filepath = Path(filepath).resolve()
     project_path = Path(project_path).resolve()
@@ -451,6 +454,7 @@ def review(filepath, project_path, output, provider, api_key, verbose):
         click.echo("Project Rules Generator v0.1.0 — Self-Review")
         click.echo(f"Reviewing: {filepath}")
         click.echo(f"Provider: {provider}")
+
 
     from generator.planning import SelfReviewer
 
@@ -519,6 +523,31 @@ def review(filepath, project_path, output, provider, api_key, verbose):
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(report.to_markdown(), encoding="utf-8")
     click.echo(f"\\nCritique written to: {output}")
+
+    # Handle --tasks flag
+    if tasks:
+        from generator.planning.task_creator import TaskCreator
+        from generator.task_decomposer import TaskDecomposer
+
+        if verbose:
+            click.echo("Generating executable tasks from review...")
+
+        try:
+            decomposer = TaskDecomposer(api_key=api_key)
+            subtasks = decomposer.from_plan(filepath)
+
+            creator = TaskCreator()
+            output_dir = project_path / ".clinerules" / "tasks"
+            manifest = creator.create_from_subtasks(
+                subtasks,
+                plan_file=filepath.name,
+                task_description=f"Generated from {filepath.name}",
+                output_dir=output_dir,
+            )
+            click.echo(f"✅ Created {len(subtasks)} tasks in {output_dir}")
+        except Exception as e:
+            click.echo(f"❌ Failed to generate tasks: {e}", err=True)
+
 
 
 @click.command(name="start")

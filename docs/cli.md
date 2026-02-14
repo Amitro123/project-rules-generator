@@ -69,7 +69,7 @@ Reduce cognitive load by letting the agent manage the task lifecycle.
 
 ### `prg start`
 
-Runs the **full workflow** from idea to execution readiness.
+Runs the **fast workflow** from idea to execution readiness.
 
 ```bash
 prg start "Refactor auth middleware to use JWT"
@@ -81,6 +81,27 @@ prg start "Refactor auth middleware to use JWT"
 3.  **Preflight**: Checks for missing dependencies or potential conflicts.
 4.  **Auto-Fix**: Attempts to fix preflight issues automatically.
 5.  **Ready**: Prepares the environment for the first task.
+
+### `prg autopilot` 🆕
+
+Full end-to-end autonomous orchestration. Unlike `start`, `autopilot` manages the discovery phase and the execution loop automatically.
+
+```bash
+prg autopilot [PROJECT_PATH] [OPTIONS]
+```
+
+**Workflow:**
+1.  **Discovery**: Automatically runs `analyze`, `plan`, and `tasks`.
+2.  **Branching**: Creates a git branch for each task (`autopilot/task-{id}`).
+3.  **Autonomous Agent**: Uses a task agent to generate code changes.
+4.  **Approval**: Prompts the user for approval before merging changes.
+5.  **Cleanup**: Merges branch and deletes it on pass; rolls back on failure/rejection.
+
+**Options:**
+- `--discovery-only`: Stop after rule generation and task creation.
+- `--execute-only`: Assume tasks exist and start execution loop.
+- `--provider`: AI provider (`gemini`, `groq`).
+- `--api-key`: API key for the agent.
 
 ### `prg setup`
 

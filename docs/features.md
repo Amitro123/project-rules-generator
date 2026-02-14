@@ -10,6 +10,7 @@ Project Rules Generator offers a suite of tools to analyze your codebase and gen
 | **AI Skills** | Uses LLM to generate custom skills | Slow | Yes |
 | **Incremental** | Updates only changed sections | Very Fast | No |
 | **Task Breakdown** | Breaks large tasks into smaller steps | Medium | Yes |
+| **Autopilot** 🆕 | End-to-end discovery & execution loop | Slow | Yes |
 | **Two-Stage Planning** | Design -> Plan workflow for complex features | Slow | Yes |
 | **Constitution** | Generates high-level principles | Fast | No |
 | **Skill Management** | Managing your learned skills library | Instant | No |

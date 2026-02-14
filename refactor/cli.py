@@ -64,7 +64,10 @@ from refactor.agent import agent_command, design, plan, review, setup, start
 
 # Import and register commands at module level
 from refactor.analyze_cmd import analyze
-from refactor.jobs import exec_task, leaderboard, status
+from refactor.autopilot_cmd import autopilot
+from refactor.gaps_cmd import gaps, spec_cmd
+from refactor.tasks_cmd import tasks_cmd
+from refactor.jobs import exec_task, leaderboard, next_task, query_tasks, status
 
 cli.add_command(analyze)
 cli.add_command(design)
@@ -74,6 +77,12 @@ cli.add_command(start)
 cli.add_command(setup)
 cli.add_command(exec_task)
 cli.add_command(status)
+cli.add_command(next_task, name="next")
+cli.add_command(query_tasks, name="query")
+cli.add_command(autopilot)
+cli.add_command(gaps)
+cli.add_command(tasks_cmd)
+cli.add_command(spec_cmd, name="spec")
 cli.add_command(agent_command)
 cli.add_command(leaderboard)
 

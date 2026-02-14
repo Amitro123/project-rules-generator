@@ -202,7 +202,7 @@ class TestIncrementalCLI:
 
     def test_incremental_flag_in_help(self):
         runner = CliRunner()
-        result = runner.invoke(main, ["--help"])
+        result = runner.invoke(main, ["analyze", "--help"])
         assert "--incremental" in result.output
 
     def test_incremental_skip_when_no_changes(self, tmp_path):

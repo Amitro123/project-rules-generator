@@ -49,7 +49,29 @@ Here are the most common ways to use Project Rules Generator in your daily devel
     prg analyze . --incremental
     ```
 
-## 3. Task-Driven Development 🆕
+## 3. Autopilot (Full Automation) 🆕
+
+**Goal**: Full "Hands-off" orchestration from project discovery to code implementation.
+
+1.  **Run Autopilot**:
+    ```bash
+    prg autopilot .
+    ```
+    *   **Discovery**: Automatically runs `analyze`, `plan`, and `tasks`.
+    *   **Execution**: Starts a loop that implements each task.
+    *   **Safety**: Creates disposable git branches for each task.
+
+2.  **Supervised Review**:
+    For each task, the agent will:
+    *   Branch: `autopilot/task-{id}`
+    *   Implement changes using AI.
+    *   Prompt for your approval.
+    
+3.  **Approval / Rollback**:
+    - **Approve**: Merges the branch and proceeds to the next task.
+    - **Reject**: Rolls back changes and stops for safety.
+
+## 4. Task-Driven Development (Semi-Auto)
 
 **Goal**: Automate the "Plan → Execute → Verify" loop.
 

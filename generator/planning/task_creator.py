@@ -171,15 +171,15 @@ class TaskCreator:
 
     @staticmethod
     def _subtask_to_filename(subtask: SubTask) -> str:
-        """Generate a filename like ``001-research-redis.md`` from a SubTask."""
+        """Generate a filename like ``task001-research-redis.py`` from a SubTask."""
         slug = re.sub(r"[^a-z0-9]+", "-", subtask.title.lower()).strip("-")
         # Truncate to keep filenames reasonable
         slug = slug[:50].rstrip("-")
-        return f"{subtask.id:03d}-{slug}.md"
+        return f"task{subtask.id:03d}-{slug}.{subtask.type}"
 
     @staticmethod
     def _render_task_md(subtask: SubTask) -> str:
-        """Render a single SubTask as a markdown file."""
+        """Render a single SubTask as a markdown or python file."""
         lines = [
             f"# Task {subtask.id}: {subtask.title}",
             "",
@@ -215,4 +215,9 @@ class TaskCreator:
         lines.append("- [ ] Not started")
         lines.append("")
 
-        return "\n".join(lines)
+        content = "\n".join(lines)
+        
+        if subtask.type == "py":
+            return f'"""\n{content}\n"""\n\nif __name__ == "__main__":\n    print("Task: {subtask.title}")\n    print("Goal: {subtask.goal}")\n'
+        
+        return content

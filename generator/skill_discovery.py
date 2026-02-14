@@ -117,24 +117,52 @@ class SkillDiscovery:
 
         skills = {}
 
+        def _resolve_path(base: Path, name: str) -> Optional[Path]:
+            # Check for file
+            p_md = base / f"{name}.md"
+            if p_md.exists(): return p_md
+            
+            p_yaml = base / f"{name}.yaml"
+            if p_yaml.exists(): return p_yaml
+            
+            p_yml = base / f"{name}.yml"
+            if p_yml.exists(): return p_yml
+
+            # Check for directory
+            p_dir = base / name / "SKILL.md"
+            if p_dir.exists(): return p_dir
+            
+            # Handle subdirectories in name (e.g. learned/foo)
+            # The 'name' from _scan_directory might include slashes
+            p_direct = base / f"{name}.md" 
+            if p_direct.exists(): return p_direct
+
+            return None
+
         # 1. Load Builtin (Lowest Priority)
         for s in self._scan_directory(self.global_builtin):
             name = s.split("/")[-1]
-            skills[name] = {"type": "builtin", "path": self.global_builtin / f"{s}.md"}
+            path = _resolve_path(self.global_builtin, s)
+            if path:
+                skills[name] = {"type": "builtin", "path": path}
 
         # 2. Load Learned (Medium Priority)
         for s in self._scan_directory(self.global_learned):
             name = s.split("/")[-1]
-            skills[name] = {"type": "learned", "path": self.global_learned / f"{s}.md"}
+            path = _resolve_path(self.global_learned, s)
+            if path:
+                skills[name] = {"type": "learned", "path": path}
 
         # 3. Load Project (Highest Priority)
         if self.project_local_dir and self.project_local_dir.exists():
             for s in self._scan_directory(self.project_local_dir):
                 name = s.split("/")[-1]
-                skills[name] = {
-                    "type": "project",
-                    "path": self.project_local_dir / f"{s}.md",
-                }
+                path = _resolve_path(self.project_local_dir, s)
+                if path:
+                    skills[name] = {
+                        "type": "project",
+                        "path": path,
+                    }
 
         return skills
 
