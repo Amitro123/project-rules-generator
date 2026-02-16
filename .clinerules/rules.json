@@ -10,6 +10,9 @@
       "Use type hints on all public function signatures",
       "Use Pydantic models for data validation (not raw dicts)",
       "Use Click decorators for CLI arguments — don't parse sys.argv manually",
+      "Use Typer for CLI commands — keep command functions thin",
+      "Use `Depends()` for dependency injection in route handlers",
+      "Define Pydantic response models for all endpoints",
       "Store API keys in `.env` or environment variables — never hardcode (gemini, groq)",
       "Add retry logic with exponential backoff for external API calls",
       "Validate and type-check API responses before using them",
@@ -20,6 +23,8 @@
       "Don't use `print()` for logging — use the `logging` module",
       "Don't catch bare `Exception` — catch specific exceptions",
       "Don't use `sys.exit()` in library code — raise exceptions, let Click handle exit",
+      "Don't use sync functions for I/O in async route handlers",
+      "Don't skip Pydantic validation by accessing `request.json()` directly",
       "Don't log or print full API responses in production (may contain PII)",
       "Don't ignore rate-limit headers from API providers",
       "Don't commit secrets, API keys, or `.env` files",
@@ -27,7 +32,7 @@
     ]
   },
   "priorities": [],
-  "rules_count": 16,
+  "rules_count": 21,
   "architecture": [
     "**Project type**: python-cli",
     "**Entry points**: main.py",
