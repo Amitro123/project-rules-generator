@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-from generator.ai.ai_client import create_ai_client
+from generator.ai.factory import create_ai_client
 
 REVIEW_SYSTEM_PROMPT = (
     "You are a document reviewer. Evaluate the provided artifact for quality, "

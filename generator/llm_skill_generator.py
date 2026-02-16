@@ -3,7 +3,7 @@
 import os
 from typing import Dict, Optional
 
-from .ai.ai_client import create_ai_client
+from .ai.factory import create_ai_client
 
 
 class LLMSkillGenerator:

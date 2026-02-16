@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from generator.ai.ai_client import create_ai_client
+from generator.ai.factory import create_ai_client
 from generator.config import AnalyzerConfig
 from generator.exceptions import FileOperationError, ValidationError
 from generator.integrations.opik_client import OpikEvaluator

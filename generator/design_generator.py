@@ -192,7 +192,7 @@ class DesignGenerator:
 
         # Only initialize AI client if an API key is available; otherwise fallback deterministically
         try:
-            from .ai.ai_client import create_ai_client
+            from .ai.factory import create_ai_client
 
             if self.api_key:
                 self.client = create_ai_client(self.provider, api_key=self.api_key)

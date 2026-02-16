@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from generator.ai.ai_client import create_ai_client
+from generator.ai.factory import create_ai_client
 from generator.task_decomposer import SubTask
 
 TASK_AGENT_SYSTEM_PROMPT = """You are an expert software engineer. 
