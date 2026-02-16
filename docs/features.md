@@ -11,6 +11,7 @@ Project Rules Generator offers a suite of tools to analyze your codebase and gen
 | **Incremental** | Updates only changed sections | Very Fast | No |
 | **Task Breakdown** | Breaks large tasks into smaller steps | Medium | Yes |
 | **Autopilot** 🆕 | End-to-end discovery & execution loop | Slow | Yes |
+| **Project Manager** 🆕 | Livecycle orchestration (Setup->Verify->Exec->Report) | Slow | Yes |
 | **Two-Stage Planning** | Design -> Plan workflow for complex features | Slow | Yes |
 | **Constitution** | Generates high-level principles | Fast | No |
 | **Skill Management** | Managing your learned skills library | Instant | No |
@@ -222,3 +223,42 @@ prg agent "I need to fix a bug"
 ```
 
 **Use Case**: Building autonomous agents that know *exactly* which tool to use for a specific request, without hallucinating.
+
+### Feature 9: Autopilot 🤖 NEW
+**What it does**: A fully autonomous loop that takes a project from zero to implemented features.
+
+**Command**:
+```bash
+prg autopilot .
+```
+
+**Workflow**:
+1.  **Analyze**: Scans project context.
+2.  **Plan**: Generates a roadmap (`PLAN.md`) and task manifest (`TASKS.yaml`).
+3.  **Execute**:
+    -   Picks the next pending task.
+    -   Creates a git branch (`autopilot/task-001`).
+    -   Uses an AI agent to implement the changes.
+    -   Runs verification (tests/lint).
+4.  **Human Review**: Asks for your approval.
+    -   **Yes**: Merges branch.
+    -   **No**: Rolls back changes.
+
+**Use Case**: "Hands-off" development for well-defined projects or refactoring tasks.
+
+### Feature 10: Project Manager Agent 👨‍💼 NEW
+**What it does**: Acts as a verified project manager. It ensures your project is set up correctly (Plan, Spec, Architecture), validates readiness, and then manages the execution.
+
+**Command**:
+```bash
+prg manager .
+```
+
+**Phases**:
+1.  **Setup**: Checks/generates 9 critical artifacts (`rules.md`, `skills/`, `PLAN.md`, `tasks/`, `spec.md`, `tests/`, `pytest.ini`, `README.md`, `ARCHITECTURE.md`).
+2.  **Verify**: Runs `PreflightChecker`.
+3.  **Copilot**: Runs `Autopilot` loop.
+4.  **Summary**: Generates `PROJECT-COMPLETION.md`.
+
+**Use Case**: When you want a structured, professional workflow that guarantees documentation and process compliance.
+

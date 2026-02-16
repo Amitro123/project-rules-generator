@@ -100,7 +100,7 @@ class AutopilotOrchestrator:
                 # 3. Verification & Human in the loop
                 click.echo("\n--- Verification Required ---")
                 click.echo(f"Task: {nxt.title}")
-                click.echo(f"Goal: {nxt.goal}")
+                click.echo(f"Goal: {subtask.goal}")
                 
                 from rich.prompt import Confirm
                 if Confirm.ask("Do you approve these changes?", default=True):

@@ -103,6 +103,27 @@ prg autopilot [PROJECT_PATH] [OPTIONS]
 - `--provider`: AI provider (`gemini`, `groq`).
 - `--api-key`: API key for the agent.
 
+- `--provider`: AI provider (`gemini`, `groq`).
+- `--api-key`: API key for the agent.
+
+### `prg manager` 🆕
+
+Complete 4-phase project lifecycle orchestration.
+
+```bash
+prg manager [PROJECT_PATH] [OPTIONS]
+```
+
+**Phases:**
+1.  **Setup**: Automatically generates missing artifacts (`rules.md`, `PLAN.md`, `spec.md`, `ARCHITECTURE.md`, `PROJECT-MANAGER.md`).
+2.  **Verify**: Runs pre-flight checks to ensure system readiness.
+3.  **Copilot**: Runs the implementation loop (same as `autopilot` with checkpoints).
+4.  **Summary**: Generates a completion report with metrics.
+
+**Options:**
+- `--provider`: AI provider (`gemini`, `groq`).
+- `--api-key`: API key for the agent.
+
 ### `prg setup`
 
 Same as `start`, but stops after generating tasks. Useful if you want to inspect manual work before execution.
