@@ -209,9 +209,12 @@ class ContentAnalyzer:
         skill_count = len(skill_headers)
         
         structure_score = 5
-        if has_context: structure_score += 5
-        if has_skills: structure_score += 5
-        if has_usage: structure_score += 5
+        if has_context:
+            structure_score += 5
+        if has_skills:
+            structure_score += 5
+        if has_usage:
+            structure_score += 5
         structure_score = max(0, min(20, structure_score))
 
         # Clarity: Concise descriptions and clear naming
@@ -241,9 +244,12 @@ class ContentAnalyzer:
         has_tools = bool(re.search(r"\*\*Tools:\*\*", text, flags=re.IGNORECASE))
         has_examples = "```bash" in text or "```python" in text
         
-        if has_triggers: actionability_score += 5
-        if has_tools: actionability_score += 5
-        if has_examples: actionability_score += 5
+        if has_triggers:
+            actionability_score += 5
+        if has_tools:
+            actionability_score += 5
+        if has_examples:
+            actionability_score += 5
         actionability_score = max(0, min(20, actionability_score))
 
         # Consistency: Unified format

@@ -1,5 +1,6 @@
 """Integration tests for end-to-end flow."""
 
+from pathlib import Path
 from click.testing import CliRunner
 
 from main import main
@@ -8,7 +9,7 @@ from main import main
 class TestIntegration:
     """Test suite for end-to-end integration."""
 
-    def test_full_flow_generates_files(self, tmp_path):
+    def test_full_flow_generates_files(self, tmp_path: Path):
         """Test complete flow generates both files correctly."""
         # Create a test project
         project_dir = tmp_path / "my-test-project"
@@ -75,7 +76,7 @@ Install and run.
         assert "## CORE SKILLS" in skills_content
         assert "cli-usability-auditor" in skills_content
 
-    def test_flow_with_different_tech_stacks(self, tmp_path):
+    def test_flow_with_different_tech_stacks(self, tmp_path: Path):
         """Test with various tech stack combinations."""
         test_cases = [
             {
@@ -126,7 +127,7 @@ Description.
             for tech in case["tech_keys"]:
                 assert tech in rules, f"Expected {tech} in {case['name']} rules"
 
-    def test_flow_preserves_existing_files(self, tmp_path):
+    def test_flow_preserves_existing_files(self, tmp_path: Path):
         """Test that running twice updates files."""
         project_dir = tmp_path / "existing-project"
         project_dir.mkdir()

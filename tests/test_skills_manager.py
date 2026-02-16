@@ -64,7 +64,7 @@ def test_list_skills(temp_skills_dir, mock_manager):
 
 def test_create_skill(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager) as MockClass:
+    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager):
         result = runner.invoke(main, ["--create-skill", "new-skill"])
 
         assert result.exit_code == 0

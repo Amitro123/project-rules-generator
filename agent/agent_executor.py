@@ -31,11 +31,6 @@ class AgentExecutor:
         # Simple keyword matching for now
         # Could be enhanced with fuzzy matching or embeddings later
 
-        best_match = None
-        max_overlap = (
-            0  # Not typically useful for simple phrase match, but maybe for partials?
-        )
-
         # We look for exact phrase usage mostly
         for skill, phrases in self._triggers.items():
             for phrase in phrases:

@@ -345,7 +345,8 @@ def example_function(param: str) -> int:
         analyzer.client = mock_client
 
         # Run improvement
-        result = improve_with_feedback(
+        # Run improvement
+        improve_with_feedback(
             filepath, analyzer, target_score=90, max_iterations=3, verbose=False
         )
 

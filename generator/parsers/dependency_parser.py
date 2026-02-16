@@ -291,22 +291,54 @@ class DependencyParser:
 
     @staticmethod
     def _parse_pep508(dep_str: str) -> Optional[Dict[str, str]]:
-        """Parse a PEP 508 dependency string like 'fastapi>=0.100.0'."""
-        match = re.match(
-            r"^([a-zA-Z0-9_.-]+)"
-            r"(?:\[([^\]]+)\])?"
-            r"\s*(?:(==|>=|<=|~=|!=|>|<)\s*([a-zA-Z0-9._*-]+))?",
-            dep_str.strip(),
-        )
-        if match:
+        """Parse a PEP 508 dependency string."""
+        if not dep_str.strip():
+            return None
+            
+        try:
+            from packaging.requirements import Requirement
+            req = Requirement(dep_str)
+            
+            # Extract extras
+            extras = ",".join(sorted(req.extras)) if req.extras else ""
+            
+            # Extract version/specifier
+            # packaging stores it as SpecifierSet, convert to string
+            version = str(req.specifier) if req.specifier else ""
+            
+            # Extract marker
+            marker = str(req.marker) if req.marker else ""
+            
+            # Extract URL if present
+            url = req.url if hasattr(req, "url") and req.url else ""
+
             return {
-                "name": match.group(1).lower().replace("_", "-"),
-                "version": match.group(4) or "",
-                "constraint": match.group(3) or "",
-                "extras": match.group(2) or "",
+                "name": req.name.lower().replace("_", "-"),
+                "version": version,
+                "constraint": "", # Kept for compatibility, mostly empty or part of version
+                "extras": extras,
+                "marker": marker,
+                "url": url,
                 "raw": dep_str.strip(),
             }
-        return None
+        except Exception as e:
+            # Fallback for simple cases if packaging fails or is missing
+            # logger.debug(f"packaging parse failed for {dep_str}: {e}")
+            match = re.match(
+                r"^([a-zA-Z0-9_.-]+)"
+                r"(?:\[([^\]]+)\])?"
+                r"\s*(?:(==|>=|<=|~=|!=|>|<)\s*([a-zA-Z0-9._*-]+))?",
+                dep_str.strip(),
+            )
+            if match:
+                return {
+                    "name": match.group(1).lower().replace("_", "-"),
+                    "version": match.group(4) or "",
+                    "constraint": match.group(3) or "",
+                    "extras": match.group(2) or "",
+                    "raw": dep_str.strip(),
+                }
+            return None
 
     @staticmethod
     def parse_readme_pip_install(readme_path: Path) -> List[Dict[str, str]]:
@@ -373,16 +405,23 @@ class DependencyParser:
         }
 
         # Scan Python files and README
-        scan_files = list(project_path.glob("*.py"))
-        scan_files.extend(project_path.glob("**/*.py"))
-        readme_files = list(project_path.glob("README*"))
-        scan_files.extend(readme_files)
+        scan_files = set()
+        scan_files.update(project_path.glob("*.py"))
+        scan_files.update(project_path.glob("README*"))
+        
+        # Add recursive scan, but the set will handle duplicates if logic changes
+        # Previously: glob("*.py") AND glob("**/*.py") caused root files to be double counted
+        # The glob("**/*.py") includes root files !!
+        # So we just need the recursive glob.
+        scan_files = set(project_path.glob("**/*.py"))
+        scan_files.update(project_path.glob("README*"))
 
         # Limit scanning to avoid performance issues
-        scan_files = scan_files[:50]
+        # Sort to ensure deterministic behavior for tests/limiting
+        scan_files_list = sorted(list(scan_files))[:50]
 
         combined_content = ""
-        for f in scan_files:
+        for f in scan_files_list:
             try:
                 combined_content += f.read_text(encoding="utf-8", errors="replace")[
                     :2000

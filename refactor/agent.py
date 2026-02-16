@@ -538,7 +538,7 @@ def review(filepath, project_path, output, provider, api_key, tasks, verbose):
 
             creator = TaskCreator()
             output_dir = project_path / ".clinerules" / "tasks"
-            manifest = creator.create_from_subtasks(
+            creator.create_from_subtasks(
                 subtasks,
                 plan_file=filepath.name,
                 task_description=f"Generated from {filepath.name}",

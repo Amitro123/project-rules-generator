@@ -156,16 +156,15 @@ class TestTaskManifest:
 class TestTaskCreator:
 
     def test_subtask_to_filename(self):
-        st = SubTask(id=1, title="Research Redis caching", goal="g")
+        st = SubTask(id=1, title="Research Redis caching", goal="g", type="md")
         name = TaskCreator._subtask_to_filename(st)
-        assert name == "001-research-redis-caching.md"
+        assert name == "task001-research-redis-caching.md"
 
-    def test_subtask_to_filename_special_chars(self):
-        st = SubTask(id=12, title="Implement API v2.0 (new!)", goal="g")
+        st = SubTask(id=12, title="Implement API v2.0 (new!)", goal="g", type="py")
         name = TaskCreator._subtask_to_filename(st)
-        assert name.startswith("012-")
+        assert name.startswith("task012-")
         assert "(" not in name
-        assert name.endswith(".md")
+        assert name.endswith(".py")
 
     def test_render_task_md(self):
         st = SubTask(
@@ -209,9 +208,9 @@ class TestTaskCreator:
         assert task_dir.is_dir()
         assert (task_dir / "TASKS.yaml").exists()
 
-        md_files = sorted(task_dir.glob("0*.md"))
+        md_files = sorted(task_dir.glob("task[0-9]*.*"))
         assert len(md_files) == 3
-        assert md_files[0].name.startswith("001-")
+        assert md_files[0].name.startswith("task001-")
 
         # Dependencies preserved
         assert manifest.tasks[1].dependencies == [1]
@@ -226,5 +225,5 @@ class TestTaskCreator:
         creator.create_from_subtasks(subtasks, "PLAN.md", output_dir=out_dir)
         creator.create_from_subtasks(subtasks, "PLAN.md", output_dir=out_dir)
 
-        md_files = sorted(out_dir.glob("0*.md"))
+        md_files = sorted(out_dir.glob("task[0-9]*.*"))
         assert len(md_files) == 3

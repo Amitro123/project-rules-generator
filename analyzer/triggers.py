@@ -1,4 +1,5 @@
 import fnmatch
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Set
 
@@ -125,4 +126,4 @@ class SkillTriggerDetector:
         return True
 
 
-import os
+

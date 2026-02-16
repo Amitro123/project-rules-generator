@@ -1,6 +1,6 @@
 """Autopilot orchestrator — manages the end-to-end discovery and execution loop."""
 
-import os
+
 import re
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -11,6 +11,7 @@ from generator.planning.workflow import AgentWorkflow
 from generator.planning.task_creator import TaskManifest
 from generator.planning.task_executor import TaskExecutor
 from generator.planning.task_agent import TaskImplementationAgent
+from generator.task_decomposer import SubTask
 from prg_utils import git_ops
 
 class AutopilotOrchestrator:
@@ -126,9 +127,8 @@ class AutopilotOrchestrator:
                     git_ops.rollback_to_head(self.project_path)
                 break
 
-    def _load_subtask_details(self, entry) -> 'SubTask':
+    def _load_subtask_details(self, entry) -> SubTask:
         """Load full SubTask details from the task file."""
-        from generator.task_decomposer import SubTask
         task_file = self.project_path / "tasks" / entry.file
         content = task_file.read_text(encoding="utf-8")
         
