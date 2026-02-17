@@ -40,7 +40,18 @@ export GEMINI_API_KEY=your_key_here
 prg analyze . --mode ai --auto-generate-skills
 ```
 
-## 4. Verify Output
+```
+
+## 4. Create Custom Skills
+
+Generate high-quality skills for your specific workflow:
+
+```bash
+# Auto-detects tech stack and creates relevant skills
+prg create-skills .
+```
+
+## 5. Verify Output
 
 Check the generated rules:
 

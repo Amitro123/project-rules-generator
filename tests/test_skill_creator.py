@@ -435,7 +435,7 @@ class TestEndToEnd:
         assert skill_file.name == "test-skill.md"
 
         # Should contain content
-        saved_content = skill_file.read_text()
+        saved_content = skill_file.read_text(encoding="utf-8")
         assert saved_content == content
 
 

@@ -43,6 +43,24 @@ prg design <TASK_DESCRIPTION> [OPTIONS]
 | `--output` | file | `DESIGN.md` | Output file path. |
 | `--api-key` | str | `env` | AI API key. |
 
+### Create Skills
+
+Generate high-quality, context-aware skills for your project.
+
+```bash
+prg create-skills [PROJECT_PATH] [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `[PROJECT_PATH]` | argument | `.` (current dir) | The root directory of the project. |
+| `--skill` | str | - | Generate a specific skill by name (e.g., `fastapi-security`). |
+| `--quality-threshold` | int | `70` | Minimum quality score (0-100) required to save the skill. |
+| `--export-report` | flag | `false` | Save a JSON quality report for each generated skill. |
+| `--verbose` | flag | `false` | Show detailed generation logs and quality issues. |
+| `--ai` | flag | `false` | Use AI to enhance skill generation (requires API key). |
+
+
 ### Plan
 
 Break down a task into smaller subtasks.

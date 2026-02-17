@@ -66,6 +66,7 @@ from refactor.agent import agent_command, design, plan, review, setup, start
 from refactor.analyze_cmd import analyze
 from refactor.autopilot_cmd import autopilot
 from refactor.create_skills_cmd import create_skills
+from refactor.create_rules_cmd import create_rules
 from refactor.gaps_cmd import gaps, spec_cmd
 from refactor.manager_cmd import manager
 from refactor.tasks_cmd import tasks_cmd
@@ -73,6 +74,7 @@ from refactor.jobs import exec_task, leaderboard, next_task, query_tasks, status
 
 cli.add_command(analyze)
 cli.add_command(create_skills)
+cli.add_command(create_rules)
 cli.add_command(design)
 cli.add_command(plan)
 cli.add_command(review)

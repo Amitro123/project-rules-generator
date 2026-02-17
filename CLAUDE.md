@@ -1,60 +1,57 @@
-🔧 EXTRACT COWORK SKILL CREATOR LOGIC → PRG Integration
+🔧 PORT COWORK LOGIC: Smart Rules Generator → PRG
 
-**Goal:** Port Cowork's smart skill creation to PRG (local/offline)
+**Goal:** Transfer Cowork's intelligent rule creation to PRG rules engine
 
-**What I need from you:**
-1. **Skill Creation Algorithm** (pseudocode/python):
-   - Input: README/project context
-   - Output: Optimized SKILL.md (auto-triggers/tools/steps)
-   
-2. **Template Engine** (best practices):
-${NAME}
-Auto-trigger: [...]
-Tools: [...]
-Steps: [...]
-Output: [...]
+**Current PRG rules:** Basic README parsing → Generic rules
+**Target:** Cowork-level rules (structured, actionable, quality-gated)
+
+**Extract from Cowork:**
+1. **Rules Creation Algorithm:**
+   - Input: README + code structure + git history
+   - Output: .clinerules/rules.md (YAML frontmatter + sections)
+
+2. **Rule Structure** (Cowork quality):
+project: multi-agent-system
+tech_stack: [python, asyncio, langchain]
+priority_rules: [async_patterns, agent_orchestration]
+
+Coding Standards
+High Priority
+Always use async/await for agent coordination
+
+Architecture
+Single orchestrator pattern
 
 text
-
-3. **Quality Gates** (Cowork magic):
-- Trigger optimization
-- Tool selection logic  
-- Step decomposition
-- Validation checklist
+3. **Intelligence Features:**
+   - Tech stack detection → Specific rules
+   - Priority scoring (High/Medium/Low)
+   - Anti-pattern extraction from git history  
+   - Quality validation (completeness, conflicts)
 
 **Deliverables:**
-generator/skill_creator.py (full implementation)
+generator/rules_creator.py (CoworkRulesCreator class)
 
-templates/SKILL.md.jinja2
+templates/RULES.md.jinja2
 
-tests/test_skill_creator.py
+tests/test_rules_creator.py (90% coverage)
 
-README section: "PRG Skill Creator (powered by Cowork logic)"
-
-text
-
-**Integration:**
-prg analyze . → rules + raw skills
-prg create-skills → Cowork-quality SKILL.md files
-prg export-cowork → Optional Cowork format
+CLI: prg create-rules .
 
 text
 
-**Example:**
-Input: FastAPI project README
-Output: fastapi-security-auditor/SKILL.md
-Triggers: ["security audit", "api review"]
-Tools: ["ruff", "bandit", "prg review"]
+**Integration Flow:**
+prg analyze . → Detect tech/context
+prg create-rules . → Cowork-quality rules.md
+prg verify-rules → Quality score 85%+
 
 text
 
-**Extract your skill creation intelligence → Make PRG creator Cowork-level!** 🎨
-🛠️ מה תקבל אחרי:
+**Examples to Generate:**
+FastAPI project → REST patterns, Pydantic validation
+Multi-agent → Async coordination, error boundaries
+React → Hooks patterns, state management
+
 text
-prg create-skills .  # Offline, token-free!
-text
-✅ Created 8 project skills (Cowork quality)
-├── fastapi-auditor/SKILL.md
-├── agent-orchestrator/SKILL.md  
-└── test-coverage/SKILL.md
-📊 Quality: Triggers 95% | Tools optimal
+
+**Extract Cowork rules intelligence → Supercharge PRG rules!** 📜🚀

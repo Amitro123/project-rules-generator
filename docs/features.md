@@ -262,3 +262,27 @@ prg manager .
 
 **Use Case**: When you want a structured, professional workflow that guarantees documentation and process compliance.
 
+### Feature 11: Cowork Skill Creator 🎨 NEW
+**What it does**: Generates high-quality, professional skills using Cowork's intelligent logic—even offline.
+
+**Command**:
+```bash
+prg create-skills .
+```
+
+**Key Capabilities**:
+1.  **Smart Auto-Triggers**: Generates natural variations and synonyms for better agent retrieval.
+2.  **Intelligent Tool Selection**: Automatically maps your project's tech stack (e.g., FastAPI → uvicorn, pytest) to the right tools.
+3.  **Quality Gates**: Validates skills against strict criteria (actionability, placeholders) and auto-improves them.
+4.  **Hallucination Prevention**: Scans generated content to ensure all file paths exist in your project.
+
+**Usage**:
+```bash
+# Auto-generate skills from project context
+prg create-skills .
+
+# Create a specific skill with AI enhancement
+prg create-skills . --skill "react-component-builder" --ai
+```
+
+**Use Case**: Quickly bootstrapping a robust skill library for any new project, ensuring agents have high-quality instructions from day one.
