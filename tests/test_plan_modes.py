@@ -1,6 +1,8 @@
 """Tests for planning modules (project planner and plan parser)."""
+from unittest.mock import patch
 
 from pathlib import Path
+import os
 
 import pytest
 
@@ -90,7 +92,8 @@ class TestProjectPlanner:
     @pytest.fixture
     def planner(self):
         """Create planner instance."""
-        return ProjectPlanner()
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "dummy_key"}):
+            return ProjectPlanner()
 
     @pytest.fixture
     def sample_readme(self, tmp_path):

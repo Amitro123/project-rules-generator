@@ -262,6 +262,9 @@ def analyze(
             click.echo(f"❌ Failed to generate index.md: {e}", err=True)
             sys.exit(1)
 
+    if ai:
+        auto_generate_skills = True
+
     # Handle --mode shortcut
     if mode == "ai":
         auto_generate_skills = True

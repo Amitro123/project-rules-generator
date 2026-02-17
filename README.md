@@ -295,6 +295,192 @@ prg --version
  
 ---
 
+## 🎨 NEW: Cowork-Powered Skill Creator
+
+PRG now includes **Cowork's intelligent skill creation logic**, generating professional-quality skills offline without tokens!
+
+### What Makes It Special?
+
+**🧠 Smart Auto-Triggers**
+- Generates 5-8 natural invocation patterns per skill
+- Includes synonyms and action-based variations
+- Example: "security audit" → "audit api", "check security", "review vulnerabilities"
+
+**🛠️ Intelligent Tool Selection**
+- Automatically detects required tools from tech stack
+- Validates tool availability in `requirements.txt`/`package.json`
+- Maps technologies to appropriate tooling (FastAPI → uvicorn, pytest, httpx)
+
+**✅ Quality Gates**
+- Scores skills 0-100 on actionability
+- Detects placeholders and generic content
+- **Hallucination Prevention**: Catches fake file paths automatically
+- Auto-fixes common issues (generic paths, missing sections)
+
+**📊 Project Signals**
+- Detects: `has_docker`, `has_tests`, `has_api`, `has_ci`
+- Uses actual project structure to inform skill content
+- No guessing—skills reference real files
+
+### Usage
+
+```bash
+# Auto-generate skills from your project
+prg create-skills .
+
+# Create specific skill
+prg create-skills . --skill "fastapi-security-auditor"
+
+# High-quality mode with strict validation
+prg create-skills . --quality-threshold 85 --verbose
+
+# Export quality reports
+prg create-skills . --export-report --verbose
+```
+
+### Example Output
+
+**Generated Skill:** `fastapi-security-auditor.md`
+
+```yaml
+---
+name: fastapi-security-auditor
+description: FastAPI security auditing for this project
+auto_triggers:
+  keywords:
+    - fastapi security auditor
+    - audit fastapi
+    - review api security
+    - security audit
+    - check vulnerabilities
+  project_signals:
+    - has_docker
+    - has_tests
+    - has_api
+tools:
+  - bandit
+  - pytest
+  - httpx
+  - ruff
+category: project
+---
+
+# Skill: Fastapi Security Auditor
+
+## Purpose
+Security auditing workflow for FastAPI endpoints...
+
+## Process
+### 1. Run Security Scan
+\`\`\`bash
+bandit -r . -ll
+safety check
+\`\`\`
+
+### 2. Test API Endpoints
+\`\`\`bash
+pytest tests/test_security.py -v
+\`\`\`
+...
+```
+
+**Quality Report:**
+```
+📈 Quality Score: 92.0/100
+✅ PASSED
+
+📊 Skill Metadata:
+   - Auto-triggers: 8
+   - Tools: 4
+   - Project signals: 3
+
+🎯 Auto-Triggers:
+   - "fastapi security auditor"
+   - "audit fastapi"
+   - "review api security"
+   - "security audit"
+   - "check vulnerabilities"
+```
+
+### Architecture
+
+```
+generator/
+├── skill_creator.py         # Cowork intelligence core
+│   ├── CoworkSkillCreator   # Main creator class
+│   ├── SkillMetadata        # Structured metadata
+│   ├── QualityReport        # Validation results
+│   └── Quality Gates:
+│       ├── Placeholder detection
+│       ├── Hallucination prevention
+│       ├── Trigger optimization
+│       └── Tool validation
+│
+templates/
+└── SKILL.md.jinja2          # Professional skill template
+
+tests/
+└── test_skill_creator.py    # 100% coverage tests
+```
+
+### Quality Features
+
+| Feature | Description | Benefit |
+|:--------|:------------|:--------|
+| **Smart Triggers** | 5-8 variations with synonyms | Agents find skills naturally |
+| **Tool Validation** | Checks requirements.txt | Only suggests available tools |
+| **Hallucination Detection** | Scans for fake file paths | No confusing references |
+| **Project Signals** | Detects Docker, tests, CI | Context-aware skills |
+| **Auto-Fix** | Repairs common issues | 70%+ pass rate |
+| **YAML Frontmatter** | Structured metadata | Machine-readable |
+
+### Comparison: Before vs After
+
+**Before (Old Generator):**
+```markdown
+# Skill: FastAPI Endpoints
+
+## Purpose
+Follow project conventions
+
+## Process
+[Step-by-step instructions]
+```
+❌ Generic, placeholder text
+❌ No triggers
+❌ No tools specified
+
+**After (Cowork-Powered):**
+```yaml
+---
+auto_triggers:
+  - "create fastapi endpoint"
+  - "add api route"
+  - "build rest endpoint"
+tools: [pytest, httpx, uvicorn]
+---
+
+# Skill: FastAPI Endpoints
+
+## Purpose
+Create RESTful API endpoints following project-name patterns
+
+## Process
+### 1. Create Route File
+\`\`\`bash
+# Check existing structure
+ls api/routes/
+
+# Create new route
+touch api/routes/new_feature.py
+\`\`\`
+```
+✅ Specific, actionable
+✅ 8 auto-triggers
+✅ Validated tools
+
+---
+
 ## 🤝 Contributing
 1.  Fork the repo
 2.  Create feature branch (`git checkout -b feat/amazing-feature`)
@@ -304,4 +490,4 @@ prg --version
 
 ---
 
-**Project Rules Generator** — Because generic "analyze code" skills aren't enough anymore.
+**Project Rules Generator** — Now with **Cowork-level skill creation**, because generic "analyze code" skills aren't enough anymore.

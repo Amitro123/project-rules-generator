@@ -8,9 +8,9 @@ class TestEncodingFix:
     def test_gemini_client_encoding_fix(self):
         """Test that GeminiClient cleans encoding artifacts."""
         # Patch where genai is imported in gemini_client.py
-        with patch("generator.ai.providers.gemini_client.genai.Client") as MockClient:
+        with patch("generator.ai.providers.gemini_client.genai") as MockGenAI:
             # Setup mock
-            mock_instance = MockClient.return_value
+            mock_instance = MockGenAI.Client.return_value
             mock_response = MagicMock()
             # Corrupted string with mojibake
             mock_response.text = "Some content \u05d2\u20ac\u201d with artifacts \u05d2"
