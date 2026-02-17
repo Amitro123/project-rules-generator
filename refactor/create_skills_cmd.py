@@ -13,6 +13,7 @@ from pathlib import Path
 import click
 
 from generator.skill_creator import CoworkSkillCreator, QualityReport
+from refactor.config_cmd import load_config
 
 
 @click.command("create-skills")
@@ -58,6 +59,12 @@ from generator.skill_creator import CoworkSkillCreator, QualityReport
     is_flag=True,
     help="Verbose output with quality details",
 )
+@click.option(
+    "--provider",
+    type=str,
+    default=None,
+    help="AI Provider (gemini, groq). Defaults to config or gemini.",
+)
 def create_skills(
     project_path: str,
     skill: str,
@@ -67,6 +74,7 @@ def create_skills(
     auto_fix: bool,
     export_report: bool,
     verbose: bool,
+    provider: str,
 ):
     """
     Create Cowork-quality skills for your project.
@@ -104,6 +112,14 @@ def create_skills(
     else:
         readme_content = readme_path.read_text(encoding="utf-8", errors="replace")
 
+    # Determine provider
+    if not provider:
+        config = load_config()
+        provider = config.get("llm", {}).get("provider", "gemini")
+    
+    if verbose and ai:
+        click.echo(f"🤖 AI Provider: {provider}")
+
     # Initialize creator
     creator = CoworkSkillCreator(project_path_obj)
 
@@ -130,6 +146,8 @@ def create_skills(
             auto_fix,
             verbose,
             export_report,
+            provider,
+            ai,
         )
     else:
         # Auto-generate skills from README
@@ -141,6 +159,8 @@ def create_skills(
             quality_threshold,
             auto_fix,
             verbose,
+            provider,
+            ai,
         )
 
     click.echo("\n✅ Skill generation complete!")
@@ -157,6 +177,8 @@ def _create_single_skill(
     auto_fix: bool,
     verbose: bool,
     export_report: bool,
+    provider: str,
+    use_ai: bool,
 ):
     """Create a single skill with quality validation."""
 
@@ -164,7 +186,7 @@ def _create_single_skill(
 
     try:
         content, metadata, quality = creator.create_skill(
-            skill_name, readme_content
+            skill_name, readme_content, use_ai=use_ai, provider=provider
         )
 
         # Display quality report
@@ -235,89 +257,19 @@ def _auto_generate_skills(
     quality_threshold: int,
     auto_fix: bool,
     verbose: bool,
+    provider: str,
+    use_ai: bool,
 ):
-    """Auto-generate skills from README and tech stack."""
-
-    click.echo("🔍 Analyzing project...")
-
-    # Detect tech stack
-    tech_stack = creator._detect_tech_stack(readme_content)
-
-    if not tech_stack:
-        click.echo("⚠️  No tech stack detected. Creating generic skill.", err=True)
-        skill_name = f"{project_path.name}-workflow"
-        _create_single_skill(
-            creator,
-            skill_name,
-            readme_content,
-            output_dir,
-            quality_threshold,
-            auto_fix,
-            verbose,
-            export_report=False,
-        )
-        return
-
-    click.echo(f"📦 Detected technologies: {', '.join(tech_stack)}\n")
-
-    # Generate skill names from tech stack
-    skill_names = []
-    for tech in tech_stack:
-        tech_lower = tech.lower()
-
-        # Map to skill types
-        if tech_lower in ["fastapi", "flask", "django"]:
-            skill_names.append(f"{tech_lower}-api-workflow")
-        elif tech_lower in ["react", "vue"]:
-            skill_names.append(f"{tech_lower}-component-builder")
-        elif tech_lower == "pytest":
-            skill_names.append("pytest-testing-workflow")
-        elif tech_lower == "docker":
-            skill_names.append("docker-deployment")
-        # Add more mappings as needed
-
-    # Fallback: create generic project skill
-    if not skill_names:
-        skill_names = [f"{project_path.name}-workflow"]
-
-    # Create each skill
-    created_count = 0
-    failed_count = 0
-
-    for skill_name in skill_names:
-        click.echo(f"\n{'='*60}")
-        click.echo(f"Creating: {skill_name}")
-        click.echo(f"{'='*60}\n")
-
-        try:
-            content, metadata, quality = creator.create_skill(
-                skill_name, readme_content
-            )
-
-            _display_quality_report(quality, verbose)
-
-            if quality.score >= quality_threshold or auto_fix:
-                skill_file = creator.export_to_file(content, metadata, output_dir)
-                click.echo(f"✅ Created: {skill_file.name}")
-                created_count += 1
-            else:
-                click.echo(
-                    f"⚠️  Skipped: Quality {quality.score:.1f} < {quality_threshold}",
-                    err=True,
-                )
-                failed_count += 1
-
-        except Exception as e:
-            click.echo(f"❌ Failed: {e}", err=True)
-            failed_count += 1
-
-    # Summary
-    click.echo(f"\n{'='*60}")
-    click.echo(f"📊 Summary:")
-    click.echo(f"   ✅ Created: {created_count}")
-    if failed_count > 0:
-        click.echo(f"   ❌ Failed: {failed_count}")
-    click.echo(f"{'='*60}")
+    """Auto-generate skills using the new flow (Global Learned Cache)."""
+    click.echo("🔍 Analyzing project for learned skills...")
+    
+    # Use the new generate_all flow
+    # This handles detection, global reuse, creation, and symlinking
+    creator.generate_all(project_path, use_ai=use_ai, provider=provider)
+    
+    click.echo("\n✅ Learned skills generation complete!")
+    click.echo(f"   - Verified Global Cache: {creator.discovery.global_learned}")
+    click.echo(f"   - Linked to Project: {creator.discovery.project_skills_root}")
 
 
 def _display_quality_report(quality: QualityReport, verbose: bool):

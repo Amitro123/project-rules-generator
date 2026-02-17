@@ -65,7 +65,9 @@ from refactor.agent import agent_command, design, plan, review, setup, start
 # Import and register commands at module level
 from refactor.analyze_cmd import analyze
 from refactor.autopilot_cmd import autopilot
+from refactor.cascade_cmd import cascade
 from refactor.create_skills_cmd import create_skills
+from refactor.config_cmd import config_cmd
 from refactor.create_rules_cmd import create_rules
 from refactor.gaps_cmd import gaps, spec_cmd
 from refactor.manager_cmd import manager
@@ -73,8 +75,10 @@ from refactor.tasks_cmd import tasks_cmd
 from refactor.jobs import exec_task, leaderboard, next_task, query_tasks, status
 
 cli.add_command(analyze)
+cli.add_command(cascade)
 cli.add_command(create_skills)
 cli.add_command(create_rules)
+cli.add_command(config_cmd)
 cli.add_command(design)
 cli.add_command(plan)
 cli.add_command(review)
@@ -92,6 +96,34 @@ cli.add_command(spec_cmd, name="spec")
 cli.add_command(agent_command)
 cli.add_command(leaderboard)
 
+
+
+from refactor.flows import SimpleFlow, GuidedFlow, AutoFlow
+
+@click.command("simple")
+@click.argument("project_path", default=".")
+def simple_flow(project_path):
+    """Run the Simple Flow (Quick Checklist)."""
+    SimpleFlow(Path(project_path)).run()
+
+@click.command("guided")
+@click.argument("project_path", default=".")
+def guided_flow(project_path):
+    """Run the Guided Flow (Interactive Wizard)."""
+    GuidedFlow(Path(project_path)).run()
+
+@click.command("auto")
+@click.argument("project_path", default=".")
+@click.option("--discovery-only", is_flag=True, help="Run discovery only (dry run)")
+def auto_flow(project_path, discovery_only):
+    """Run the Auto Flow (Full Autopilot)."""
+    AutoFlow(Path(project_path)).run(discovery_only=discovery_only)
+
+
+# Register new flow commands
+cli.add_command(simple_flow)
+cli.add_command(guided_flow)
+cli.add_command(auto_flow)
 
 def main():
     cli()

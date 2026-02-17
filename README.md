@@ -14,16 +14,14 @@ Most rule generators give you static templates. **Project Rules Generator** read
 
 ## 🆚 Traditional Rule Generators vs. Project Rules Generator
 
-| **Feature** | **Other Tools (Static)** | **Project Rules Generator (Dynamic) 🧠** |
+| **Feature** | **Other Tools (Static)** | **Project Rules Generator (v1.0) 🚀** |
 | :--- | :---: | :---: |
 | **Context Awareness** | ❌ Generic templates | ✅ Reads README & Structure |
-| **Memory** | ❌ None (Start from scratch) | ✅ Learns across ALL projects |
-| **Skill Type** | ❌ "Use React" (Basic) | ✅ "Optimize FFmpeg for ML" (Expert) |
+| **Global Memory** | ❌ None | ✅ **Learns skills once, reuses everywhere** |
+| **Skill Quality** | ❌ Generic "Use React" | ✅ **Cowork-Quality** (Actionable, Triggers, Tools) |
 | **Git Integration** | ❌ Manual | ✅ Auto-commits (Smart .gitignore handling) |
 | **Constitution** | ❌ None | ✅ Generates `constitution.md` principles |
-| **Incremental** | ❌ Full Regen Only | ✅ Updates only changed files/skills |
-| **Context Opt.** | ❌ All or Nothing | ✅ Smart `.clinerules.yaml` exclusions |
-| **Evolution** | ❌ Static | ✅ Gets smarter every usage |
+| **Incremental** | ❌ Full Regen Only | ✅ Updates only changed files |
 
 ---
 
@@ -101,19 +99,40 @@ prg autopilot .
  
 ## 🌊 Common Workflows
  
-###  Initial Setup
-Run this once when setting up a new project or onboarding.
+## 🚀 Quick Start (v2.0)
+
+PRG v2.0 introduces **Unified Flows** to simplify your workflow. Choose the mode that fits your style:
+
+### 1. Simple Flow (✅ Checklist)
+Best for quick, non-intrusive analysis.
 ```bash
-# Full generation with Constitution and AI skills
-prg . --ai --constitution --full-workflow
+prg simple .
 ```
- 
-### 💻 Daily Development
-Run this when you add new dependencies or change project structure.
+
+### 2. Guided Flow (🧭 Interactive)
+A wizard that skips no steps. Rules, tasks, skills—all interactive.
 ```bash
-# Fast incremental update
-prg . --incremental
+prg guided .
 ```
+
+### 3. Auto Flow (🤖 Autopilot)
+Full autonomous mode. Discovery → Planning → Execution.
+```bash
+prg auto .
+```
+
+---
+
+### 🌍 Global Project Manager (New)
+
+All projects now share a global brain (`~/.project-rules-generator/projects/`). 
+Run this once to link everything:
+
+```bash
+prg analyze . --full-flow
+```
+(Note: `prg guided` includes this step automatically!)
+
  
 ### 🚀 CI/CD Integration
 Add this to your GitHub Actions to ensure rules are always up to date.
@@ -479,50 +498,7 @@ tests/
 | **Auto-Fix** | Repairs common issues | 70%+ pass rate |
 | **YAML Frontmatter** | Structured metadata | Machine-readable |
 
-### Comparison: Before vs After
 
-**Before (Old Generator):**
-```markdown
-# Skill: FastAPI Endpoints
-
-## Purpose
-Follow project conventions
-
-## Process
-[Step-by-step instructions]
-```
-❌ Generic, placeholder text
-❌ No triggers
-❌ No tools specified
-
-**After (Cowork-Powered):**
-```yaml
----
-auto_triggers:
-  - "create fastapi endpoint"
-  - "add api route"
-  - "build rest endpoint"
-tools: [pytest, httpx, uvicorn]
----
-
-# Skill: FastAPI Endpoints
-
-## Purpose
-Create RESTful API endpoints following project-name patterns
-
-## Process
-### 1. Create Route File
-\`\`\`bash
-# Check existing structure
-ls api/routes/
-
-# Create new route
-touch api/routes/new_feature.py
-\`\`\`
-```
-✅ Specific, actionable
-✅ 8 auto-triggers
-✅ Validated tools
 
 ---
 

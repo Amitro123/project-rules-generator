@@ -1,57 +1,40 @@
-🔧 PORT COWORK LOGIC: Smart Rules Generator → PRG
+🔥 CASCADE UPGRADE: Design → Plan → Tasks (Production Quality)
 
-**Goal:** Transfer Cowork's intelligent rule creation to PRG rules engine
+**Current:** Generic → Specific chain broken
+**Target:** PLAN drives design/task.yaml improvements
 
-**Current PRG rules:** Basic README parsing → Generic rules
-**Target:** Cowork-level rules (structured, actionable, quality-gated)
+**1. MASTER PLAN Template (Specificity):**
+PLAN: {project_name} - {goal}
+Est: {total}min | Risks: Redis timeout
 
-**Extract from Cowork:**
-1. **Rules Creation Algorithm:**
-   - Input: README + code structure + git history
-   - Output: .clinerules/rules.md (YAML frontmatter + sections)
+1. {title} ({est}min)
+Files: llm_client.py, tests/test_cache.py
+Depends: {#1}
 
-2. **Rule Structure** (Cowork quality):
-project: multi-agent-system
-tech_stack: [python, asyncio, langchain]
-priority_rules: [async_patterns, agent_orchestration]
-
-Coding Standards
-High Priority
-Always use async/await for agent coordination
-
-Architecture
-Single orchestrator pattern
-
-text
-3. **Intelligence Features:**
-   - Tech stack detection → Specific rules
-   - Priority scoring (High/Medium/Low)
-   - Anti-pattern extraction from git history  
-   - Quality validation (completeness, conflicts)
-
-**Deliverables:**
-generator/rules_creator.py (CoworkRulesCreator class)
-
-templates/RULES.md.jinja2
-
-tests/test_rules_creator.py (90% coverage)
-
-CLI: prg create-rules .
+Add Redis async wrapper
+Verify: pytest --cov=80%
+AC: Cache hit >80%
 
 text
 
-**Integration Flow:**
-prg analyze . → Detect tech/context
-prg create-rules . → Cowork-quality rules.md
-prg verify-rules → Quality score 85%+
+**2. Cascade Logic:**
+PLAN.md → feeds TaskDecomposer → task.yaml (files/AC)
+PLAN.md → feeds DesignCreator → DESIGN.md (API contracts)
 
 text
 
-**Examples to Generate:**
-FastAPI project → REST patterns, Pydantic validation
-Multi-agent → Async coordination, error boundaries
-React → Hooks patterns, state management
+**3. Rules:**
+- Extract **project name/tech** from scan
+- **Specific files** per task (llm_client.py, not "core")
+- Measurable **AC** (pytest pass, coverage %)
+- **Risks** per task
+- **17min total** realistic
+
+**Test Chain:**
+prg create-rules . → DESIGN.md (specific)
+prg plan . → PLAN.md (detailed)
+→ task.yaml (precise files/deps)
 
 text
 
-**Extract Cowork rules intelligence → Supercharge PRG rules!** 📜🚀
+**UPGRADE CASCADE → Copilot will complete projects!** 🎯✨

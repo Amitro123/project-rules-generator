@@ -331,7 +331,7 @@ def analyze(
                  click.echo("   ⚠️  Verification: rules.md is a copy (Fallback mode)")
         
         click.echo("✨ Full Flow Complete!")
-        sys.exit(0)
+        return
 
     # Handle --generate-index flag (standalone action)
     if generate_index:

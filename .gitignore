@@ -40,3 +40,6 @@ walkthrough.md
 
 # Cache files
 .clinerules/.prg-cache.json
+
+# Temp
+temp_test_project/

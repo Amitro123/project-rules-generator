@@ -18,6 +18,8 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import yaml
 
+from generator.skill_discovery import SkillDiscovery
+
 try:
     from jinja2 import Environment, FileSystemLoader, Template
     HAS_JINJA2 = True
@@ -112,6 +114,161 @@ class CoworkSkillCreator:
         self.project_path = project_path
         self._detected_signals: Optional[Set[str]] = None
         self._tech_stack: Optional[Set[str]] = None
+        self.discovery = SkillDiscovery(project_path)
+
+    def generate_all(self, project_path: Optional[Path] = None, use_ai: bool = False, provider: str = "gemini"):
+        """
+        GLOBAL LEARNED LIBRARY Flow (User's Vision!):
+        1. Detect skill needs (e.g. pytest-testing-workflow)
+        2. Check GLOBAL learned/
+        3. Exists → ♻️ Reuse (Link to project)
+        4. Not exists → ✨ Create (Cowork) → Save to GLOBAL learned/ → Link
+        """
+        proj_path = project_path or self.project_path
+
+        # Ensure global structure and local project structure
+        self.discovery.ensure_global_structure()
+        self.discovery.setup_project_structure()
+
+        # Get README for context
+        readme_path = proj_path / "README.md"
+        readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
+
+        # 1. Detect needed skills
+        needed_skills = self.detect_skill_needs(proj_path)
+        print(f"🎯 Detected Needs: {needed_skills if needed_skills else ['None']}")
+
+        if not needed_skills:
+            return
+
+        created = 0
+        reused = 0
+        
+        # 2. Process each skill
+        for skill_name in needed_skills:
+            
+            # Check GLOBAL learned
+            if self.exists_in_learned(skill_name):
+                print(f"♻️  Reusing: {skill_name}")
+                self.link_from_learned(skill_name)
+                reused += 1
+                continue
+
+            # Create NEW with Cowork quality
+            print(f"\n{'='*60}")
+            print(f"✨ Creating: {skill_name}")
+            print(f"{'='*60}\n")
+
+            try:
+                # We need to determine the main tech for this skill to pass to create_skill
+                # detect_skill_needs derives names like 'pytest-testing-workflow'
+                # extraction: 'pytest' from 'pytest-testing-workflow'
+                tech_hint = skill_name.split("-")[0]
+                tech_stack_hint = [tech_hint] if tech_hint else None
+                
+                content, metadata, quality = self.create_skill(
+                    skill_name, readme_content, tech_stack=tech_stack_hint,
+                    use_ai=use_ai, provider=provider
+                )
+
+                print(f"📈 Quality: {quality.score:.1f}/100")
+                if not quality.passed and quality.issues:
+                    print(f"Issues: {', '.join(quality.issues[:2])}")
+
+                # Save to GLOBAL learned
+                self.save_to_learned(skill_name, content)
+                
+                # Link to project
+                self.link_from_learned(skill_name)
+
+                print(f"💾 Saved to: ~/.project-rules-generator/learned/{skill_name}.md")
+                print(f"✅ Linked to: .clinerules/skills/project/{skill_name}.md")
+                print(f"📊 Triggers: {len(metadata.auto_triggers)} | Tools: {len(metadata.tools)}")
+
+                created += 1
+
+            except Exception as e:
+                print(f"❌ Failed to create {skill_name}: {e}")
+                import traceback
+                traceback.print_exc()
+                continue
+
+        print(f"\n{'='*60}")
+        print(f"📊 Summary: ✨ Created: {created} | ♻️ Reused: {reused}")
+        print(f"{'='*60}")
+
+    def detect_skill_needs(self, project_path: Path) -> List[str]:
+        """Detect needed skills based on tech stack and context."""
+        readme_path = project_path / "README.md"
+        readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
+        
+        tech_stack = self._detect_tech_stack(readme_content)
+        skill_names = []
+
+        if not tech_stack:
+            skill_names.append(f"{project_path.name}-workflow")
+        else:
+             # Basic mapping - can be expanded
+            tool_map = {
+                "fastapi": "fastapi-api-workflow",
+                "flask": "flask-api-workflow",
+                "django": "django-app-workflow",
+                "react": "react-component-workflow",
+                "vue": "vue-component-workflow",
+                "pytest": "pytest-testing-workflow",
+                "docker": "docker-deployment-workflow",
+            }
+            
+            for tech in tech_stack:
+                if tech.lower() in tool_map:
+                    skill_names.append(tool_map[tech.lower()])
+            
+            # If nothing specific, generic
+            if not skill_names:
+                 skill_names.append(f"{project_path.name}-workflow")
+                 
+        return list(set(skill_names))
+
+    def exists_in_learned(self, skill_name: str) -> bool:
+        """Check if skill exists in global learned cache."""
+        # Check for direct file or directory
+        return (self.discovery.global_learned / f"{skill_name}.md").exists() or \
+               (self.discovery.global_learned / skill_name).exists()
+
+    def save_to_learned(self, skill_name: str, content: str):
+        """Save skill to global learned cache."""
+        # We prefer flat files for simplicity unless it needs resources, but 
+        # Cowork flow often uses directories? 
+        # Let's use flat .md for now as per previous patterns, or match existing.
+        # implementation_plan said "global/learned/"
+        
+        target = self.discovery.global_learned / f"{skill_name}.md"
+        target.write_text(content, encoding="utf-8")
+
+    def link_from_learned(self, skill_name: str):
+        """Link a learned skill from Global Cache to Project Local Skills."""
+        # Source: ~/.project-rules-generator/learned/<skill_name>.md
+        # Target: <project>/.clinerules/skills/project/<skill_name>.md
+        
+        source = self.discovery.global_learned / f"{skill_name}.md"
+        if not source.exists():
+            # Check for directory based skill
+            source_dir = self.discovery.global_learned / skill_name
+            if source_dir.exists() and source_dir.is_dir():
+                 # For directories, we might need to handle differently or link the dir
+                 # But current save_to_learned saves as .md
+                 pass
+        
+        target = self.discovery.project_local_dir / f"{skill_name}.md"
+        
+        if source.exists():
+             self.discovery._link_or_copy(source, target)
+        else:
+             print(f"⚠️ Could not link {skill_name}: Source not found in global learned.")
+
+    def setup_symlinks(self):
+        """Ensure project symlinks are set up."""
+        self.discovery.setup_project_structure()
 
     def create_skill(
         self,
@@ -119,6 +276,8 @@ class CoworkSkillCreator:
         readme_content: str,
         tech_stack: Optional[List[str]] = None,
         custom_context: Optional[Dict] = None,
+        use_ai: bool = False,
+        provider: str = "gemini",
     ) -> Tuple[str, SkillMetadata, QualityReport]:
         """
         Create a Cowork-quality skill with full intelligence.
@@ -132,15 +291,23 @@ class CoworkSkillCreator:
         Returns:
             Tuple of (skill_content, metadata, quality_report)
         """
+        # 0. CRITICAL: Analyze ACTUAL project files first!
+        project_analysis = self._analyze_project_structure(skill_name, tech_stack)
+
+        # Merge with custom context
+        if custom_context is None:
+            custom_context = {}
+        custom_context["project_analysis"] = project_analysis
+
         # 1. Build metadata with smart triggers
         metadata = self._build_metadata(skill_name, readme_content, tech_stack)
 
-        # 2. Generate skill content
+        # 2. Generate skill content (WITH actual project context!)
         content = self._generate_content(
-            skill_name, readme_content, metadata, custom_context
+            skill_name, readme_content, metadata, custom_context, use_ai, provider
         )
 
-        # 3. Quality validation
+        # 3. Quality validation (will catch hallucinated paths!)
         quality = self._validate_quality(content, metadata)
 
         # 4. If quality is low, attempt auto-fix
@@ -149,6 +316,83 @@ class CoworkSkillCreator:
             quality = self._validate_quality(content, metadata)
 
         return content, metadata, quality
+
+    def _analyze_project_structure(
+        self, skill_name: str, tech_stack: Optional[List[str]]
+    ) -> Dict:
+        """
+        Analyze ACTUAL project structure - NO HALLUCINATIONS!
+
+        This is critical for project-specific skills.
+        """
+        analysis = {
+            "actual_files": [],
+            "patterns": [],
+            "structure": {},
+        }
+
+        # Detect skill type
+        skill_lower = skill_name.lower()
+
+        if "pytest" in skill_lower or "test" in skill_lower:
+            # Analyze test structure
+            test_dirs = []
+            conftest_files = []
+            test_files = []
+
+            for test_dir in ["tests", "test"]:
+                test_path = self.project_path / test_dir
+                if test_path.exists():
+                    test_dirs.append(str(test_path.relative_to(self.project_path)))
+
+                    # Find actual files
+                    if test_path.is_dir():
+                        conftest = test_path / "conftest.py"
+                        if conftest.exists():
+                            conftest_files.append(str(conftest.relative_to(self.project_path)))
+
+                        # Find test files
+                        for test_file in test_path.glob("test_*.py"):
+                            test_files.append(str(test_file.relative_to(self.project_path)))
+
+            # Check for pytest.ini
+            pytest_ini = self.project_path / "pytest.ini"
+            if pytest_ini.exists():
+                analysis["actual_files"].append("pytest.ini")
+
+            analysis["structure"] = {
+                "test_dirs": test_dirs,
+                "conftest_files": conftest_files,
+                "test_files": test_files[:5],  # Sample of 5
+            }
+
+            # Extract patterns from actual conftest.py
+            if conftest_files:
+                try:
+                    conftest_content = (self.project_path / conftest_files[0]).read_text(
+                        encoding="utf-8", errors="ignore"
+                    )
+                    if "pytest.fixture" in conftest_content:
+                        analysis["patterns"].append("Uses pytest fixtures")
+                    if "@pytest.mark" in conftest_content:
+                        analysis["patterns"].append("Uses pytest markers")
+                    if "pytest_configure" in conftest_content:
+                        analysis["patterns"].append("Has pytest_configure hook")
+                except Exception:
+                    pass
+
+        elif "fastapi" in skill_lower or "api" in skill_lower:
+            # Analyze API structure
+            api_files = []
+            for api_dir in ["api", "app", "src"]:
+                api_path = self.project_path / api_dir
+                if api_path.exists() and api_path.is_dir():
+                    for py_file in api_path.rglob("*.py"):
+                        api_files.append(str(py_file.relative_to(self.project_path)))
+
+            analysis["structure"]["api_files"] = api_files[:10]  # Sample
+
+        return analysis
 
     def _build_metadata(
         self,
@@ -266,14 +510,14 @@ class CoworkSkillCreator:
         # 2. Common tools for skill type
         skill_lower = skill_name.lower()
 
-        if "test" in skill_lower:
-            tools.update(["pytest", "coverage"])
+        if "test" in skill_lower or "pytest" in skill_lower:
+            tools.update(["pytest", "coverage", "tox"])
 
         if "deploy" in skill_lower or "docker" in skill_lower:
             tools.update(["docker", "docker-compose"])
 
-        if "api" in skill_lower or "endpoint" in skill_lower:
-            tools.update(["curl", "httpx", "pytest"])
+        if "api" in skill_lower or "endpoint" in skill_lower or "fastapi" in skill_lower:
+            tools.update(["curl", "httpx", "pytest", "uvicorn"])
 
         if "security" in skill_lower or "audit" in skill_lower:
             tools.update(["bandit", "safety", "ruff"])
@@ -310,10 +554,138 @@ class CoworkSkillCreator:
         return available
 
     def _detect_tech_stack(self, readme_content: str) -> List[str]:
-        """Auto-detect tech stack from README."""
+        """
+        Auto-detect tech stack from README AND actual project files.
+
+        More accurate than keyword search - checks:
+        1. requirements.txt / package.json for ACTUAL dependencies
+        2. Project files (.py, .jsx, .tsx, etc.)
+        3. README only for confirmation
+        """
         if self._tech_stack:
             return list(self._tech_stack)
 
+        detected = set()
+
+        # 1. Check ACTUAL dependencies (most reliable!)
+        detected.update(self._detect_from_dependencies())
+
+        # 2. Check for actual tech-specific files
+        detected.update(self._detect_from_files())
+
+        # 3. Only then check README (as confirmation, not primary source)
+        readme_detected = self._detect_from_readme(readme_content)
+
+        # Only add README detections if they're confirmed by files or dependencies
+        for tech in readme_detected:
+            # Allow if already detected, OR if it's a generic tech like python/typescript
+            if tech in detected or tech in {"python", "typescript", "javascript"}:
+                detected.add(tech)
+
+        self._tech_stack = detected
+        return list(detected)
+
+    def _detect_from_dependencies(self) -> Set[str]:
+        """Detect tech from actual dependency files."""
+        detected = set()
+
+        # Python: requirements.txt, pyproject.toml
+        requirements_file = self.project_path / "requirements.txt"
+        if requirements_file.exists():
+            try:
+                content = requirements_file.read_text(encoding="utf-8", errors="ignore").lower()
+
+                # Check for specific packages
+                if "fastapi" in content:
+                    detected.add("fastapi")
+                if "flask" in content:
+                    detected.add("flask")
+                if "django" in content:
+                    detected.add("django")
+                if "pytest" in content:
+                    detected.add("pytest")
+                if "sqlalchemy" in content:
+                    detected.add("sqlalchemy")
+                if "pydantic" in content:
+                    detected.add("pydantic")
+                if "celery" in content:
+                    detected.add("celery")
+                if "redis" in content:
+                    detected.add("redis")
+                if "openai" in content:
+                    detected.add("openai")
+                if "anthropic" in content:
+                    detected.add("anthropic")
+                if "langchain" in content:
+                    detected.add("langchain")
+
+                detected.add("python")  # Has requirements.txt = Python project
+            except Exception:
+                pass
+
+        # Node: package.json
+        package_json = self.project_path / "package.json"
+        if package_json.exists():
+            try:
+                import json
+                content = json.loads(package_json.read_text(encoding="utf-8"))
+                deps = {**content.get("dependencies", {}), **content.get("devDependencies", {})}
+
+                if "react" in deps:
+                    detected.add("react")
+                if "vue" in deps:
+                    detected.add("vue")
+                if "express" in deps:
+                    detected.add("express")
+                if "jest" in deps:
+                    detected.add("jest")
+                if "@types/react" in deps:
+                    detected.add("react")
+                    detected.add("typescript")
+                if "typescript" in deps:
+                    detected.add("typescript")
+                else:
+                    detected.add("javascript")
+            except Exception:
+                pass
+
+        # Docker
+        if (self.project_path / "Dockerfile").exists():
+            detected.add("docker")
+        if (self.project_path / "docker-compose.yml").exists():
+            detected.add("docker")
+
+        return detected
+
+    def _detect_from_files(self) -> Set[str]:
+        """Detect tech from actual project files."""
+        detected = set()
+
+        # Check for specific file types
+        # React/Vue: .jsx, .tsx files
+        if list(self.project_path.rglob("*.jsx")) or list(self.project_path.rglob("*.tsx")):
+            detected.add("react")
+            if list(self.project_path.rglob("*.tsx")):
+                detected.add("typescript")
+
+        if list(self.project_path.rglob("*.vue")):
+            detected.add("vue")
+
+        # Python files
+        if list(self.project_path.rglob("*.py")):
+            detected.add("python")
+
+        # Tests
+        if (self.project_path / "tests").exists() or (self.project_path / "test").exists():
+            if detected.intersection({"python", "fastapi", "flask", "django"}):
+                detected.add("pytest")
+            if detected.intersection({"react", "vue", "javascript"}):
+                detected.add("jest")
+
+        return detected
+
+    def _detect_from_readme(self, readme_content: str) -> Set[str]:
+        """Detect tech from README (least reliable - use only for confirmation)."""
         tech_keywords = {
             "fastapi", "flask", "django", "express", "react", "vue",
             "pytest", "jest", "docker", "kubernetes", "postgresql",
@@ -322,10 +694,39 @@ class CoworkSkillCreator:
         }
 
         readme_lower = readme_content.lower()
-        detected = {tech for tech in tech_keywords if tech in readme_lower}
 
-        self._tech_stack = detected
-        return list(detected)
+        # Look for tech in structured sections (more reliable)
+        detected = set()
+
+        # Try to find "Tech Stack" or "Built With" sections
+        lines = readme_content.split("\n")
+        in_tech_section = False
+
+        for line in lines:
+            line_lower = line.lower()
+
+            # Check if entering tech section
+            if any(marker in line_lower for marker in ["tech stack", "built with", "technologies", "dependencies"]):
+                in_tech_section = True
+                continue
+
+            # Exit section if we hit a new header
+            if line.strip().startswith("#") and in_tech_section:
+                in_tech_section = False
+
+            # If in tech section, be more lenient
+            if in_tech_section:
+                for tech in tech_keywords:
+                    if tech in line_lower:
+                        detected.add(tech)
+            else:
+                # Outside tech section, only detect if it's in a bullet point or strong emphasis
+                if line.strip().startswith("-") or line.strip().startswith("*"):
+                    for tech in tech_keywords:
+                        if tech in line_lower:
+                            detected.add(tech)
+
+        return detected
 
     def _detect_project_signals(self) -> Set[str]:
         """Detect project structure signals (has_docker, has_tests, etc.)."""
@@ -369,10 +770,44 @@ class CoworkSkillCreator:
         readme_content: str,
         metadata: SkillMetadata,
         custom_context: Optional[Dict] = None,
+        use_ai: bool = False,
+        provider: str = "gemini",
     ) -> str:
-        """Generate complete skill content with Cowork structure."""
+        """Generate complete skill content using AI or templates."""
+        
+        # 1. AI Generation (if requested)
+        if use_ai:
+            try:
+                from generator.llm_skill_generator import LLMSkillGenerator
+                generator = LLMSkillGenerator(provider=provider)
 
-        # Try Jinja2 template first, fallback to inline generation
+                # Build context for LLM with ACTUAL project analysis!
+                context = {
+                    "readme": readme_content,
+                    "tech_stack": {"languages": self._detect_tech_stack(readme_content)},
+                    "structure": {"has_docker": "has_docker" in metadata.project_signals},
+                    # CRITICAL: Include actual project analysis!
+                    "project_analysis": custom_context.get("project_analysis", {}) if custom_context else {},
+                }
+
+                # Add instruction to use ONLY actual files
+                if context["project_analysis"]:
+                    analysis = context["project_analysis"]
+                    context["instruction"] = (
+                        "CRITICAL: Use ONLY the actual files listed below. "
+                        "DO NOT make up file paths or create fake examples.\n\n"
+                        f"Actual Files: {analysis.get('actual_files', [])}\n"
+                        f"Structure: {analysis.get('structure', {})}\n"
+                        f"Patterns: {analysis.get('patterns', [])}"
+                    )
+
+                print(f"🤖 Generating with AI ({provider})...")
+                print(f"   Using {len(context.get('project_analysis', {}).get('actual_files', []))} actual project files")
+                return generator.generate_skill(skill_name, context)
+            except Exception as e:
+                print(f"⚠️  AI generation failed: {e}. Falling back to templates.")
+
+        # 2. Try Jinja2 template first, fallback to inline generation
         if HAS_JINJA2:
             try:
                 return self._generate_with_jinja2(
