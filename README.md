@@ -295,7 +295,25 @@ prg --version
  
 ---
 
-## 🎨 NEW: Cowork-Powered Skill Creator
+## 🎨 NEW: Cowork-Powered Creators
+
+PRG now includes two new offline, intelligent creators:
+
+### 1. Cowork Rules Creator (`prg create-rules`)
+
+Generates structured, priority-based `.clinerules` without needing an AI API key.
+
+**Key Features:**
+- **Tech-Specific Patterns**: Knows that FastAPI needs Pydantic models and React needs hooks.
+- **Priority Scoring**: Categorizes rules into High/Medium/Low priority.
+- **Git Forensics**: Analyzes git history to find hot spots and anti-patterns (e.g., "Too many large commits").
+- **Quality Gates**: Ensures rules are not generic.
+
+```bash
+prg create-rules . --tech "fastapi,react"
+```
+
+### 2. Cowork Skill Creator (`prg create-skills`)
 
 PRG now includes **Cowork's intelligent skill creation logic**, generating professional-quality skills offline without tokens!
 

@@ -43,6 +43,22 @@ prg design <TASK_DESCRIPTION> [OPTIONS]
 | `--output` | file | `DESIGN.md` | Output file path. |
 | `--api-key` | str | `env` | AI API key. |
 
+### Create Rules
+
+Generate high-quality, project-specific coding rules using Cowork intelligence.
+
+```bash
+prg create-rules [PROJECT_PATH] [OPTIONS]
+```
+
+| Flag | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `[PROJECT_PATH]` | argument | `.` (current dir) | The root directory of the project. |
+| `--tech` | str | - | Manually specify tech stack (comma-separated, e.g., "fastapi,react"). |
+| `--quality-threshold` | int | `85` | Minimum quality score (0-100) required to save rules. |
+| `--export-report` | flag | `false` | Save a JSON quality report. |
+| `--verbose` | flag | `false` | Show detailed analysis logs. |
+
 ### Create Skills
 
 Generate high-quality, context-aware skills for your project.
