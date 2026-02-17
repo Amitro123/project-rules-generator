@@ -185,7 +185,34 @@ prg . --export-json > team-skills.json
 
 ---
 
-##  Output Structure
+### 🌍 Global Project Manager Architecture (New in v1.1.0)
+
+PRG now uses a centralized **Global Project Manager** to keep your rules and skills in sync across environments.
+
+**How it works:**
+1.  **Global Storage**: All project rules (`rules.md`), tasks (`TASKS.json`), and custom skills are stored in your home directory:
+    -   `~/.project-rules-generator/projects/{project-name}/`
+2.  **Local Symlinks**: Your project's `.clinerules/` directory simply **symlinks** to the global storage.
+    -   *Windows Users*: If Developer Mode is off, it falls back to copying files.
+
+**The Full Flow:**
+Run one command to set up everything:
+
+```bash
+prg analyze . --full-flow
+```
+
+This automates 4 steps:
+1.  **Generate Rules**: Creates `rules.md` in the global cache.
+2.  **Generate Tasks**: Creates `TASKS.json` in the global cache.
+3.  **Generate Skills**: Creates custom skills (e.g., `fastapi-workflow`) in the global cache.
+4.  **Link**: Symlinks everything to your local `.clinerules/` folder.
+
+> **Tip:** This ensures that if you update a rule globally, it updates locally (via symlink).
+
+---
+
+## Output Structure
  
 All generated files are consolidated into a single `.clinerules/` directory inside your project:
  

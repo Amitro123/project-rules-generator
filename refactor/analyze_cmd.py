@@ -212,6 +212,11 @@ def setup_orchestrator(config):
     is_flag=True,
     help="Auto-generate skills/index.md from available skills",
 )
+@click.option(
+    "--full-flow",
+    is_flag=True,
+    help="Execute full flow: Global Rules -> Tasks -> Skills -> Symlinks",
+)
 def analyze(
     project_path,
     scan_all,
@@ -244,6 +249,7 @@ def analyze(
     auto_fix,
     max_iterations,
     generate_index,
+    full_flow,
 ):
     """Analyze project and generate rules.md and skills.md from README.md"""
     project_path = Path(project_path).resolve()
@@ -251,6 +257,81 @@ def analyze(
     
     # Initialize Skills Manager with project context
     skills_manager = SkillsManager(project_path=project_path)
+
+    # ---------------------------------------------------------
+    # GLOBAL FULL FLOW IMPLEMENTATION
+    # ---------------------------------------------------------
+    if full_flow:
+        click.echo("🚀 Starting Global Project Manager Flow...")
+        project_name = project_path.name
+        
+        # 1. Setup Global Structure
+        global_proj_path = skills_manager.ensure_global_project_path(project_name)
+        if verbose:
+            click.echo(f"   Global Project Cache: {global_proj_path}")
+
+        # 2. Generate Rules (Global)
+        from generator.rules_creator import CoworkRulesCreator
+        click.echo("   Generating Global Rules...")
+        readme_path = project_path / "README.md"
+        readme_content = ""
+        if readme_path.exists():
+            readme_content = readme_path.read_text(encoding="utf-8", errors="replace")
+        
+        rules_creator = CoworkRulesCreator(project_path)
+        rules_content, _, _ = rules_creator.create_rules(readme_content)
+        
+        global_rules_path = global_proj_path / "rules.md"
+        global_rules_path.write_text(rules_content, encoding="utf-8")
+        click.echo(f"   ✅ Rules saved to {global_rules_path}")
+
+        # 3. Generate TASKS.json (Global)
+        # Using TaskDecomposer to generate initial tasks
+        from generator.task_decomposer import TaskDecomposer
+        import json
+        
+        click.echo("   Generating Initial Tasks...")
+        decomposer = TaskDecomposer(api_key=api_key or os.getenv("GEMINI_API_KEY"))
+        # Default task if it's a new run
+        tasks = decomposer.decompose("Analyze project and apply coding rules")
+        
+        tasks_data = [t.model_dump() for t in tasks]
+        global_tasks_path = global_proj_path / "TASKS.json"
+        global_tasks_path.write_text(json.dumps(tasks_data, indent=2), encoding="utf-8")
+        click.echo(f"   ✅ TASKS.json saved to {global_tasks_path}")
+
+        # 4. Generate Skills (Global)
+        from generator.skill_creator import CoworkSkillCreator
+        click.echo("   Generating Custom Skills...")
+        skill_creator = CoworkSkillCreator(project_path)
+        global_skills_dir = global_proj_path / "custom-skills"
+        
+        # Auto-generate skills
+        generated_skills = skill_creator.auto_generate_skills(
+            readme_content, 
+            output_dir=global_skills_dir,
+            quality_threshold=80
+        )
+        click.echo(f"   ✅ Generated {len(generated_skills)} skills in {global_skills_dir}")
+
+        # 5. Link to Local
+        click.echo("   Linking Global -> Local...")
+        try:
+            skills_manager.setup_project_structure(project_name=project_name)
+            click.echo("   ✅ Symlinks created in .clinerules/")
+        except Exception as e:
+             click.echo(f"   ⚠️  Link warning: {e}")
+
+        # 6. Verify Symlinks (Validation Step)
+        local_rules = project_path / ".clinerules" / "rules.md"
+        if local_rules.exists():
+             if local_rules.is_symlink():
+                 click.echo("   ✅ Verification: rules.md is a valid symlink")
+             else:
+                 click.echo("   ⚠️  Verification: rules.md is a copy (Fallback mode)")
+        
+        click.echo("✨ Full Flow Complete!")
+        sys.exit(0)
 
     # Handle --generate-index flag (standalone action)
     if generate_index:

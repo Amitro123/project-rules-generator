@@ -63,50 +63,123 @@ class SkillDiscovery:
             except Exception as e:
                 print(f"[Warning] Failed to sync builtin skills to global cache: {e}")
 
-    def setup_project_structure(self):
+    def ensure_global_project_path(self, project_name: str) -> None:
+        """Ensure the project-specific global directory exists."""
+        project_global = self.global_root / "projects" / project_name
+        project_global.mkdir(parents=True, exist_ok=True)
+        (project_global / "custom-skills").mkdir(exist_ok=True)
+        return project_global
+
+    def setup_project_structure(self, project_name: Optional[str] = None):
         """
-        Create project .clinerules/skills structure with symlinks to global cache.
+        Create project .clinerules structure with links to GLOBAL cache.
         """
         if not self.project_skills_root:
             raise ValueError("Project path not set")
 
         self.ensure_global_structure()
 
-        # 1. Create local overrides dir
+        # 1. Create local structure
+        self.project_skills_root.mkdir(parents=True, exist_ok=True)
         self.project_local_dir.mkdir(parents=True, exist_ok=True)
 
-        # 2. Link/Copy Builtin & Learned
+        # 2. Determine project name for Global Link
+        name = project_name or self.project_path.name
+        global_project = self.global_root / "projects" / name
+        
+        # Ensure it exists (even if empty for now)
+        global_project.mkdir(parents=True, exist_ok=True)
+        (global_project / "custom-skills").mkdir(exist_ok=True)
+
+        # 3. Link Global Project Rules -> Local .clinerules/rules.md
+        global_rules = global_project / "rules.md"
+        local_rules = self.project_skills_root.parent / "rules.md"
+        
+        # Only link if global exists, otherwise we might be in a bootstrap phase
+        if global_rules.exists():
+            self._link_or_copy(global_rules, local_rules)
+
+        # 4. Link Global Project Tasks -> Local .clinerules/TASKS.json
+        global_tasks = global_project / "TASKS.json"
+        local_tasks = self.project_skills_root.parent / "TASKS.json"
+        
+        if global_tasks.exists():
+            self._link_or_copy(global_tasks, local_tasks)
+
+        # 5. Link Global Custom Skills -> Local .clinerules/skills/project
+        # We link specific skills or the whole folder?
+        # User requested: .clinerules/skills/ -> symlinks to global/*
+        # Actually user said: .clinerules/skills/project/ -> symlink to global/projects/{name}/custom-skills/
+        # Let's link the contents or the dir. Linking dir is easier.
+        global_custom = global_project / "custom-skills"
+        # self.project_local_dir is .clinerules/skills/project
+        # We can try to link the whole directory if it's empty locally, 
+        # but if we have local overrides, we might want to link individual files?
+        # For "Global Base", let's assume we link the directory if possible 
+        # or sync files. The user said "skills/ -> symlinks to global/*".
+        # Let's try to link the directory 'project' to 'custom-skills'
+        
+        # If project_local_dir exists and is a real dir with stuff, we might have a conflict.
+        # But for this architecture, we want 'project' to BE the global custom-skills.
+        
+        # If explicit local overrides are needed, they should probably stay local?
+        # But the request says: "2. PROJECT LOCAL ... skills/ -> symlinks to global/*"
+        
+        # Let's keep it simple: Link Builtin and Learned as before.
         self._link_or_copy(self.global_builtin, self.project_builtin_link)
         self._link_or_copy(self.global_learned, self.project_learned_link)
+        
+        # For 'project' skills (custom):
+        # We can't easily symlink the parent 'project' dir if it already exists as a dir.
+        # But we can try.
+        if global_custom.exists():
+            # If local 'project' is empty or doesn't exist, we can symlink it.
+            if not self.project_local_dir.exists() or not any(self.project_local_dir.iterdir()):
+                 if self.project_local_dir.exists():
+                     self.project_local_dir.rmdir()
+                 self._link_or_copy(global_custom, self.project_local_dir)
+            else:
+                 # If local has files, we might strictly want to symlink content?
+                 # Or just warn?
+                 # For now, let's treat it like builtin/learned: link if possible.
+                 pass
+
 
     def _link_or_copy(self, source: Path, target: Path):
-        """Try to symlink, fallback to copy."""
+        """Try to symlink, fallback to copy (Windows safe)."""
+        # 1. Clean up existing target logic
         if target.exists():
             if target.is_symlink():
                 try:
-                    if target.resolve() != source.resolve():
-                        target.unlink()
-                    else:
+                    read_link = os.readlink(target)
+                    if Path(read_link).resolve() == source.resolve():
                         return  # Already correct
-                except Exception:
+                    target.unlink()
+                except OSError:
                     target.unlink()
             elif target.is_dir():
-                # Directory exists (maybe copy), leave it be
-                return
+                # If it's a dir, we might need to remove it to symlink
+                # BUT ONLY if we are sure. For 'project' dir, maybe not?
+                # For builtin/learned, yes.
+                if target.name in ["builtin", "learned", "project"]:
+                     try:
+                        shutil.rmtree(target)
+                     except Exception:
+                        pass # proceed to try linking
+            else:
+                target.unlink()
 
-        # Try symlink
+        # 2. Try Symlink
         try:
-            os.symlink(source, target, target_is_directory=True)
-        except (OSError, AttributeError):
-            # Fallback to copy
+            os.symlink(source, target, target_is_directory=source.is_dir())
+        except (OSError, AttributeError, PermissionError):
+            # 3. Fallback: Copy
+            print(f"⚠️ Symlink failed for {target.name} -> Copying (Enable Developer Mode for live sync)")
             if source.exists():
-                try:
-                    if source.is_dir():
-                        shutil.copytree(source, target)
-                except Exception as copy_err:
-                    print(
-                        f"[Warning] Failed to link or copy {source} to {target}: {copy_err}"
-                    )
+                if source.is_dir():
+                    shutil.copytree(source, target, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(source, target)
 
     def list_skills(self) -> Dict[str, Dict[str, Any]]:
         """

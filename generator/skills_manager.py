@@ -38,9 +38,13 @@ class SkillsManager:
         """Ensure global cache directories exist and are synced."""
         self.discovery.ensure_global_structure()
 
-    def setup_project_structure(self):
+    def setup_project_structure(self, project_name: Optional[str] = None):
         """Create project .clinerules/skills structure."""
-        self.discovery.setup_project_structure()
+        self.discovery.setup_project_structure(project_name)
+
+    def ensure_global_project_path(self, project_name: str) -> Path:
+        """Ensure global project directory exists."""
+        return self.discovery.ensure_global_project_path(project_name)
 
     def list_skills(self) -> Dict[str, Dict[str, str]]:
         """List all available skills with their source resolution."""

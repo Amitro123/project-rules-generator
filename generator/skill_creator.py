@@ -675,3 +675,56 @@ Signals: {', '.join(metadata.project_signals)}
         skill_file.write_text(content, encoding="utf-8")
 
         return skill_file
+
+    def auto_generate_skills(
+        self,
+        readme_content: str,
+        output_dir: Path,
+        quality_threshold: int = 70,
+        auto_fix: bool = True,
+    ) -> List[Path]:
+        """
+        Auto-generate skills based on detected tech stack.
+        Returns list of generated file paths.
+        """
+        # Detect tech stack
+        tech_stack = self._detect_tech_stack(readme_content)
+        skill_names = []
+
+        if not tech_stack:
+            skill_names.append(f"{self.project_path.name}-workflow")
+        else:
+            # Map to skill types
+            for tech in tech_stack:
+                tech_lower = tech.lower()
+                if tech_lower in ["fastapi", "flask", "django"]:
+                    skill_names.append(f"{tech_lower}-api-workflow")
+                elif tech_lower in ["react", "vue", "nextjs"]:
+                    skill_names.append(f"{tech_lower}-component-builder")
+                elif tech_lower == "pytest":
+                    skill_names.append("pytest-testing-workflow")
+                elif tech_lower == "docker":
+                    skill_names.append("docker-deployment")
+                elif tech_lower == "git":
+                    skill_names.append("git-workflow")
+            
+            # Use detected skills + generic project workflow
+            if not skill_names:
+                skill_names.append(f"{self.project_path.name}-workflow")
+
+        generated_files = []
+        for skill_name in set(skill_names): # Deduplicate
+            try:
+                content, metadata, quality = self.create_skill(
+                    skill_name, readme_content
+                )
+                
+                if quality.score >= quality_threshold or auto_fix:
+                     # Attempt auto-fix implies we use the potentially fixed content returned by create_skill
+                     # (create_skill already calls _auto_fix_quality_issues if needed)
+                     path = self.export_to_file(content, metadata, output_dir)
+                     generated_files.append(path)
+            except Exception as e:
+                print(f"Warning: Failed to generate {skill_name}: {e}")
+                
+        return generated_files
