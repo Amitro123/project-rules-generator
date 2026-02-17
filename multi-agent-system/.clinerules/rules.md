@@ -8,9 +8,9 @@ project_type: python-cli
 
 ## CONTEXT
 
-No README provided.
+Uses Python, OpenAI, and LangChain.
 
-This project uses: standard tools
+This project uses: python, openai, langchain
 
 ## ARCHITECTURE
 
@@ -27,10 +27,18 @@ No dependency files found.
 ## DO (must follow)
 
 - Write tests for new features and bug fixes
+- Use type hints on all public function signatures
+- Store API keys in `.env` or environment variables — never hardcode (openai, langchain)
+- Add retry logic with exponential backoff for external API calls
+- Validate and type-check API responses before using them
 - Follow existing project structure and naming conventions
 
 ## DON'T
 
+- Don't use `print()` for logging — use the `logging` module
+- Don't catch bare `Exception` — catch specific exceptions
+- Don't log or print full API responses in production (may contain PII)
+- Don't ignore rate-limit headers from API providers
 - Don't commit secrets, API keys, or `.env` files
 - Don't add dependencies without checking license compatibility
 

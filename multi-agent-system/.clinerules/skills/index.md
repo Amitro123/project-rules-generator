@@ -3,14 +3,14 @@ project: multi-agent-system
 purpose: Agent skills for this project
 type: agent-skills
 detected_type: agent
-confidence: 0.00
+confidence: 0.65
 version: 1.0
 ---
 
 ## PROJECT CONTEXT
 - **Type**: Agent
-- **Tech Stack**: general
-- **Domain**: No README provided....
+- **Tech Stack**: python, openai, langchain
+- **Domain**: Uses Python, OpenAI, and LangChain....
 
 ## CORE SKILLS
 
