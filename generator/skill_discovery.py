@@ -43,6 +43,41 @@ class SkillDiscovery:
             self.project_learned_link = None
             self.project_builtin_link = None
 
+        self._skills_cache = None
+
+    def _build_cache(self):
+        """Build a unified cache of all available skills across all layers."""
+        self.ensure_global_structure()
+
+        self._skills_cache = {"project": {}, "learned": {}, "builtin": {}}
+        if hasattr(self, "_layer_skills_cache"):
+            del self._layer_skills_cache
+
+        def _scan(root: Path):
+            if not root or not root.exists():
+                return {"by_rel": {}, "by_name": {}}
+
+            idx = {
+                "by_rel": {},  # "math/add.md" -> Path
+                "by_name": {},  # "add.md" -> Path (first found)
+            }
+            try:
+                # Use a single pass over the directory tree
+                for p in root.rglob("*"):
+                    if p.is_file() and p.suffix in [".md", ".yaml", ".yml"]:
+                        rel = str(p.relative_to(root))
+                        idx["by_rel"][rel] = p
+                        if p.name not in idx["by_name"]:
+                            idx["by_name"][p.name] = p
+            except (PermissionError, OSError):
+                pass
+            return idx
+
+        self._skills_cache["builtin"] = _scan(self.global_builtin)
+        self._skills_cache["learned"] = _scan(self.global_learned)
+        if self.project_local_dir:
+            self._skills_cache["project"] = _scan(self.project_local_dir)
+
     def ensure_global_structure(self):
         """Ensure global cache directories exist and are synced."""
         self.global_root.mkdir(parents=True, exist_ok=True)
@@ -113,147 +148,157 @@ class SkillDiscovery:
         List all available skills with their source resolution.
         Returns: { 'skill_name': {'type': 'builtin'|'learned'|'project', 'path': ...} }
         """
-        self.ensure_global_structure()
+        if self._skills_cache is None:
+            self._build_cache()
 
         skills = {}
 
-        def _resolve_path(base: Path, name: str) -> Optional[Path]:
-            # Check for file
-            p_md = base / f"{name}.md"
-            if p_md.exists(): return p_md
-            
-            p_yaml = base / f"{name}.yaml"
-            if p_yaml.exists(): return p_yaml
-            
-            p_yml = base / f"{name}.yml"
-            if p_yml.exists(): return p_yml
-
-            # Check for directory
-            p_dir = base / name / "SKILL.md"
-            if p_dir.exists(): return p_dir
-            
-            # Handle subdirectories in name (e.g. learned/foo)
-            # The 'name' from _scan_directory might include slashes
-            p_direct = base / f"{name}.md" 
-            if p_direct.exists(): return p_direct
-
-            return None
-
         # 1. Load Builtin (Lowest Priority)
-        for s in self._scan_directory(self.global_builtin):
-            name = s.split("/")[-1]
-            path = _resolve_path(self.global_builtin, s)
-            if path:
-                skills[name] = {"type": "builtin", "path": path}
+        builtin_skills = self._get_layer_skills("builtin")
+        for name, path in builtin_skills.items():
+            skills[name] = {"type": "builtin", "path": path}
 
         # 2. Load Learned (Medium Priority)
-        for s in self._scan_directory(self.global_learned):
-            name = s.split("/")[-1]
-            path = _resolve_path(self.global_learned, s)
-            if path:
-                skills[name] = {"type": "learned", "path": path}
+        learned_skills = self._get_layer_skills("learned")
+        for name, path in learned_skills.items():
+            skills[name] = {"type": "learned", "path": path}
 
         # 3. Load Project (Highest Priority)
-        if self.project_local_dir and self.project_local_dir.exists():
-            for s in self._scan_directory(self.project_local_dir):
-                name = s.split("/")[-1]
-                path = _resolve_path(self.project_local_dir, s)
-                if path:
-                    skills[name] = {
-                        "type": "project",
-                        "path": path,
-                    }
+        project_skills = self._get_layer_skills("project")
+        for name, path in project_skills.items():
+            skills[name] = {"type": "project", "path": path}
 
+        return skills
+
+    def _get_layer_skills(self, layer: str) -> Dict[str, Path]:
+        """Get all skills in a layer, respecting the stop-at-SKILL.md logic."""
+        if self._skills_cache is None:
+            self._build_cache()
+
+        if not hasattr(self, "_layer_skills_cache"):
+            self._layer_skills_cache = {}
+
+        if layer in self._layer_skills_cache:
+            return self._layer_skills_cache[layer]
+
+        root = {
+            "builtin": self.global_builtin,
+            "learned": self.global_learned,
+            "project": self.project_local_dir,
+        }.get(layer)
+
+        if not root or not root.exists():
+            return {}
+
+        idx = self._skills_cache[layer]
+        skills = {}
+        skills_prio = {}
+        # Priority matching _resolve_path: .md > .yaml > .yml > SKILL.md
+        priority = {".md": 4, ".yaml": 3, ".yml": 2, "SKILL.md": 1}
+
+        # Replicate _scan_directory's stop-at-SKILL.md recursive logic
+        rel_paths = sorted(idx["by_rel"].keys())
+        skill_dirs = set()
+        for rel in rel_paths:
+            if rel == "SKILL.md" or rel.endswith("/SKILL.md"):
+                sd = "" if rel == "SKILL.md" else rel[:-9]
+                skill_dirs.add(sd)
+
+        for rel in rel_paths:
+            path = idx["by_rel"][rel]
+
+            # Check if this path is inside a skill directory (and not the SKILL.md itself)
+            is_inside_skill_dir = False
+            for sd in skill_dirs:
+                if sd == "": continue # SKILL.md in root doesn't hide anything
+                if rel.startswith(f"{sd}/") and rel != f"{sd}/SKILL.md":
+                    is_inside_skill_dir = True
+                    break
+            if is_inside_skill_dir:
+                continue
+
+            # Skill name logic matches split("/")[-1] from list_skills
+            if rel == "SKILL.md" or rel.endswith("/SKILL.md"):
+                name = rel[:-9].split("/")[-1] if "/" in rel else rel.rsplit(".", 1)[0]
+                prio = 1
+            else:
+                name = rel.rsplit(".", 1)[0].split("/")[-1]
+                prio = priority.get(path.suffix, 0)
+
+            # Use priority to decide which one wins for the same base name
+            if name not in skills or prio > skills_prio.get(name, 0):
+                skills[name] = path
+                skills_prio[name] = prio
+
+        self._layer_skills_cache[layer] = skills
         return skills
 
     def resolve_skill(self, skill_name: str) -> Optional[Path]:
         """Find the active skill file based on priority."""
-        # Check Project
+        if self._skills_cache is None:
+            self._build_cache()
+
+        # 1. Check Project
         if self.project_local_dir:
-            p_path = self.project_local_dir / f"{skill_name}.md"
-            if p_path.exists():
+            p_path = self._skills_cache["project"]["by_rel"].get(f"{skill_name}.md")
+            if p_path:
                 return p_path
 
-        # Check Learned
-        l_path = self.global_learned / f"{skill_name}.md"
-        if l_path.exists():
+        # 2. Check Learned
+        l_path = self._skills_cache["learned"]["by_rel"].get(f"{skill_name}.md")
+        if l_path:
             return l_path
 
-        l_subdir = self.global_learned / skill_name / "SKILL.md"
-        if l_subdir.exists():
+        l_subdir = self._skills_cache["learned"]["by_rel"].get(f"{skill_name}/SKILL.md")
+        if l_subdir:
             return l_subdir
 
-        # Check Builtin
-        b_path = self.global_builtin / f"{skill_name}.md"
-        if b_path.exists():
+        # 3. Check Builtin
+        b_path = self._skills_cache["builtin"]["by_rel"].get(f"{skill_name}.md")
+        if b_path:
             return b_path
 
-        # Deep search
-        for root in [self.global_learned, self.global_builtin]:
-            found = list(root.rglob(f"{skill_name}.md"))
-            if found:
-                return found[0]
-            found_dir = list(root.rglob(f"{skill_name}/SKILL.md"))
-            if found_dir:
-                return found_dir[0]
+        # 4. Deep search
+        for layer in ["learned", "builtin"]:
+            idx = self._skills_cache[layer]
+
+            # Match rglob(f"{skill_name}.md")
+            target_file = f"{skill_name}.md"
+            if "/" not in skill_name:
+                found = idx["by_name"].get(target_file)
+                if found:
+                    return found
+            else:
+                for rel, path in idx["by_rel"].items():
+                    if rel == target_file or rel.endswith(f"/{target_file}"):
+                        return path
+
+            # Match rglob(f"{skill_name}/SKILL.md")
+            target_dir_skill = f"{skill_name}/SKILL.md"
+            for rel, path in idx["by_rel"].items():
+                if rel == target_dir_skill or rel.endswith(f"/{target_dir_skill}"):
+                    return path
 
         return None
 
-    def _scan_directory(self, path: Path, prefix: str = "") -> List[str]:
-        """Recursively scan for skills (YAML or SKILL.md)."""
-        found = []
-        if not path.exists():
-            return found
-
-        try:
-            for item in path.iterdir():
-                if item.is_file() and item.suffix in [".yaml", ".yml", ".md"]:
-                    found.append(f"{prefix}{item.stem}")
-                elif item.is_dir():
-                    if (item / "SKILL.md").exists():
-                        found.append(f"{prefix}{item.name}")
-                    else:
-                        found.extend(
-                            self._scan_directory(item, prefix=f"{prefix}{item.name}/")
-                        )
-        except PermissionError:
-            pass
-        return found
 
     def get_all_skills_content(self) -> Dict[str, Dict]:
         """Get full content of all skills for export (Project > Learned > Builtin)."""
-        self.ensure_global_structure()
+        if self._skills_cache is None:
+            self._build_cache()
 
         skills_content = {"project": {}, "learned": {}, "builtin": {}}
 
-        def _read_skills_from_path(path: Path, category: str):
-            if not path or not path.exists():
-                return
-            skills_list = self._scan_directory(path)
-            for skill_rel_path in skills_list:
-                md_path = path / f"{skill_rel_path}.md"
-                dir_md_path = path / skill_rel_path / "SKILL.md"
-                yaml_path = path / f"{skill_rel_path}.yaml"
-
-                skill_file = None
-                if md_path.exists():
-                    skill_file = md_path
-                elif dir_md_path.exists():
-                    skill_file = dir_md_path
-                elif yaml_path.exists():
-                    skill_file = yaml_path
-
-                if skill_file:
-                    content = skill_file.read_text(encoding="utf-8", errors="replace")
-                    skill_name = skill_rel_path.split("/")[-1]
-                    skills_content[category][skill_name] = {
-                        "path": str(skill_file),
+        for category in ["builtin", "learned", "project"]:
+            layer_skills = self._get_layer_skills(category)
+            for name, path in layer_skills.items():
+                try:
+                    content = path.read_text(encoding="utf-8", errors="replace")
+                    skills_content[category][name] = {
+                        "path": str(path),
                         "content": content,
                     }
-
-        _read_skills_from_path(self.global_builtin, "builtin")
-        _read_skills_from_path(self.global_learned, "learned")
-        if self.project_local_dir:
-            _read_skills_from_path(self.project_local_dir, "project")
+                except Exception:
+                    continue
 
         return skills_content
