@@ -6,10 +6,17 @@ import yaml
 
 from .types import Skill, SkillPack
 
+MAX_IMPORT_FILE_SIZE = 1024 * 1024  # 1MB limit for safety
+
 
 class SkillImporter:
     def import_skills(self, source_path: Path) -> SkillPack:
         raise NotImplementedError
+
+    def _read_file_safely(self, file_path: Path) -> str:
+        """Read at most MAX_IMPORT_FILE_SIZE characters from a file."""
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read(MAX_IMPORT_FILE_SIZE)
 
 
 class AgentRulesImporter(SkillImporter):
@@ -38,7 +45,7 @@ class AgentRulesImporter(SkillImporter):
         return SkillPack(name=pack_name, skills=skills)
 
     def _parse_file(self, file_path: Path) -> Optional[Skill]:
-        content = file_path.read_text(encoding="utf-8")
+        content = self._read_file_safely(file_path)
 
         # Extract frontmatter
         frontmatter_match = re.search(r"^---\n(.*?)\n---", content, re.DOTALL)
@@ -84,7 +91,7 @@ class VercelSkillsImporter(SkillImporter):
         return SkillPack(name=pack_name, skills=skills)
 
     def _parse_file(self, file_path: Path) -> Optional[Skill]:
-        content = file_path.read_text(encoding="utf-8")
+        content = self._read_file_safely(file_path)
 
         # Vercel skills usually have a simpler structure, often just markdown text.
         # But we need basic metadata. If they follow a specific frontmatter, good.
