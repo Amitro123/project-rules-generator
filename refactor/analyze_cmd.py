@@ -367,6 +367,7 @@ def analyze(
                     from_readme=from_readme,
                     project_path=str(project_path),
                     use_ai=ai,
+                    provider=provider or "groq",
                 )
                 click.echo(f"✨ Created new skill '{path.name}' in {path}")
             except Exception as e:

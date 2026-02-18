@@ -56,9 +56,12 @@ class SkillsManager:
         from_readme: Optional[str] = None,
         project_path: Optional[str] = None,
         use_ai: bool = False,
+        provider: str = "groq",
     ) -> Path:
         """Create a new learned skill in the GLOBAL cache."""
-        return self.generator.create_skill(name, from_readme, project_path, use_ai)
+        return self.generator.create_skill(
+            name, from_readme, project_path, use_ai, provider
+        )
 
     def generate_from_readme(
         self,

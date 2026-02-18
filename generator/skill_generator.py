@@ -4,6 +4,9 @@ from typing import Dict, List, Optional
 
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_parser import SkillParser
+from generator.skill_creator import CoworkSkillCreator
+from generator.utils.quality_checker import is_stub as _check_is_stub
+from generator.utils.tech_detector import extract_context as _extract_tech_context
 
 
 class SkillGenerator:
@@ -58,8 +61,16 @@ class SkillGenerator:
         from_readme: Optional[str] = None,
         project_path: Optional[str] = None,
         use_ai: bool = False,
+        provider: str = "groq",
     ) -> Path:
         """Create a new learned skill in the GLOBAL cache."""
+        from generator.strategies import (
+            AIStrategy,
+            READMEStrategy,
+            CoworkStrategy,
+            StubStrategy,
+        )
+        
         self.discovery.ensure_global_structure()
 
         # Sanitize name
@@ -78,131 +89,27 @@ class SkillGenerator:
 
         skill_file = target_dir / "SKILL.md"
 
-        content = ""
+        # Strategy chain: try each strategy until one succeeds
+        strategies = []
+        if use_ai:
+            strategies.append(AIStrategy())
+        if from_readme:
+            strategies.append(READMEStrategy())
+        if project_path:
+            strategies.append(CoworkStrategy())
+        strategies.append(StubStrategy())  # Always available as final fallback
 
-        # 1. AI Generation
-        if use_ai and project_path:
-            try:
-                from generator.llm_skill_generator import LLMSkillGenerator
-                from generator.project_analyzer import ProjectAnalyzer
+        content = None
+        for strategy in strategies:
+            content = strategy.generate(safe_name, project_path, from_readme, provider)
+            if content:
+                break
 
-                print(f"🤖 Analyzing project context in {project_path}...")
-                analyzer = ProjectAnalyzer(Path(project_path))
-                context = analyzer.analyze()
-
-                print("✨ Generating skill with AI...")
-                generator = LLMSkillGenerator()
-                content = generator.generate_skill(safe_name, context)
-            except ImportError as e:
-                print(
-                    f"[!] Warning: AI provider not available ({e}). Falling back to standard parsing."
-                )
-            except Exception as e:
-                print(
-                    f"[!] Warning: AI generation failed ({e}). Falling back to standard parsing."
-                )
-                # Fallthrough
-
-        # 2. Smart README Parsing (if AI didn't generate content)
-        if not content and from_readme:
-            readme_path = Path(from_readme)
-            if readme_path.exists():
-                try:
-                    # Using imports from analyzer.readme_parser for legacy compatibility functions if needed,
-                    # but prefer SkillParser logic where we extracted it.
-                    # Actually, the original code imported from analyzer.readme_parser for:
-                    # extract_purpose, extract_tech_stack, extract_auto_triggers, extract_process_steps, extract_anti_patterns
-                    # Some of these are in SkillParser now, but some (process_steps, anti_patterns) might not be fully moved yet
-                    # or I missed them in the refactoring list!
-
-                    # Refactoring Check: I moved _summarize_purpose, _build_triggers.
-                    # But create_skill used imports from `analyzer.readme_parser`.
-                    # Let's see if I can delegate to SkillParser equivalents or if I need to use the analyzer ones?
-                    # `_summarize_purpose` in SkillParser is slightly different from `extract_purpose`.
-                    # Let's stick to using `analyzer.readme_parser` imports for `create_skill` where possible to minimize logic change,
-                    # OR update to use `SkillParser` logic if it covers it.
-                    # The `SkillParser` I wrote covers `extract_tech_context`, `summarize_purpose` (similar behavior), `build_triggers`.
-                    # It DOES NOT cover `extract_process_steps` or `extract_anti_patterns` (those were not in SkillsManager private methods).
-
-                    # So I should keep the imports from `analyzer.readme_parser` for those specific functions.
-                    from analyzer.readme_parser import (
-                        extract_anti_patterns,
-                        extract_auto_triggers,
-                        extract_process_steps,
-                        extract_purpose,
-                        extract_tech_stack,
-                    )
-
-                    readme_content = readme_path.read_text(
-                        encoding="utf-8", errors="replace"
-                    )
-
-                    purpose = extract_purpose(readme_content)
-                    tech = extract_tech_stack(readme_content)
-                    triggers = extract_auto_triggers(readme_content, safe_name)
-                    steps = extract_process_steps(readme_content)
-                    anti_patterns = extract_anti_patterns(
-                        readme_content, tech, project_path=readme_path.parent
-                    )
-
-                    # Build skill content
-                    title = safe_name.replace("-", " ").title()
-                    content = f"# Skill: {title}\n\n"
-                    content += f"## Purpose\n{purpose}\n\n"
-
-                    content += "## Auto-Trigger\n"
-                    content += "\n".join(["- " + t for t in triggers]) + "\n\n"
-
-                    content += "## Process\n\n"
-                    step_count = 1
-                    for step in steps:
-                        if step.strip().startswith("```"):
-                            content += f"{step}\n\n"
-                        else:
-                            clean_step = re.sub(r"^\d+\.\s*", "", step)
-                            content += f"### {step_count}. {clean_step}\n\n"
-                            step_count += 1
-
-                    content += "## Output\n[Describe what artifacts or state changes result from following this skill]\n\n"
-
-                    content += "## Anti-Patterns\n"
-                    for ap in anti_patterns:
-                        content += f"❌ {ap}\n"
-
-                    if tech:
-                        content += f"\n## Tech Stack\n{', '.join(tech)}\n"
-
-                    content += (
-                        f"\n## Context (from {readme_path.name})\n\n{readme_content}\n"
-                    )
-
-                except Exception as e:
-                    print(
-                        f"[!] Warning: Smart parsing failed ({e}). Falling back to template."
-                    )
-                    pass
-            else:
-                print(f"[!] Warning: README {from_readme} not found.")
-
-        # 3. Fallback / Default Template if content not generated
-        if not content:
-            if from_readme and Path(from_readme).exists():
-                readme_path = Path(from_readme)
-                readme_content = readme_path.read_text(
-                    encoding="utf-8", errors="replace"
-                )
-                additional_context = (
-                    f"\n\n## Context (from {readme_path.name})\n\n{readme_content}\n"
-                )
-            else:
-                additional_context = ""
-
-            title = safe_name.replace("-", " ").title()
-            content = f"# Skill: {title}\n\n## Purpose\n[One sentence: what problem does this solve]\n\n## Auto-Trigger\n[When should agent activate this skill]\n\n## Process\n[Step-by-step instructions]\n\n## Output\n[What artifact/state results]\n\n## Anti-Patterns\n[x] [What NOT to do]\n"
-            content += additional_context
 
         skill_file.write_text(content, encoding="utf-8")
         return target_dir
+
+
 
     def generate_from_readme(
         self,
@@ -284,44 +191,9 @@ class SkillGenerator:
 
     @staticmethod
     def _is_generic_stub(filepath: Path, project_path: Optional[Path] = None) -> bool:
-        """Check if a skill file is a generic stub or contains hallucinations."""
-        try:
-            content = filepath.read_text(encoding="utf-8", errors="replace")
-        except Exception:
-            return False
-
-        # 1. Generic stub markers
-        stub_markers = [
-            "Follow project conventions",
-            "Patterns and best practices for",
-            "[One sentence: what problem does this solve]",
-            "[When should agent activate this skill]",
-            "[Step-by-step instructions]",
-            "Working with general code",
-            "Add tests for new functionality",
-        ]
-        if any(marker in content for marker in stub_markers):
-            return True
-
-        # 2. Hallucinated file path detection
-        hallucinated_paths = re.findall(
-            r"(?:File:\s*)?src/[\w/]+\.py(?::\d+)?", content
-        )
-        if hallucinated_paths and project_path:
-            src_dir = project_path / "src"
-            if not src_dir.exists():
-                return True
-
-        # 3. Detect fake file path patterns in code blocks
-        file_refs = re.findall(r"#\s*File:\s*(\S+)", content)
-        if file_refs and project_path:
-            fake_count = 0
-            for ref in file_refs:
-                ref_path = ref.split(":")[0]
-                full_path = project_path / ref_path
-                if not full_path.exists():
-                    fake_count += 1
-            if fake_count > 0 and fake_count >= len(file_refs) / 2:
-                return True
-
-        return False
+        """Check if a skill file is a generic stub or contains hallucinations.
+        
+        Delegates to generator.utils.quality_checker.is_stub().
+        Kept for backward compatibility.
+        """
+        return _check_is_stub(filepath, project_path)

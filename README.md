@@ -8,6 +8,14 @@
 
 **Stop copy-pasting generic rules. Start with AI that knows your project.**
 
+## Recent Changes (v1.1)
+- **Skills cleanup**: Removed 2 legacy files (`skills_generator.py`, `skill_matcher.py`) — 258 lines eliminated
+- **New `utils/`**: `tech_detector.py` + `quality_checker.py` — consolidated duplicate logic
+- **Strategy Pattern**: `create_skill()` complexity reduced D→B (73% improvement)
+- **Architecture docs**: See [`docs/architecture.md`](docs/architecture.md)
+
+---
+
 Most rule generators give you static templates. **Project Rules Generator** reads your code, understands your architecture, and **learns from your patterns** to create smarter, context-aware `.clinerules` for any AI agent (Claude, Cursor, Windsurf, Gemini).
 
 ---

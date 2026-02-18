@@ -1,6 +1,13 @@
-import pytest
+"""
+Tests for SkillMatcher-equivalent functionality.
+SkillMatcher was removed in v1.1 cleanup.
+Equivalent functionality is now in SkillDiscovery.
+"""
 
-from generator.skill_matcher import SkillMatcher
+import pytest
+from pathlib import Path
+
+from generator.skill_discovery import SkillDiscovery
 
 
 @pytest.fixture
@@ -9,69 +16,94 @@ def mock_dirs(tmp_path):
     builtin = tmp_path / "builtin"
     learned.mkdir()
     builtin.mkdir()
-    return learned, builtin
+    return tmp_path, learned, builtin
 
 
 def test_find_learned_skill(mock_dirs):
-    learned, builtin = mock_dirs
+    """SkillDiscovery should find skills in the learned directory."""
+    project_root, learned, builtin = mock_dirs
 
-    # Create learned skill
-    (learned / "my-skill.yaml").write_text("name: my-skill\ncontent: learned content")
+    # Create learned skill directory with SKILL.md
+    skill_dir = learned / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("# Skill: My Skill\n\nlearned content")
 
-    matcher = SkillMatcher(learned, builtin)
-    skill = matcher.find_skill("my-skill", {})
+    discovery = SkillDiscovery.__new__(SkillDiscovery)
+    discovery.global_learned = learned
+    discovery.global_builtin = builtin
+    discovery.project_path = None
+    discovery.project_skills_root = None
+    discovery.project_local_dir = None
+    discovery.project_builtin_link = None
+    discovery.project_learned_link = None
+    discovery.global_root = project_root
 
-    assert skill is not None
-    assert skill.source == "learned"
-    assert "learned content" in skill.content
+    result = discovery.resolve_skill("my-skill")
+    assert result is not None
+    assert "learned content" in result.read_text()
 
 
 def test_find_builtin_skill(mock_dirs):
-    learned, builtin = mock_dirs
+    """SkillDiscovery should find skills in the builtin directory."""
+    project_root, learned, builtin = mock_dirs
 
-    # Create builtin skill
-    (builtin / "std-skill.yaml").write_text("name: std-skill\ncontent: builtin content")
+    skill_dir = builtin / "std-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("# Skill: Std Skill\n\nbuiltin content")
 
-    matcher = SkillMatcher(learned, builtin)
-    skill = matcher.find_skill("std-skill", {})
+    discovery = SkillDiscovery.__new__(SkillDiscovery)
+    discovery.global_learned = learned
+    discovery.global_builtin = builtin
+    discovery.project_path = None
+    discovery.project_skills_root = None
+    discovery.project_local_dir = None
+    discovery.project_builtin_link = None
+    discovery.project_learned_link = None
+    discovery.global_root = project_root
 
-    assert skill is not None
-    assert skill.source == "builtin"
-    assert "builtin content" in skill.content
+    result = discovery.resolve_skill("std-skill")
+    assert result is not None
+    assert "builtin content" in result.read_text()
 
 
 def test_priority_learned_over_builtin(mock_dirs):
-    learned, builtin = mock_dirs
+    """Learned skills should take priority over builtin."""
+    project_root, learned, builtin = mock_dirs
 
     # Create both
-    (learned / "conflict.yaml").write_text("name: conflict\ncontent: learned version")
-    (builtin / "conflict.yaml").write_text("name: conflict\ncontent: builtin version")
+    for d, label in [(learned, "learned version"), (builtin, "builtin version")]:
+        skill_dir = d / "conflict"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(f"# Skill: Conflict\n\n{label}")
 
-    matcher = SkillMatcher(learned, builtin)
-    skill = matcher.find_skill("conflict", {})
+    discovery = SkillDiscovery.__new__(SkillDiscovery)
+    discovery.global_learned = learned
+    discovery.global_builtin = builtin
+    discovery.project_path = None
+    discovery.project_skills_root = None
+    discovery.project_local_dir = None
+    discovery.project_builtin_link = None
+    discovery.project_learned_link = None
+    discovery.global_root = project_root
 
-    assert skill is not None
-    assert skill.source == "learned"
-    assert "learned version" in skill.content
+    result = discovery.resolve_skill("conflict")
+    assert result is not None
+    assert "learned version" in result.read_text()
 
 
-def test_ignore_nested_readme(mock_dirs):
-    learned, builtin = mock_dirs
+def test_missing_skill_returns_none(mock_dirs):
+    """resolve_skill should return None for unknown skills."""
+    project_root, learned, builtin = mock_dirs
 
-    # Create random README in builtin (should be ignored by strict matcher unless it matches name or uses SKILL.md pattern)
-    # Our matcher currently searches:
-    # 1. name.yaml/yml/md
-    # 2. name/SKILL.md
+    discovery = SkillDiscovery.__new__(SkillDiscovery)
+    discovery.global_learned = learned
+    discovery.global_builtin = builtin
+    discovery.project_path = None
+    discovery.project_skills_root = None
+    discovery.project_local_dir = None
+    discovery.project_builtin_link = None
+    discovery.project_learned_link = None
+    discovery.global_root = project_root
 
-    (builtin / "README.md").write_text("Not a skill")
-
-    matcher = SkillMatcher(learned, builtin)
-    skill = matcher.find_skill("README", {})
-
-    # Should not match unless we specifically look for "README" skill which is unlikely?
-    # Actually if we ask for "README", and "README.md" exists...
-    # But usually we ask for "python-setup" or similar.
-
-    # Let's test finding a skill called "test"
-    skill = matcher.find_skill("test", {})
-    assert skill is None
+    result = discovery.resolve_skill("nonexistent-skill")
+    assert result is None

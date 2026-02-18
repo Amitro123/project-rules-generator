@@ -24,3 +24,6 @@ Learned:
 - **Test Security**: When testing file operations with ContentAnalyzer, pass `allowed_base_path=tmp_path` to avoid security check failures in tests.
 - **CLI Flags**: When adding new CLI options, update both the decorator AND the function signature to avoid parameter mismatch errors.
 - **Quality Thresholds**: Raise quality bars progressively (85 → 90) to ensure continuous improvement without breaking existing workflows.
+- **Workflow Stability**: Don't over-engineer. Use simple, proven patterns (e.g., Global Cache + Symlinks) instead of complex new abstractions unless necessary.
+- **Naming Conventions**: Stick to functional names (e.g., `pytest-testing-workflow`) over abstract ones (e.g., `tech-patterns`) to maintain clarity and reusability.
+- **Config Single Source of Truth**: NEVER allow duplicate configuration files (e.g., `.clinerules/clinerules.yaml` vs `.clinerules.yaml`). Always enforce a single root source of truth to avoid cache confusion.
