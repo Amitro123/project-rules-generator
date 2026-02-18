@@ -62,30 +62,48 @@ class SkillGenerator:
         project_path: Optional[str] = None,
         use_ai: bool = False,
         provider: str = "groq",
+        force: bool = False,
     ) -> Path:
-        """Create a new learned skill in the GLOBAL cache."""
+        """Create a new learned skill in the GLOBAL cache.
+
+        Args:
+            name: Skill name (will be normalized to lowercase-hyphenated).
+            from_readme: README content to use for context.
+            project_path: Project path for CoworkStrategy.
+            use_ai: Whether to use AI provider.
+            provider: AI provider name ('groq' or 'gemini').
+            force: If True, overwrite an existing skill. Default False (skip).
+
+        Returns:
+            Path to the skill directory.
+
+        Raises:
+            ValueError: If the skill name is invalid.
+        """
         from generator.strategies import (
             AIStrategy,
             READMEStrategy,
             CoworkStrategy,
             StubStrategy,
         )
-        
+
         self.discovery.ensure_global_structure()
 
-        # Sanitize name
+        # Normalize name: lowercase, hyphens only
         safe_name = re.sub(r"[^a-z0-9-]", "", name.lower().replace(" ", "-"))
         if not safe_name:
             raise ValueError("Invalid skill name provided.")
 
-        # Target is GLOBAL learned
+        # ── Duplicate guard ──────────────────────────────────────────────────
+        if self.discovery.skill_exists(safe_name, scope="learned") and not force:
+            existing = self.discovery.resolve_skill(safe_name)
+            print(f"⏭️  Skill '{safe_name}' already exists — skipping. (use force=True to overwrite)")
+            return existing.parent if existing and existing.name == "SKILL.md" else existing.parent
+        # ─────────────────────────────────────────────────────────────────────
+
+        # Target is GLOBAL learned (directory format)
         target_dir = self.discovery.global_learned / safe_name
-        if target_dir.exists():
-            print(
-                f"Skill '{safe_name}' already exists in global learned cache. Updating..."
-            )
-        else:
-            target_dir.mkdir(parents=True, exist_ok=True)
+        target_dir.mkdir(parents=True, exist_ok=True)
 
         skill_file = target_dir / "SKILL.md"
 
@@ -104,7 +122,6 @@ class SkillGenerator:
             content = strategy.generate(safe_name, project_path, from_readme, provider)
             if content:
                 break
-
 
         skill_file.write_text(content, encoding="utf-8")
         return target_dir

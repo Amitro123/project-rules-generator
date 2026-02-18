@@ -234,10 +234,12 @@ class CoworkSkillCreator:
         return list(set(skill_names))
 
     def exists_in_learned(self, skill_name: str) -> bool:
-        """Check if skill exists in global learned cache."""
-        # Check for direct file or directory
-        return (self.discovery.global_learned / f"{skill_name}.md").exists() or \
-               (self.discovery.global_learned / skill_name).exists()
+        """Check if skill exists in global learned cache.
+
+        Delegates to SkillDiscovery.skill_exists() — single source of truth.
+        Checks both flat file (<name>.md) and directory (<name>/SKILL.md) formats.
+        """
+        return self.discovery.skill_exists(skill_name, scope="learned")
 
     def save_to_learned(self, skill_name: str, content: str):
         """Save skill to global learned cache."""
