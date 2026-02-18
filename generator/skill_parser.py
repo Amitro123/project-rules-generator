@@ -3,6 +3,8 @@ import re
 from pathlib import Path
 from typing import Dict, List
 
+from generator.utils.tech_detector import extract_context as _extract_context
+
 
 class SkillParser:
     """Handles parsing of skill content and README context."""
@@ -28,57 +30,12 @@ class SkillParser:
 
     @staticmethod
     def extract_tech_context(tech: str, readme_content: str) -> List[str]:
-        """Extract lines from README that mention a specific technology."""
-        lines = readme_content.split("\n")
-        context = []
-        tech_lower = tech.lower()
-
-        # Also match common aliases
-        aliases = {tech_lower}
-        alias_map = {
-            "fastapi": {"fastapi", "fast api"},
-            "websocket": {"websocket", "websockets", "web socket"},
-            "perplexity": {"perplexity", "sonar"},
-            "openai": {"openai", "gpt-4", "gpt-3", "chatgpt"},
-            "pytorch": {"pytorch", "torch"},
-            "chrome": {
-                "chrome",
-                "chrome extension",
-                "manifest.json",
-                "background.js",
-                "content script",
-            },
-            "gitpython": {"gitpython", "git diff", "git operations", "repo.git"},
-            "mcp": {"mcp", "model context protocol", "mcp server", "mcp tool"},
-        }
-        if tech_lower in alias_map:
-            aliases = alias_map[tech_lower]
-
-        for i, line in enumerate(lines):
-            line_lower = line.lower()
-            if any(alias in line_lower for alias in aliases):
-                stripped = line.strip()
-                # Skip code fence lines, table separators, empty
-                if (
-                    not stripped
-                    or stripped.startswith("```")
-                    or stripped.startswith("|--")
-                ):
-                    continue
-                if stripped not in context:
-                    context.append(stripped)
-                    # Also grab the next line if it's a continuation
-                    if i + 1 < len(lines):
-                        next_line = lines[i + 1].strip()
-                        if (
-                            next_line
-                            and not next_line.startswith("#")
-                            and not next_line.startswith("```")
-                            and next_line not in context
-                        ):
-                            context.append(next_line)
-
-        return context[:10]
+        """Extract lines from README that mention a specific technology.
+        
+        Delegates to generator.utils.tech_detector.extract_context().
+        Kept for backward compatibility.
+        """
+        return _extract_context(tech, readme_content)
 
     @staticmethod
     def summarize_purpose(

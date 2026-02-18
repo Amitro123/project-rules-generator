@@ -1,0 +1,1100 @@
+﻿"""
+Cowork-Powered Skill Creator
+===========================
+
+This module implements Cowork's intelligent skill creation logic for PRG.
+It generates high-quality, project-specific skills with:
+- Smart auto-trigger optimization
+- Intelligent tool selection
+- Quality gates and validation
+- Hallucination prevention
+- Actionable, specific steps
+"""
+
+import re
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Dict, List, Optional, Set, Tuple
+
+import yaml
+
+from generator.skill_discovery import SkillDiscovery
+from generator.utils.tech_detector import (
+    detect_tech_stack as _detect_tech_stack_util,
+    detect_from_dependencies as _detect_from_deps_util,
+)
+
+try:
+    from jinja2 import Environment, FileSystemLoader, Template
+    HAS_JINJA2 = True
+except ImportError:
+    HAS_JINJA2 = False
+
+
+@dataclass
+class SkillMetadata:
+    """Structured metadata for skill generation."""
+
+    name: str
+    description: str
+    auto_triggers: List[str] = field(default_factory=list)
+    project_signals: List[str] = field(default_factory=list)
+    tools: List[str] = field(default_factory=list)
+    category: str = "project"
+    priority: int = 50  # 0-100, higher = more priority
+
+
+@dataclass
+class QualityReport:
+    """Quality assessment of generated skill."""
+
+    score: float  # 0-100
+    passed: bool
+    issues: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+    suggestions: List[str] = field(default_factory=list)
+
+
+class CoworkSkillCreator:
+    """
+    Generates Cowork-quality skills for PRG projects.
+
+    This creator combines:
+    - Cowork's trigger optimization intelligence
+    - Smart tool selection based on tech stack
+    - Quality gates for actionability
+    - Hallucination detection
+    """
+
+    # Technology Γזע Required Tools mapping (Cowork intelligence)
+    TECH_TOOLS = {
+        "fastapi": ["uvicorn", "pydantic", "pytest", "httpx"],
+        "flask": ["flask", "pytest", "requests"],
+        "django": ["django", "pytest", "django-admin"],
+        "react": ["npm", "webpack", "jest", "eslint"],
+        "vue": ["npm", "vue-cli", "jest"],
+        "pytest": ["pytest", "coverage", "pytest-cov"],
+        "docker": ["docker", "docker-compose"],
+        "kubernetes": ["kubectl", "helm"],
+        "sqlalchemy": ["alembic", "pytest"],
+        "celery": ["redis-cli", "celery"],
+        "redis": ["redis-cli"],
+        "postgresql": ["psql", "pg_dump"],
+        "mongodb": ["mongosh", "mongodump"],
+        "git": ["git"],
+        "github": ["gh"],
+        "openai": ["openai"],
+        "anthropic": ["anthropic"],
+        "langchain": ["langchain"],
+    }
+
+    # Common trigger patterns (Cowork-style synonyms)
+    TRIGGER_SYNONYMS = {
+        "test": ["test", "testing", "unit test", "integration test", "verify"],
+        "deploy": ["deploy", "deployment", "ship", "release", "publish"],
+        "api": ["api", "endpoint", "route", "rest api", "graphql"],
+        "database": ["database", "db", "schema", "migration", "query"],
+        "debug": ["debug", "troubleshoot", "investigate", "diagnose"],
+        "optimize": ["optimize", "improve", "enhance", "speed up", "performance"],
+        "security": ["security", "secure", "audit", "vulnerability", "pentest"],
+        "docs": ["documentation", "docs", "readme", "guide", "tutorial"],
+        "refactor": ["refactor", "cleanup", "improve code", "reorganize"],
+    }
+
+    # Project signal detection (from file/folder structure)
+    PROJECT_SIGNALS = {
+        "has_docker": ["Dockerfile", "docker-compose.yml", ".dockerignore"],
+        "has_tests": ["tests/", "test/", "pytest.ini", "conftest.py"],
+        "has_ci": [".github/workflows/", ".gitlab-ci.yml", ".circleci/"],
+        "has_docs": ["docs/", "README.md", "CONTRIBUTING.md"],
+        "has_api": ["api/", "routes/", "endpoints/", "app.py", "main.py"],
+        "has_frontend": ["frontend/", "src/components/", "public/"],
+        "has_database": ["migrations/", "alembic/", "models.py", "schema.sql"],
+        "monorepo": ["packages/", "apps/", "workspaces"],
+    }
+
+    def __init__(self, project_path: Path):
+        """Initialize with project path for context awareness."""
+        self.project_path = project_path
+        self._detected_signals: Optional[Set[str]] = None
+        self._tech_stack: Optional[Set[str]] = None
+        self.discovery = SkillDiscovery(project_path)
+
+    def generate_all(self, project_path: Optional[Path] = None, use_ai: bool = False, provider: str = "gemini"):
+        """
+        GLOBAL LEARNED LIBRARY Flow (User's Vision!):
+        1. Detect skill needs (e.g. pytest-testing-workflow)
+        2. Check GLOBAL learned/
+        3. Exists Γזע Γש╗∩╕ן Reuse (Link to project)
+        4. Not exists Γזע Γ£¿ Create (Cowork) Γזע Save to GLOBAL learned/ Γזע Link
+        """
+        proj_path = project_path or self.project_path
+
+        # Ensure global structure and local project structure
+        self.discovery.ensure_global_structure()
+        self.discovery.setup_project_structure()
+
+        # Get README for context
+        readme_path = proj_path / "README.md"
+        readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
+
+        # 1. Detect needed skills
+        needed_skills = self.detect_skill_needs(proj_path)
+        print(f"≡ƒמ» Detected Needs: {needed_skills if needed_skills else ['None']}")
+
+        if not needed_skills:
+            return
+
+        created = 0
+        reused = 0
+        
+        # 2. Process each skill
+        for skill_name in needed_skills:
+            
+            # Check GLOBAL learned
+            if self.exists_in_learned(skill_name):
+                print(f"Γש╗∩╕ן  Reusing: {skill_name}")
+                self.link_from_learned(skill_name)
+                reused += 1
+                continue
+
+            # Create NEW with Cowork quality
+            print(f"\n{'='*60}")
+            print(f"Γ£¿ Creating: {skill_name}")
+            print(f"{'='*60}\n")
+
+            try:
+                # We need to determine the main tech for this skill to pass to create_skill
+                # detect_skill_needs derives names like 'pytest-testing-workflow'
+                # extraction: 'pytest' from 'pytest-testing-workflow'
+                tech_hint = skill_name.split("-")[0]
+                tech_stack_hint = [tech_hint] if tech_hint else None
+                
+                content, metadata, quality = self.create_skill(
+                    skill_name, readme_content, tech_stack=tech_stack_hint,
+                    use_ai=use_ai, provider=provider
+                )
+
+                print(f"≡ƒףט Quality: {quality.score:.1f}/100")
+                if not quality.passed and quality.issues:
+                    print(f"Issues: {', '.join(quality.issues[:2])}")
+
+                # Save to GLOBAL learned
+                self.save_to_learned(skill_name, content)
+                
+                # Link to project
+                self.link_from_learned(skill_name)
+
+                print(f"≡ƒע╛ Saved to: ~/.project-rules-generator/learned/{skill_name}.md")
+                print(f"Γ£ו Linked to: .clinerules/skills/project/{skill_name}.md")
+                print(f"≡ƒףך Triggers: {len(metadata.auto_triggers)} | Tools: {len(metadata.tools)}")
+
+                created += 1
+
+            except Exception as e:
+                print(f"Γ¥ל Failed to create {skill_name}: {e}")
+                import traceback
+                traceback.print_exc()
+                continue
+
+        print(f"\n{'='*60}")
+        print(f"≡ƒףך Summary: Γ£¿ Created: {created} | Γש╗∩╕ן Reused: {reused}")
+        print(f"{'='*60}")
+
+    def detect_skill_needs(self, project_path: Path) -> List[str]:
+        """Detect needed skills based on tech stack and context."""
+        readme_path = project_path / "README.md"
+        readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
+        
+        tech_stack = self._detect_tech_stack(readme_content)
+        skill_names = []
+
+        if not tech_stack:
+            skill_names.append(f"{project_path.name}-workflow")
+        else:
+             # Basic mapping - can be expanded
+            tool_map = {
+                "fastapi": "fastapi-api-workflow",
+                "flask": "flask-api-workflow",
+                "django": "django-app-workflow",
+                "react": "react-component-workflow",
+                "vue": "vue-component-workflow",
+                "pytest": "pytest-testing-workflow",
+                "docker": "docker-deployment-workflow",
+            }
+            
+            for tech in tech_stack:
+                if tech.lower() in tool_map:
+                    skill_names.append(tool_map[tech.lower()])
+            
+            # If nothing specific, generic
+            if not skill_names:
+                 skill_names.append(f"{project_path.name}-workflow")
+                 
+        return list(set(skill_names))
+
+    def exists_in_learned(self, skill_name: str) -> bool:
+        """Check if skill exists in global learned cache.
+
+        Delegates to SkillDiscovery.skill_exists() — single source of truth.
+        Checks both flat file (<name>.md) and directory (<name>/SKILL.md) formats.
+        """
+        return self.discovery.skill_exists(skill_name, scope="learned")
+
+    def save_to_learned(self, skill_name: str, content: str):
+        """Save skill to global learned cache."""
+        # We prefer flat files for simplicity unless it needs resources, but 
+        # Cowork flow often uses directories? 
+        # Let's use flat .md for now as per previous patterns, or match existing.
+        # implementation_plan said "global/learned/"
+        
+        target = self.discovery.global_learned / f"{skill_name}.md"
+        target.write_text(content, encoding="utf-8")
+
+    def link_from_learned(self, skill_name: str):
+        """Link a learned skill from Global Cache to Project Local Skills."""
+        # Source: ~/.project-rules-generator/learned/<skill_name>.md
+        # Target: <project>/.clinerules/skills/project/<skill_name>.md
+        
+        source = self.discovery.global_learned / f"{skill_name}.md"
+        if not source.exists():
+            # Check for directory based skill
+            source_dir = self.discovery.global_learned / skill_name
+            if source_dir.exists() and source_dir.is_dir():
+                 # For directories, we might need to handle differently or link the dir
+                 # But current save_to_learned saves as .md
+                 pass
+        
+        target = self.discovery.project_local_dir / f"{skill_name}.md"
+        
+        if source.exists():
+             self.discovery._link_or_copy(source, target)
+        else:
+             print(f"Γתá∩╕ן Could not link {skill_name}: Source not found in global learned.")
+
+    def setup_symlinks(self):
+        """Ensure project symlinks are set up."""
+        self.discovery.setup_project_structure()
+
+    def create_skill(
+        self,
+        skill_name: str,
+        readme_content: str,
+        tech_stack: Optional[List[str]] = None,
+        custom_context: Optional[Dict] = None,
+        use_ai: bool = False,
+        provider: str = "gemini",
+    ) -> Tuple[str, SkillMetadata, QualityReport]:
+        """
+        Create a Cowork-quality skill with full intelligence.
+
+        Args:
+            skill_name: Name of skill (e.g., "fastapi-security-auditor")
+            readme_content: Project README content for context
+            tech_stack: Technologies used (auto-detected if None)
+            custom_context: Additional context (file samples, etc.)
+
+        Returns:
+            Tuple of (skill_content, metadata, quality_report)
+        """
+        # 0. CRITICAL: Analyze ACTUAL project files first!
+        project_analysis = self._analyze_project_structure(skill_name, tech_stack)
+
+        # Merge with custom context
+        if custom_context is None:
+            custom_context = {}
+        custom_context["project_analysis"] = project_analysis
+
+        # 1. Build metadata with smart triggers
+        metadata = self._build_metadata(skill_name, readme_content, tech_stack)
+
+        # 2. Generate skill content (WITH actual project context!)
+        content = self._generate_content(
+            skill_name, readme_content, metadata, custom_context, use_ai, provider
+        )
+
+        # 3. Quality validation (will catch hallucinated paths!)
+        quality = self._validate_quality(content, metadata)
+
+        # 4. If quality is low, attempt auto-fix
+        if not quality.passed:
+            content = self._auto_fix_quality_issues(content, quality)
+            quality = self._validate_quality(content, metadata)
+
+        return content, metadata, quality
+
+    def _analyze_project_structure(
+        self, skill_name: str, tech_stack: Optional[List[str]]
+    ) -> Dict:
+        """
+        Analyze ACTUAL project structure - NO HALLUCINATIONS!
+
+        This is critical for project-specific skills.
+        """
+        analysis = {
+            "actual_files": [],
+            "patterns": [],
+            "structure": {},
+        }
+
+        # Detect skill type
+        skill_lower = skill_name.lower()
+
+        if "pytest" in skill_lower or "test" in skill_lower:
+            # Analyze test structure
+            test_dirs = []
+            conftest_files = []
+            test_files = []
+
+            for test_dir in ["tests", "test"]:
+                test_path = self.project_path / test_dir
+                if test_path.exists():
+                    test_dirs.append(str(test_path.relative_to(self.project_path)))
+
+                    # Find actual files
+                    if test_path.is_dir():
+                        conftest = test_path / "conftest.py"
+                        if conftest.exists():
+                            conftest_files.append(str(conftest.relative_to(self.project_path)))
+
+                        # Find test files
+                        for test_file in test_path.glob("test_*.py"):
+                            test_files.append(str(test_file.relative_to(self.project_path)))
+
+            # Check for pytest.ini
+            pytest_ini = self.project_path / "pytest.ini"
+            if pytest_ini.exists():
+                analysis["actual_files"].append("pytest.ini")
+
+            analysis["structure"] = {
+                "test_dirs": test_dirs,
+                "conftest_files": conftest_files,
+                "test_files": test_files[:5],  # Sample of 5
+            }
+
+            # Extract patterns from actual conftest.py
+            if conftest_files:
+                try:
+                    conftest_content = (self.project_path / conftest_files[0]).read_text(
+                        encoding="utf-8", errors="ignore"
+                    )
+                    if "pytest.fixture" in conftest_content:
+                        analysis["patterns"].append("Uses pytest fixtures")
+                    if "@pytest.mark" in conftest_content:
+                        analysis["patterns"].append("Uses pytest markers")
+                    if "pytest_configure" in conftest_content:
+                        analysis["patterns"].append("Has pytest_configure hook")
+                except Exception:
+                    pass
+
+        elif "fastapi" in skill_lower or "api" in skill_lower:
+            # Analyze API structure
+            api_files = []
+            for api_dir in ["api", "app", "src"]:
+                api_path = self.project_path / api_dir
+                if api_path.exists() and api_path.is_dir():
+                    for py_file in api_path.rglob("*.py"):
+                        api_files.append(str(py_file.relative_to(self.project_path)))
+
+            analysis["structure"]["api_files"] = api_files[:10]  # Sample
+
+        return analysis
+
+    def _build_metadata(
+        self,
+        skill_name: str,
+        readme_content: str,
+        tech_stack: Optional[List[str]] = None,
+    ) -> SkillMetadata:
+        """Build smart metadata with Cowork intelligence."""
+
+        # Extract tech from name and README
+        if tech_stack is None:
+            tech_stack = self._detect_tech_stack(readme_content)
+
+        # Generate smart triggers with synonyms
+        triggers = self._generate_triggers(skill_name, readme_content, tech_stack)
+
+        # Detect project signals
+        signals = self._detect_project_signals()
+
+        # Select tools intelligently
+        tools = self._select_tools(skill_name, tech_stack)
+
+        # Generate description
+        description = self._generate_description(skill_name, readme_content)
+
+        return SkillMetadata(
+            name=skill_name,
+            description=description,
+            auto_triggers=triggers,
+            project_signals=list(signals),
+            tools=tools,
+        )
+
+    def _generate_triggers(
+        self, skill_name: str, readme_content: str, tech_stack: List[str]
+    ) -> List[str]:
+        """
+        Generate smart auto-triggers with Cowork-style variations.
+
+        This is one of Cowork's key intelligences: creating multiple
+        natural ways to invoke a skill.
+        """
+        triggers = []
+
+        # 1. Base trigger from skill name
+        base = skill_name.replace("-", " ").lower()
+        triggers.append(base)
+
+        # 2. Add tech-specific triggers
+        for tech in tech_stack:
+            tech_lower = tech.lower()
+            if tech_lower in base:
+                # "fastapi security" Γזע "audit fastapi", "review api security"
+                triggers.append(f"audit {tech_lower}")
+                triggers.append(f"review {tech_lower}")
+
+        # 3. Expand with synonyms (Cowork magic!)
+        expanded = set(triggers)
+        for trigger in triggers:
+            words = trigger.split()
+            for word in words:
+                if word in self.TRIGGER_SYNONYMS:
+                    for synonym in self.TRIGGER_SYNONYMS[word][:2]:  # Top 2
+                        new_trigger = trigger.replace(word, synonym)
+                        expanded.add(new_trigger)
+
+        # 4. Add action-based triggers from README context
+        action_triggers = self._extract_action_triggers(readme_content, base)
+        expanded.update(action_triggers)
+
+        # Deduplicate and limit to top 8 most relevant
+        return list(sorted(expanded))[:8]
+
+    def _extract_action_triggers(
+        self, readme_content: str, skill_base: str
+    ) -> Set[str]:
+        """Extract action-based triggers from README."""
+        triggers = set()
+
+        # Look for imperative verbs near skill topic
+        action_verbs = [
+            "run", "execute", "check", "validate", "analyze",
+            "generate", "create", "build", "test", "deploy"
+        ]
+
+        # Simple pattern matching
+        lines = readme_content.lower().split("\n")
+        skill_words = skill_base.split()
+
+        for line in lines:
+            # If line mentions skill-related words
+            if any(word in line for word in skill_words):
+                for verb in action_verbs:
+                    if verb in line:
+                        # "run security audit" Γזע "security audit"
+                        triggers.add(f"{verb} {skill_base}")
+                        break
+
+        return triggers
+
+    def _select_tools(self, skill_name: str, tech_stack: List[str]) -> List[str]:
+        """
+        Intelligently select tools needed for this skill.
+
+        Cowork knows which tools are required for each tech stack.
+        """
+        tools = set()
+
+        # 1. Tools from tech stack
+        for tech in tech_stack:
+            tech_lower = tech.lower()
+            if tech_lower in self.TECH_TOOLS:
+                tools.update(self.TECH_TOOLS[tech_lower])
+
+        # 2. Common tools for skill type
+        skill_lower = skill_name.lower()
+
+        if "test" in skill_lower or "pytest" in skill_lower:
+            tools.update(["pytest", "coverage", "tox"])
+
+        if "deploy" in skill_lower or "docker" in skill_lower:
+            tools.update(["docker", "docker-compose"])
+
+        if "api" in skill_lower or "endpoint" in skill_lower or "fastapi" in skill_lower:
+            tools.update(["curl", "httpx", "pytest", "uvicorn"])
+
+        if "security" in skill_lower or "audit" in skill_lower:
+            tools.update(["bandit", "safety", "ruff"])
+
+        if "duplication" in skill_lower or "duplicate" in skill_lower or "dry" in skill_lower:
+            tools.update(["pylint", "radon", "vulture"])
+
+        if "refactor" in skill_lower or "cleanup" in skill_lower:
+            tools.update(["pylint", "ruff", "black"])
+
+        # 3. Validate tools exist in project
+        tools = self._validate_tools_availability(tools)
+
+        return list(sorted(tools))
+
+    def _validate_tools_availability(self, tools: Set[str]) -> Set[str]:
+        """Check if tools are actually available/referenced in project."""
+        available = set()
+
+        # Check requirements.txt, pyproject.toml, package.json
+        requirement_files = [
+            self.project_path / "requirements.txt",
+            self.project_path / "pyproject.toml",
+            self.project_path / "package.json",
+        ]
+
+        all_content = ""
+        for req_file in requirement_files:
+            if req_file.exists():
+                try:
+                    all_content += req_file.read_text(encoding="utf-8", errors="ignore")
+                except Exception:
+                    pass
+
+        # Common Python/Node tools that are always available
+        system_tools = {
+            "git", "docker", "curl", "bash",
+            "pytest", "python", "pip", "npm", "node",
+            "pylint", "ruff", "black", "mypy", "coverage",
+            "radon", "vulture", "bandit", "safety"
+        }
+
+        for tool in tools:
+            # Tool exists in requirements OR is a common system/Python tool
+            if tool in all_content or tool in system_tools:
+                available.add(tool)
+
+        return available
+
+    def _detect_tech_stack(self, readme_content: str) -> List[str]:
+        """
+        Auto-detect tech stack from README AND actual project files.
+        Delegates to generator.utils.tech_detector.detect_tech_stack().
+        """
+        if self._tech_stack:
+            return list(self._tech_stack)
+        detected = set(_detect_tech_stack_util(self.project_path, readme_content))
+        self._tech_stack = detected
+        return list(detected)
+
+
+    def _detect_from_dependencies(self) -> Set[str]:
+        """Detect tech from actual dependency files.
+        Delegates to generator.utils.tech_detector.detect_from_dependencies().
+        """
+        return _detect_from_deps_util(self.project_path)
+
+
+    def _detect_from_files(self) -> Set[str]:
+        """Detect tech from actual project files."""
+        detected = set()
+
+        # Check for specific file types
+        # React/Vue: .jsx, .tsx files
+        if list(self.project_path.rglob("*.jsx")) or list(self.project_path.rglob("*.tsx")):
+            detected.add("react")
+            if list(self.project_path.rglob("*.tsx")):
+                detected.add("typescript")
+
+        if list(self.project_path.rglob("*.vue")):
+            detected.add("vue")
+
+        # Python files
+        if list(self.project_path.rglob("*.py")):
+            detected.add("python")
+
+        # Tests
+        if (self.project_path / "tests").exists() or (self.project_path / "test").exists():
+            if detected.intersection({"python", "fastapi", "flask", "django"}):
+                detected.add("pytest")
+            if detected.intersection({"react", "vue", "javascript"}):
+                detected.add("jest")
+
+        return detected
+
+    def _detect_from_readme(self, readme_content: str) -> Set[str]:
+        """Detect tech from README (least reliable - use only for confirmation)."""
+        tech_keywords = {
+            "fastapi", "flask", "django", "express", "react", "vue",
+            "pytest", "jest", "docker", "kubernetes", "postgresql",
+            "mongodb", "redis", "celery", "sqlalchemy", "pydantic",
+            "openai", "anthropic", "langchain", "typescript", "python"
+        }
+
+        readme_lower = readme_content.lower()
+
+        # Look for tech in structured sections (more reliable)
+        detected = set()
+
+        # Try to find "Tech Stack" or "Built With" sections
+        lines = readme_content.split("\n")
+        in_tech_section = False
+
+        for line in lines:
+            line_lower = line.lower()
+
+            # Check if entering tech section
+            if any(marker in line_lower for marker in ["tech stack", "built with", "technologies", "dependencies"]):
+                in_tech_section = True
+                continue
+
+            # Exit section if we hit a new header
+            if line.strip().startswith("#") and in_tech_section:
+                in_tech_section = False
+
+            # If in tech section, be more lenient
+            if in_tech_section:
+                for tech in tech_keywords:
+                    if tech in line_lower:
+                        detected.add(tech)
+            else:
+                # Outside tech section, only detect if it's in a bullet point or strong emphasis
+                if line.strip().startswith("-") or line.strip().startswith("*"):
+                    for tech in tech_keywords:
+                        if tech in line_lower:
+                            detected.add(tech)
+
+        return detected
+
+    def _detect_project_signals(self) -> Set[str]:
+        """Detect project structure signals (has_docker, has_tests, etc.)."""
+        if self._detected_signals:
+            return self._detected_signals
+
+        signals = set()
+
+        for signal_name, indicators in self.PROJECT_SIGNALS.items():
+            for indicator in indicators:
+                check_path = self.project_path / indicator
+                if check_path.exists():
+                    signals.add(signal_name)
+                    break
+
+        self._detected_signals = signals
+        return signals
+
+    def _generate_description(
+        self, skill_name: str, readme_content: str
+    ) -> str:
+        """Generate concise skill description."""
+        # Extract purpose from first paragraph mentioning skill topic
+        skill_words = skill_name.replace("-", " ").split()
+
+        lines = readme_content.split("\n")
+        for line in lines:
+            line_lower = line.lower()
+            if any(word in line_lower for word in skill_words) and len(line) > 20:
+                # Found relevant line
+                return line.strip()[:150]
+
+        # Fallback: generic but specific
+        tech_part = skill_name.split("-")[0].upper() if "-" in skill_name else ""
+        action_part = skill_name.split("-")[-1] if "-" in skill_name else "workflow"
+        return f"{tech_part} {action_part} for this project"
+
+    def _generate_content(
+        self,
+        skill_name: str,
+        readme_content: str,
+        metadata: SkillMetadata,
+        custom_context: Optional[Dict] = None,
+        use_ai: bool = False,
+        provider: str = "gemini",
+    ) -> str:
+        """Generate complete skill content using AI or templates."""
+        
+        # 1. AI Generation (if requested)
+        if use_ai:
+            try:
+                from generator.llm_skill_generator import LLMSkillGenerator
+                generator = LLMSkillGenerator(provider=provider)
+
+                # Build context for LLM with ACTUAL project analysis!
+                context = {
+                    "readme": readme_content,
+                    "tech_stack": {"languages": self._detect_tech_stack(readme_content)},
+                    "structure": {"has_docker": "has_docker" in metadata.project_signals},
+                    # CRITICAL: Include actual project analysis!
+                    "project_analysis": custom_context.get("project_analysis", {}) if custom_context else {},
+                }
+
+                # Add instruction to use ONLY actual files
+                if context["project_analysis"]:
+                    analysis = context["project_analysis"]
+                    context["instruction"] = (
+                        "CRITICAL: Use ONLY the actual files listed below. "
+                        "DO NOT make up file paths or create fake examples.\n\n"
+                        f"Actual Files: {analysis.get('actual_files', [])}\n"
+                        f"Structure: {analysis.get('structure', {})}\n"
+                        f"Patterns: {analysis.get('patterns', [])}"
+                    )
+
+                print(f"≡ƒñצ Generating with AI ({provider})...")
+                print(f"   Using {len(context.get('project_analysis', {}).get('actual_files', []))} actual project files")
+                return generator.generate_skill(skill_name, context)
+            except Exception as e:
+                print(f"Γתá∩╕ן  AI generation failed: {e}. Falling back to templates.")
+
+        # 2. Try Jinja2 template first, fallback to inline generation
+        if HAS_JINJA2:
+            try:
+                return self._generate_with_jinja2(
+                    skill_name, readme_content, metadata, custom_context
+                )
+            except Exception as e:
+                print(f"Warning: Jinja2 template failed ({e}), using inline generation")
+
+        # Fallback: inline generation
+        return self._generate_inline(skill_name, readme_content, metadata)
+
+    def _generate_with_jinja2(
+        self,
+        skill_name: str,
+        readme_content: str,
+        metadata: SkillMetadata,
+        custom_context: Optional[Dict] = None,
+    ) -> str:
+        """Generate using Jinja2 template."""
+        template_dir = Path(__file__).parent.parent / "templates"
+        template_path = template_dir / "SKILL.md.jinja2"
+
+        if not template_path.exists():
+            raise FileNotFoundError(f"Template not found: {template_path}")
+
+        env = Environment(loader=FileSystemLoader(str(template_dir)))
+        template = env.get_template("SKILL.md.jinja2")
+
+        # Build template context
+        context = {
+            "name": skill_name,
+            "title": skill_name.replace("-", " ").title(),
+            "description": metadata.description,
+            "purpose": metadata.description,
+            "purpose_extended": f"This skill provides step-by-step guidance for {skill_name.replace('-', ' ')}.",
+            "auto_triggers": metadata.auto_triggers,
+            "project_signals": metadata.project_signals,
+            "tools": metadata.tools,
+            "category": metadata.category,
+            "priority": metadata.priority,
+            "project_name": self.project_path.name,
+            "project_path": str(self.project_path),
+            "tech_stack": self._detect_tech_stack(readme_content),
+            "readme_context": readme_content[:500] if readme_content else None,
+            "quality_score": 95,  # Will be updated after validation
+        }
+
+        # Merge custom context
+        if custom_context:
+            context.update(custom_context)
+
+        return template.render(**context)
+
+    def _generate_inline(
+        self,
+        skill_name: str,
+        readme_content: str,
+        metadata: SkillMetadata,
+    ) -> str:
+        """Fallback inline generation (no Jinja2)."""
+        title = skill_name.replace("-", " ").title()
+
+        # Build YAML frontmatter
+        frontmatter = {
+            "name": skill_name,
+            "description": metadata.description,
+            "auto_triggers": {
+                "keywords": metadata.auto_triggers,
+                "project_signals": metadata.project_signals,
+            },
+            "tools": metadata.tools,
+            "category": metadata.category,
+        }
+
+        yaml_str = yaml.dump(frontmatter, sort_keys=False, allow_unicode=True)
+
+        # Build content sections
+        content = f"""---
+{yaml_str}---
+
+# Skill: {title}
+
+## Purpose
+
+{metadata.description}
+
+This skill provides step-by-step guidance for {skill_name.replace('-', ' ')}.
+
+## Auto-Trigger
+
+The agent should activate this skill when:
+
+{self._format_triggers(metadata.auto_triggers)}
+
+**Project Signals:**
+{self._format_signals(metadata.project_signals)}
+
+## Process
+
+### 1. Analyze Current State
+
+- Check project structure in `{self.project_path.name}/`
+- Review relevant configuration files
+- Identify existing patterns
+
+### 2. Execute Core Steps
+
+**Tools Required:** {', '.join(f"`{t}`" for t in metadata.tools)}
+
+```bash
+# Example workflow
+cd {self.project_path.name}
+# Run appropriate commands based on skill context
+```
+
+### 3. Validate Results
+
+- Verify expected outputs
+- Run tests if applicable
+- Check for common issues
+
+## Output
+
+This skill generates:
+
+- Modified/created files in project
+- Status report of changes
+- Recommendations for next steps
+
+## Anti-Patterns
+
+Γ¥ל **Don't** use generic commands without project context
+Γ£ו **Do** use actual project paths and configurations
+
+Γ¥ל **Don't** skip validation steps
+Γ£ו **Do** always verify changes work as expected
+
+## Tech Stack Notes
+
+**Detected Technologies:** {', '.join(self._detect_tech_stack(readme_content))}
+
+**Compatible Tools:** {', '.join(metadata.tools)}
+
+## Project Context
+
+```
+Project: {self.project_path.name}
+Signals: {', '.join(metadata.project_signals)}
+```
+
+---
+*Generated by Cowork-Powered PRG Skill Creator*
+"""
+
+        return content
+
+    def _format_triggers(self, triggers: List[str]) -> str:
+        """Format triggers as markdown list."""
+        return "\n".join(f"- {t}" for t in triggers)
+
+    def _format_signals(self, signals: List[str]) -> str:
+        """Format project signals as markdown list."""
+        if not signals:
+            return "- None detected"
+        return "\n".join(f"- `{s}`" for s in signals)
+
+    def _validate_quality(
+        self, content: str, metadata: SkillMetadata
+    ) -> QualityReport:
+        """
+        Cowork's quality gates: ensure skill is actionable and specific.
+
+        Checks:
+        1. No placeholder text
+        2. Specific commands/paths
+        3. Proper trigger coverage
+        4. Tool validation
+        5. No hallucinated file paths
+        """
+        issues = []
+        warnings = []
+        suggestions = []
+        score = 100.0
+
+        # 1. Check for placeholders
+        placeholders = [
+            "[describe", "[example", "[your", "[add", "[insert",
+            "TODO", "FIXME", "XXX"
+        ]
+        for placeholder in placeholders:
+            if placeholder.lower() in content.lower():
+                issues.append(f"Contains placeholder: {placeholder}")
+                score -= 10
+
+        # 2. Check for specific paths/commands
+        if "cd project_name" in content or "cd /path/to" in content:
+            issues.append("Contains generic path placeholders")
+            score -= 15
+
+        # 3. Validate triggers coverage
+        if len(metadata.auto_triggers) < 3:
+            warnings.append("Only {len(metadata.auto_triggers)} triggers (recommend 5+)")
+            score -= 5
+
+        # 4. Check for hallucinated file paths
+        hallucinated = self._detect_hallucinated_paths(content)
+        if hallucinated:
+            issues.append(f"Hallucinated file paths: {', '.join(hallucinated[:3])}")
+            score -= 20
+
+        # 5. Tool validation
+        if not metadata.tools:
+            warnings.append("No tools specified")
+            score -= 5
+
+        # 6. Check for actionability (has code blocks or commands)
+        if "```" not in content and "bash" not in content.lower():
+            warnings.append("No code examples found (skill may not be actionable)")
+            score -= 10
+
+        # 7. Check for anti-patterns section
+        if "## Anti-Patterns" not in content or "Γ¥ל" not in content:
+            suggestions.append("Add anti-patterns section with Γ¥ל/Γ£ו markers")
+            score -= 5
+
+        passed = score >= 70 and len(issues) == 0
+
+        return QualityReport(
+            score=max(0, score),
+            passed=passed,
+            issues=issues,
+            warnings=warnings,
+            suggestions=suggestions,
+        )
+
+    def _detect_hallucinated_paths(self, content: str) -> List[str]:
+        """
+        Detect file paths that don't exist in project.
+
+        This is critical for Cowork quality: no fake files!
+        """
+        hallucinated = []
+
+        # Extract file path patterns
+        patterns = [
+            r"(?:File:|Path:|`)([\w/.-]+\.[\w]+)",  # File: path/to/file.py
+            r"`(src/[\w/]+\.py)`",  # `src/module.py`
+            r"(?:in|check|see) `([\w/.-]+\.[\w]+)`",  # in `file.py`
+        ]
+
+        for pattern in patterns:
+            matches = re.findall(pattern, content)
+            for match in matches:
+                file_path = self.project_path / match
+                if not file_path.exists():
+                    hallucinated.append(match)
+
+        return hallucinated
+
+    def _auto_fix_quality_issues(
+        self, content: str, quality: QualityReport
+    ) -> str:
+        """Attempt to auto-fix common quality issues."""
+
+        # Fix generic paths
+        content = content.replace("cd project_name", f"cd {self.project_path.name}")
+        content = content.replace("/path/to/project", str(self.project_path))
+
+        # Remove placeholder sections if empty
+        content = re.sub(r"\[describe.*?\]", "", content, flags=re.IGNORECASE)
+        content = re.sub(r"\[example.*?\]", "", content, flags=re.IGNORECASE)
+
+        # Add anti-patterns if missing
+        if "## Anti-Patterns" not in content:
+            anti_pattern_section = """
+
+## Anti-Patterns
+
+Γ¥ל **Don't** use generic solutions without understanding project context
+Γ£ו **Do** analyze project structure first
+
+Γ¥ל **Don't** skip validation steps
+Γ£ו **Do** always verify changes work
+"""
+            content += anti_pattern_section
+
+        return content
+
+    def export_to_file(
+        self,
+        content: str,
+        metadata: SkillMetadata,
+        output_dir: Path,
+    ) -> Path:
+        """Export skill to file in project .clinerules structure."""
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        skill_file = output_dir / f"{metadata.name}.md"
+
+        skill_file.write_text(content, encoding="utf-8")
+
+        return skill_file
+
+    def auto_generate_skills(
+        self,
+        readme_content: str,
+        output_dir: Path,
+        quality_threshold: int = 70,
+        auto_fix: bool = True,
+    ) -> List[Path]:
+        """
+        Auto-generate skills based on detected tech stack.
+        Returns list of generated file paths.
+        """
+        # Detect tech stack
+        tech_stack = self._detect_tech_stack(readme_content)
+        skill_names = []
+
+        if not tech_stack:
+            skill_names.append(f"{self.project_path.name}-workflow")
+        else:
+            # Map to skill types
+            for tech in tech_stack:
+                tech_lower = tech.lower()
+                if tech_lower in ["fastapi", "flask", "django"]:
+                    skill_names.append(f"{tech_lower}-api-workflow")
+                elif tech_lower in ["react", "vue", "nextjs"]:
+                    skill_names.append(f"{tech_lower}-component-builder")
+                elif tech_lower == "pytest":
+                    skill_names.append("pytest-testing-workflow")
+                elif tech_lower == "docker":
+                    skill_names.append("docker-deployment")
+                elif tech_lower == "git":
+                    skill_names.append("git-workflow")
+            
+            # Use detected skills + generic project workflow
+            if not skill_names:
+                skill_names.append(f"{self.project_path.name}-workflow")
+
+        generated_files = []
+        for skill_name in set(skill_names): # Deduplicate
+            try:
+                content, metadata, quality = self.create_skill(
+                    skill_name, readme_content
+                )
+                
+                if quality.score >= quality_threshold or auto_fix:
+                     # Attempt auto-fix implies we use the potentially fixed content returned by create_skill
+                     # (create_skill already calls _auto_fix_quality_issues if needed)
+                     path = self.export_to_file(content, metadata, output_dir)
+                     generated_files.append(path)
+            except Exception as e:
+                print(f"Warning: Failed to generate {skill_name}: {e}")
+                
+        return generated_files

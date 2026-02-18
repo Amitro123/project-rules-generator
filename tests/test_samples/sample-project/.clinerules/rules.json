@@ -38,9 +38,26 @@
     "`**/.clinerules*`"
   ],
   "auto-trigger": [
-    "After design approval (DESIGN.md exists)",
-    "User says: \"Let's implement this\", \"Create a plan\"",
-    "Before starting implementation"
+    "**\"test cleanup\"**",
+    "**\"test refactor\"**",
+    "**\"testing refactor\"**",
+    "`has_ci`",
+    "`has_api` Γזע API endpoints present",
+    "`has_tests` Γזע Test suite available",
+    "`has_docs`"
+  ],
+  "process": [
+    "Review project structure in `project-rules-generator/`",
+    "Check configuration files",
+    "Identify existing patterns",
+    "Run tests if available",
+    "Check for errors",
+    "Verify expected outputs"
+  ],
+  "output": [
+    "Modified/created files in `project-rules-generator/`",
+    "Status report with changes",
+    "Recommendations for next steps"
   ],
   "pre-review_checklist": [
     "✓ Read every line you changed",
@@ -83,5 +100,9 @@
     "Check assumptions",
     "Verify data types",
     "Review recent changes"
+  ],
+  "tech_stack_notes": [
+    "`python`",
+    "`pytest`"
   ]
 }

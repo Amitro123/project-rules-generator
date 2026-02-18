@@ -282,6 +282,41 @@ class SkillDiscovery:
         return None
 
 
+    def skill_exists(self, skill_name: str, scope: str = "learned") -> bool:
+        """Check if a skill already exists, preventing duplicates.
+
+        Checks all storage formats:
+        - Flat file:   <scope>/<skill_name>.md
+        - Directory:   <scope>/<skill_name>/SKILL.md
+
+        Args:
+            skill_name: Normalized skill name (lowercase, hyphens)
+            scope: 'learned' (default), 'builtin', or 'project'
+
+        Returns:
+            True if the skill exists in any format in the given scope.
+        """
+        if scope == "learned":
+            base = self.global_learned
+        elif scope == "builtin":
+            base = self.global_builtin
+        elif scope == "project":
+            base = self.project_local_dir
+        else:
+            raise ValueError(f"Unknown scope: {scope!r}. Use 'learned', 'builtin', or 'project'.")
+
+        if not base or not base.exists():
+            return False
+
+        # Check flat file
+        if (base / f"{skill_name}.md").exists():
+            return True
+        # Check directory format
+        if (base / skill_name / "SKILL.md").exists():
+            return True
+        return False
+
+
     def get_all_skills_content(self) -> Dict[str, Dict]:
         """Get full content of all skills for export (Project > Learned > Builtin)."""
         if self._skills_cache is None:

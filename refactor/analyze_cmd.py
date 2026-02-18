@@ -185,6 +185,12 @@ def setup_orchestrator(config):
     help="AI Provider (gemini, groq). Auto-detected from env vars if omitted.",
 )
 @click.option("--add-skill", help="Add a skill (alias for create-skill)")
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Force overwrite if skill already exists (default: skip existing)",
+)
 @click.option("--remove-skill", help="Remove a learned skill")
 @click.option(
     "--quality-check",
@@ -238,6 +244,7 @@ def analyze(
     ide,
     provider,
     add_skill,
+    force,
     remove_skill,
     quality_check,
     eval_opik,
@@ -367,7 +374,10 @@ def analyze(
                     from_readme=from_readme,
                     project_path=str(project_path),
                     use_ai=ai,
+                    provider=provider or "groq",
+                    force=force,
                 )
+
                 click.echo(f"✨ Created new skill '{path.name}' in {path}")
             except Exception as e:
                 click.echo(f"❌ Failed to create skill: {e}", err=True)

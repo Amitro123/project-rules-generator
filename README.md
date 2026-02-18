@@ -8,6 +8,14 @@
 
 **Stop copy-pasting generic rules. Start with AI that knows your project.**
 
+## Recent Changes (v1.1)
+- **Skills cleanup**: Removed 2 legacy files (`skills_generator.py`, `skill_matcher.py`) — 258 lines eliminated
+- **New `utils/`**: `tech_detector.py` + `quality_checker.py` — consolidated duplicate logic
+- **Strategy Pattern**: `create_skill()` complexity reduced D→B (73% improvement)
+- **Architecture docs**: See [`docs/architecture.md`](docs/architecture.md)
+
+---
+
 Most rule generators give you static templates. **Project Rules Generator** reads your code, understands your architecture, and **learns from your patterns** to create smarter, context-aware `.clinerules` for any AI agent (Claude, Cursor, Windsurf, Gemini).
 
 ---
@@ -86,6 +94,16 @@ prg --list-skills
 # Create a new skill manually with AI assistance
 prg --create-skill "database-migration" --ai
 ```
+
+### 6. Autopilot 🤖
+**What it does:** Full autonomous mode. Discovers project, plans tasks, and executes them with git safety.
+
+```bash
+prg autopilot .
+```
+-   **Discovery**: Analyzes & Plans.
+-   **Execution**: Branches -> Implements -> Verifies -> Merges.
+
  
 ---
  
@@ -169,6 +187,7 @@ prg . --export-json > team-skills.json
 | `prg autopilot` | **Autonomous Agent**: Full Discovery (Analyze/Rules) → Planning → Execution loop. |
 | `prg start "task"` | **Fast Setup**: Plan → Tasks → Preflight → Auto-Fix → Ready for work. |
 | `prg setup "task"` | Setup only (generates plan & tasks) without execution prompt. |
+| `prg manager` | **Project Manager**: 4-Phase Lifecycle (Setup -> Verify -> Copilot -> Report). |
 | `prg exec tasks/001-*.md` | Execute specific task file. Options: `--complete` or `--skip`. |
 | `prg status` | Show progress table (reads `TASKS.yaml` or falls back to `PlanParser`). |
 

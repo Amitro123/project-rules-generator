@@ -71,7 +71,27 @@ Here are the most common ways to use Project Rules Generator in your daily devel
     - **Approve**: Merges the branch and proceeds to the next task.
     - **Reject**: Rolls back changes and stops for safety.
 
-## 4. Task-Driven Development (Semi-Auto)
+    - **Reject**: Rolls back changes and stops for safety.
+
+## 4. Project Manager Agent (Lifecycle Orchestration) 🆕
+
+**Goal**: Managed project execution with setup, verification, and reporting.
+
+1.  **Run Manager**:
+    ```bash
+    prg manager .
+    ```
+2.  **Phase 1: Setup**:
+    The agent checks for 9 critical documents (Plan, Spec, Architecture, Rules, etc.) and auto-generates any that are missing.
+    *   *Result*: `PROJECT-MANAGER.md` checklist.
+3.  **Phase 2: Verify**:
+    Runs pre-flight checks (dependency health, plan validity).
+4.  **Phase 3: Copilot**:
+    Enters the autonomous execution loop (implementing tasks one by one).
+5.  **Phase 4: Summary**:
+    Generates `PROJECT-COMPLETION.md` with success metrics.
+
+## 5. Task-Driven Development (Semi-Auto)
 
 **Goal**: Automate the "Plan → Execute → Verify" loop.
 
@@ -99,7 +119,10 @@ Here are the most common ways to use Project Rules Generator in your daily devel
     prg analyze . --incremental   # Update rules with new patterns
     ```
 
-## 4. Team Onboarding
+    prg analyze . --incremental   # Update rules with new patterns
+    ```
+
+## 6. Team Onboarding
 
 **Goal**: Harmonize coding standards across your team.
 
@@ -115,7 +138,10 @@ Here are the most common ways to use Project Rules Generator in your daily devel
     git commit -m "docs: add AI coding rules"
     ```
 
-## 5. CI/CD Integration
+    git commit -m "docs: add AI coding rules"
+    ```
+
+## 7. CI/CD Integration
 
 **Goal**: Ensure rules clearly reflect the current state of the main branch.
 
@@ -129,7 +155,9 @@ Add this step to your GitHub Actions workflow (e.g., `.github/workflows/update-r
     git diff .clinerules/  # Fail if rules are out of sync, or auto-commit
 ```
 
-## 6. Agent-Driven Development 🧠 🆕
+```
+
+## 8. Agent-Driven Development 🧠 🆕
 
 **Goal**: Build autonomous agents that call the right skills for you.
 
