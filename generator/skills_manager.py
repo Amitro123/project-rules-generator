@@ -68,6 +68,20 @@ class SkillsManager:
             name, from_readme, project_path, use_ai, provider, force=force
         )
 
+    def check_global_skill_reuse(self, tech_stack: List[str]) -> dict:
+        """Check which skills already exist globally: 'reuse' | 'adapt' | 'create'.
+
+        Call this before generating skills to surface cross-project reuse decisions.
+        Example output::
+
+            {
+                'fastapi-endpoints':    'reuse',   # rich skill exists globally
+                'dxf-processing':       'adapt',   # stub exists, needs project context
+                'konva-nesting-canvas': 'create'   # no skill exists yet
+            }
+        """
+        return self.generator.check_global_skill_reuse(tech_stack)
+
     def generate_from_readme(
         self,
         readme_content: str,

@@ -62,6 +62,12 @@
     "`has_ci`",
     "`has_docs`"
   ],
+  "dxf-processing": [
+    "working on `/projects/{id}/dxf` endpoint",
+    "editing any file that imports `ezdxf`",
+    "implementing file upload or validation logic for `.dxf` files",
+    "converting dxf entities to svg paths for konva.js"
+  ],
   "fastapi-api-workflow": [
     "audit fastapi",
     "check fastapi api workflow",
@@ -75,6 +81,12 @@
     "`has_api`",
     "`has_ci`",
     "`has_docs`"
+  ],
+  "konva-nesting-canvas": [
+    "working on the nesting canvas component",
+    "editing files that import `konva` or `react-konva`",
+    "implementing drag-and-drop for dxf parts over slab images",
+    "building the `/slab` upload + crop rectangle flow"
   ],
   "pytest-testing-workflow": [
     "audit pytest",

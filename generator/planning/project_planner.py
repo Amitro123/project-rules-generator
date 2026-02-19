@@ -83,9 +83,58 @@ class Plan:
 
         return "\n".join(lines)
 
-    def save(self, filepath: Path) -> None:
-        """Save plan to file."""
-        filepath.write_text(self.to_markdown(), encoding="utf-8")
+    def to_mermaid(self) -> str:
+        """Convert plan to Mermaid gantt/graph diagram embedded in markdown."""
+        lines = [
+            f"# {self.title}",
+            "",
+            self.description,
+            "",
+            "---",
+            "",
+            "## Roadmap Diagram",
+            "",
+            "```mermaid",
+            "graph TD",
+        ]
+
+        # Build node IDs and connections
+        prev_phase_id = None
+        for phase_idx, phase in enumerate(self.phases):
+            phase_id = f"P{phase_idx + 1}"
+            phase_label = phase.name.replace('"', "'")
+            lines.append(f'    {phase_id}["{phase_label}"]')
+
+            for task_idx, task in enumerate(phase.tasks):
+                task_id = f"T{phase_idx + 1}_{task_idx + 1}"
+                task_label = task.description.replace('"', "'")[:60]
+                status = "[x]" if task.completed else "[ ]"
+                lines.append(f'    {task_id}["{status} {task_label}"]')
+                lines.append(f"    {phase_id} --> {task_id}")
+
+            if prev_phase_id:
+                lines.append(f"    {prev_phase_id} --> {phase_id}")
+            prev_phase_id = phase_id
+
+        lines.append("```")
+        lines.append("")
+
+        # Also include the full markdown task list below the diagram
+        lines.append("---")
+        lines.append("")
+        lines.append("## Task Details")
+        lines.append("")
+        for phase in self.phases:
+            lines.append(phase.to_markdown())
+
+        return "\n".join(lines)
+
+    def save(self, filepath: Path, fmt: str = "markdown") -> None:
+        """Save plan to file in the specified format."""
+        if fmt == "mermaid":
+            filepath.write_text(self.to_mermaid(), encoding="utf-8")
+        else:
+            filepath.write_text(self.to_markdown(), encoding="utf-8")
 
 
 class ProjectPlanner:

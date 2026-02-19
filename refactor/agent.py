@@ -160,6 +160,13 @@ def design(description, project_path, output, api_key, provider, verbose):
     is_flag=True,
     help="Agent executes tasks automatically (requires --interactive)",
 )
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["markdown", "mermaid"]),
+    default="markdown",
+    help="Output format: markdown (default) or mermaid (diagram)",
+)
 @click.option("--verbose/--quiet", default=True, help="Verbose output")
 def plan(
     task_description,
@@ -172,10 +179,28 @@ def plan(
     provider,
     interactive,
     auto_execute,
+    output_format,
     verbose,
 ):
     """Break down a task into subtasks and generate PLAN.md."""
     project_path = Path(project_path).resolve()
+
+    # Auto-detect: if task_description looks like a directory path, treat as project
+    if task_description and not from_readme and not from_design and not status:
+        candidate = Path(task_description)
+        # Check relative to CWD and absolute
+        if not candidate.is_absolute():
+            candidate = Path.cwd() / candidate
+        if candidate.is_dir():
+            # Treat task_description as a project path, auto-find README
+            project_path = candidate.resolve()
+            readme_candidate = project_path / "README.md"
+            if readme_candidate.exists():
+                from_readme = str(readme_candidate)
+                task_description = None
+                if verbose:
+                    click.echo(f"Auto-detected project directory: {project_path}")
+                    click.echo(f"Using README: {readme_candidate}")
 
     # Handle --status mode
     if status:
@@ -230,7 +255,9 @@ def plan(
         if not output_path.is_absolute():
             output_path = project_path / output_path
 
-        plan_obj.save(output_path)
+        plan_obj.save(output_path, fmt=output_format)
+        if verbose and output_format == "mermaid":
+            click.echo(f"   Format: Mermaid diagram")
 
         # Write structured task manifest for roadmaps too
         import json

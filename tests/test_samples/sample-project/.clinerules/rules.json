@@ -104,5 +104,25 @@
   "tech_stack_notes": [
     "`python`",
     "`pytest`"
+  ],
+  "project_context_(from_readme)": [
+    "audit pytest",
+    "generate pytest testing workflow",
+    "pytest testing workflow",
+    "review pytest",
+    "run pytest testing workflow",
+    "test pytest testing workflow",
+    "has_tests",
+    "has_api",
+    "has_ci",
+    "has_docs",
+    "docker",
+    "pydantic"
+  ],
+  "key_constraints_(from_readme)": [
+    "Manual nesting only — no auto-nesting algorithm in MVP",
+    "Single admin user, no real-time collab",
+    "Parts are DXF-derived SVG paths, not raster images",
+    "Canvas must export placement data for `GET /pdf` to consume"
   ]
 }

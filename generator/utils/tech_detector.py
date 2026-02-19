@@ -84,6 +84,15 @@ def detect_from_readme(readme_content: str) -> Set[str]:
         "redis": ["redis"],
         "openai": ["openai", "gpt-4", "gpt-3"],
         "langchain": ["langchain"],
+        # 2D/3D canvas and DXF editing
+        "konva": ["konva", "konvajs", "konva.js"],
+        "canvas": ["canvas", "svg canvas", "html canvas"],
+        "dxf": ["dxf", "ezdxf", "dxf editor", "dxf upload", "dxf viewer"],
+        "threejs": ["three.js", "threejs", "three js", "webgl", "3d extrusion"],
+        "babylon": ["babylon", "babylonjs", "babylon.js"],
+        "supabase": ["supabase"],
+        "reportlab": ["reportlab"],
+        "pdf": ["pdf", "pdf generation", "pdf export"],
     }
 
     for tech, keywords in tech_keywords.items():
@@ -119,6 +128,10 @@ def detect_from_dependencies(project_path: Path) -> Set[str]:
                 "openai": "openai",
                 "anthropic": "anthropic",
                 "langchain": "langchain",
+                "ezdxf": "dxf",
+                "reportlab": "reportlab",
+                "supabase": "supabase",
+                "konva": "konva",
             }
             for pkg, tech in pkg_map.items():
                 if pkg in content:
@@ -153,6 +166,10 @@ def detect_from_dependencies(project_path: Path) -> Set[str]:
                 "jest": "jest",
                 "typescript": "typescript",
                 "@types/react": "react",
+                "konva": "konva",
+                "react-konva": "konva",
+                "three": "threejs",
+                "babylonjs": "babylon",
             }
             for pkg, tech in node_map.items():
                 if pkg in deps:
@@ -184,11 +201,21 @@ def detect_tech_stack(project_path: Path, readme_content: str = "") -> List[str]
     # 2. Check for tech-specific files
     detected.update(_detect_from_files(project_path))
 
-    # 3. README as confirmation only
+    # 3. README - confirmation for common techs, primary source for canvas/DXF/specialized techs
     if readme_content:
         readme_detected = detect_from_readme(readme_content)
+        # These techs rarely appear in dependency files (CDN, inline, or specialized)
+        # so README is the primary source for them
+        readme_primary_techs = {
+            "konva", "canvas", "dxf", "threejs", "babylon", "supabase",
+            "reportlab", "pdf",
+        }
         for tech in readme_detected:
-            if tech in detected or tech in {"python", "typescript", "javascript"}:
+            if (
+                tech in detected
+                or tech in {"python", "typescript", "javascript"}
+                or tech in readme_primary_techs
+            ):
                 detected.add(tech)
 
     return list(detected)

@@ -1,0 +1,295 @@
+{
+  "plan_file": "PROJECT-ROADMAP.md",
+  "created": "2026-02-18T19:44:55.141761",
+  "task": "Project Roadmap: Project Rules Generator",
+  "tasks": [
+    {
+      "id": 1,
+      "phase": "Phase 1: Feature Development",
+      "title": "Task 1: Implement Context Awareness",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 2,
+      "phase": "Phase 1: Feature Development",
+      "title": "Subtask 1.1: Read README & Structure",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 3,
+      "phase": "Phase 1: Feature Development",
+      "title": "Subtask 1.2: Integrate with Architecture docs (`docs/architecture.md`)",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 4,
+      "phase": "Phase 1: Feature Development",
+      "title": "Task 2: Develop Memory System",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 5,
+      "phase": "Phase 1: Feature Development",
+      "title": "Subtask 2.1: Learn across ALL projects",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 6,
+      "phase": "Phase 1: Feature Development",
+      "title": "Subtask 2.2: Implement incremental updates",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 7,
+      "phase": "Phase 1: Feature Development",
+      "title": "Task 3: Integrate Skill Type Generation",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 8,
+      "phase": "Phase 1: Feature Development",
+      "title": "Subtask 3.1: Generate \"Optimize FFmpeg for ML\" (Expert) skills",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 9,
+      "phase": "Phase 1: Feature Development",
+      "title": "Subtask 3.2: Implement \"Use React\" (Basic) skills",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 10,
+      "phase": "Phase 2: Git Integration and Constitution",
+      "title": "Task 1: Implement Auto-commits (Smart .gitignore handling)",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 11,
+      "phase": "Phase 2: Git Integration and Constitution",
+      "title": "Subtask 1.1: Handle .gitignore exclusions",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 12,
+      "phase": "Phase 2: Git Integration and Constitution",
+      "title": "Subtask 1.2: Auto-commit changes",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 13,
+      "phase": "Phase 2: Git Integration and Constitution",
+      "title": "Task 2: Generate Constitution Document",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 14,
+      "phase": "Phase 2: Git Integration and Constitution",
+      "title": "Subtask 2.1: Create `constitution.md` principles",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 15,
+      "phase": "Phase 2: Git Integration and Constitution",
+      "title": "Subtask 2.2: Integrate with Architecture docs",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 16,
+      "phase": "Phase 2: Git Integration and Constitution",
+      "title": "Task 3: Implement Smart `.clinerules.yaml` exclusions",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 17,
+      "phase": "Phase 2: Git Integration and Constitution",
+      "title": "Subtask 3.1: Optimize exclusions for context awareness",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 18,
+      "phase": "Phase 2: Git Integration and Constitution",
+      "title": "Subtask 3.2: Implement incremental updates",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 19,
+      "phase": "Phase 3: Evolution and Testing",
+      "title": "Task 1: Implement Evolution System",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 20,
+      "phase": "Phase 3: Evolution and Testing",
+      "title": "Subtask 1.1: Get smarter every usage",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 21,
+      "phase": "Phase 3: Evolution and Testing",
+      "title": "Subtask 1.2: Integrate with Memory System",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 22,
+      "phase": "Phase 3: Evolution and Testing",
+      "title": "Task 2: Improve Context Awareness",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 23,
+      "phase": "Phase 3: Evolution and Testing",
+      "title": "Subtask 2.1: Enhance README & Structure reading",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 24,
+      "phase": "Phase 3: Evolution and Testing",
+      "title": "Subtask 2.2: Integrate with Architecture docs",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 25,
+      "phase": "Phase 3: Evolution and Testing",
+      "title": "Task 3: Fix Bugs and Improve Stability",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 26,
+      "phase": "Phase 3: Evolution and Testing",
+      "title": "Subtask 3.1: Test with various projects and architectures",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 27,
+      "phase": "Phase 3: Evolution and Testing",
+      "title": "Subtask 3.2: Fix bugs and improve performance",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 28,
+      "phase": "Phase 4: Documentation and Maintenance",
+      "title": "Task 1: Update Architecture Docs",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 29,
+      "phase": "Phase 4: Documentation and Maintenance",
+      "title": "Subtask 1.1: Refactor and improve documentation",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 30,
+      "phase": "Phase 4: Documentation and Maintenance",
+      "title": "Subtask 1.2: Integrate with Memory System",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 31,
+      "phase": "Phase 4: Documentation and Maintenance",
+      "title": "Task 2: Improve README and Documentation",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 32,
+      "phase": "Phase 4: Documentation and Maintenance",
+      "title": "Subtask 2.1: Enhance feature descriptions",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 33,
+      "phase": "Phase 4: Documentation and Maintenance",
+      "title": "Subtask 2.2: Integrate with Architecture docs",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 34,
+      "phase": "Phase 4: Documentation and Maintenance",
+      "title": "Task 3: Establish Maintenance Routine",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 35,
+      "phase": "Phase 4: Documentation and Maintenance",
+      "title": "Subtask 3.1: Schedule regular updates and bug fixes",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    },
+    {
+      "id": 36,
+      "phase": "Phase 4: Documentation and Maintenance",
+      "title": "Subtask 3.2: Establish community involvement and feedback",
+      "subtasks": [],
+      "completed": false,
+      "status": "pending"
+    }
+  ]
+}

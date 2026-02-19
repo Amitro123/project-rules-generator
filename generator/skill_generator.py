@@ -50,6 +50,15 @@ class SkillGenerator:
         "mcp": "mcp-protocol",
         "uvicorn": "uvicorn-server",
         "aiohttp": "aiohttp-client",
+        # 2D/3D canvas & DXF editing
+        "dxf": "dxf-processing",
+        "konva": "konva-nesting-canvas",
+        "canvas": "konva-nesting-canvas",
+        "threejs": "threejs-scene",
+        "babylon": "babylon-scene",
+        "supabase": "supabase-auth-storage",
+        "reportlab": "reportlab-pdf",
+        "pdf": "reportlab-pdf",
     }
 
     def __init__(self, discovery: SkillDiscovery):
@@ -97,8 +106,11 @@ class SkillGenerator:
         # ── Duplicate guard ──────────────────────────────────────────────────
         if self.discovery.skill_exists(safe_name, scope="learned") and not force:
             existing = self.discovery.resolve_skill(safe_name)
-            print(f"⏭️  Skill '{safe_name}' already exists — skipping. (use force=True to overwrite)")
-            return existing.parent if existing and existing.name == "SKILL.md" else existing.parent
+            print(f"Skill '{safe_name}' already exists — skipping. (use force=True to overwrite)")
+            if existing is not None:
+                return existing.parent if existing.name == "SKILL.md" else existing.parent
+            # Fallback: return the expected directory path
+            return self.discovery.global_learned / safe_name
         # ─────────────────────────────────────────────────────────────────────
 
         # Target is GLOBAL learned (directory format)
@@ -128,6 +140,37 @@ class SkillGenerator:
 
 
 
+    def check_global_skill_reuse(self, tech_stack: List[str]) -> Dict[str, str]:
+        """Check which skills already exist in global learned for a given tech stack.
+
+        Returns a dict of skill_name -> 'reuse' | 'adapt' | 'create'
+        - 'reuse':  skill exists globally and content is rich (not a stub)
+        - 'adapt':  skill exists globally but is a generic stub needing project adaptation
+        - 'create': skill does not exist globally at all
+        """
+        result = {}
+        for tech in tech_stack:
+            tech_lower = tech.lower().strip()
+            skill_name = self.TECH_SKILL_NAMES.get(tech_lower)
+            if not skill_name:
+                continue
+            if result.get(skill_name):
+                continue  # already classified via another tech alias
+
+            if self.discovery.skill_exists(skill_name, scope="learned"):
+                resolved = self.discovery.resolve_skill(skill_name)
+                if resolved and resolved.exists():
+                    if self._is_generic_stub(resolved):
+                        result[skill_name] = "adapt"
+                    else:
+                        result[skill_name] = "reuse"
+                else:
+                    result[skill_name] = "adapt"
+            else:
+                result[skill_name] = "create"
+
+        return result
+
     def generate_from_readme(
         self,
         readme_content: str,
@@ -136,32 +179,65 @@ class SkillGenerator:
         project_name: str = "",
         project_path: Optional[Path] = None,
     ) -> List[str]:
-        """Generate project-specific learned skills from README and tech stack."""
+        """Generate project-specific learned skills from README and tech stack.
 
-        # Prefer the manager's project local dir if available, else derive from output_dir
+        Cross-project reuse logic:
+        - 'reuse': global skill is rich → symlink/copy it to project, don't regenerate
+        - 'adapt': global skill is a stub → regenerate with project context
+        - 'create': no global skill → create new one in global learned + reference it
+        """
         if self.discovery.project_local_dir:
             target_dir = self.discovery.project_local_dir
         else:
-            # Fallback (e.g. if discovery wasn't init with project path but create_skill passed one?)
             target_dir = output_dir / "skills" / "project"
 
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        # Map tech to project-specific skill definitions
+        # Classify skills: reuse / adapt / create
+        reuse_map = self.check_global_skill_reuse(tech_stack)
+
+        # Map tech to project-specific skill content (for adapt/create cases)
         skill_templates = self._derive_project_skills(
             tech_stack, readme_content, project_name
         )
 
         generated = []
         for skill_name, skill_content in skill_templates.items():
+            action = reuse_map.get(skill_name, "create")
             dest = target_dir / f"{skill_name}.md"
-            if dest.exists():
-                # Overwrite if existing file is a generic stub or hallucinated
-                if self._is_generic_stub(dest, project_path=project_path):
-                    dest.write_text(skill_content, encoding="utf-8")
-                    generated.append(skill_name)
-            else:
+
+            if action == "reuse":
+                # Rich global skill exists — copy it to project dir as-is
+                resolved = self.discovery.resolve_skill(skill_name)
+                if resolved and resolved.exists():
+                    import shutil
+                    shutil.copy2(resolved, dest)
+                    print(f"  [reuse]  {skill_name} (from global learned)")
+                    generated.append(f"{skill_name} (reused)")
+                continue
+
+            elif action == "adapt":
+                # Stub exists globally — write project-adapted version to project dir
+                # and also update the global stub with the richer content
                 dest.write_text(skill_content, encoding="utf-8")
+                # Update global stub so future projects benefit
+                resolved = self.discovery.resolve_skill(skill_name)
+                if resolved and resolved.exists() and self._is_generic_stub(resolved, project_path=project_path):
+                    resolved.write_text(skill_content, encoding="utf-8")
+                    print(f"  [adapt]  {skill_name} (updated global stub)")
+                else:
+                    print(f"  [adapt]  {skill_name} (project override)")
+                generated.append(f"{skill_name} (adapted)")
+
+            else:  # create
+                # No global skill — write to project dir and save to global learned
+                dest.write_text(skill_content, encoding="utf-8")
+                global_dest = self.discovery.global_learned / f"{skill_name}.md"
+                if not global_dest.exists():
+                    global_dest.write_text(skill_content, encoding="utf-8")
+                    print(f"  [create] {skill_name} (saved to global learned)")
+                else:
+                    print(f"  [create] {skill_name} (project copy only)")
                 generated.append(skill_name)
 
         return generated

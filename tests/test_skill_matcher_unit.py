@@ -14,29 +14,39 @@ from generator.skill_discovery import SkillDiscovery
 def mock_dirs(tmp_path):
     learned = tmp_path / "learned"
     builtin = tmp_path / "builtin"
+    package_builtin = tmp_path / "package_builtin"
     learned.mkdir()
     builtin.mkdir()
-    return tmp_path, learned, builtin
+    package_builtin.mkdir()
+    return tmp_path, learned, builtin, package_builtin
+
+
+def _make_discovery(tmp_path, learned, builtin, package_builtin):
+    """Helper: create a SkillDiscovery bypassing __init__ with all required attrs."""
+    discovery = SkillDiscovery.__new__(SkillDiscovery)
+    discovery.global_learned = learned
+    discovery.global_builtin = builtin
+    discovery.package_builtin = package_builtin
+    discovery.project_path = None
+    discovery.project_skills_root = None
+    discovery.project_local_dir = None
+    discovery.project_builtin_link = None
+    discovery.project_learned_link = None
+    discovery.global_root = tmp_path
+    discovery._skills_cache = None
+    return discovery
 
 
 def test_find_learned_skill(mock_dirs):
     """SkillDiscovery should find skills in the learned directory."""
-    project_root, learned, builtin = mock_dirs
+    project_root, learned, builtin, package_builtin = mock_dirs
 
     # Create learned skill directory with SKILL.md
     skill_dir = learned / "my-skill"
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text("# Skill: My Skill\n\nlearned content")
 
-    discovery = SkillDiscovery.__new__(SkillDiscovery)
-    discovery.global_learned = learned
-    discovery.global_builtin = builtin
-    discovery.project_path = None
-    discovery.project_skills_root = None
-    discovery.project_local_dir = None
-    discovery.project_builtin_link = None
-    discovery.project_learned_link = None
-    discovery.global_root = project_root
+    discovery = _make_discovery(project_root, learned, builtin, package_builtin)
 
     result = discovery.resolve_skill("my-skill")
     assert result is not None
@@ -45,21 +55,13 @@ def test_find_learned_skill(mock_dirs):
 
 def test_find_builtin_skill(mock_dirs):
     """SkillDiscovery should find skills in the builtin directory."""
-    project_root, learned, builtin = mock_dirs
+    project_root, learned, builtin, package_builtin = mock_dirs
 
     skill_dir = builtin / "std-skill"
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text("# Skill: Std Skill\n\nbuiltin content")
 
-    discovery = SkillDiscovery.__new__(SkillDiscovery)
-    discovery.global_learned = learned
-    discovery.global_builtin = builtin
-    discovery.project_path = None
-    discovery.project_skills_root = None
-    discovery.project_local_dir = None
-    discovery.project_builtin_link = None
-    discovery.project_learned_link = None
-    discovery.global_root = project_root
+    discovery = _make_discovery(project_root, learned, builtin, package_builtin)
 
     result = discovery.resolve_skill("std-skill")
     assert result is not None
@@ -68,7 +70,7 @@ def test_find_builtin_skill(mock_dirs):
 
 def test_priority_learned_over_builtin(mock_dirs):
     """Learned skills should take priority over builtin."""
-    project_root, learned, builtin = mock_dirs
+    project_root, learned, builtin, package_builtin = mock_dirs
 
     # Create both
     for d, label in [(learned, "learned version"), (builtin, "builtin version")]:
@@ -76,15 +78,7 @@ def test_priority_learned_over_builtin(mock_dirs):
         skill_dir.mkdir()
         (skill_dir / "SKILL.md").write_text(f"# Skill: Conflict\n\n{label}")
 
-    discovery = SkillDiscovery.__new__(SkillDiscovery)
-    discovery.global_learned = learned
-    discovery.global_builtin = builtin
-    discovery.project_path = None
-    discovery.project_skills_root = None
-    discovery.project_local_dir = None
-    discovery.project_builtin_link = None
-    discovery.project_learned_link = None
-    discovery.global_root = project_root
+    discovery = _make_discovery(project_root, learned, builtin, package_builtin)
 
     result = discovery.resolve_skill("conflict")
     assert result is not None
@@ -93,17 +87,9 @@ def test_priority_learned_over_builtin(mock_dirs):
 
 def test_missing_skill_returns_none(mock_dirs):
     """resolve_skill should return None for unknown skills."""
-    project_root, learned, builtin = mock_dirs
+    project_root, learned, builtin, package_builtin = mock_dirs
 
-    discovery = SkillDiscovery.__new__(SkillDiscovery)
-    discovery.global_learned = learned
-    discovery.global_builtin = builtin
-    discovery.project_path = None
-    discovery.project_skills_root = None
-    discovery.project_local_dir = None
-    discovery.project_builtin_link = None
-    discovery.project_learned_link = None
-    discovery.global_root = project_root
+    discovery = _make_discovery(project_root, learned, builtin, package_builtin)
 
     result = discovery.resolve_skill("nonexistent-skill")
     assert result is None

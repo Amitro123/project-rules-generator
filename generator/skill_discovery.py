@@ -58,14 +58,15 @@ class SkillDiscovery:
                 return {"by_rel": {}, "by_name": {}}
 
             idx = {
-                "by_rel": {},  # "math/add.md" -> Path
+                "by_rel": {},  # "math/add.md" -> Path (always forward slashes)
                 "by_name": {},  # "add.md" -> Path (first found)
             }
             try:
                 # Use a single pass over the directory tree
                 for p in root.rglob("*"):
                     if p.is_file() and p.suffix in [".md", ".yaml", ".yml"]:
-                        rel = str(p.relative_to(root))
+                        # Normalize to forward slashes for cross-platform consistency
+                        rel = p.relative_to(root).as_posix()
                         idx["by_rel"][rel] = p
                         if p.name not in idx["by_name"]:
                             idx["by_name"][p.name] = p
@@ -308,12 +309,19 @@ class SkillDiscovery:
         if not base or not base.exists():
             return False
 
-        # Check flat file
+        # Check flat file: <base>/<name>.md
         if (base / f"{skill_name}.md").exists():
             return True
-        # Check directory format
+        # Check directory format: <base>/<name>/SKILL.md
         if (base / skill_name / "SKILL.md").exists():
             return True
+        # Check subcategory format: <base>/<category>/<name>.md or <base>/<category>/<name>/SKILL.md
+        for category_dir in base.iterdir():
+            if category_dir.is_dir():
+                if (category_dir / f"{skill_name}.md").exists():
+                    return True
+                if (category_dir / skill_name / "SKILL.md").exists():
+                    return True
         return False
 
 

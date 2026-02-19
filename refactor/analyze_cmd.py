@@ -218,6 +218,18 @@ def setup_orchestrator(config):
     is_flag=True,
     help="Auto-generate skills/index.md from available skills",
 )
+@click.option(
+    "--create-rules",
+    "create_rules_flag",
+    is_flag=True,
+    help="Generate Cowork-quality rules.md (overrides default rules generation)",
+)
+@click.option(
+    "--rules-quality-threshold",
+    type=int,
+    default=85,
+    help="Minimum quality score for --create-rules (default: 85)",
+)
 def analyze(
     project_path,
     scan_all,
@@ -251,6 +263,8 @@ def analyze(
     auto_fix,
     max_iterations,
     generate_index,
+    create_rules_flag,
+    rules_quality_threshold,
 ):
     """Analyze project and generate rules.md and skills.md from README.md"""
     project_path = Path(project_path).resolve()
@@ -365,7 +379,6 @@ def analyze(
         if create_skill or add_skill:
             skill_name = create_skill or add_skill
             # Place learned skills in the project output directory
-            # Place learned skills in the project output directory
             # Now we use global SkillsManager which handles pathing
             manager = SkillsManager(project_path=project_path)
             try:
@@ -382,7 +395,10 @@ def analyze(
             except Exception as e:
                 click.echo(f"❌ Failed to create skill: {e}", err=True)
                 sys.exit(1)
-            sys.exit(0)
+            # Only exit early if --create-rules is NOT also requested.
+            # This allows: prg analyze --create-skill foo --create-rules to work.
+            if not create_rules_flag:
+                sys.exit(0)
 
         if remove_skill:
             learned_dir = output_dir / "skills" / "learned"
@@ -825,6 +841,16 @@ def analyze(
                         encoding="utf-8", errors="replace"
                     )
                     project_tech = project_data.get("tech_stack", [])
+
+                    # Cross-project reuse report
+                    if verbose:
+                        reuse_map = skills_manager.check_global_skill_reuse(project_tech)
+                        if reuse_map:
+                            click.echo("\n   Global skill reuse check:")
+                            for skill_name, action in sorted(reuse_map.items()):
+                                icon = {"reuse": "♻️ ", "adapt": "🔧", "create": "✨"}.get(action, "  ")
+                                click.echo(f"     {icon} {skill_name}: {action}")
+
                     generated_skills = skills_manager.generate_from_readme(
                         readme_content=readme_text,
                         tech_stack=project_tech,
@@ -1187,6 +1213,51 @@ def analyze(
                             click.echo(
                                 "     (Auto-fix temporarily disabled in v1.2.0 Opik update)"
                             )
+
+        # Cowork Rules Creator integration (delegation)
+        if create_rules_flag:
+            try:
+                from generator.rules_creator import CoworkRulesCreator
+
+                if verbose:
+                    click.echo("\\n🎯 Cowork Rules Creator...")
+
+                readme_text = ""
+                if readme_path and readme_path.exists():
+                    readme_text = readme_path.read_text(encoding="utf-8", errors="replace")
+                else:
+                    readme_text = f"# {project_name}\\n\\nProject analysis in progress..."
+
+                tech_stack_arg = project_data.get("tech_stack") or None
+
+                creator = CoworkRulesCreator(project_path)
+                content, metadata, quality = creator.create_rules(
+                    readme_text,
+                    tech_stack=tech_stack_arg,
+                    enhanced_context=enhanced_context,
+                )
+
+                if verbose:
+                    click.echo(f"   Tech Stack: {', '.join(metadata.tech_stack) or 'none'}")
+                    click.echo(f"   Project Type: {metadata.project_type}")
+                    click.echo(f"   Quality Score: {quality.score:.1f}/100")
+
+                if quality.score < rules_quality_threshold:
+                    click.echo(
+                        f"   ⚠️  Quality score {quality.score:.1f} below threshold {rules_quality_threshold}",
+                        err=True,
+                    )
+
+                cowork_rules_file = creator.export_to_file(content, metadata, output_dir)
+                generated_files.append(cowork_rules_file)
+                if verbose:
+                    click.echo(f"   ✅ Cowork rules.md saved: {cowork_rules_file}")
+
+            except Exception as e:
+                click.echo(f"   ⚠️  Cowork rules generation failed: {e}", err=True)
+                if verbose:
+                    import traceback
+                    traceback.print_exc()
 
         click.echo("\\nDone!")
 

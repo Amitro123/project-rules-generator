@@ -244,6 +244,10 @@ class EnhancedProjectParser:
             "mcp": "mcp",
             "groq": "groq",
             "perplexity": "perplexity",
+            "ezdxf": "dxf",
+            "reportlab": "reportlab",
+            "supabase": "supabase",
+            "konva": "konva",
         }
         for dep_name, tech_name in dep_to_tech.items():
             if dep_name in python_dep_names:
@@ -264,6 +268,10 @@ class EnhancedProjectParser:
             "tailwindcss": "tailwindcss",
             "jest": "jest",
             "typescript": "typescript",
+            "konva": "konva",
+            "react-konva": "konva",
+            "three": "threejs",
+            "babylonjs": "babylon",
         }
         for dep_name, tech_name in node_dep_to_tech.items():
             if dep_name in node_dep_names:
@@ -277,6 +285,32 @@ class EnhancedProjectParser:
             languages.add("javascript")
         if any(d["name"] == "typescript" for d in deps.get("node_dev", [])):
             languages.add("typescript")
+
+        # Supplement with README-based detection for specialized/CDN-loaded techs
+        # (konva, canvas, DXF viewer, WebGL) that rarely appear in dep files
+        raw_readme = readme_data.get("raw_readme", "")
+        if not raw_readme:
+            # Try to get from readme_path field
+            readme_path_str = readme_data.get("readme_path")
+            if readme_path_str:
+                try:
+                    raw_readme = Path(readme_path_str).read_text(
+                        encoding="utf-8", errors="replace"
+                    )
+                except Exception:
+                    pass
+        if raw_readme:
+            from generator.utils.tech_detector import detect_from_readme
+
+            readme_tech = detect_from_readme(raw_readme)
+            # Only add specialized techs that wouldn't be in dep files
+            readme_primary = {
+                "konva", "canvas", "dxf", "threejs", "babylon",
+                "supabase", "reportlab", "pdf",
+            }
+            for tech in readme_tech:
+                if tech in readme_primary:
+                    tech_stack.add(tech)
 
         # Detect docker
         has_docker = (self.path / "Dockerfile").exists() or (

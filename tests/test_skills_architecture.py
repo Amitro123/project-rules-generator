@@ -56,14 +56,17 @@ def test_priority_resolution(manager):
 
     # 1. Builtin only
     builtin_skill.write_text("BUILTIN", encoding="utf-8")
+    manager.discovery._skills_cache = None  # Invalidate cache after filesystem change
     assert manager.resolve_skill(skill_name).read_text(encoding="utf-8") == "BUILTIN"
 
     # 2. Learned overrides Builtin
     learned_skill.write_text("LEARNED", encoding="utf-8")
+    manager.discovery._skills_cache = None  # Invalidate cache after filesystem change
     assert manager.resolve_skill(skill_name).read_text(encoding="utf-8") == "LEARNED"
 
     # 3. Project overrides Learned
     project_skill.write_text("PROJECT", encoding="utf-8")
+    manager.discovery._skills_cache = None  # Invalidate cache after filesystem change
     assert manager.resolve_skill(skill_name).read_text(encoding="utf-8") == "PROJECT"
 
 
