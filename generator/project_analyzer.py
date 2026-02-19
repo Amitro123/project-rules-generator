@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 
 class ProjectAnalyzer:
@@ -23,7 +23,7 @@ class ProjectAnalyzer:
 
     def _analyze_structure(self) -> Dict:
         """Analyze directory structure."""
-        structure = {
+        structure: Dict[str, Any] = {
             "has_backend": (self.project_path / "backend").exists(),
             "has_frontend": (self.project_path / "frontend").exists(),
             "has_api": (self.project_path / "api").exists(),

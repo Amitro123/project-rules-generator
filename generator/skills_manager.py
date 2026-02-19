@@ -12,7 +12,7 @@ class SkillsManager:
     Delegates to SkillDiscovery, SkillParser, and SkillGenerator.
     """
 
-    def __init__(self, project_path: Optional[Path] = None):
+    def __init__(self, project_path: Optional[Path] = None, skills_dir: Optional[Path] = None):
         """
         Initialize SkillsManager with Global and Project layers.
 
@@ -21,7 +21,7 @@ class SkillsManager:
         2. Global Learned (~/.project-rules-generator/learned) - User's shared skills
         3. Global Builtin (~/.project-rules-generator/builtin) - Core PRG skills
         """
-        self.discovery = SkillDiscovery(project_path)
+        self.discovery = SkillDiscovery(project_path, skills_dir=skills_dir)
         self.generator = SkillGenerator(self.discovery)
 
         # Expose paths for backward compatibility if accessed directly

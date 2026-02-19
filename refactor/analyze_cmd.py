@@ -108,7 +108,7 @@ def setup_orchestrator(config):
 @click.argument(
     "project_path", type=click.Path(exists=True, file_okay=False), default="."
 )
-@click.option("--scan-all", is_flag=True, help="Scan all subdirectories for projects")
+
 @click.option("--commit/--no-commit", default=True, help="Auto-commit to git")
 @click.option("--interactive", "-i", is_flag=True, help="Interactive prompts")
 @click.option("--verbose/--quiet", default=True, help="Verbose output")
@@ -230,9 +230,13 @@ def setup_orchestrator(config):
     default=85,
     help="Minimum quality score for --create-rules (default: 85)",
 )
+@click.option(
+    "--skills-dir",
+    type=click.Path(file_okay=False),
+    help="Custom skills directory (default: ./skills)",
+)
 def analyze(
     project_path,
-    scan_all,
     commit,
     interactive,
     verbose,
@@ -265,13 +269,17 @@ def analyze(
     generate_index,
     create_rules_flag,
     rules_quality_threshold,
+    skills_dir,
 ):
     """Analyze project and generate rules.md and skills.md from README.md"""
     project_path = Path(project_path).resolve()
     cleanup_awesome_skills()
     
+    # Invoke with default skills_dir=None to allow SkillDiscovery to use its default (.clinerules/skills)
+    # skills_dir = skills_dir or "skills"
+
     # Initialize Skills Manager with project context
-    skills_manager = SkillsManager(project_path=project_path)
+    skills_manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
 
     # Handle --generate-index flag (standalone action)
     if generate_index:
@@ -304,7 +312,7 @@ def analyze(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Initialize Skills Manager with project context
-    skills_manager = SkillsManager(project_path=project_path)
+    skills_manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
 
     # Setup .clinerules/skills structure (symlinks/copies)
     try:
@@ -372,15 +380,13 @@ def analyze(
                 config["skill_sources"]["learned"] = {}
             config["skill_sources"]["learned"]["auto_save"] = True
 
-        # Skills Manager Logic
-        skills_dir = project_path / "skills"
 
         # Skill Management (CLI Flags)
         if create_skill or add_skill:
             skill_name = create_skill or add_skill
             # Place learned skills in the project output directory
             # Now we use global SkillsManager which handles pathing
-            manager = SkillsManager(project_path=project_path)
+            manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
             try:
                 path = manager.create_skill(
                     skill_name,
@@ -392,6 +398,12 @@ def analyze(
                 )
 
                 click.echo(f"✨ Created new skill '{path.name}' in {path}")
+
+                # Update agent cache immediately
+                click.echo("🔄 Updating agent cache...")
+                manager.save_triggers_json(output_dir)
+                click.echo("✅ auto-triggers.json refreshed!")
+
             except Exception as e:
                 click.echo(f"❌ Failed to create skill: {e}", err=True)
                 sys.exit(1)
@@ -401,8 +413,8 @@ def analyze(
                 sys.exit(0)
 
         if remove_skill:
-            learned_dir = output_dir / "skills" / "learned"
-            manager = SkillsManager(learned_path=learned_dir)
+            # Re-initialize to ensure we have the latest structure
+            manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
             try:
                 # Basic removal logic - check learned skills
                 import shutil
@@ -431,7 +443,7 @@ def analyze(
             sys.exit(0)
         if list_skills:
             # Re-initialize to ensure we have the latest structure
-            manager = SkillsManager(project_path=project_path)
+            manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
             skills = manager.list_skills()
 
             # Group by type for display
@@ -453,7 +465,7 @@ def analyze(
                     click.echo(f"  - {s} (Local)")
 
             if display_groups["learned"]:
-                click.echo(f"\\n🧠 Global Learned ({len(display_groups['learned'])}):")
+                click.echo(f"\\n🧠 Learned Skills (Global & Local) ({len(display_groups['learned'])}):")
                 for s in sorted(display_groups["learned"]):
                     click.echo(f"  - {s}")
 
@@ -640,7 +652,7 @@ def analyze(
             pbar.update(1)
 
             pbar.set_description("Processing Skills")
-            skills_manager = SkillsManager()
+            skills_manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
 
             # Enhanced auto-generate skills using new Phase 1-4 modules
             enhanced_selected_skills = set()
@@ -781,6 +793,8 @@ def analyze(
             triggers_dict = {}
             if with_skills:
                 triggers_dict = skills_manager.extract_all_triggers()
+                # Save triggers for AgentExecutor
+                skills_manager.save_triggers_json(output_dir)
             pbar.update(1)
 
             pbar.set_description("Unified Export (.clinerules/)")
@@ -1284,5 +1298,8 @@ def analyze(
             import traceback
 
             traceback.print_exc()
-        click.echo(f"❌ Unexpected error: {e}", err=True)
+        click.echo(f"❌ Unexpected Error: {e}", err=True)
         sys.exit(1)
+
+if __name__ == "__main__":
+    analyze()

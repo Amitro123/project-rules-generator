@@ -100,8 +100,8 @@ class TestCreateSkillDuplicatePrevention:
         generator = SkillGenerator(discovery)
         generator.create_skill("test-skill", force=True)
 
-        # Directory format should now exist (create_skill uses dir format)
-        skill_file = discovery.global_learned / "test-skill" / "SKILL.md"
+        # The generator prefers project local path if available
+        skill_file = discovery.project_learned_link / "test-skill" / "SKILL.md"
         assert skill_file.exists()
 
     def test_new_skill_created_normally(self, tmp_path):
@@ -112,7 +112,7 @@ class TestCreateSkillDuplicatePrevention:
         generator = SkillGenerator(discovery)
         result = generator.create_skill("brand-new-skill")
 
-        assert (discovery.global_learned / "brand-new-skill" / "SKILL.md").exists()
+        assert (discovery.project_learned_link / "brand-new-skill" / "SKILL.md").exists()
 
     def test_name_normalization_prevents_duplicates(self, tmp_path, capsys):
         """Names like 'My Skill' and 'my-skill' resolve to the same normalized name."""
@@ -196,8 +196,8 @@ class TestSkillsManagerDuplicatePrevention:
 
         manager.create_skill("existing-skill", force=True)
 
-        # New directory format created
-        assert (manager.global_learned / "existing-skill" / "SKILL.md").exists()
+        # New directory format created in PROJECT scope
+        assert (manager.project_learned_link / "existing-skill" / "SKILL.md").exists()
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import click
 from generator.planning.autopilot import AutopilotOrchestrator
 from refactor.agent import _detect_provider, _set_api_key
 
+
 @click.command(name="autopilot")
 @click.argument(
     "project_path", type=click.Path(exists=True, file_okay=False), default="."

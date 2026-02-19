@@ -7,8 +7,8 @@ to be used interchangeably.
 """
 
 from generator.strategies.ai_strategy import AIStrategy
-from generator.strategies.readme_strategy import READMEStrategy
 from generator.strategies.cowork_strategy import CoworkStrategy
+from generator.strategies.readme_strategy import READMEStrategy
 from generator.strategies.stub_strategy import StubStrategy
 
 __all__ = [

@@ -1,6 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch, call
-from pathlib import Path
+from unittest.mock import patch
 from generator.planning.project_manager import ProjectManager
 
 @pytest.fixture

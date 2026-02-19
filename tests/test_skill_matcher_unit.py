@@ -5,7 +5,6 @@ Equivalent functionality is now in SkillDiscovery.
 """
 
 import pytest
-from pathlib import Path
 
 from generator.skill_discovery import SkillDiscovery
 

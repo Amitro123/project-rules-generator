@@ -1,13 +1,13 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 class SkillDiscovery:
     """Manages skill discovery, paths, and structure."""
 
-    def __init__(self, project_path: Optional[Path] = None):
+    def __init__(self, project_path: Optional[Path] = None, skills_dir: Optional[Path] = None):
         """
         Initialize with Global and Project layers.
 
@@ -32,8 +32,21 @@ class SkillDiscovery:
         self.package_builtin = Path(__file__).parent / "skills" / "builtin"
 
         # 3. Project Paths (if valid project)
+        # 3. Project Paths (if valid project)
         if self.project_path:
-            self.project_skills_root = self.project_path / ".clinerules" / "skills"
+            # Allow override or default to new standard (.clinerules/skills)
+            if skills_dir:
+                # User provided skills_dir (e.g. from CLI)
+                proposed_root = Path(skills_dir)
+                if not proposed_root.is_absolute():
+                    self.project_skills_root = self.project_path / proposed_root
+                else:
+                    self.project_skills_root = proposed_root
+            else:
+                # Default: .clinerules/skills
+                self.project_skills_root = self.project_path / ".clinerules" / "skills"
+
+            # Point directly to the standard locations used by migration
             self.project_local_dir = self.project_skills_root / "project"
             self.project_learned_link = self.project_skills_root / "learned"
             self.project_builtin_link = self.project_skills_root / "builtin"
@@ -42,7 +55,7 @@ class SkillDiscovery:
             self.project_local_dir = None
             self.project_learned_link = None
             self.project_builtin_link = None
-
+            
         self._skills_cache = None
 
     def _build_cache(self):
@@ -184,7 +197,7 @@ class SkillDiscovery:
 
         root = {
             "builtin": self.global_builtin,
-            "learned": self.global_learned,
+            "learned": self.project_learned_link if self.project_learned_link and self.project_learned_link.exists() else self.global_learned,
             "project": self.project_local_dir,
         }.get(layer)
 

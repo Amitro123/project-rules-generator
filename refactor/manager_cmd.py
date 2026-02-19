@@ -1,7 +1,10 @@
-import click
 from pathlib import Path
+
+import click
+
 from generator.planning.project_manager import ProjectManager
 from refactor.agent import _detect_provider, _set_api_key
+
 
 @click.command(name="manager")
 @click.argument(

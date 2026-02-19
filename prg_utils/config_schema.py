@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 class LLMConfig(BaseModel):
     enabled: bool = False
     api_key: Optional[str] = None
-    provider: Literal["anthropic", "gemini"] = "anthropic"
+    provider: Literal["anthropic", "gemini", "groq"] = "anthropic"
     model: str = "claude-3-5-sonnet-20241022"
 
 

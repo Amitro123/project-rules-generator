@@ -75,7 +75,7 @@ def test_create_skill_global(manager):
     skill_name = "new-global-skill"
     manager.create_skill(skill_name)
 
-    expected_path = manager.global_learned / skill_name / "SKILL.md"
+    expected_path = manager.project_learned_link / skill_name / "SKILL.md"
     assert expected_path.exists()
     assert "Skill: New Global Skill" in expected_path.read_text(encoding="utf-8")
 

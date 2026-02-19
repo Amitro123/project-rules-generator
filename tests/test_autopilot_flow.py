@@ -1,6 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch, call
-from pathlib import Path
+from unittest.mock import MagicMock, patch
 from generator.planning.autopilot import AutopilotOrchestrator
 from generator.planning.task_creator import TaskManifest, TaskEntry
 from generator.task_decomposer import SubTask

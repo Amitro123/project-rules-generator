@@ -20,12 +20,14 @@ import yaml
 
 from generator.skill_discovery import SkillDiscovery
 from generator.utils.tech_detector import (
-    detect_tech_stack as _detect_tech_stack_util,
     detect_from_dependencies as _detect_from_deps_util,
+)
+from generator.utils.tech_detector import (
+    detect_tech_stack as _detect_tech_stack_util,
 )
 
 try:
-    from jinja2 import Environment, FileSystemLoader, Template
+    from jinja2 import Environment, FileSystemLoader
     HAS_JINJA2 = True
 except ImportError:
     HAS_JINJA2 = False
@@ -66,7 +68,7 @@ class CoworkSkillCreator:
     - Hallucination detection
     """
 
-    # Technology Γזע Required Tools mapping (Cowork intelligence)
+    # Technology → Required Tools mapping (Cowork intelligence)
     TECH_TOOLS = {
         "fastapi": ["uvicorn", "pydantic", "pytest", "httpx"],
         "flask": ["flask", "pytest", "requests"],
@@ -74,6 +76,7 @@ class CoworkSkillCreator:
         "react": ["npm", "webpack", "jest", "eslint"],
         "vue": ["npm", "vue-cli", "jest"],
         "pytest": ["pytest", "coverage", "pytest-cov"],
+        "qa": ["pytest", "coverage", "ruff", "vulture"],
         "docker": ["docker", "docker-compose"],
         "kubernetes": ["kubectl", "helm"],
         "sqlalchemy": ["alembic", "pytest"],
@@ -534,6 +537,9 @@ class CoworkSkillCreator:
         if "refactor" in skill_lower or "cleanup" in skill_lower:
             tools.update(["pylint", "ruff", "black"])
 
+        if "qa" in skill_lower or "bugs" in skill_lower:
+            tools.update(["pytest", "ruff", "vulture", "mypy"])
+
         # 3. Validate tools exist in project
         tools = self._validate_tools_availability(tools)
 
@@ -874,11 +880,11 @@ This skill generates:
 
 ## Anti-Patterns
 
-Γ¥ל **Don't** use generic commands without project context
-Γ£ו **Do** use actual project paths and configurations
+❌ **Don't** use generic commands without project context
+✅ **Do** use actual project paths and configurations
 
-Γ¥ל **Don't** skip validation steps
-Γ£ו **Do** always verify changes work as expected
+❌ **Don't** skip validation steps
+✅ **Do** always verify changes work as expected
 
 ## Tech Stack Notes
 
@@ -964,8 +970,8 @@ Signals: {', '.join(metadata.project_signals)}
             score -= 10
 
         # 7. Check for anti-patterns section
-        if "## Anti-Patterns" not in content or "Γ¥ל" not in content:
-            suggestions.append("Add anti-patterns section with Γ¥ל/Γ£ו markers")
+        if "## Anti-Patterns" not in content:
+            suggestions.append("Add anti-patterns section")
             score -= 5
 
         passed = score >= 70 and len(issues) == 0
@@ -1021,11 +1027,11 @@ Signals: {', '.join(metadata.project_signals)}
 
 ## Anti-Patterns
 
-Γ¥ל **Don't** use generic solutions without understanding project context
-Γ£ו **Do** analyze project structure first
+❌ **Don't** use generic solutions without understanding project context
+✅ **Do** analyze project structure first
 
-Γ¥ל **Don't** skip validation steps
-Γ£ו **Do** always verify changes work
+❌ **Don't** skip validation steps
+✅ **Do** always verify changes work
 """
             content += anti_pattern_section
 

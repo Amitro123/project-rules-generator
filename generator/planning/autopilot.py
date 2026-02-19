@@ -3,16 +3,17 @@
 
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 import click
 
-from generator.planning.workflow import AgentWorkflow
+from generator.planning.task_agent import TaskImplementationAgent
 from generator.planning.task_creator import TaskManifest
 from generator.planning.task_executor import TaskExecutor
-from generator.planning.task_agent import TaskImplementationAgent
+from generator.planning.workflow import AgentWorkflow
 from generator.task_decomposer import SubTask
 from prg_utils import git_ops
+
 
 class AutopilotOrchestrator:
     """Manages the full end-to-end autopilot workflow."""

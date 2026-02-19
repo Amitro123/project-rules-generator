@@ -22,7 +22,6 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-
 # ── Strategy Protocol ─────────────────────────────────────────────────────────
 
 class _RulesStrategy:

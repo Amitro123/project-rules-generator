@@ -39,3 +39,17 @@ packages = ["generator", "analyzer", "prg_utils", "src"]
 
 [tool.setuptools.package-data]
 generator = ["skills/**/*"]
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py38"
+exclude = [
+    "generator/templates/*",
+    ".clinerules/*",
+    "tests/*",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["F401", "E501"]

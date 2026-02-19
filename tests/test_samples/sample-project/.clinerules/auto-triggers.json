@@ -43,6 +43,17 @@
     "create a plan",
     "starting implementation"
   ],
+  "cleanup": [
+    "cleanup",
+    "`has_ci`",
+    "`has_docs`",
+    "`has_api` \u03b3\u05d6\u05e2 api endpoints present",
+    "`has_tests` \u03b3\u05d6\u05e2 test suite available"
+  ],
+  "click-cli": [
+    "working with click integration code",
+    "editing files that import or configure click"
+  ],
   "code-duplication": [
     "code duplication",
     "`has_ci`",

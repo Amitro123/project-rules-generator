@@ -1,8 +1,6 @@
 """Task implementation agent — generates code changes for a subtask."""
 
-import os
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from generator.ai.factory import create_ai_client
 from generator.task_decomposer import SubTask

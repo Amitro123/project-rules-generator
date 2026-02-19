@@ -1,10 +1,9 @@
 """Integration tests for end-to-end flow."""
 
 from pathlib import Path
+from typing import Dict, List, Any
 from click.testing import CliRunner
-
 from main import main
-
 
 class TestIntegration:
     """Test suite for end-to-end integration."""
@@ -78,7 +77,7 @@ Install and run.
 
     def test_flow_with_different_tech_stacks(self, tmp_path: Path):
         """Test with various tech stack combinations."""
-        test_cases = [
+        test_cases: List[Dict[str, Any]] = [
             {
                 "name": "react-project",
                 "tech": ["react", "typescript", "nextjs"],

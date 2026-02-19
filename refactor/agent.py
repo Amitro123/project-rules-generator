@@ -257,7 +257,7 @@ def plan(
 
         plan_obj.save(output_path, fmt=output_format)
         if verbose and output_format == "mermaid":
-            click.echo(f"   Format: Mermaid diagram")
+            click.echo("   Format: Mermaid diagram")
 
         # Write structured task manifest for roadmaps too
         import json

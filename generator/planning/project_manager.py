@@ -1,15 +1,15 @@
 """Project Manager — Handles the full project lifecycle from setup to completion."""
 
-import click
-import json
-from pathlib import Path
-from typing import Dict, List, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import List, Optional, Dict, Any
 
-from generator.planning.workflow import AgentWorkflow
-from generator.planning.preflight import PreflightChecker, PreflightReport
+import click
+
 from generator.planning.autopilot import AutopilotOrchestrator
+from generator.planning.preflight import PreflightChecker
 from generator.planning.task_creator import TaskManifest
+from generator.planning.workflow import AgentWorkflow
 
 
 class ProjectManager:
@@ -111,9 +111,9 @@ class ProjectManager:
         # Group 3: Architecture
         if "ARCHITECTURE.md" in missing:
             click.echo("   ⚙️  Generating ARCHITECTURE.md...")
-            from generator.design_generator import DesignGenerator
             # Need a client
             from generator.ai.factory import create_ai_client
+            from generator.design_generator import DesignGenerator
             client = create_ai_client(provider=self.provider, api_key=self.api_key)
             gen = DesignGenerator(client)
             design = gen.generate_design(
@@ -136,13 +136,8 @@ class ProjectManager:
 
     def _generate_spec_md(self):
         """Infer requirements from README or context."""
-        readme = (self.project_path / "README.md")
-        content = readme.read_text(encoding="utf-8") if readme.exists() else "No README found."
-        
-    def _generate_spec_md(self):
-        """Infer requirements from README or context."""
-        from generator.requirements import RequirementsInferrer
         from generator.ai.factory import create_ai_client
+        from generator.requirements import RequirementsInferrer
         
         client = create_ai_client(provider=self.provider, api_key=self.api_key)
         inferrer = RequirementsInferrer(client=client)
@@ -182,9 +177,9 @@ class ProjectManager:
         (self.project_path / "PROJECT-MANAGER.md").write_text("\n".join(lines), encoding="utf-8")
         click.echo(f"   📄 Updated PROJECT-MANAGER.md ({ready_count}/{len(self.REQUIRED_DOCS)} ready)")
 
-    def _get_context(self) -> str:
+    def _get_context(self) -> Optional[Dict]:
         # Helper to get some context for AI generation
-        return self.workflow._get_project_context() if self.workflow else ""
+        return self.workflow._get_project_context() if self.workflow else {}
 
     # -- Phase 2: Verify --------------------------------------------------
 

@@ -11,7 +11,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-
 # Markers that indicate a skill is a generic stub (not project-specific)
 STUB_MARKERS = [
     "Follow project conventions",

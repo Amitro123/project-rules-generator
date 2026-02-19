@@ -4,9 +4,7 @@ from typing import Dict, List, Optional
 
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_parser import SkillParser
-from generator.skill_creator import CoworkSkillCreator
 from generator.utils.quality_checker import is_stub as _check_is_stub
-from generator.utils.tech_detector import extract_context as _extract_tech_context
 
 
 class SkillGenerator:
@@ -91,8 +89,8 @@ class SkillGenerator:
         """
         from generator.strategies import (
             AIStrategy,
-            READMEStrategy,
             CoworkStrategy,
+            READMEStrategy,
             StubStrategy,
         )
 
@@ -113,8 +111,13 @@ class SkillGenerator:
             return self.discovery.global_learned / safe_name
         # ─────────────────────────────────────────────────────────────────────
 
-        # Target is GLOBAL learned (directory format)
-        target_dir = self.discovery.global_learned / safe_name
+        # Target: prefer Local Learned if project context exists, else Global Learned
+        if self.discovery.project_learned_link:
+             target_root = self.discovery.project_learned_link
+        else:
+             target_root = self.discovery.global_learned
+        
+        target_dir = target_root / safe_name
         target_dir.mkdir(parents=True, exist_ok=True)
 
         skill_file = target_dir / "SKILL.md"

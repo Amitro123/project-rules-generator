@@ -153,7 +153,7 @@ def create_rules(
             + content.count("### High Priority")
             + content.count("### Medium Priority")
         )
-        click.echo(f"\nRules Summary:")
+        click.echo("\nRules Summary:")
         click.echo(f"   - Tech-specific rules: {sum(1 for t in metadata.tech_stack if t in content.lower())}")
         click.echo(f"   - Priority areas: {len(metadata.priority_areas)}")
         click.echo(f"   - Quality score: {quality.score:.1f}/100")
@@ -199,8 +199,8 @@ def _display_quality_report(quality, verbose: bool):
     else:
         score_color = "red"
 
-    click.echo(f"\nQuality Assessment:")
-    click.echo(f"   Score: ", nl=False)
+    click.echo("\nQuality Assessment:")
+    click.echo("   Score: ", nl=False)
     click.secho(f"{quality.score:.1f}/100", fg=score_color, bold=True)
     click.echo(f"   Completeness: {quality.completeness*100:.0f}%")
 

@@ -4,9 +4,10 @@ import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from generator.ai.factory import create_ai_client
+
 
 @dataclass
 class Requirement:

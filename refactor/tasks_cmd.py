@@ -1,11 +1,14 @@
 """Tasks command for comprehensive task generation."""
 
 from pathlib import Path
+
 import click
+
+from generator.planning.task_creator import TaskCreator
 from generator.requirements import RequirementsInferrer
 from generator.task_decomposer import TaskDecomposer
-from generator.planning.task_creator import TaskCreator
 from refactor.agent import _detect_provider, _set_api_key
+
 
 @click.command(name="tasks")
 @click.argument("project_path", type=click.Path(exists=True, file_okay=False), default=".")
@@ -24,7 +27,8 @@ def tasks_cmd(project_path, infer_spec, provider, api_key, verbose):
     requirements = []
     
     if infer_spec or not spec_path.exists():
-        if verbose: click.echo("Inferring requirements...")
+        if verbose:
+            click.echo("Inferring requirements...")
         inferrer = RequirementsInferrer(provider=provider, api_key=api_key)
         requirements = inferrer.infer(project_path)
     else:
@@ -40,7 +44,8 @@ def tasks_cmd(project_path, infer_spec, provider, api_key, verbose):
         return
 
     # 2. Decompose to tasks
-    if verbose: click.echo(f"Decomposing {len(requirements)} requirements into tasks...")
+    if verbose:
+        click.echo(f"Decomposing {len(requirements)} requirements into tasks...")
     decomposer = TaskDecomposer(api_key=api_key)
     
     # Simple consolidation: feed all requirements as context
@@ -54,7 +59,7 @@ def tasks_cmd(project_path, infer_spec, provider, api_key, verbose):
     # 3. Create manifest and files
     creator = TaskCreator()
     output_dir = project_path / "tasks"
-    manifest = creator.create_from_subtasks(
+    creator.create_from_subtasks(
         subtasks,
         plan_file="requirements-inference",
         task_description="Generated from comprehensive requirement inference",

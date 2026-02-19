@@ -1,7 +1,7 @@
 """Base protocol for skill generation strategies."""
 
-from typing import Protocol, Optional
 from pathlib import Path
+from typing import Optional, Protocol
 
 
 class SkillGenerationStrategy(Protocol):

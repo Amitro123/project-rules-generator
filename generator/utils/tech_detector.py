@@ -7,10 +7,8 @@ Consolidated tech detection logic from:
 """
 
 import json
-import re
 from pathlib import Path
 from typing import List, Set
-
 
 # Alias map for tech name variations
 TECH_ALIASES = {

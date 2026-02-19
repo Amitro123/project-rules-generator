@@ -1,8 +1,8 @@
 llm:
-  enabled: false
-  api_key: ""
-  provider: "anthropic"  # or "gemini"
-  model: "claude-3-5-sonnet-20241022"  # or "gemini-1.5-flash"
+  enabled: true
+  api_key: "" # Set via env var GROQ_API_KEY
+  provider: "groq"
+  model: "llama-3.1-70b-versatile" # Recommended for better reasoning than 8b-instant
 
 git:
   auto_commit: true

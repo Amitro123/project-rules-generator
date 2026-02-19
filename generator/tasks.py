@@ -1,9 +1,10 @@
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List
 
+from .planning.task_creator import TaskEntry
 from .requirements import Requirement
-from .planning.task_creator import TaskManifest, TaskEntry
+
 
 @dataclass
 class TraceabilityMatrix:
@@ -12,7 +13,7 @@ class TraceabilityMatrix:
     tasks: List[TaskEntry]
     mapping: Dict[str, List[int]] = field(default_factory=dict) # req_id -> list of task_ids
 
-    def build(self, api_client=None):
+    def build(self):
         """Build the mapping using AI or heuristics."""
         # Simple heuristic: check if requirement keywords appear in task titles/goals
         # In a full implementation, this should use AI for semantic matching

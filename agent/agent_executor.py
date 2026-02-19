@@ -26,6 +26,11 @@ class AgentExecutor:
         Find the best matching skill for the user input.
         Returns the skill name or None.
         """
+        if not self._triggers:
+            print(f"[DEBUG] No triggers loaded from {self.triggers_path}")
+            return None
+
+        print(f"[DEBUG] Loaded {len(self._triggers)} trigger groups.")
         user_input_lower = user_input.lower()
 
         # Simple keyword matching for now
@@ -37,9 +42,22 @@ class AgentExecutor:
                 # remove quotes if present in phrase
                 clean_phrase = phrase.strip("\"'").lower()
 
-                # print(f"DEBUG: Checking '{clean_phrase}' in '{user_input_lower}'")
+                print(f"[DEBUG] Checking '{clean_phrase}' in '{user_input_lower}'")
                 if clean_phrase in user_input_lower:
                     # Found a match!
-                    return skill
+                    # Verify skill exists in learned (standard location) or builtin
+                    # We assume standard structure now: .clinerules/skills/learned/<skill>/SKILL.md or .md
+                    skill_path = self.project_path / ".clinerules" / "skills" / "learned" / skill
+                    flat_path = self.project_path / ".clinerules" / "skills" / "learned" / f"{skill}.md"
+                    
+                    if skill_path.exists() or flat_path.exists():
+                        print(f"[DEBUG] MATCH FOUND for skill: {skill}")
+                        return skill
+                    else:
+                        print(f"[DEBUG] Trigger matched but skill '{skill}' not found in .clinerules/skills/learned")
+                        # Fallback to just returning it? Or scanning builtin?
+                        # For now, let's trust the trigger but warn
+                        return skill
 
+        print("[DEBUG] No match found.")
         return None

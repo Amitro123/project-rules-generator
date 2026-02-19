@@ -2,8 +2,8 @@
 
 from .cli import flush_input
 from .encoding import normalize_mojibake
-from .tech_detector import detect_tech_stack, detect_from_dependencies, extract_context
-from .quality_checker import is_stub, validate_quality, QualityReport
+from .quality_checker import QualityReport, is_stub, validate_quality
+from .tech_detector import detect_from_dependencies, detect_tech_stack, extract_context
 
 __all__ = [
     "normalize_mojibake",

@@ -26,6 +26,16 @@ def normalize_mojibake(text: str) -> str:
     cleaned = text.replace("\u05d2\u20ac\u201d", "\u2014")  # Unicode sequence
     cleaned = cleaned.replace('ג€"', "—")  # Literal string (for files)
 
+    # CP862 (Hebrew DOS) / UTF-8 mismatches
+    # ❌ (U+274C) -> E2 9D 8C -> Γ¥ל
+    cleaned = cleaned.replace("\u0393\u00a5\u05dc", "❌")
+    
+    # ✅ (U+2705) -> E2 9C 85 -> Γ£ו
+    cleaned = cleaned.replace("\u0393\u00a3\u05d5", "✅")
+    
+    # → (U+2192) -> E2 86 92 -> Γזע
+    cleaned = cleaned.replace("\u0393\u05d6\u05e2", "→")
+
     # Additional known mojibake patterns can be added here
     # Example: cleaned = cleaned.replace('â€™', "'")
 

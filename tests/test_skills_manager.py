@@ -50,7 +50,7 @@ def test_cli_respects_project_path(tmp_path):
 
         assert result.exit_code == 0
         # Main now passes project specific path for skills location
-        MockClass.assert_called_with(project_path=target_dir)
+        MockClass.assert_called_with(project_path=target_dir, skills_dir=None)
 
 
 def test_list_skills(temp_skills_dir, mock_manager):
@@ -70,7 +70,7 @@ def test_create_skill(temp_skills_dir, mock_manager):
         assert result.exit_code == 0
         assert "Created new skill 'new-skill'" in result.output
 
-        skill_path = temp_skills_dir / "learned" / "new-skill" / "SKILL.md"
+        skill_path = temp_skills_dir / ".clinerules" / "skills" / "learned" / "new-skill" / "SKILL.md"
         assert skill_path.exists()
         # Assert updated template format
         assert "# Skill: New Skill" in skill_path.read_text(encoding="utf-8")
@@ -85,7 +85,7 @@ def test_create_skill_sanitization(temp_skills_dir, mock_manager):
         # We now expect the sanitized name in the output
         assert "Created new skill 'bad-name'" in result.output
 
-        skill_path = temp_skills_dir / "learned" / "bad-name" / "SKILL.md"
+        skill_path = temp_skills_dir / ".clinerules" / "skills" / "learned" / "bad-name" / "SKILL.md"
         assert skill_path.exists()
 
 
@@ -111,7 +111,7 @@ Description of test project.
         )
         assert result.exit_code == 0
 
-        skill_path = temp_skills_dir / "learned" / "readme-skill" / "SKILL.md"
+        skill_path = temp_skills_dir / ".clinerules" / "skills" / "learned" / "readme-skill" / "SKILL.md"
         assert skill_path.exists()
         content = skill_path.read_text(encoding="utf-8")
 

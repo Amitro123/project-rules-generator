@@ -1,11 +1,14 @@
 """Gaps and Spec commands for traceability and requirement management."""
 
 from pathlib import Path
+
 import click
-from generator.requirements import RequirementsInferrer, Requirement
-from generator.tasks import TraceabilityMatrix
+
 from generator.planning.task_creator import TaskManifest
+from generator.requirements import Requirement, RequirementsInferrer
+from generator.tasks import TraceabilityMatrix
 from refactor.agent import _detect_provider, _set_api_key
+
 
 @click.command(name="gaps")
 @click.argument("project_path", type=click.Path(exists=True, file_okay=False), default=".")

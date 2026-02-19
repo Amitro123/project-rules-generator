@@ -321,7 +321,7 @@ class DependencyParser:
                 "url": url,
                 "raw": dep_str.strip(),
             }
-        except Exception as e:
+        except Exception:
             # Fallback for simple cases if packaging fails or is missing
             # logger.debug(f"packaging parse failed for {dep_str}: {e}")
             match = re.match(
