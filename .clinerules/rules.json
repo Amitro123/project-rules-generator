@@ -3,13 +3,15 @@
   "purpose": "Coding & contribution rules for this workspace",
   "version": "2.0",
   "generated": "auto",
-  "project_type": "python-cli",
+  "project_type": "django-app",
   "rules": {
     "do": [
       "Run `pytest` before committing; add tests for new features",
       "Use type hints on all public function signatures",
       "Use Pydantic models for data validation (not raw dicts)",
       "Use Click decorators for CLI arguments — don't parse sys.argv manually",
+      "Run `python manage.py makemigrations` after model changes",
+      "Use Django ORM — don't write raw SQL without justification",
       "Store API keys in `.env` or environment variables — never hardcode (gemini, groq)",
       "Add retry logic with exponential backoff for external API calls",
       "Validate and type-check API responses before using them",
@@ -27,21 +29,21 @@
     ]
   },
   "priorities": [],
-  "rules_count": 16,
+  "rules_count": 18,
   "architecture": [
-    "**Project type**: python-cli",
+    "**Project type**: django-app",
     "**Entry points**: main.py",
-    "**Structural patterns**: python-cli, pytest-tests",
+    "**Structural patterns**: django-app, pytest-tests",
     "**Languages**: python"
   ],
   "file_structure": [
     "`main.py`",
-    "python-cli",
+    "django-app",
     "pytest-tests"
   ],
   "testing": [
     "**Framework**: pytest",
-    "**Test files**: 90 (742 test cases)",
+    "**Test files**: 180 (1484 test cases)",
     "**Test types**: unit, integration",
     "**Fixtures**: shared via `conftest.py`",
     "**Test data**: `tests/fixtures/` directory"
@@ -54,7 +56,8 @@
     "`**/node_modules/**`",
     "`**/*-skills.md`",
     "`**/*-skills.json`",
-    "`**/.clinerules*`"
+    "`**/.clinerules*`",
+    "`**/migrations/**`"
   ],
   "auto-trigger": [
     "**\"test cleanup\"**",
@@ -123,5 +126,25 @@
   "tech_stack_notes": [
     "`python`",
     "`pytest`"
+  ],
+  "project_context_(from_readme)": [
+    "audit pytest",
+    "generate pytest testing workflow",
+    "pytest testing workflow",
+    "review pytest",
+    "run pytest testing workflow",
+    "test pytest testing workflow",
+    "has_tests",
+    "has_api",
+    "has_ci",
+    "has_docs",
+    "docker",
+    "pydantic"
+  ],
+  "key_constraints_(from_readme)": [
+    "Manual nesting only — no auto-nesting algorithm in MVP",
+    "Single admin user, no real-time collab",
+    "Parts are DXF-derived SVG paths, not raster images",
+    "Canvas must export placement data for `GET /pdf` to consume"
   ]
 }
