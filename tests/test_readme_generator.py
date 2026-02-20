@@ -2,10 +2,19 @@
 
 import shutil
 import unittest
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from generator.readme_generator import generate_readme_interactively, is_readme_minimal
+# Mock click if not available to handle missing dependency in test environment
+if "click" not in sys.modules:
+    sys.modules["click"] = MagicMock()
+
+from generator.readme_generator import (
+    generate_readme_interactively,
+    generate_readme_with_llm,
+    is_readme_minimal,
+)
 
 
 class TestReadmeGenerator(unittest.TestCase):
@@ -67,3 +76,72 @@ class TestReadmeGenerator(unittest.TestCase):
         # Verify
         self.assertEqual(content, "# Template README")
         mock_gen_template.assert_called_once()
+
+    @patch("generator.llm_skill_generator.LLMSkillGenerator")
+    def test_generate_readme_with_llm_success(self, mock_llm_gen_cls):
+        """Test successful AI README generation."""
+        # Setup mock
+        mock_llm_gen = MagicMock()
+        mock_llm_gen.generate_content.return_value = "# AI Generated README"
+        mock_llm_gen_cls.return_value = mock_llm_gen
+
+        # Inputs
+        user_input = {
+            "name": "Test Project",
+            "description": "A test project",
+            "purpose": "Testing",
+            "tech_stack": "Python",
+            "features": "Feature 1, Feature 2",
+        }
+        context = {
+            "tech_stack": {
+                "backend": ["Python"],
+                "frontend": [],
+                "database": [],
+                "languages": ["Python"],
+            },
+            "structure": {
+                "has_backend": True,
+                "has_frontend": False,
+                "has_tests": True,
+                "has_docker": False,
+            },
+        }
+
+        # Run
+        content = generate_readme_with_llm(user_input, context)
+
+        # Verify
+        self.assertEqual(content, "# AI Generated README")
+        mock_llm_gen_cls.assert_called_once()
+
+        # Verify prompt content
+        call_args = mock_llm_gen.generate_content.call_args
+        prompt = call_args[0][0]
+        self.assertIn("Test Project", prompt)
+        self.assertIn("A test project", prompt)
+        self.assertIn("Python", prompt)
+        self.assertIn("Feature 1", prompt)
+        self.assertIn("# Generate Professional README.md", prompt)
+
+    @patch("generator.readme_generator.generate_readme_template")
+    @patch("generator.llm_skill_generator.LLMSkillGenerator")
+    def test_generate_readme_with_llm_failure(self, mock_llm_gen_cls, mock_fallback):
+        """Test fallback to template on AI failure."""
+        # Setup mock to raise exception
+        mock_llm_gen = MagicMock()
+        mock_llm_gen.generate_content.side_effect = Exception("API Error")
+        mock_llm_gen_cls.return_value = mock_llm_gen
+
+        mock_fallback.return_value = "# Fallback Template"
+
+        # Inputs
+        user_input = {"name": "Test"}
+        context = {"tech_stack": {}, "structure": {}}
+
+        # Run
+        content = generate_readme_with_llm(user_input, context)
+
+        # Verify fallback
+        self.assertEqual(content, "# Fallback Template")
+        mock_fallback.assert_called_once_with(user_input, context)
