@@ -30,7 +30,7 @@ class READMEStrategy:
             return None
         
         try:
-            from analyzer.readme_parser import (
+            from generator.analyzers.readme_parser import (
                 extract_anti_patterns,
                 extract_auto_triggers,
                 extract_process_steps,

@@ -191,7 +191,7 @@ class AgentWorkflow:
             return
 
         try:
-            from analyzer.readme_parser import parse_readme
+            from generator.analyzers.readme_parser import parse_readme
             from generator.rules_generator import generate_rules
 
             readme_text = readme_path.read_text(encoding="utf-8")

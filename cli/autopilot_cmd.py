@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 
 from generator.planning.autopilot import AutopilotOrchestrator
-from refactor.agent import _detect_provider, _set_api_key
+from cli.agent import _detect_provider, _set_api_key
 
 
 @click.command(name="autopilot")

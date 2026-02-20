@@ -22,6 +22,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from generator.utils.readme_bridge import bridge_missing_context, is_readme_sufficient
+
 # ── Strategy Protocol ─────────────────────────────────────────────────────────
 
 class _RulesStrategy:
@@ -155,6 +157,13 @@ class RulesGenerator:
 
         out_dir = output_dir or (self.project_path / ".clinerules")
         readme_content = self._read_readme()
+
+        # If README is missing or sparse, bridge the gap with project tree
+        # (+ optional user description in interactive/CLI mode)
+        if not is_readme_sufficient(readme_content):
+            supplement = bridge_missing_context(self.project_path, "rules")
+            if supplement:
+                readme_content = supplement + "\n\n" + readme_content
 
         creator = CoworkRulesCreator(self.project_path)
         content, metadata, quality = creator.create_rules(

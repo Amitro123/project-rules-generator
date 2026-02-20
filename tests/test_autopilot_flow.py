@@ -44,40 +44,41 @@ def test_execution_loop_happy_path(orchestrator):
     with patch("generator.planning.autopilot.TaskExecutor") as MockExecutor, \
          patch("generator.planning.autopilot.TaskImplementationAgent") as MockAgent, \
          patch("generator.planning.autopilot.git_ops") as mock_git, \
-         patch("generator.planning.autopilot.click.echo") as mock_echo, \
-         patch("rich.prompt.Confirm.ask", return_value=True) as mock_confirm:
-        
+         patch("generator.planning.autopilot.click.echo"), \
+         patch("click.prompt", return_value="a") as mock_prompt:
+
         # Setup Executor
         mock_executor_instance = MockExecutor.return_value
-        mock_executor_instance.get_next_task.side_effect = [mock_task_entry, None] # One task, then finish
-        
+        mock_executor_instance.get_next_task.side_effect = [mock_task_entry, None]
+
         # Setup Agent
         mock_agent_instance = MockAgent.return_value
         mock_agent_instance.implement.return_value = {"test.py": "print('hello')"}
-        
-        # Setup Orchestrator method to return mock subtask directly to avoid file reading
+
+        # Setup Orchestrator methods
         orchestrator._load_subtask_details = MagicMock(return_value=mock_subtask)
-        
+        orchestrator._run_tests = MagicMock(return_value=(True, "all passed"))
+
         # Setup Git
         mock_git.get_current_branch.return_value = "main"
 
         # Run Loop
         orchestrator.execution_loop(mock_manifest)
-        
+
         # Verifications
         # 1. Branching
         mock_git.create_branch.assert_called_with("autopilot/task-1", orchestrator.project_path)
-        
+
         # 2. Agent Execution
         mock_agent_instance.implement.assert_called_once()
-        
+
         # 3. File Writing
         output_file = orchestrator.project_path / "test.py"
         assert output_file.exists()
         assert output_file.read_text(encoding="utf-8") == "print('hello')"
-        
-        # 4. Confirmation & Merge
-        mock_confirm.assert_called_once()
+
+        # 4. User prompt shown, task completed, branch merged
+        mock_prompt.assert_called_once()
         mock_executor_instance.complete_task.assert_called_with(1)
         mock_git.merge_branch.assert_called_with("autopilot/task-1", orchestrator.project_path)
         mock_git.delete_branch.assert_called_with("autopilot/task-1", force=True, repo_path=orchestrator.project_path)
@@ -94,20 +95,22 @@ def test_execution_loop_rejection(orchestrator):
     with patch("generator.planning.autopilot.TaskExecutor") as MockExecutor, \
          patch("generator.planning.autopilot.TaskImplementationAgent") as MockAgent, \
          patch("generator.planning.autopilot.git_ops") as mock_git, \
-         patch("rich.prompt.Confirm.ask", return_value=False) as mock_confirm: # User rejects
-        
+         patch("generator.planning.autopilot.click.echo"), \
+         patch("click.prompt", return_value="q"):  # User stops
+
         mock_executor_instance = MockExecutor.return_value
-        mock_executor_instance.get_next_task.side_effect = [mock_task_entry] # Stop after rejection logic breaks loop
-        
+        mock_executor_instance.get_next_task.side_effect = [mock_task_entry]
+
         mock_agent_instance = MockAgent.return_value
         mock_agent_instance.implement.return_value = {}
-        
+
         orchestrator._load_subtask_details = MagicMock(return_value=mock_subtask)
+        orchestrator._run_tests = MagicMock(return_value=(True, "all passed"))
         mock_git.get_current_branch.return_value = "main"
 
         orchestrator.execution_loop(mock_manifest)
-        
-        # Verification
+
+        # Verification: stop → rollback, delete branch, no complete
         mock_git.rollback_to_head.assert_called()
         mock_git.delete_branch.assert_called()
         mock_executor_instance.complete_task.assert_not_called()

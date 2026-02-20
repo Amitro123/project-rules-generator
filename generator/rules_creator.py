@@ -234,9 +234,10 @@ class CoworkRulesCreator:
         "reverted_commits": "Commits that were reverted",
     }
 
-    def __init__(self, project_path: Path):
+    def __init__(self, project_path: Path, provider: str = "groq"):
         """Initialize with project path for context awareness."""
         self.project_path = project_path
+        self.provider = provider
         self._git_available = self._check_git_available()
 
     def create_rules(
@@ -492,6 +493,87 @@ class CoworkRulesCreator:
 
         return signals
 
+    def _generate_rules_via_llm(
+        self,
+        metadata: RulesMetadata,
+        readme_content: str = "",
+    ) -> Dict[str, List[Rule]]:
+        """Generate rules via LLM when tech stack is unknown or unrecognized.
+
+        Called as fallback when no tech in metadata.tech_stack exists in TECH_RULES.
+        Parses the LLM response into Rule objects. Falls back to generic rules on failure.
+        """
+        from generator.utils.readme_bridge import build_project_tree
+
+        tree = build_project_tree(self.project_path)
+
+        # Load a few key files for grounding (lightweight version)
+        snippets: list[str] = []
+        for fname in ["main.py", "app.py", "pyproject.toml", "requirements.txt", "package.json", "Cargo.toml", "go.mod"]:
+            p = self.project_path / fname
+            if p.exists():
+                try:
+                    snippets.append(f"[{fname}]\n{p.read_text(encoding='utf-8', errors='ignore')[:400]}")
+                except Exception:
+                    pass
+
+        prompt = f"""You are generating coding rules for a software project.
+
+Project: {metadata.project_name}
+Tech stack detected: {', '.join(metadata.tech_stack) or 'unknown'}
+Project tree:
+{tree}
+
+Key files:
+{chr(10).join(snippets) or 'No key files found.'}
+
+README excerpt:
+{readme_content[:600] or 'No README.'}
+
+Generate 6-10 specific, actionable coding rules for this project.
+Format strictly as:
+DO: <rule>
+DO: <rule>
+DONT: <rule>
+DONT: <rule>
+
+Rules must be specific to this tech stack and project structure.
+No explanations, no markdown, just the DO:/DONT: lines."""
+
+        try:
+            from generator.llm_skill_generator import LLMSkillGenerator
+            generator = LLMSkillGenerator(provider=self.provider)
+            response = generator.generate_content(prompt, max_tokens=600)
+
+            rules_by_category: Dict[str, List[Rule]] = defaultdict(list)
+            for line in response.splitlines():
+                line = line.strip()
+                if line.upper().startswith("DO:"):
+                    rules_by_category["Coding Standards"].append(Rule(
+                        content=line[3:].strip(),
+                        priority="High",
+                        category="Coding Standards",
+                        source="llm_fallback",
+                    ))
+                elif line.upper().startswith("DONT:") or line.upper().startswith("DON'T:"):
+                    content = line.split(":", 1)[-1].strip()
+                    rules_by_category["Coding Standards"].append(Rule(
+                        content=f"Don't {content}",
+                        priority="High",
+                        category="Coding Standards",
+                        source="llm_fallback",
+                    ))
+
+            if rules_by_category:
+                print(f"✨ LLM generated {sum(len(v) for v in rules_by_category.values())} rules for unknown tech stack.")
+                return dict(rules_by_category)
+
+        except Exception as e:
+            print(f"⚠️  LLM rules fallback failed ({e}). Using generic rules.")
+
+        # Final fallback — return empty so _generate_rules continues to generic
+        return {}
+
     def _generate_rules(
         self,
         metadata: RulesMetadata,
@@ -500,6 +582,17 @@ class CoworkRulesCreator:
         """Generate rules organized by category with priorities."""
 
         rules_by_category = defaultdict(list)
+
+        # Detect whether any tech is actually recognized in TECH_RULES.
+        # If none are, fall back to LLM rather than producing empty output silently.
+        recognized = [t for t in metadata.tech_stack if t.lower() in self.TECH_RULES]
+        if metadata.tech_stack and not recognized:
+            llm_rules = self._generate_rules_via_llm(metadata)
+            if llm_rules:
+                # Still append generic rules and return
+                generic_rules = self._generate_generic_rules(metadata)
+                llm_rules.setdefault("General", []).extend(generic_rules)
+                return llm_rules
 
         # 1. Tech-specific rules (Cowork intelligence!)
         for tech in metadata.tech_stack:

@@ -16,7 +16,7 @@ if str(root_dir) not in sys.path:
 
 
 # Redirect to refactored CLI
-from refactor.cli import cli
+from cli.cli import cli
 
 # Expose click command object as `main` for tests expecting a Click command
 main = cli

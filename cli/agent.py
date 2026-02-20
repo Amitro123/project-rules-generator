@@ -661,7 +661,7 @@ def setup(task_description, project_path, provider, api_key, verbose):
 @click.argument("query")
 def agent_command(query):
     """Simulate agent auto-trigger matching for a query."""
-    from agent.agent_executor import AgentExecutor
+    from generator.planning.agent_executor import AgentExecutor
 
     # Assume current directory is project root
     project_path = Path(os.getcwd())

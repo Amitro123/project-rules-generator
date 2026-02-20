@@ -53,7 +53,7 @@ class EnhancedProjectParser:
             readme_path = self.path / filename
             if readme_path.exists():
                 try:
-                    from analyzer.readme_parser import parse_readme
+                    from generator.analyzers.readme_parser import parse_readme
 
                     return parse_readme(readme_path)
                 except Exception as e:

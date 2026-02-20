@@ -3,7 +3,7 @@
 from click.testing import CliRunner
 
 from main import cli, main
-from refactor.analyze_cmd import load_config
+from cli.analyze_cmd import load_config
 
 
 class TestCLI:

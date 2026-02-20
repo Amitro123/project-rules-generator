@@ -1,4 +1,4 @@
-﻿"""
+"""
 CLI command for Cowork-powered rules creation.
 
 Usage:

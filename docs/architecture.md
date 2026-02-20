@@ -106,6 +106,72 @@ Consolidated quality checking from `skill_generator.py` and `skill_creator.py`:
 | `SkillParser.extract_tech_context()` | 20 | 1 (delegates) | ✅ Eliminated |
 | `CoworkSkillCreator._detect_tech_stack()` | 18 | 3 (delegates) | ✅ Eliminated |
 
+## Skill & Rules Generation Flow (v1.2)
+
+Full end-to-end flow for `prg analyze . --create-skill <name>` and `prg create-rules .`,
+including the README sufficiency bridge introduced in v1.2.
+
+```
+prg analyze . --create-skill <name>          prg create-rules .
+        │                                            │
+        ▼                                            ▼
+SkillGenerator.create_skill()            RulesGenerator.create_rules()
+        │                                            │
+        │   Strategy chain:                          │
+        │   AIStrategy (if --ai)                     │
+        │   → READMEStrategy (if --from-readme)      │
+        │   → CoworkStrategy  ◄──────────────────────┘
+        │   → StubStrategy (fallback)
+        │
+        ▼
+CoworkStrategy.generate()
+        │
+        ├─ is_readme_sufficient(readme)?
+        │        │ NO (< 80 words or missing)
+        │        ▼
+        │   bridge_missing_context()   [generator/utils/readme_bridge.py]
+        │        │
+        │        ├── sys.stdin.isatty()?
+        │        │         │ YES (CLI)              NO (IDE / pipe / CI)
+        │        │         ▼                        ▼
+        │        │   Show project tree        Return project tree only
+        │        │   Ask user 2-3 sentences   (AI infers from structure)
+        │        │   Combine into context
+        │        │
+        │        └── supplement prepended to readme_content
+        │
+        │ YES (README sufficient) → use as-is
+        │
+        ▼
+CoworkSkillCreator.create_skill()
+        │
+        ├── _load_key_files()
+        │       ├── entry points (main.py, app.py, pyproject.toml ...)
+        │       ├── project_tree  [_scan_project_tree()]
+        │       └── supplementary docs (spec.md, SKILLS_ARCHITECTURE.md,
+        │                               AMIT_CODING_PREFERENCES.md,
+        │                               docs/features.md, docs/architecture.md ...)
+        │
+        ├── _build_metadata()  → triggers, signals, tools
+        │
+        └── _generate_content(use_ai=True)
+                │
+                ├── LLMSkillGenerator (Groq / Gemini)
+                │       context: readme + tech_stack + structure + key_files
+                │
+                └── Jinja2 template fallback → inline template fallback
+```
+
+### readme_bridge module
+
+`generator/utils/readme_bridge.py` — shared by both pipelines:
+
+| Function | Purpose |
+|---|---|
+| `is_readme_sufficient(content, min_words=80)` | Returns False if README is missing or < 80 words |
+| `build_project_tree(project_path)` | Walks project tree (max depth 3, max 60 items), excludes noise |
+| `bridge_missing_context(project_path, name)` | CLI: prompt user. Non-interactive: tree only |
+
 ## Directory Structure
 
 ```

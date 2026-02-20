@@ -7,7 +7,7 @@ import click
 from generator.planning.task_creator import TaskManifest
 from generator.requirements import Requirement, RequirementsInferrer
 from generator.tasks import TraceabilityMatrix
-from refactor.agent import _detect_provider, _set_api_key
+from cli.agent import _detect_provider, _set_api_key
 
 
 @click.command(name="gaps")

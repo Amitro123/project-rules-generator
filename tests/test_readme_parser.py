@@ -2,7 +2,7 @@
 
 import pytest
 
-from analyzer.readme_parser import TECH_KEYWORDS, parse_readme
+from generator.analyzers.readme_parser import TECH_KEYWORDS, parse_readme
 
 
 class TestReadmeParser:

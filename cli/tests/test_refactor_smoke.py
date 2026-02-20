@@ -1,6 +1,6 @@
 from click.testing import CliRunner
 
-from refactor.cli import cli
+from cli.cli import cli
 
 
 def test_cli_root_help():

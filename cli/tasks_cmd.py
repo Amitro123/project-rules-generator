@@ -7,7 +7,7 @@ import click
 from generator.planning.task_creator import TaskCreator
 from generator.requirements import RequirementsInferrer
 from generator.task_decomposer import TaskDecomposer
-from refactor.agent import _detect_provider, _set_api_key
+from cli.agent import _detect_provider, _set_api_key
 
 
 @click.command(name="tasks")

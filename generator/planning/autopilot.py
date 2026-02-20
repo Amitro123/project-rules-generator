@@ -2,8 +2,9 @@
 
 
 import re
+import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import click
 
@@ -44,19 +45,26 @@ class AutopilotOrchestrator:
             api_key=self.api_key,
             verbose=self.verbose,
         )
-        
-        # run_setup handles analyze, design/plan, and task creation
+
         manifest = self.workflow.run_setup()
         return manifest
 
     def execution_loop(self, manifest: TaskManifest):
-        """PHASE 2: Supervised Execution Loop."""
+        """PHASE 2: Supervised Execution Loop.
+
+        Per-task flow:
+            1. Create git branch
+            2. Agent implements changes
+            3. Run tests → show results
+            4. Show diff summary to user
+            5. User: approve → merge | retry → redo | skip → next | stop → exit
+        """
         if self.verbose:
             click.echo("🚀 Starting Supervised Execution Loop...")
 
         executor = TaskExecutor(manifest)
         agent = TaskImplementationAgent(provider=self.provider, api_key=self.api_key)
-        
+
         main_branch = None
         try:
             main_branch = git_ops.get_current_branch(self.project_path)
@@ -64,89 +72,200 @@ class AutopilotOrchestrator:
             if self.verbose:
                 click.echo("⚠️  Not a git repository or git not found. Safety features disabled.")
 
+        completed = 0
+        skipped = 0
+
         while True:
             nxt = executor.get_next_task()
             if not nxt:
-                click.echo("\n🎉 PROJECT COMPLETE!")
+                self._print_summary(completed, skipped)
                 break
 
-            click.echo(f"\n🎯 Next Task: #{nxt.id} {nxt.title}")
-            
-            # 1. Branching
+            click.echo(f"\n{'='*60}")
+            click.echo(f"🎯  Task #{nxt.id}: {nxt.title}")
+            click.echo(f"{'='*60}")
+
             branch_name = f"autopilot/task-{nxt.id}"
             if main_branch:
                 try:
                     git_ops.create_branch(branch_name, self.project_path)
-                    click.echo(f"   🌿 Created branch: {branch_name}")
+                    click.echo(f"🌿 Branch: {branch_name}")
                 except Exception as e:
-                    click.echo(f"   ⚠️  Failed to create branch: {e}")
+                    click.echo(f"⚠️  Branch creation failed: {e}")
 
-            # 2. Implementation
             try:
                 executor.execute_single(nxt.id)
-                # We need SubTask object, manifest has TaskEntry. 
-                # TaskEntry references files, but not the full SubTask details needed for AI.
-                # Re-parse subtask from its file
                 subtask = self._load_subtask_details(nxt)
-                
-                click.echo("   🤖 Agent is implementing changes...")
-                changes = agent.implement(subtask, project_context=self.workflow._get_project_context() if self.workflow else None)
-                
+
+                click.echo("🤖 Agent implementing changes...")
+                changes = agent.implement(
+                    subtask,
+                    project_context=self.workflow._get_project_context() if self.workflow else None,
+                )
+
                 for fpath, content in changes.items():
                     full_path = self.project_path / fpath
                     full_path.parent.mkdir(parents=True, exist_ok=True)
                     full_path.write_text(content, encoding="utf-8")
-                    click.echo(f"   ✅ Applied changes to {fpath}")
+                    click.echo(f"   ✅ {fpath}")
 
-                # 3. Verification & Human in the loop
-                click.echo("\n--- Verification Required ---")
-                click.echo(f"Task: {nxt.title}")
-                click.echo(f"Goal: {subtask.goal}")
-                
-                from rich.prompt import Confirm
-                if Confirm.ask("Do you approve these changes?", default=True):
+                # Run tests after every implementation
+                tests_passed, test_output = self._run_tests(subtask)
+                self._print_test_results(tests_passed, test_output)
+
+                # User decision loop
+                action = self._ask_user(nxt.title, subtask.goal, tests_passed)
+
+                if action == "approve":
                     executor.complete_task(nxt.id)
                     executor.save(self.manifest_path)
-                    
                     if main_branch:
                         git_ops.checkout(main_branch, self.project_path)
                         git_ops.merge_branch(branch_name, self.project_path)
                         git_ops.delete_branch(branch_name, force=True, repo_path=self.project_path)
-                        click.echo(f"   ✅ Task #{nxt.id} merged and branch deleted.")
-                else:
-                    click.echo("   ❌ Changes rejected. Rolling back...")
+                        click.echo(f"✅ Task #{nxt.id} merged.")
+                    completed += 1
+
+                elif action == "skip":
+                    click.echo(f"⏭️  Skipping task #{nxt.id}.")
+                    if main_branch:
+                        git_ops.checkout(main_branch, self.project_path)
+                        git_ops.delete_branch(branch_name, force=True, repo_path=self.project_path)
+                    skipped += 1
+
+                else:  # stop
+                    click.echo("🛑 Autopilot stopped by user.")
                     if main_branch:
                         git_ops.checkout(main_branch, self.project_path)
                         git_ops.delete_branch(branch_name, force=True, repo_path=self.project_path)
                         git_ops.rollback_to_head(self.project_path)
-                    break # Stop autopilot on rejection for safety
+                    self._print_summary(completed, skipped)
+                    break
 
             except Exception as e:
-                click.echo(f"   ❌ Task execution failed: {e}")
+                click.echo(f"❌ Task #{nxt.id} failed: {e}")
                 if main_branch:
                     git_ops.checkout(main_branch, self.project_path)
                     git_ops.rollback_to_head(self.project_path)
                 break
 
+    # ── Private helpers ───────────────────────────────────────────────────────
+
+    def _run_tests(self, subtask: SubTask) -> Tuple[bool, str]:
+        """Run the project test suite and return (passed, output).
+
+        Detects test runner from project config (pytest > jest > none).
+        Scope: runs only tests related to subtask files when possible,
+        otherwise falls back to full suite.
+        """
+        runner, args = self._detect_test_runner(subtask)
+        if not runner:
+            return True, "No test runner detected — skipping."
+
+        click.echo(f"\n🧪 Running tests: {' '.join([runner] + args)}")
+        try:
+            result = subprocess.run(
+                [runner] + args,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            passed = result.returncode == 0
+            output = (result.stdout + result.stderr).strip()
+            return passed, output
+        except subprocess.TimeoutExpired:
+            return False, "Tests timed out after 120s."
+        except FileNotFoundError:
+            return True, f"Test runner '{runner}' not found — skipping."
+        except Exception as e:
+            return False, f"Test execution error: {e}"
+
+    def _detect_test_runner(self, subtask: SubTask) -> Tuple[Optional[str], list]:
+        """Return (runner, args) based on project config and subtask files."""
+        # pytest
+        has_pytest = any(
+            (self.project_path / f).exists()
+            for f in ["pytest.ini", "pyproject.toml", "setup.cfg", "conftest.py"]
+        )
+        if has_pytest:
+            args = ["-x", "-q"]
+            # Narrow scope to affected test files if available
+            test_files = [
+                f for f in (subtask.files or [])
+                if "test" in f
+            ]
+            if test_files:
+                args += test_files
+            return "pytest", args
+
+        # jest
+        if (self.project_path / "package.json").exists():
+            return "npx", ["jest", "--passWithNoTests", "--bail"]
+
+        return None, []
+
+    def _print_test_results(self, passed: bool, output: str) -> None:
+        """Print a concise test result block."""
+        icon = "✅" if passed else "❌"
+        label = "Tests passed" if passed else "Tests FAILED"
+        click.echo(f"\n{icon} {label}")
+        # Show last 15 lines — enough to see failures without flooding terminal
+        lines = output.splitlines()
+        if lines:
+            click.echo("\n".join(lines[-15:]))
+
+    def _ask_user(self, title: str, goal: str, tests_passed: bool) -> str:
+        """Interactive prompt after implementation + test run.
+
+        Returns: 'approve' | 'skip' | 'stop'
+        """
+        click.echo(f"\n📋 Task: {title}")
+        click.echo(f"   Goal: {goal}")
+        if not tests_passed:
+            click.echo("   ⚠️  Tests failed — review changes before approving.")
+
+        click.echo("\nWhat would you like to do?")
+        click.echo("  [a] Approve & merge")
+        click.echo("  [s] Skip this task")
+        click.echo("  [q] Stop autopilot")
+
+        while True:
+            choice = click.prompt("Choice", default="a").strip().lower()
+            if choice in ("a", "approve", "y", "yes"):
+                return "approve"
+            if choice in ("s", "skip"):
+                return "skip"
+            if choice in ("q", "quit", "stop", "n", "no"):
+                return "stop"
+            click.echo("Please enter a, s, or q.")
+
+    def _print_summary(self, completed: int, skipped: int) -> None:
+        """Print end-of-run summary."""
+        click.echo(f"\n{'='*60}")
+        click.echo("🎉 Autopilot run complete")
+        click.echo(f"   ✅ Completed : {completed}")
+        click.echo(f"   ⏭️  Skipped   : {skipped}")
+        click.echo(f"{'='*60}")
+
     def _load_subtask_details(self, entry) -> SubTask:
         """Load full SubTask details from the task file."""
         task_file = self.project_path / "tasks" / entry.file
         content = task_file.read_text(encoding="utf-8")
-        
-        # Extract fields using regex
+
         goal_match = re.search(r"\*\*Goal:\*\*\s*(.+)", content)
         goal = goal_match.group(1).strip() if goal_match else entry.title
-        
+
         files = []
         files_section = re.search(r"## Files\n(.*?)(?=\n##|\Z)", content, re.DOTALL)
         if files_section:
             files = re.findall(r"-\s+`(.+?)`", files_section.group(1))
-            
+
         changes = []
         changes_section = re.search(r"## Changes\n(.*?)(?=\n##|\Z)", content, re.DOTALL)
         if changes_section:
             changes = re.findall(r"-\s+(.+)", changes_section.group(1))
-            
+
         tests = []
         tests_section = re.search(r"## Tests\n(.*?)(?=\n##|\Z)", content, re.DOTALL)
         if tests_section:
@@ -161,5 +280,5 @@ class AutopilotOrchestrator:
             tests=tests,
             dependencies=entry.dependencies,
             estimated_minutes=entry.estimated_minutes,
-            type=task_file.suffix.replace(".", "")
+            type=task_file.suffix.replace(".", ""),
         )

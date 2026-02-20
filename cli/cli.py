@@ -60,16 +60,16 @@ def cli():
     pass
 
 
-from refactor.agent import agent_command, design, plan, review, setup, start
+from cli.agent import agent_command, design, plan, review, setup, start
 
 # Import and register commands at module level
-from refactor.analyze_cmd import analyze
-from refactor.autopilot_cmd import autopilot
-from refactor.create_rules_cmd import create_rules
-from refactor.gaps_cmd import gaps, spec_cmd
-from refactor.jobs import exec_task, leaderboard, next_task, query_tasks, status
-from refactor.manager_cmd import manager
-from refactor.tasks_cmd import tasks_cmd
+from cli.analyze_cmd import analyze
+from cli.autopilot_cmd import autopilot
+from cli.create_rules_cmd import create_rules
+from cli.gaps_cmd import gaps, spec_cmd
+from cli.jobs import exec_task, leaderboard, next_task, query_tasks, status
+from cli.manager_cmd import manager
+from cli.tasks_cmd import tasks_cmd
 
 cli.add_command(analyze)
 cli.add_command(create_rules)

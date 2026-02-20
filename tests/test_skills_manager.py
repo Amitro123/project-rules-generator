@@ -40,7 +40,7 @@ def test_cli_respects_project_path(tmp_path):
     target_dir.mkdir()
 
     runner = CliRunner()
-    with patch("refactor.analyze_cmd.SkillsManager") as MockClass:
+    with patch("cli.analyze_cmd.SkillsManager") as MockClass:
         # Mocking list_skills to return a structure that won't cause main.py to crash on sum()
         MockClass.return_value.list_skills.return_value = {
             "skill1": {"type": "builtin", "path": "path/to/skill1"}
@@ -55,7 +55,7 @@ def test_cli_respects_project_path(tmp_path):
 
 def test_list_skills(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager):
+    with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager):
         result = runner.invoke(main, ["--list-skills"])
         assert result.exit_code == 0
         assert "Skills" in result.output
@@ -64,7 +64,9 @@ def test_list_skills(temp_skills_dir, mock_manager):
 
 def test_create_skill(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager):
+    llm_output = "# Skill: New Skill\n\n## Purpose\nTest skill.\n"
+    with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager), \
+         patch("generator.llm_skill_generator.LLMSkillGenerator.generate_skill", return_value=llm_output):
         result = runner.invoke(main, ["--create-skill", "new-skill"])
 
         assert result.exit_code == 0
@@ -72,13 +74,12 @@ def test_create_skill(temp_skills_dir, mock_manager):
 
         skill_path = temp_skills_dir / ".clinerules" / "skills" / "learned" / "new-skill" / "SKILL.md"
         assert skill_path.exists()
-        # Assert updated template format
         assert "# Skill: New Skill" in skill_path.read_text(encoding="utf-8")
 
 
 def test_create_skill_sanitization(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager):
+    with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager):
         result = runner.invoke(main, ["--create-skill", "bad name!"])
         # It should sanitize 'bad name!' to 'bad-name' and succeed
         assert result.exit_code == 0
@@ -105,7 +106,7 @@ Description of test project.
     )
 
     runner = CliRunner()
-    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager):
+    with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager):
         result = runner.invoke(
             main, ["--create-skill", "readme-skill", "--from-readme", str(readme)]
         )
@@ -129,7 +130,7 @@ Description of test project.
 
 def test_create_duplicate_skill(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("refactor.analyze_cmd.SkillsManager", side_effect=mock_manager):
+    with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager):
         runner.invoke(main, ["--create-skill", "dup-skill"])
         result = runner.invoke(main, ["--create-skill", "dup-skill"])
         assert result.exit_code == 0

@@ -41,7 +41,7 @@ except ImportError:
 
 from pydantic import ValidationError
 
-from analyzer.readme_parser import parse_readme
+from generator.analyzers.readme_parser import parse_readme
 from generator.constitution_generator import generate_constitution
 from generator.extractors.code_extractor import CodeExampleExtractor
 from generator.incremental_analyzer import IncrementalAnalyzer
@@ -1015,7 +1015,7 @@ def analyze(
                         learned_source.save_skill(skill)
 
             # Create SkillFile wrapper
-            from analyzer.project_type_detector import detect_project_type_from_data
+            from generator.analyzers.project_type_detector import detect_project_type_from_data
 
             type_info = detect_project_type_from_data(project_data, str(project_path))
 

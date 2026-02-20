@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from analyzer.project_type_detector import detect_project_type_from_data
+from generator.analyzers.project_type_detector import detect_project_type_from_data
 from generator.types import SkillNeed
 
 

@@ -686,6 +686,59 @@ class CoworkSkillCreator:
         self._detected_signals = signals
         return signals
 
+    README_MIN_WORDS = 80  # Below this → README is too sparse to rely on alone
+
+    def is_readme_sufficient(self, readme_content: str) -> bool:
+        """Return True if README has enough content for meaningful skill generation."""
+        if not readme_content or not readme_content.strip():
+            return False
+        return len(readme_content.split()) >= self.README_MIN_WORDS
+
+    def _scan_project_tree(self, max_depth: int = 3, max_items: int = 60) -> str:
+        """Walk the project directory and produce a structured tree for LLM context.
+
+        Excludes noise directories (.git, __pycache__, venv, node_modules, etc.).
+        Capped at max_items entries to stay within token budget.
+        """
+        EXCLUDE = {
+            ".git", "__pycache__", ".venv", "venv", "node_modules",
+            ".pytest_cache", "dist", "build", ".mypy_cache", ".ruff_cache",
+            ".clinerules", ".claude", ".eggs", "eggs",
+        }
+
+        lines: List[str] = [f"{self.project_path.name}/"]
+        count = 0
+
+        def _walk(path: Path, depth: int, prefix: str) -> None:
+            nonlocal count
+            if depth > max_depth or count >= max_items:
+                return
+            try:
+                entries = sorted(path.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
+            except PermissionError:
+                return
+
+            visible = [
+                e for e in entries
+                if not e.name.startswith(".") and e.name not in EXCLUDE
+            ]
+            for i, item in enumerate(visible):
+                if count >= max_items:
+                    lines.append(f"{prefix}... (truncated)")
+                    return
+                connector = "└── " if i == len(visible) - 1 else "├── "
+                child_prefix = prefix + ("    " if i == len(visible) - 1 else "│   ")
+                if item.is_dir():
+                    lines.append(f"{prefix}{connector}{item.name}/")
+                    count += 1
+                    _walk(item, depth + 1, child_prefix)
+                else:
+                    lines.append(f"{prefix}{connector}{item.name}")
+                    count += 1
+
+        _walk(self.project_path, 1, "")
+        return "\n".join(lines)
+
     def _generate_description(
         self, skill_name: str, readme_content: str
     ) -> str:
@@ -705,6 +758,119 @@ class CoworkSkillCreator:
         action_part = skill_name.split("-")[-1] if "-" in skill_name else "workflow"
         return f"{tech_part} {action_part} for this project"
 
+    # Max total chars for supplementary docs (to stay within token budget)
+    SUPPLEMENTARY_BUDGET = 1500
+
+    # Filenames that are noise — never useful as skill context
+    _DOCS_SKIP = {
+        "readme.md", "changelog.md", "changelog", "license.md", "license",
+        "contributing.md", "contributors.md", "authors.md", "history.md",
+        "news.md", "releases.md", "security.md", "code_of_conduct.md",
+    }
+
+    # Filename signals that indicate high-value context docs (any project)
+    _DOCS_HIGH_VALUE = {
+        "spec", "architecture", "design", "constitution", "features",
+        "preferences", "coding", "style", "guide", "workflow", "overview",
+        "plan", "roadmap", "rules", "standards", "conventions", "adr",
+    }
+
+    def _score_doc(self, path: Path, content: str) -> int:
+        """Score a supplementary doc by relevance. Higher = more useful."""
+        stem = path.stem.lower()
+        score = 0
+        # High-value keyword in filename
+        if any(kw in stem for kw in self._DOCS_HIGH_VALUE):
+            score += 2
+        # Bonus for being in a docs/ subdirectory (intentional documentation)
+        if path.parent.name.lower() in ("docs", "doc", "documentation"):
+            score += 1
+        # Penalise very short files (likely stubs)
+        if len(content) < 200:
+            score -= 1
+        return score
+
+    def _discover_supplementary_docs(self) -> List[Path]:
+        """Dynamically discover relevant .md docs in the project.
+
+        Scans root + docs/ subdirectory, skips noise files (CHANGELOG, LICENSE …),
+        and returns paths sorted by relevance score descending.
+        Works for any project — no hardcoded filenames.
+        """
+        candidates: List[Path] = []
+
+        search_dirs = [self.project_path] + [
+            d for d in self.project_path.iterdir()
+            if d.is_dir() and d.name.lower() in ("docs", "doc", "documentation")
+        ]
+
+        for directory in search_dirs:
+            for md_file in directory.glob("*.md"):
+                if md_file.name.lower() in self._DOCS_SKIP:
+                    continue
+                if md_file.name.lower() == "readme.md":
+                    continue
+                candidates.append(md_file)
+
+        # Sort by score descending, then alphabetically for determinism
+        candidates.sort(key=lambda p: (-self._score_doc(p, ""), p.name))
+        return candidates
+
+    def _load_key_files(self, skill_name: str) -> Dict[str, str]:
+        """Load actual key project files to ground the LLM in real project content.
+
+        Always includes: entry points + config + project tree +
+        top supplementary docs discovered dynamically (no hardcoded names).
+        Supplementary docs are capped at SUPPLEMENTARY_BUDGET total chars.
+        """
+        key_files: Dict[str, str] = {}
+        skill_lower = skill_name.lower()
+
+        # Always try to include entry points and config
+        candidates = ["main.py", "app.py", "pyproject.toml", "requirements.txt"]
+
+        # Topic-specific code file additions
+        if any(w in skill_lower for w in ["backend", "api", "developer"]):
+            candidates += ["project_rules_generator.py", "generator/__init__.py"]
+        if "test" in skill_lower:
+            candidates += ["pytest.ini", "tests/conftest.py"]
+        if "cli" in skill_lower or "command" in skill_lower:
+            candidates += ["main.py"]
+
+        for candidate in candidates:
+            path = self.project_path / candidate
+            if path.exists() and path.is_file():
+                try:
+                    content = path.read_text(encoding="utf-8", errors="ignore")
+                    key_files[candidate] = content[:600]
+                except Exception:
+                    pass
+
+        # Project tree: always include (gives LLM structural grounding)
+        tree = self._scan_project_tree()
+        key_files["project_tree"] = tree[:800]
+
+        # Supplementary docs: discovered dynamically, capped by total budget
+        remaining_budget = self.SUPPLEMENTARY_BUDGET
+        for doc_path in self._discover_supplementary_docs():
+            if remaining_budget <= 0:
+                break
+            try:
+                content = doc_path.read_text(encoding="utf-8", errors="ignore").strip()
+                if not content:
+                    continue
+                # Re-score with actual content (short files get penalised)
+                if self._score_doc(doc_path, content) < 0:
+                    continue
+                rel = str(doc_path.relative_to(self.project_path))
+                chunk = content[:remaining_budget]
+                key_files[rel] = chunk
+                remaining_budget -= len(chunk)
+            except Exception:
+                pass
+
+        return key_files
+
     def _generate_content(
         self,
         skill_name: str,
@@ -722,31 +888,37 @@ class CoworkSkillCreator:
                 from generator.llm_skill_generator import LLMSkillGenerator
                 generator = LLMSkillGenerator(provider=provider)
 
-                # Build context for LLM with ACTUAL project analysis!
+                # Categorize tech stack for richer LLM context
+                tech_list = self._detect_tech_stack(readme_content)
+                _backend = {"fastapi", "flask", "django", "python", "express", "node", "fastapi"}
+                _frontend = {"react", "vue", "angular", "typescript", "javascript", "nextjs"}
+                _database = {"postgresql", "mysql", "mongodb", "redis", "sqlalchemy", "sqlite"}
+
+                signals = set(metadata.project_signals)
                 context = {
                     "readme": readme_content,
-                    "tech_stack": {"languages": self._detect_tech_stack(readme_content)},
-                    "structure": {"has_docker": "has_docker" in metadata.project_signals},
-                    # CRITICAL: Include actual project analysis!
+                    "tech_stack": {
+                        "backend": [t for t in tech_list if t.lower() in _backend],
+                        "frontend": [t for t in tech_list if t.lower() in _frontend],
+                        "database": [t for t in tech_list if t.lower() in _database],
+                        "languages": tech_list,
+                    },
+                    "structure": {
+                        "has_docker": "has_docker" in signals,
+                        "has_tests": "has_tests" in signals,
+                        "has_api": "has_api" in signals,
+                        "has_frontend": "has_frontend" in signals,
+                        "has_database": "has_database" in signals,
+                    },
+                    # Load actual key project files for grounded generation
+                    "key_files": self._load_key_files(skill_name),
                     "project_analysis": custom_context.get("project_analysis", {}) if custom_context else {},
                 }
 
-                # Add instruction to use ONLY actual files
-                if context["project_analysis"]:
-                    analysis = context["project_analysis"]
-                    context["instruction"] = (
-                        "CRITICAL: Use ONLY the actual files listed below. "
-                        "DO NOT make up file paths or create fake examples.\n\n"
-                        f"Actual Files: {analysis.get('actual_files', [])}\n"
-                        f"Structure: {analysis.get('structure', {})}\n"
-                        f"Patterns: {analysis.get('patterns', [])}"
-                    )
-
-                print(f"≡ƒñצ Generating with AI ({provider})...")
-                print(f"   Using {len(context.get('project_analysis', {}).get('actual_files', []))} actual project files")
+                print(f"🤖 Generating with AI ({provider})...")
                 return generator.generate_skill(skill_name, context)
             except Exception as e:
-                print(f"Γתá∩╕ן  AI generation failed: {e}. Falling back to templates.")
+                print(f"⚠️  AI generation failed: {e}. Falling back to templates.")
 
         # 2. Try Jinja2 template first, fallback to inline generation
         if HAS_JINJA2:

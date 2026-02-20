@@ -1,4 +1,4 @@
-from analyzer.project_type_detector import detect_project_type
+from generator.analyzers.project_type_detector import detect_project_type
 
 
 class MockPath:

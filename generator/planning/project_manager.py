@@ -135,24 +135,96 @@ class ProjectManager:
                 (self.project_path / "pytest.ini").write_text("[pytest]\ntestpaths = tests\n", encoding="utf-8")
 
     def _generate_spec_md(self):
-        """Infer requirements from README or context."""
+        """Generate a structured project specification using LLM (spec-kit-inspired)."""
+        import subprocess
         from generator.ai.factory import create_ai_client
-        from generator.requirements import RequirementsInferrer
-        
+        from generator.utils.readme_bridge import build_project_tree, is_readme_sufficient
+
         client = create_ai_client(provider=self.provider, api_key=self.api_key)
-        inferrer = RequirementsInferrer(client=client)
-        reqs = inferrer.infer(self.project_path)
-        
-        # Simple Markdown dump of requirements
-        md_lines = ["# Project Specification", "", "## Requirements"]
-        
-        # Sort by priority
-        reqs.sort(key=lambda x: x.priority)
-        
-        for r in reqs:
-            md_lines.append(f"- [P{r.priority}] ({r.source}) {r.description}")
-        
-        (self.project_path / "spec.md").write_text("\n".join(md_lines), encoding="utf-8")
+
+        # --- Gather context ---
+        readme_path = self.project_path / "README.md"
+        readme_content = ""
+        if readme_path.exists():
+            readme_content = readme_path.read_text(encoding="utf-8", errors="replace")
+
+        plan_path = self.project_path / "PLAN.md"
+        plan_content = ""
+        if plan_path.exists():
+            plan_content = plan_path.read_text(encoding="utf-8", errors="replace")[:1500]
+
+        project_tree = build_project_tree(self.project_path)
+
+        git_log = ""
+        try:
+            result = subprocess.run(
+                ["git", "-C", str(self.project_path), "log", "--oneline", "-20"],
+                capture_output=True, text=True, timeout=10
+            )
+            git_log = result.stdout.strip() if result.returncode == 0 else ""
+        except Exception:
+            pass
+
+        # --- Build prompt ---
+        context_parts = [f"## README\n{readme_content[:2500]}"] if readme_content else []
+        if plan_content:
+            context_parts.append(f"## PLAN.md (excerpt)\n{plan_content}")
+        if git_log:
+            context_parts.append(f"## Recent Git Commits\n{git_log}")
+        context_parts.append(f"## Project Tree\n{project_tree}")
+
+        context_block = "\n\n".join(context_parts)
+
+        prompt = f"""You are a senior product manager. Based on the project context below, write a complete **spec.md** document.
+
+---
+{context_block}
+---
+
+Generate a spec.md with EXACTLY these sections (use the headings verbatim):
+
+# Project Specification
+
+## Overview
+One paragraph: what this project does, who it's for, and the core problem it solves.
+
+## Goals
+3-5 bullet points. Each goal is a concrete, measurable outcome.
+
+## User Personas
+2-3 short personas. Format: **Name** (Role) — one sentence describing their need.
+
+## User Stories
+5-8 stories in "As a [persona], I want [action] so that [benefit]." format.
+
+## Constraints
+Technical and non-functional constraints (performance, security, compatibility, budget, timeline).
+Use bullets.
+
+## Acceptance Criteria
+Numbered list. Each criterion is testable and unambiguous.
+Format: [ID] Given [context], when [action], then [expected result].
+
+## Out of Scope
+What this project explicitly does NOT cover. 2-4 bullets.
+
+Rules:
+- Be specific to THIS project — no generic filler.
+- Do not include section titles not listed above.
+- Use clean Markdown only.
+"""
+
+        spec_content = client.generate(
+            prompt,
+            temperature=0.3,
+            system_message="You are a senior product manager. Write precise, actionable project specifications."
+        )
+
+        # Encoding safety
+        spec_content = spec_content.encode("utf-8", errors="replace").decode("utf-8")
+
+        (self.project_path / "spec.md").write_text(spec_content, encoding="utf-8")
+        click.echo(f"   ✅ Generated spec.md ({len(spec_content.splitlines())} lines)")
 
     def _update_manager_checklist(self):
         """Create or update PROJECT-MANAGER.md."""

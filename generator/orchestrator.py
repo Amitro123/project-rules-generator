@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, List
 
-from analyzer.needs import ProjectNeedsAnalyzer
+from generator.analyzers.needs import ProjectNeedsAnalyzer
 
 from .sources.base import SkillSource
 from .types import Skill, SkillNeed
@@ -71,7 +71,7 @@ class SkillOrchestrator:
         """Detect skills that should be active based on triggers."""
         from pathlib import Path
 
-        from analyzer.triggers import SkillTriggerDetector
+        from generator.analyzers.triggers import SkillTriggerDetector
 
         detector = SkillTriggerDetector(Path(project_path), project_data)
         all_skills = self.list_all_skills()
