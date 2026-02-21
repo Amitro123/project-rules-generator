@@ -70,7 +70,7 @@ class ProjectAnalyzer:
 
     def _detect_tech_stack(self) -> Dict[str, List[str]]:
         """Detect technologies from project files."""
-        tech = {
+        tech: Dict[str, List[str]] = {
             "backend": [],
             "frontend": [],
             "database": [],

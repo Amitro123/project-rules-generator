@@ -1,8 +1,9 @@
 """Git operations utility module."""
 
+import os
 import subprocess
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 
 def _posix(path: Union[str, Path]) -> str:
@@ -48,8 +49,8 @@ def stage_files(paths: List[Union[str, Path]], repo_path: Union[str, Path] = "."
 def commit_changes(
     message: str,
     repo_path: Union[str, Path] = ".",
-    user_name: str = None,
-    user_email: str = None,
+    user_name: Optional[str] = None,
+    user_email: Optional[str] = None,
 ) -> str:
     """Commit staged changes."""
     env = {}
@@ -64,7 +65,7 @@ def commit_changes(
         ["git", "-C", _posix(repo_path), "commit", "-m", message],
         capture_output=True,
         text=True,
-        env={**subprocess.os.environ, **env} if env else None,
+        env={**os.environ, **env} if env else None,
     )
 
     if result.returncode != 0:
@@ -79,8 +80,8 @@ def commit_files(
     paths: List[Union[str, Path]],
     message: str,
     repo_path: Union[str, Path] = ".",
-    user_name: str = None,
-    user_email: str = None,
+    user_name: Optional[str] = None,
+    user_email: Optional[str] = None,
 ) -> str:
     """Stage and commit files in one operation."""
     if not is_git_repo(repo_path):

@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Set
+from typing import Any, Dict, Optional, Set
 
 import yaml
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def generate_clinerules(
     project_name: str,
     selected_skills: Set[str],
-    project_context: Dict[str, Any] = None,
+    project_context: Optional[Dict[str, Any]] = None,
     output_dir: "Path | None" = None,
 ) -> str:
     """
@@ -148,7 +148,7 @@ def generate_clinerules_with_inline(
     project_name: str,
     selected_skills: Set[str],
     rules_content: str = "",
-    project_context: Dict[str, Any] = None,
+    project_context: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
     Generate a .clinerules file with inline skill content (backward compatible).
@@ -199,7 +199,7 @@ def generate_clinerules_with_inline(
     return content
 
 
-def _build_context_config(project_context: Dict[str, Any] = None) -> Dict[str, Any]:
+def _build_context_config(project_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Build context configuration for .clinerules.yaml.
 
     Returns dict with exclude patterns, max_file_size, and load_on_demand hints.

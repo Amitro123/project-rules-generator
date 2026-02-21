@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Type
+from typing import Any, Dict, List, Type
 
 import yaml
 
@@ -58,7 +58,7 @@ version: {skill_file.version}
 
 """
         # Group skills by category
-        skills_by_cat = {}
+        skills_by_cat: Dict[str, List[Any]] = {}
         for skill in skill_file.skills:
             if skill.category not in skills_by_cat:
                 skills_by_cat[skill.category] = []

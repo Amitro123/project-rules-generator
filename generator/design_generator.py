@@ -3,7 +3,7 @@
 import os
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -171,6 +171,7 @@ class DesignGenerator:
             self.api_key = api_key or os.getenv(f"{provider.upper()}_API_KEY")
 
         # Only initialize AI client if an API key is available; otherwise fallback deterministically
+        self.client: Optional[Any] = None
         try:
             from .ai.factory import create_ai_client
 

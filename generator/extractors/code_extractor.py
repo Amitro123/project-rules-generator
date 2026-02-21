@@ -179,7 +179,7 @@ class CodeExampleExtractor:
         search_patterns: Dict[str, List[str]],
     ) -> List[Dict[str, Any]]:
         """Extract examples from a single Python file using AST."""
-        examples = []
+        examples: List[Dict[str, Any]] = []
 
         try:
             content = file_path.read_text(encoding="utf-8", errors="replace")
@@ -214,7 +214,7 @@ class CodeExampleExtractor:
         search_patterns: Dict[str, List[str]],
     ) -> List[Dict[str, Any]]:
         """Extract examples using Python AST parsing."""
-        examples = []
+        examples: List[Dict[str, Any]] = []
 
         try:
             tree = ast.parse(content)
@@ -359,7 +359,7 @@ class CodeExampleExtractor:
             return decorator.id
         elif isinstance(decorator, ast.Attribute):
             parts = []
-            node = decorator
+            node: ast.expr = decorator
             while isinstance(node, ast.Attribute):
                 parts.append(node.attr)
                 node = node.value
@@ -377,7 +377,7 @@ class CodeExampleExtractor:
             return node.id
         elif isinstance(node, ast.Attribute):
             parts = []
-            current = node
+            current: ast.expr = node
             while isinstance(current, ast.Attribute):
                 parts.append(current.attr)
                 current = current.value

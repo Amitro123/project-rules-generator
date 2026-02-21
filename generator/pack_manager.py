@@ -17,7 +17,7 @@ def load_external_packs(
     """
     Load external skill packs from CLI arguments and config.
     """
-    external_packs = []
+    external_packs: List[SkillPack] = []
 
     # Combine CLI packs and config packs
     packs_to_load = list(include_packs)

@@ -357,14 +357,14 @@ Generate exactly 5-8 subtasks now:
 
             client = genai.Client(api_key=self.api_key)
             response = client.models.generate_content(
-                model=self.model_name,
+                model=self.model_name or "gemini-2.0-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.4,
                     max_output_tokens=3000,
                 ),
             )
-            return response.text
+            return response.text or ""
         except Exception:
             return ""
 
@@ -405,7 +405,8 @@ Generate exactly 5-8 subtasks now:
                     int(d.strip().strip("#")) for d in deps_str.split(",") if d.strip() and d.strip().lower() != "none"
                 ]
                 est = self._extract_field(content, "Estimated")
-                est_min = int(re.search(r"\d+", est).group()) if re.search(r"\d+", est) else 5
+                _est_m = re.search(r"\d+", est)
+                est_min = int(_est_m.group()) if _est_m else 5
                 est_min = max(1, min(est_min, 10))
 
                 tasks.append(

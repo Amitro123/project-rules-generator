@@ -30,17 +30,17 @@ def migrate_project(project_path: str = "."):
     """
     Migrate project skills to the standard .clinerules/skills/ location.
     """
-    project_path = Path(project_path).resolve()
-    print(f"📦 Migrating project: {project_path}")
+    project_dir = Path(project_path).resolve()
+    print(f"📦 Migrating project: {project_dir}")
 
-    clinerules_dir = project_path / ".clinerules"
+    clinerules_dir = project_dir / ".clinerules"
     clinerules_dir.mkdir(exist_ok=True)
 
     # 1. Target Directory: .clinerules/skills
     target_skills_dir = clinerules_dir / "skills"
 
     # 2. Source Directory: skills (root)
-    source_skills_dir = project_path / "skills"
+    source_skills_dir = project_dir / "skills"
 
     # Check if we need to migrate root 'skills'
     if source_skills_dir.exists():

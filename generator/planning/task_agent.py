@@ -1,6 +1,6 @@
 """Task implementation agent — generates code changes for a subtask."""
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from generator.ai.factory import create_ai_client
 from generator.task_decomposer import SubTask
@@ -64,7 +64,7 @@ Tests to Verify:
         files = {}
         # Simple parsing for [FILE: path]
         current_file = None
-        current_content = []
+        current_content: List[str] = []
 
         for line in response.split("\n"):
             if line.startswith("[FILE:"):

@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_parser import SkillParser
@@ -123,7 +123,7 @@ class SkillGenerator:
         skill_file = target_dir / "SKILL.md"
 
         # Strategy chain: try each strategy until one succeeds
-        strategies = []
+        strategies: List[Any] = []
         if use_ai:
             strategies.append(AIStrategy())
         if from_readme:
@@ -138,7 +138,7 @@ class SkillGenerator:
             if content:
                 break
 
-        skill_file.write_text(content, encoding="utf-8")
+        skill_file.write_text(content or "", encoding="utf-8")
         return target_dir
 
     def check_global_skill_reuse(self, tech_stack: List[str]) -> Dict[str, str]:
@@ -149,7 +149,7 @@ class SkillGenerator:
         - 'adapt':  skill exists globally but is a generic stub needing project adaptation
         - 'create': skill does not exist globally at all
         """
-        result = {}
+        result: Dict[str, str] = {}
         for tech in tech_stack:
             tech_lower = tech.lower().strip()
             skill_name = self.TECH_SKILL_NAMES.get(tech_lower)

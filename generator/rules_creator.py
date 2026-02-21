@@ -359,7 +359,7 @@ class CoworkRulesCreator:
             "jinja2",
         }
 
-        detected = set()
+        detected: Set[str] = set()
 
         # Scan project files first (authoritative)
         self._detect_from_files(detected)
@@ -828,7 +828,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
             )
 
             if result.returncode == 0:
-                file_changes = defaultdict(int)
+                file_changes: Dict[str, int] = defaultdict(int)
                 for line in result.stdout.split("\n"):
                     if line.strip():
                         file_changes[line] += 1

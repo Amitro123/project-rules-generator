@@ -110,12 +110,9 @@ class ProjectManager:
         # Group 3: Architecture
         if "ARCHITECTURE.md" in missing:
             click.echo("   ⚙️  Generating ARCHITECTURE.md...")
-            # Need a client
-            from generator.ai.factory import create_ai_client
             from generator.design_generator import DesignGenerator
 
-            client = create_ai_client(provider=self.provider, api_key=self.api_key)
-            gen = DesignGenerator(client)
+            gen = DesignGenerator(api_key=self.api_key, provider=self.provider)
             design = gen.generate_design(
                 user_request="Complete full project implementation. Focus on high-level architecture.",
                 project_context=self._get_context(),

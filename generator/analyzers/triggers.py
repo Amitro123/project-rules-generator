@@ -53,7 +53,7 @@ class SkillTriggerDetector:
         ts = self.context.get("tech_stack", [])
         if isinstance(ts, dict):
             # Flatten dict values
-            flat_list = sum(ts.values(), [])
+            flat_list: List[str] = sum(ts.values(), [])
             return {t.lower() for t in flat_list}
         elif isinstance(ts, list):
             return {str(t).lower() for t in ts}
@@ -64,7 +64,7 @@ class SkillTriggerDetector:
         Check if skill should be triggered.
         Returns list of matched conditions (empty if not triggered).
         """
-        matched_conditions = []
+        matched_conditions: List[str] = []
 
         # 1. Check structured auto_triggers (List[Dict])
         if skill.auto_triggers:

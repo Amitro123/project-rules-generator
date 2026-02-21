@@ -38,9 +38,9 @@ class OpikEvaluator:
         self,
         content: str,
         task_type: str,
-        metadata: Dict[str, Any] = None,
-        metrics: Dict[str, float] = None,
-        output_props: Dict[str, Any] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        metrics: Optional[Dict[str, float]] = None,
+        output_props: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Log content generation to Opik for observability and evaluation.

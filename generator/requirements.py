@@ -49,7 +49,7 @@ class RequirementsInferrer:
     def _analyze_readme(self, path: Path) -> List[Requirement]:
         """Extract features/stories from README using heuristics or simple parsing."""
         content = path.read_text(encoding="utf-8")
-        requirements = []
+        requirements: List[Requirement] = []
 
         # Look for "Features" or "How it works" sections
         sections = re.findall(
@@ -71,7 +71,7 @@ class RequirementsInferrer:
             )
             logs = result.stdout.splitlines()
             # Simple heuristic: commits with "feat:", "add", "fix"
-            requirements = []
+            requirements: List[Requirement] = []
             for log in logs:
                 if any(x in log.lower() for x in ["feat:", "add", "implement"]):
                     requirements.append(
@@ -88,7 +88,7 @@ class RequirementsInferrer:
 
     def _analyze_codebase(self, project_path: Path) -> List[Requirement]:
         """Find TODOs and endpoints in the codebase."""
-        requirements = []
+        requirements: List[Requirement] = []
 
         # 1. Search for TODOs
         try:
@@ -153,10 +153,16 @@ SOURCE: [Original source]
             if "ID:" not in block:
                 continue
             try:
-                id_val = re.search(r"ID:\s*(.+)", block).group(1).strip()
-                desc = re.search(r"DESC:\s*(.+)", block).group(1).strip()
-                pri = re.search(r"PRIORITY:\s*(\d+)", block).group(1).strip()
-                src = re.search(r"SOURCE:\s*(.+)", block).group(1).strip()
+                id_match = re.search(r"ID:\s*(.+)", block)
+                desc_match = re.search(r"DESC:\s*(.+)", block)
+                pri_match = re.search(r"PRIORITY:\s*(\d+)", block)
+                src_match = re.search(r"SOURCE:\s*(.+)", block)
+                if not (id_match and desc_match and pri_match and src_match):
+                    continue
+                id_val = id_match.group(1).strip()
+                desc = desc_match.group(1).strip()
+                pri = pri_match.group(1).strip()
+                src = src_match.group(1).strip()
                 refined.append(Requirement(id=id_val, description=desc, source=src, priority=int(pri)))
             except Exception:
                 continue

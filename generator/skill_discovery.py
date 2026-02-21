@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 class SkillDiscovery:
@@ -32,7 +32,12 @@ class SkillDiscovery:
         self.package_builtin = Path(__file__).parent / "skills" / "builtin"
 
         # 3. Project Paths (if valid project)
-        # 3. Project Paths (if valid project)
+        # Declare as Optional so both if/else branches are consistent
+        self.project_skills_root: Optional[Path] = None
+        self.project_local_dir: Optional[Path] = None
+        self.project_learned_link: Optional[Path] = None
+        self.project_builtin_link: Optional[Path] = None
+
         if self.project_path:
             # Allow override or default to new standard (.clinerules/skills)
             if skills_dir:
@@ -50,13 +55,8 @@ class SkillDiscovery:
             self.project_local_dir = self.project_skills_root / "project"
             self.project_learned_link = self.project_skills_root / "learned"
             self.project_builtin_link = self.project_skills_root / "builtin"
-        else:
-            self.project_skills_root = None
-            self.project_local_dir = None
-            self.project_learned_link = None
-            self.project_builtin_link = None
 
-        self._skills_cache = None
+        self._skills_cache: Optional[Dict[str, Any]] = None
 
     def _build_cache(self):
         """Build a unified cache of all available skills across all layers."""
@@ -70,7 +70,7 @@ class SkillDiscovery:
             if not root or not root.exists():
                 return {"by_rel": {}, "by_name": {}}
 
-            idx = {
+            idx: Dict[str, Dict[str, Path]] = {
                 "by_rel": {},  # "math/add.md" -> Path (always forward slashes)
                 "by_name": {},  # "add.md" -> Path (first found)
             }
@@ -186,9 +186,10 @@ class SkillDiscovery:
         """Get all skills in a layer, respecting the stop-at-SKILL.md logic."""
         if self._skills_cache is None:
             self._build_cache()
+        assert self._skills_cache is not None
 
         if not hasattr(self, "_layer_skills_cache"):
-            self._layer_skills_cache = {}
+            self._layer_skills_cache: Dict[str, Dict[str, Path]] = {}
 
         if layer in self._layer_skills_cache:
             return self._layer_skills_cache[layer]
@@ -207,8 +208,8 @@ class SkillDiscovery:
             return {}
 
         idx = self._skills_cache[layer]
-        skills = {}
-        skills_prio = {}
+        skills: Dict[str, Path] = {}
+        skills_prio: Dict[str, int] = {}
         # Priority matching _resolve_path: .md > .yaml > .yml > SKILL.md
         priority = {".md": 4, ".yaml": 3, ".yml": 2, "SKILL.md": 1}
 
@@ -254,6 +255,7 @@ class SkillDiscovery:
         """Find the active skill file based on priority."""
         if self._skills_cache is None:
             self._build_cache()
+        assert self._skills_cache is not None
 
         # 1. Check Project
         if self.project_local_dir:
@@ -312,6 +314,7 @@ class SkillDiscovery:
         Returns:
             True if the skill exists in any format in the given scope.
         """
+        base: Optional[Path]
         if scope == "learned":
             base = self.global_learned
         elif scope == "builtin":
@@ -344,7 +347,7 @@ class SkillDiscovery:
         if self._skills_cache is None:
             self._build_cache()
 
-        skills_content = {"project": {}, "learned": {}, "builtin": {}}
+        skills_content: Dict[str, Dict[str, Any]] = {"project": {}, "learned": {}, "builtin": {}}
 
         for category in ["builtin", "learned", "project"]:
             layer_skills = self._get_layer_skills(category)

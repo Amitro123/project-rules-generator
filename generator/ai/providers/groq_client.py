@@ -39,17 +39,17 @@ class GroqClient(AIClient):
     ) -> str:
         """Generate content using Groq."""
         try:
-            messages = []
+            messages: list = []
             if system_message:
                 messages.append({"role": "system", "content": system_message})
             messages.append({"role": "user", "content": prompt})
             completion = self.client.chat.completions.create(
                 model=model or self.DEFAULT_MODEL,
-                messages=messages,
+                messages=messages,  # type: ignore[arg-type]
                 temperature=temperature,
                 max_tokens=max_tokens,
             )
             # Clean encoding artifacts per AMIT_CODING_PREFERENCES.md
-            return normalize_mojibake(completion.choices[0].message.content)
+            return normalize_mojibake(completion.choices[0].message.content or "")
         except Exception as e:
             raise RuntimeError(f"Groq generation failed: {e}")

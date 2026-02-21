@@ -83,8 +83,8 @@ def is_stub_content(content: str) -> bool:
 
 def validate_quality(
     content: str,
-    metadata_triggers: List[str] = None,
-    metadata_tools: List[str] = None,
+    metadata_triggers: Optional[List[str]] = None,
+    metadata_tools: Optional[List[str]] = None,
 ) -> QualityReport:
     """
     Validate the quality of generated skill content.

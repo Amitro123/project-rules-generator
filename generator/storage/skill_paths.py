@@ -105,7 +105,7 @@ class SkillPathManager:
     @classmethod
     def list_learned_skills(cls) -> Dict[str, list]:
         """List all learned skills organized by category."""
-        result = {}
+        result: Dict[str, list] = {}
         if not cls.GLOBAL_LEARNED.exists():
             return result
 
@@ -125,7 +125,7 @@ class SkillPathManager:
     @classmethod
     def list_builtin_skills(cls) -> list:
         """List all builtin skills."""
-        skills = []
+        skills: list = []
         if not cls.GLOBAL_BUILTIN.exists():
             return skills
 

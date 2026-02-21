@@ -14,7 +14,7 @@ It generates high-quality, project-specific skills with:
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import yaml
 
@@ -264,6 +264,10 @@ class CoworkSkillCreator:
                 # But current save_to_learned saves as .md
                 pass
 
+        if not self.discovery.project_local_dir:
+            print(f"⚠️  Could not link {skill_name}: No project path configured.")
+            return
+
         target = self.discovery.project_local_dir / f"{skill_name}.md"
 
         if source.exists():
@@ -326,7 +330,7 @@ class CoworkSkillCreator:
 
         This is critical for project-specific skills.
         """
-        analysis = {
+        analysis: Dict[str, Any] = {
             "actual_files": [],
             "patterns": [],
             "structure": {},

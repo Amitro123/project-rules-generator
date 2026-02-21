@@ -271,9 +271,10 @@ class SkillParser:
         # 3. Smart Defaults (Fill gaps)
         if not parsed["triggers"] and parsed["when_to_use"]:
             # Infer triggers from 'When to use' bullets
+            when_to_use: str = parsed["when_to_use"]  # type: ignore[assignment]
             parsed["triggers"] = [
                 line.strip("- *").strip().lower()
-                for line in parsed["when_to_use"].split("\n")
+                for line in when_to_use.split("\n")
                 if line.strip().startswith("-")
             ]
 

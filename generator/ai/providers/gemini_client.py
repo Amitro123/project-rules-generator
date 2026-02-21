@@ -7,13 +7,13 @@ from ...utils.encoding import normalize_mojibake
 from ..ai_client import AIClient
 
 try:
-    from google import genai
-    from google.genai import types
+    from google import genai  # type: ignore[import-untyped]
+    from google.genai import types  # type: ignore[import-untyped]
 
     GEMINI_AVAILABLE = True
 except ImportError:
-    genai = None
-    types = None
+    genai = None  # type: ignore[assignment]
+    types = None  # type: ignore[assignment]
     GEMINI_AVAILABLE = False
 
 
@@ -44,7 +44,7 @@ class GeminiClient(AIClient):
         try:
             full_prompt = f"{system_message}\n\n{prompt}" if system_message else prompt
             response = self.client.models.generate_content(
-                model=model or os.getenv("GEMINI_MODEL", self.DEFAULT_MODEL),
+                model=model or os.getenv("GEMINI_MODEL", self.DEFAULT_MODEL) or self.DEFAULT_MODEL,
                 contents=full_prompt,
                 config=types.GenerateContentConfig(
                     temperature=temperature,
@@ -52,6 +52,6 @@ class GeminiClient(AIClient):
                 ),
             )
             # Clean encoding artifacts per AMIT_CODING_PREFERENCES.md
-            return normalize_mojibake(response.text)
+            return normalize_mojibake(response.text or "")
         except Exception as e:
             raise RuntimeError(f"Gemini generation failed: {e}")

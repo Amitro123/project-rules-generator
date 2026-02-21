@@ -176,7 +176,7 @@ class StructureAnalyzer:
 
         # Pick best match
         if scores:
-            best = max(scores, key=scores.get)
+            best = max(scores, key=lambda k: scores[k])
             max_score = scores[best]
 
             # If 'library' wins but a more specific application type has a
@@ -186,7 +186,7 @@ class StructureAnalyzer:
             if best == "library":
                 app_types = {k: v for k, v in scores.items() if k != "library" and v >= 2}
                 if app_types:
-                    best = max(app_types, key=app_types.get)
+                    best = max(app_types, key=lambda k: app_types[k])
                     max_score = scores[best]
 
             # Confidence based on score strength

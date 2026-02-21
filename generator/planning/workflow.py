@@ -192,7 +192,7 @@ class AgentWorkflow:
             readme_text = readme_path.read_text(encoding="utf-8")
             parsed = parse_readme(readme_text)
 
-            rules = generate_rules(parsed)
+            rules = generate_rules(parsed, {})
             output_dir = self.project_path / ".clinerules"
             output_dir.mkdir(parents=True, exist_ok=True)
 

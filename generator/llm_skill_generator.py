@@ -16,6 +16,7 @@ class LLMSkillGenerator:
         provider: str = "groq",
     ):
         self.provider = provider
+        self.api_key: Optional[str]
 
         # 1. Use explicit key if provided
         if api_key:

@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ..skill_templates import load_skill_from_yaml
 from ..types import Skill, SkillNeed
@@ -13,7 +13,7 @@ logger = logging.getLogger("project_rules_generator")
 class BuiltinSkillsSource(SkillSource):
     """Source that loads skills from the project's templates directory."""
 
-    def __init__(self, config: Dict[str, Any], templates_dir: Path = None):
+    def __init__(self, config: Dict[str, Any], templates_dir: Optional[Path] = None):
         super().__init__(config)
 
         # Determine path from config or default or injected

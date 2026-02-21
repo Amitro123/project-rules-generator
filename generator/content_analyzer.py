@@ -7,7 +7,7 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from generator.ai.factory import create_ai_client
 from generator.config import AnalyzerConfig
@@ -142,13 +142,13 @@ class ContentAnalyzer:
                     doc_type = "other"
 
                 # Prepare metrics
-                metrics = {
-                    "score_total": score,
-                    "score_structure": breakdown.structure,
-                    "score_clarity": breakdown.clarity,
-                    "score_project_grounding": breakdown.project_grounding,
-                    "score_actionability": breakdown.actionability,
-                    "score_consistency": breakdown.consistency,
+                metrics: Dict[str, float] = {
+                    "score_total": float(score),
+                    "score_structure": float(breakdown.structure),
+                    "score_clarity": float(breakdown.clarity),
+                    "score_project_grounding": float(breakdown.project_grounding),
+                    "score_actionability": float(breakdown.actionability),
+                    "score_consistency": float(breakdown.consistency),
                 }
 
                 # Prepare breakdown dict for output

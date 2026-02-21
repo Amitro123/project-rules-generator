@@ -3,19 +3,24 @@
 import json
 import logging
 import re
+import types
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 # Use tomllib (3.11+) or tomli as fallback
+_tomllib: Optional[types.ModuleType] = None
 try:
-    import tomllib
+    import tomllib as _tomllib_impl
+    _tomllib = _tomllib_impl
 except ModuleNotFoundError:
     try:
-        import tomli as tomllib
+        import tomli as _tomllib_impl2  # type: ignore[import-untyped]
+        _tomllib = _tomllib_impl2
     except ModuleNotFoundError:
-        tomllib = None
+        _tomllib = None
+tomllib = _tomllib
 
 
 class DependencyParser:
@@ -35,7 +40,7 @@ class DependencyParser:
         Returns:
             List of dicts: [{'name': 'fastapi', 'version': '0.100.0', 'constraint': '==', 'raw': 'fastapi==0.100.0'}]
         """
-        deps = []
+        deps: List[Dict[str, str]] = []
         try:
             content = file_path.read_text(encoding="utf-8", errors="replace")
         except Exception as e:
@@ -115,7 +120,7 @@ class DependencyParser:
                 'build_system': str,
             }
         """
-        result = {
+        result: Dict[str, Any] = {
             "project_name": "",
             "python_requires": "",
             "dependencies": [],
@@ -191,7 +196,7 @@ class DependencyParser:
     @staticmethod
     def _parse_pyproject_fallback(file_path: Path) -> Dict:
         """Fallback parsing when tomllib is not available."""
-        result = {
+        result: Dict[str, Any] = {
             "project_name": "",
             "python_requires": "",
             "dependencies": [],
@@ -232,7 +237,7 @@ class DependencyParser:
                 'engines': dict,
             }
         """
-        result = {
+        result: Dict[str, Any] = {
             "project_name": "",
             "dependencies": [],
             "dev_dependencies": [],
@@ -332,7 +337,7 @@ class DependencyParser:
             pip3 install -r requirements.txt  (skipped — file reference)
             pip install fastapi[all]>=0.100.0
         """
-        deps = []
+        deps: List[Dict[str, str]] = []
         try:
             content = readme_path.read_text(encoding="utf-8", errors="replace")
         except Exception:
@@ -385,7 +390,7 @@ class DependencyParser:
         }
 
         # Scan Python files and README
-        scan_files = set()
+        scan_files: set = set()
         scan_files.update(project_path.glob("*.py"))
         scan_files.update(project_path.glob("README*"))
 

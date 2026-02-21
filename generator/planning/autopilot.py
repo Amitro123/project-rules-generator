@@ -29,7 +29,7 @@ class AutopilotOrchestrator:
         self.provider = provider
         self.api_key = api_key
         self.verbose = verbose
-        self.workflow = None
+        self.workflow: Optional[AgentWorkflow] = None
         self.manifest_path = self.project_path / "tasks" / "TASKS.yaml"
 
     def discovery(self, task_description: str = "Complete project") -> TaskManifest:
@@ -37,15 +37,16 @@ class AutopilotOrchestrator:
         if self.verbose:
             click.echo(f"🔍 Discovery Phase: {task_description}")
 
-        self.workflow = AgentWorkflow(
+        workflow = AgentWorkflow(
             project_path=self.project_path,
             task_description=task_description,
             provider=self.provider,
             api_key=self.api_key,
             verbose=self.verbose,
         )
+        self.workflow = workflow
 
-        manifest = self.workflow.run_setup()
+        manifest = workflow.run_setup()
         return manifest
 
     def execution_loop(self, manifest: TaskManifest):

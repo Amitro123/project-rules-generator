@@ -451,6 +451,7 @@ Generate the plan now:
                     tasks.append(current_task)
 
                 match = re.match(r"^-\s+\[([ x])\]\s+(.+)$", line)
+                assert match is not None
                 completed = match.group(1) == "x"
                 description = match.group(2).strip()
                 current_task = Task(description=description, subtasks=[], completed=completed)
@@ -458,6 +459,7 @@ Generate the plan now:
             # Subtask (starts with  - [ ] - indented)
             elif current_task and re.match(r"^\s+-\s+\[([ x])\]\s+(.+)$", line):
                 match = re.match(r"^\s+-\s+\[([ x])\]\s+(.+)$", line)
+                assert match is not None
                 subtask = match.group(2).strip()
                 current_task.subtasks.append(subtask)
 
