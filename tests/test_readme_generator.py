@@ -58,9 +58,7 @@ class TestReadmeGenerator(unittest.TestCase):
     @patch("click.confirm")
     @patch("generator.readme_generator.generate_readme_template")
     @patch("generator.project_analyzer.ProjectAnalyzer")
-    def test_generate_interactive(
-        self, mock_analyzer_cls, mock_gen_template, mock_confirm, mock_prompt
-    ):
+    def test_generate_interactive(self, mock_analyzer_cls, mock_gen_template, mock_confirm, mock_prompt):
         """Test flow of interactive generation."""
         # Mocks
         mock_prompt.side_effect = ["Test Proj", "Desc", "Purpose", "Python", "Features"]
@@ -150,10 +148,10 @@ class TestReadmeGenerator(unittest.TestCase):
 
         # Verify fallback
         self.assertEqual(content, "# Fallback Template")
-        
+
         # Verify LLM was attempted
         mock_llm_gen_cls.assert_called_once()
         mock_llm_gen.generate_content.assert_called_once()
-        
+
         # Verify fallback was called
         mock_fallback.assert_called_once_with(user_input, context)

@@ -80,17 +80,13 @@ class TestDesignToMarkdown:
         assert "Con: Extra infra" in md
 
     def test_renders_api_contracts(self):
-        d = Design(
-            title="X", problem_statement="P", api_contracts=["GET /health -> 200"]
-        )
+        d = Design(title="X", problem_statement="P", api_contracts=["GET /health -> 200"])
         md = d.to_markdown()
         assert "## API Contracts" in md
         assert "GET /health -> 200" in md
 
     def test_renders_success_criteria(self):
-        d = Design(
-            title="X", problem_statement="P", success_criteria=["All tests pass"]
-        )
+        d = Design(title="X", problem_statement="P", success_criteria=["All tests pass"])
         md = d.to_markdown()
         assert "## Success Criteria" in md
         assert "All tests pass" in md
@@ -173,6 +169,7 @@ class TestDesignGenerator:
 
 from unittest.mock import patch
 
+
 class TestDesignCLI:
     """Test the design CLI command."""
 
@@ -206,9 +203,7 @@ class TestDesignCLI:
             ],
         )
 
-        assert (
-            result.exit_code == 0
-        ), f"Exit {result.exit_code}: {result.output}\n{result.exception}"
+        assert result.exit_code == 0, f"Exit {result.exit_code}: {result.output}\n{result.exception}"
         design_path = tmp_path / "DESIGN.md"
         assert design_path.exists()
         content = design_path.read_text(encoding="utf-8")

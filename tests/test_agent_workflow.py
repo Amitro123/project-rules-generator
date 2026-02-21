@@ -17,9 +17,7 @@ from main import cli
 def _setup_project(tmp_path, with_readme=True, with_plan=False, with_tasks=False):
     """Create a minimal project directory."""
     if with_readme:
-        (tmp_path / "README.md").write_text(
-            "# Test Project\nFastAPI + Redis\n", encoding="utf-8"
-        )
+        (tmp_path / "README.md").write_text("# Test Project\nFastAPI + Redis\n", encoding="utf-8")
 
     if with_plan:
         plan_content = """# PLAN
@@ -56,9 +54,7 @@ def _setup_project(tmp_path, with_readme=True, with_plan=False, with_tasks=False
             plan_file="PLAN.md",
             task_description="Add cache",
             tasks=[
-                TaskEntry(
-                    id=1, file="001-research.md", title="Research", estimated_minutes=3
-                ),
+                TaskEntry(id=1, file="001-research.md", title="Research", estimated_minutes=3),
                 TaskEntry(
                     id=2,
                     file="002-implement.md",
@@ -275,9 +271,7 @@ class TestCLICommands:
         _setup_project(tmp_path, with_tasks=True)
         runner = CliRunner()
         # Start and complete task 1
-        runner.invoke(
-            cli, ["exec", "tasks/001-research.md", "--project-path", str(tmp_path)]
-        )
+        runner.invoke(cli, ["exec", "tasks/001-research.md", "--project-path", str(tmp_path)])
         runner.invoke(
             cli,
             [

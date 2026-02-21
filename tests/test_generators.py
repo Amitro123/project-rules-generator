@@ -1,6 +1,7 @@
 """Tests for rules and skills generators."""
 
 from generator.rules_generator import generate_rules
+
 # NOTE: skills_generator.py was removed in v1.1 cleanup.
 # Skills generation is now done via SkillsManager.create_skill() or SkillGenerator.
 # The TestSkillsGenerator tests below are kept for historical reference but
@@ -97,7 +98,7 @@ class TestRulesGenerator:
 
 class TestSkillsGenerator:
     """Test suite for skills generation.
-    
+
     NOTE: skills_generator.py was removed in v1.1 cleanup.
     These tests are preserved for documentation purposes.
     New skill generation is done via SkillsManager.create_skill().
@@ -106,21 +107,25 @@ class TestSkillsGenerator:
     def test_generate_skills_structure(self, mock_config):
         """Legacy test - skills_generator removed in v1.1."""
         import pytest
+
         pytest.skip("skills_generator.py removed in v1.1 - use SkillsManager.create_skill()")
 
     def test_generate_skills_domain_specific(self, mock_config):
         """Legacy test - skills_generator removed in v1.1."""
         import pytest
+
         pytest.skip("skills_generator.py removed in v1.1 - use SkillsManager.create_skill()")
 
     def test_generate_skills_usage_section(self, mock_config):
         """Legacy test - skills_generator removed in v1.1."""
         import pytest
+
         pytest.skip("skills_generator.py removed in v1.1 - use SkillsManager.create_skill()")
 
     def test_generate_skills_with_primary_domain(self, mock_config):
         """Legacy test - skills_generator removed in v1.1."""
         import pytest
+
         pytest.skip("skills_generator.py removed in v1.1 - use SkillsManager.create_skill()")
 
     def test_skills_manager_list(self, tmp_path):

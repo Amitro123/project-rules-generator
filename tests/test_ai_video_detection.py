@@ -2,6 +2,7 @@
 
 import pytest
 from generator.analyzers.project_type_detector import detect_project_type
+
 # NOTE: skills_generator.py removed in v1.1 - use SkillsManager.create_skill()
 
 
@@ -53,6 +54,4 @@ def test_video_ml_detection():
     result = detect_project_type(mock_data, ".")
 
     assert result["primary_type"] == "ml_pipeline"
-    assert (
-        result["all_scores"]["ml_pipeline"] >= 1.0
-    )  # 0.5 (ML) + 0.4 (video libs) + 0.3 (video KWs)
+    assert result["all_scores"]["ml_pipeline"] >= 1.0  # 0.5 (ML) + 0.4 (video libs) + 0.3 (video KWs)

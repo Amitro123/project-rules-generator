@@ -309,9 +309,7 @@ class DependencyParser:
             # Fallback for simple cases if packaging fails or is missing
             # logger.debug(f"packaging parse failed for {dep_str}: {e}")
             match = re.match(
-                r"^([a-zA-Z0-9_.-]+)"
-                r"(?:\[([^\]]+)\])?"
-                r"\s*(?:(==|>=|<=|~=|!=|>|<)\s*([a-zA-Z0-9._*-]+))?",
+                r"^([a-zA-Z0-9_.-]+)" r"(?:\[([^\]]+)\])?" r"\s*(?:(==|>=|<=|~=|!=|>|<)\s*([a-zA-Z0-9._*-]+))?",
                 dep_str.strip(),
             )
             if match:
@@ -356,9 +354,7 @@ class DependencyParser:
                     continue
                 # Parse: package[extras]>=version
                 pkg_match = re.match(
-                    r"^([a-zA-Z0-9_.-]+)"
-                    r"(?:\[([^\]]+)\])?"
-                    r"(?:(==|>=|<=|~=|!=|>|<)([a-zA-Z0-9._*-]+))?",
+                    r"^([a-zA-Z0-9_.-]+)" r"(?:\[([^\]]+)\])?" r"(?:(==|>=|<=|~=|!=|>|<)([a-zA-Z0-9._*-]+))?",
                     token,
                 )
                 if pkg_match:

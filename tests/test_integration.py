@@ -5,6 +5,7 @@ from typing import Dict, List, Any
 from click.testing import CliRunner
 from main import main
 
+
 class TestIntegration:
     """Test suite for end-to-end integration."""
 
@@ -120,9 +121,7 @@ Description.
             assert result.exit_code == 0, f"Failed for {case['name']}"
 
             # Verify tech stack in output files
-            rules = (project_dir / ".clinerules" / "rules.md").read_text(
-                encoding="utf-8"
-            )
+            rules = (project_dir / ".clinerules" / "rules.md").read_text(encoding="utf-8")
             for tech in case["tech_keys"]:
                 assert tech in rules, f"Expected {tech} in {case['name']} rules"
 

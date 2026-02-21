@@ -225,9 +225,7 @@ def _calculate_final_scores(scores: Dict[str, float]) -> Dict[str, Any]:
 
     primary_type, primary_score = sorted_scores[0]
     secondary_types = [
-        k
-        for k, v in sorted_scores[1:3]
-        if v > 0.3 and k != "generator"  # Don't leak generator to other projects
+        k for k, v in sorted_scores[1:3] if v > 0.3 and k != "generator"  # Don't leak generator to other projects
     ]
 
     return {

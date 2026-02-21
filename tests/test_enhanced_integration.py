@@ -24,13 +24,9 @@ class TestEndToEndEnhancedPipeline:
         project_dir.mkdir()
 
         (project_dir / "README.md").write_text(
-            "# My CLI Tool\n\n"
-            "A Python CLI tool for data processing.\n\n"
-            "## Tech\n- python\n- click\n- pytest\n"
+            "# My CLI Tool\n\n" "A Python CLI tool for data processing.\n\n" "## Tech\n- python\n- click\n- pytest\n"
         )
-        (project_dir / "requirements.txt").write_text(
-            "click>=8.0\npydantic>=2.0\npytest>=7.0\nrich>=13.0\n"
-        )
+        (project_dir / "requirements.txt").write_text("click>=8.0\npydantic>=2.0\npytest>=7.0\nrich>=13.0\n")
         (project_dir / "main.py").write_text(
             "import click\n\n"
             "@click.command()\n"
@@ -78,18 +74,14 @@ class TestEndToEndEnhancedPipeline:
         (project_dir / "requirements.txt").write_text(
             "fastapi>=0.100.0\nuvicorn>=0.23.0\npydantic>=2.0\nsqlalchemy>=2.0\n"
         )
-        (project_dir / "README.md").write_text(
-            "# My API\n\nA FastAPI REST API.\n\n## Tech\n- python\n- fastapi\n"
-        )
+        (project_dir / "README.md").write_text("# My API\n\nA FastAPI REST API.\n\n## Tech\n- python\n- fastapi\n")
         (project_dir / "app.py").write_text(
             "from fastapi import FastAPI\napp = FastAPI()\n"
             "@app.get('/health')\ndef health(): return {'status': 'ok'}\n"
         )
         routes = project_dir / "routes"
         routes.mkdir()
-        (routes / "users.py").write_text(
-            "from fastapi import APIRouter\nrouter = APIRouter()\n"
-        )
+        (routes / "users.py").write_text("from fastapi import APIRouter\nrouter = APIRouter()\n")
 
         parser = EnhancedProjectParser(project_dir)
         context = parser.extract_full_context()
@@ -109,9 +101,7 @@ class TestEndToEndEnhancedPipeline:
         project_dir.mkdir()
 
         (project_dir / "requirements.txt").write_text("flask>=3.0\npytest>=7.0\n")
-        (project_dir / "app.py").write_text(
-            "from flask import Flask\napp = Flask(__name__)\n"
-        )
+        (project_dir / "app.py").write_text("from flask import Flask\napp = Flask(__name__)\n")
 
         parser = EnhancedProjectParser(project_dir)
         context = parser.extract_full_context()
@@ -156,8 +146,7 @@ class TestEndToEndEnhancedPipeline:
         # which require actual dependencies.
         has_react_learned = any(s.startswith("learned/react/") for s in selected)
         assert not has_react_learned, (
-            f"React learned skills should not be selected for a Python-only project. "
-            f"Selected: {selected}"
+            f"React learned skills should not be selected for a Python-only project. " f"Selected: {selected}"
         )
 
 
@@ -175,16 +164,10 @@ class TestCodeExampleExtractor:
         )
 
         extractor = CodeExampleExtractor()
-        examples = extractor.extract_examples_for_skill(
-            tmp_path, "cli", ["python", "click"]
-        )
+        examples = extractor.extract_examples_for_skill(tmp_path, "cli", ["python", "click"])
 
         assert len(examples) > 0
-        assert any(
-            "click" in ex.get("reason", "").lower()
-            or "click" in ex.get("code", "").lower()
-            for ex in examples
-        )
+        assert any("click" in ex.get("reason", "").lower() or "click" in ex.get("code", "").lower() for ex in examples)
 
     def test_extract_fastapi_patterns(self, tmp_path):
         """Extract FastAPI route patterns."""
@@ -197,9 +180,7 @@ class TestCodeExampleExtractor:
         )
 
         extractor = CodeExampleExtractor()
-        examples = extractor.extract_examples_for_skill(
-            tmp_path, "fastapi", ["python", "fastapi"]
-        )
+        examples = extractor.extract_examples_for_skill(tmp_path, "fastapi", ["python", "fastapi"])
 
         assert len(examples) > 0
 
@@ -207,9 +188,7 @@ class TestCodeExampleExtractor:
         """Extract examples from the project-rules-generator itself."""
         project_path = Path(__file__).parent.parent
         extractor = CodeExampleExtractor()
-        examples = extractor.extract_examples_for_skill(
-            project_path, "cli", ["python", "click"]
-        )
+        examples = extractor.extract_examples_for_skill(project_path, "cli", ["python", "click"])
 
         assert len(examples) > 0
         # Should find click-related code
@@ -272,16 +251,12 @@ class TestLightweightClinerules:
         }
 
         # With output_dir, paths should use skill names, not SKILL.md
-        output = generate_clinerules(
-            "test", selected, context, output_dir=Path("/fake")
-        )
+        output = generate_clinerules("test", selected, context, output_dir=Path("/fake"))
         parsed = yaml.safe_load(output)
 
         builtin_paths = parsed["skills"]["builtin"]
         # Each path must be unique and named after the skill
-        assert len(builtin_paths) == len(
-            set(builtin_paths)
-        ), f"Duplicate paths: {builtin_paths}"
+        assert len(builtin_paths) == len(set(builtin_paths)), f"Duplicate paths: {builtin_paths}"
         for p in builtin_paths:
             assert "SKILL.md" not in p, f"Generic SKILL.md found in path: {p}"
             assert p.startswith("skills/builtin/")
@@ -309,9 +284,7 @@ class TestCLIIntegration:
         project_dir = tmp_path / "test-project"
         project_dir.mkdir()
 
-        (project_dir / "README.md").write_text(
-            "# Test Project\n\nA Python project.\n\n## Tech\n- python\n- click\n"
-        )
+        (project_dir / "README.md").write_text("# Test Project\n\nA Python project.\n\n## Tech\n- python\n- click\n")
         (project_dir / "requirements.txt").write_text("click>=8.0\npytest>=7.0\n")
         (project_dir / "main.py").write_text("import click\n")
 
@@ -332,9 +305,7 @@ class TestCLIIntegration:
         project_dir = tmp_path / "basic-project"
         project_dir.mkdir()
 
-        (project_dir / "README.md").write_text(
-            "# Basic Project\n\nDescription.\n\n## Tech\n- python\n"
-        )
+        (project_dir / "README.md").write_text("# Basic Project\n\nDescription.\n\n## Tech\n- python\n")
 
         runner = CliRunner()
         result = runner.invoke(main, [str(project_dir), "--no-commit", "--quiet"])

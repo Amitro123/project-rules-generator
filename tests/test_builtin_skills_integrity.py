@@ -49,9 +49,7 @@ def test_builtin_skill_content_structure(skills_root, skill_path):
     # Required headers based on our template/meta-skill
     assert "# Skill:" in content, f"{skill_path} missing '# Skill:' header"
     assert "## Purpose" in content, f"{skill_path} missing '## Purpose' section"
-    assert (
-        "## Auto-Trigger" in content
-    ), f"{skill_path} missing '## Auto-Trigger' section"
+    assert "## Auto-Trigger" in content, f"{skill_path} missing '## Auto-Trigger' section"
     # Some skills might name "Process" differently (e.g. "4-Phase Process"), so let's check broadly
     assert "## " in content, f"{skill_path} seems to have no H2 headers"
 

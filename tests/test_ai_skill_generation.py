@@ -34,23 +34,17 @@ class TestAISkillGeneration(unittest.TestCase):
         mock_analyzer_cls.return_value = mock_analyzer
 
         mock_generator = MagicMock()
-        mock_generator.generate_skill.return_value = (
-            "# Skill: AI Test\n\n## Purpose\nAI Generated"
-        )
+        mock_generator.generate_skill.return_value = "# Skill: AI Test\n\n## Purpose\nAI Generated"
         mock_llm_cls.return_value = mock_generator
 
         manager = SkillsManager()
 
         # Call create_skill with use_ai=True
-        skill_path = manager.create_skill(
-            "ai-test-skill", project_path=".", use_ai=True
-        )
+        skill_path = manager.create_skill("ai-test-skill", project_path=".", use_ai=True)
 
         # Verify interactions
         mock_analyzer_cls.assert_called_once()
-        mock_generator.generate_skill.assert_called_once_with(
-            "ai-test-skill", {"context": "dummy"}
-        )
+        mock_generator.generate_skill.assert_called_once_with("ai-test-skill", {"context": "dummy"})
 
         # Verify file content
         content = (skill_path / "SKILL.md").read_text(encoding="utf-8")
@@ -65,9 +59,7 @@ class TestAISkillGeneration(unittest.TestCase):
         manager = SkillsManager()
 
         # Should gracefully fallback and produce a default template
-        skill_path = manager.create_skill(
-            "missing-dep-skill", project_path=".", use_ai=True
-        )
+        skill_path = manager.create_skill("missing-dep-skill", project_path=".", use_ai=True)
 
         content = (skill_path / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("# Skill: Missing Dep Skill", content)
@@ -87,9 +79,7 @@ class TestAISkillGeneration(unittest.TestCase):
 
         manager = SkillsManager()
 
-        skill_path = manager.create_skill(
-            "failed-ai-skill", project_path=".", use_ai=True
-        )
+        skill_path = manager.create_skill("failed-ai-skill", project_path=".", use_ai=True)
 
         # Should populate with default template
         content = (skill_path / "SKILL.md").read_text(encoding="utf-8")

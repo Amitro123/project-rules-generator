@@ -115,9 +115,7 @@ class TestCacheIO:
         output_dir.mkdir()
         analyzer = IncrementalAnalyzer(tmp_path, output_dir)
 
-        analyzer.save_hash(
-            {"deps": "a", "readme": "b", "source": "c", "tests": "d", "structure": "e"}
-        )
+        analyzer.save_hash({"deps": "a", "readme": "b", "source": "c", "tests": "d", "structure": "e"})
 
         assert (output_dir / ".prg-cache.json").exists()
         data = json.loads((output_dir / ".prg-cache.json").read_text(encoding="utf-8"))
@@ -211,16 +209,10 @@ class TestIncrementalCLI:
 
         runner = CliRunner()
         # First run: generates files and saves cache
-        result1 = runner.invoke(
-            main, [str(tmp_path), "--no-commit", "--verbose", "--incremental"]
-        )
-        assert (
-            result1.exit_code == 0
-        ), f"Exit {result1.exit_code}: {result1.output}\n{result1.exception}"
+        result1 = runner.invoke(main, [str(tmp_path), "--no-commit", "--verbose", "--incremental"])
+        assert result1.exit_code == 0, f"Exit {result1.exit_code}: {result1.output}\n{result1.exception}"
 
         # Second run: no changes → skip
-        result2 = runner.invoke(
-            main, [str(tmp_path), "--no-commit", "--verbose", "--incremental"]
-        )
+        result2 = runner.invoke(main, [str(tmp_path), "--no-commit", "--verbose", "--incremental"])
         assert result2.exit_code == 0
         assert "No changes detected" in result2.output

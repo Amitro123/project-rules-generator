@@ -83,9 +83,7 @@ class TestProjectAnalyzer(unittest.TestCase):
         (scripts_dir / "deploy.sh").touch()
 
         # package.json scripts
-        pkg_content = json.dumps(
-            {"scripts": {"start": "node index.js", "test": "jest"}}
-        )
+        pkg_content = json.dumps({"scripts": {"start": "node index.js", "test": "jest"}})
         (self.test_dir / "package.json").write_text(pkg_content, encoding="utf-8")
 
         analyzer = ProjectAnalyzer(self.test_dir)

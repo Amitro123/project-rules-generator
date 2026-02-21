@@ -49,10 +49,7 @@ class TestTaskDecomposer:
 
         assert len(tasks) >= 1
         assert tasks[0].id == 1
-        assert (
-            "authentication" in tasks[0].title.lower()
-            or "authentication" in tasks[0].goal.lower()
-        )
+        assert "authentication" in tasks[0].title.lower() or "authentication" in tasks[0].goal.lower()
 
     def test_decompose_with_project_context(self):
         """Context should not crash the decomposer."""
@@ -164,9 +161,7 @@ Estimated: 4
 
     def test_parse_malformed_response_returns_fallback(self):
         decomposer = TaskDecomposer(api_key=None)
-        tasks = decomposer._parse_response(
-            "Just some random text\nwith no structure", "Fallback task"
-        )
+        tasks = decomposer._parse_response("Just some random text\nwith no structure", "Fallback task")
 
         assert len(tasks) >= 1
 
@@ -269,9 +264,7 @@ class TestPlanCLI:
             ],
         )
 
-        assert (
-            result.exit_code == 0
-        ), f"Exit {result.exit_code}: {result.output}\n{result.exception}"
+        assert result.exit_code == 0, f"Exit {result.exit_code}: {result.output}\n{result.exception}"
         plan_path = tmp_path / "PLAN.md"
         assert plan_path.exists()
         content = plan_path.read_text(encoding="utf-8")
@@ -327,9 +320,7 @@ class TestPlanCLI:
             ],
         )
 
-        assert (
-            result.exit_code == 0
-        ), f"Exit {result.exit_code}: {result.output}\n{result.exception}"
+        assert result.exit_code == 0, f"Exit {result.exit_code}: {result.output}\n{result.exception}"
         plan_path = tmp_path / "PLAN.md"
         assert plan_path.exists()
         content = plan_path.read_text(encoding="utf-8")

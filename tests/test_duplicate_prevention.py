@@ -3,6 +3,7 @@
 Verifies that the system correctly detects existing skills and
 prevents duplicate creation unless force=True is passed.
 """
+
 import pytest
 from pathlib import Path
 
@@ -10,8 +11,8 @@ from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
 from generator.skills_manager import SkillsManager
 
-
 # ─── SkillDiscovery.skill_exists() ────────────────────────────────────────────
+
 
 class TestSkillExists:
     """Unit tests for SkillDiscovery.skill_exists()."""
@@ -66,6 +67,7 @@ class TestSkillExists:
 
 
 # ─── SkillGenerator.create_skill() duplicate guard ────────────────────────────
+
 
 class TestCreateSkillDuplicatePrevention:
     """Tests for the force=False duplicate guard in create_skill."""
@@ -132,6 +134,7 @@ class TestCreateSkillDuplicatePrevention:
 
 # ─── CoworkSkillCreator.exists_in_learned() ───────────────────────────────────
 
+
 class TestExistsInLearned:
     """Tests for CoworkSkillCreator.exists_in_learned() delegation."""
 
@@ -171,6 +174,7 @@ class TestExistsInLearned:
 
 # ─── SkillsManager facade ─────────────────────────────────────────────────────
 
+
 class TestSkillsManagerDuplicatePrevention:
     """Tests for duplicate prevention through the SkillsManager facade."""
 
@@ -201,6 +205,7 @@ class TestSkillsManagerDuplicatePrevention:
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def _make_discovery(tmp_path: Path) -> SkillDiscovery:
     """Create a SkillDiscovery instance pointing to tmp_path directories."""

@@ -141,9 +141,7 @@ class TestContextStrategyByProjectType:
         structure = {"entry_points": ["app/main.py"], "patterns": ["fastapi-api"]}
         test_info = {"framework": "pytest", "has_conftest": False}
 
-        result = _build_context_strategy(
-            structure, ["app/main.py"], "fastapi-api", test_info
-        )
+        result = _build_context_strategy(structure, ["app/main.py"], "fastapi-api", test_info)
 
         assert "`app/main.py`" in result
 
@@ -151,9 +149,7 @@ class TestContextStrategyByProjectType:
         structure = {"entry_points": ["manage.py"], "patterns": ["django-app"]}
         test_info = {"framework": "pytest", "has_conftest": False}
 
-        result = _build_context_strategy(
-            structure, ["manage.py"], "django-app", test_info
-        )
+        result = _build_context_strategy(structure, ["manage.py"], "django-app", test_info)
 
         assert "migrations" in result
 

@@ -545,8 +545,7 @@ class {user_request.split()[0].title()}Config(BaseModel):
         # Create API contracts
         api_contracts = []
         if is_cache:
-            api_contracts.append(
-                """### `get_cached(key: str, fetch_fn: Callable[[], T]) -> T`
+            api_contracts.append("""### `get_cached(key: str, fetch_fn: Callable[[], T]) -> T`
 
 **Purpose**: Retrieve value from cache or fetch and cache it
 
@@ -566,8 +565,7 @@ def fetch_user(user_id: int) -> User:
     return db.query(User).get(user_id)
 
 user = get_cached(f"user:{user_id}", lambda: fetch_user(user_id))
-```"""
-            )
+```""")
             api_contracts.append("""### `invalidate_cache(pattern: str) -> int`
 
 **Purpose**: Remove cache entries matching pattern
@@ -583,8 +581,7 @@ user = get_cached(f"user:{user_id}", lambda: fetch_user(user_id))
 count = invalidate_cache("user:*")
 ```""")
         else:
-            api_contracts.append(
-                f"""### `execute_{user_request.split()[0].lower()}(params: dict) -> Result`
+            api_contracts.append(f"""### `execute_{user_request.split()[0].lower()}(params: dict) -> Result`
 
 **Purpose**: Execute the {user_request} operation
 
@@ -596,8 +593,7 @@ count = invalidate_cache("user:*")
 **Raises**:
 - `ValidationError`: If params are invalid
 - `OperationError`: If execution fails
-"""
-            )
+""")
 
         # Create success criteria
         criteria = []

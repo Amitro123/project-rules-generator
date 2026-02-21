@@ -8,6 +8,7 @@ from generator.renderers import (
     MarkdownSkillRenderer,
     YamlSkillRenderer,
 )
+
 # NOTE: skills_generator.py removed in v1.1 - generate_skills tests are skipped
 from generator.types import Skill, SkillFile
 

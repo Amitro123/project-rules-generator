@@ -56,19 +56,19 @@ def test_detect_tools_from_pyproject(tmp_path: Path):
     pyproject = tmp_path / "pyproject.toml"
 
     # Case 1: Ruff
-    pyproject.write_text('[tool.ruff]\nline-length = 88', encoding="utf-8")
+    pyproject.write_text("[tool.ruff]\nline-length = 88", encoding="utf-8")
     tools = detect_project_tools(project_path=tmp_path)
     assert tools.get("check") == "ruff check ."
     assert tools.get("format") == "ruff format ."
 
     # Case 2: Flake8 and Black
-    pyproject.write_text('[tool.flake8]\nmax-line-length = 88\n[tool.black]', encoding="utf-8")
+    pyproject.write_text("[tool.flake8]\nmax-line-length = 88\n[tool.black]", encoding="utf-8")
     tools = detect_project_tools(project_path=tmp_path)
     assert tools.get("check") == "flake8 ."
     assert tools.get("format") == "black ."
 
     # Case 3: Mypy
-    pyproject.write_text('[tool.mypy]\nstrict = true', encoding="utf-8")
+    pyproject.write_text("[tool.mypy]\nstrict = true", encoding="utf-8")
     tools = detect_project_tools(project_path=tmp_path)
     assert tools.get("lint") == "mypy ."
 

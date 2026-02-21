@@ -175,14 +175,9 @@ class TestConstitutionCLIFlag:
             ],
         )
 
-        assert (
-            result.exit_code == 0
-        ), f"Exit {result.exit_code}: {result.output}\n{result.exception}"
+        assert result.exit_code == 0, f"Exit {result.exit_code}: {result.output}\n{result.exception}"
         # Check the file was generated (path mentioned in output)
-        assert (
-            "constitution" in result.output.lower()
-            or "Generated files" in result.output
-        )
+        assert "constitution" in result.output.lower() or "Generated files" in result.output
 
     def test_constitution_flag_creates_file(self, tmp_path):
         """Test that constitution.md is actually created on disk."""
@@ -202,12 +197,8 @@ class TestConstitutionCLIFlag:
             ],
         )
 
-        assert (
-            result.exit_code == 0
-        ), f"Exit {result.exit_code}: {result.output}\n{result.exception}"
+        assert result.exit_code == 0, f"Exit {result.exit_code}: {result.output}\n{result.exception}"
         constitution_path = tmp_path / ".clinerules" / "constitution.md"
-        assert (
-            constitution_path.exists()
-        ), f"constitution.md not created. Output:\n{result.output}"
+        assert constitution_path.exists(), f"constitution.md not created. Output:\n{result.output}"
         content = constitution_path.read_text(encoding="utf-8")
         assert "## Code Quality Principles" in content

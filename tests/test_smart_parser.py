@@ -82,8 +82,6 @@ def test_extract_anti_patterns(tmp_path):
     assert len(patterns) == 0, "Should return nothing without project_path"
 
     # With project_path and actual code using ffmpeg without a guard
-    (tmp_path / "processor.py").write_text(
-        'import subprocess\nsubprocess.run(["ffmpeg", "-i", f])\n'
-    )
+    (tmp_path / "processor.py").write_text('import subprocess\nsubprocess.run(["ffmpeg", "-i", f])\n')
     patterns = extract_anti_patterns("dummy", ["ffmpeg"], project_path=tmp_path)
     assert any("FFmpeg" in p or "ffmpeg" in p for p in patterns)

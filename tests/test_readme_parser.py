@@ -134,15 +134,9 @@ Here is how to use ffmpeg and opencv in your own project.
         result = parse_readme(readme)
         assert "python" in result["tech_stack"]
         # These should FAIL until we fix the parser
-        assert (
-            "ffmpeg" not in result["tech_stack"]
-        ), "ffmpeg should be ignored in Examples"
-        assert (
-            "opencv" not in result["tech_stack"]
-        ), "opencv should be ignored in Examples"
-        assert (
-            "pytorch" not in result["tech_stack"]
-        ), "pytorch should be ignored in Supported Types"
+        assert "ffmpeg" not in result["tech_stack"], "ffmpeg should be ignored in Examples"
+        assert "opencv" not in result["tech_stack"], "opencv should be ignored in Examples"
+        assert "pytorch" not in result["tech_stack"], "pytorch should be ignored in Supported Types"
 
     def test_ignores_tech_in_fenced_code_blocks(self, tmp_path):
         """Should not detect tech keywords that only appear inside fenced code blocks."""
@@ -204,9 +198,7 @@ Do things.
         """Should handle large README content without errors or timeouts."""
         readme = tmp_path / "README.md"
         big_section = "\n".join([f"- item {i}" for i in range(5000)])
-        content = (
-            f"# Big\n\n## Features\n{big_section}\n\n## Installation\n1. a\n2. b\n"
-        )
+        content = f"# Big\n\n## Features\n{big_section}\n\n## Installation\n1. a\n2. b\n"
         readme.write_text(content)
         result = parse_readme(readme)
         assert isinstance(result["features"], list)

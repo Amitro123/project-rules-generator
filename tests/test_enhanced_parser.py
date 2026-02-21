@@ -15,12 +15,7 @@ class TestDependencyParser:
         """Parse standard requirements.txt with pinned versions."""
         req_file = tmp_path / "requirements.txt"
         req_file.write_text(
-            "fastapi==0.100.0\n"
-            "pydantic>=2.0.0\n"
-            "uvicorn~=0.23.0\n"
-            "# This is a comment\n"
-            "\n"
-            "click\n"
+            "fastapi==0.100.0\n" "pydantic>=2.0.0\n" "uvicorn~=0.23.0\n" "# This is a comment\n" "\n" "click\n"
         )
         deps = DependencyParser.parse_requirements_txt(req_file)
 
@@ -59,11 +54,7 @@ class TestDependencyParser:
     def test_parse_requirements_txt_skips_options(self, tmp_path):
         """Skip -r includes and --flags."""
         req_file = tmp_path / "requirements.txt"
-        req_file.write_text(
-            "-r base-requirements.txt\n"
-            "--index-url https://pypi.org/simple\n"
-            "requests>=2.28.0\n"
-        )
+        req_file.write_text("-r base-requirements.txt\n" "--index-url https://pypi.org/simple\n" "requests>=2.28.0\n")
         deps = DependencyParser.parse_requirements_txt(req_file)
 
         assert len(deps) == 1
@@ -123,9 +114,7 @@ dependencies = [
     def test_detect_system_dependencies(self, tmp_path):
         """Detect system deps from source code."""
         py_file = tmp_path / "processor.py"
-        py_file.write_text(
-            "import subprocess\n" 'subprocess.run(["ffmpeg", "-i", input_file])\n'
-        )
+        py_file.write_text("import subprocess\n" 'subprocess.run(["ffmpeg", "-i", input_file])\n')
         system_deps = DependencyParser.detect_system_dependencies(tmp_path)
         assert "ffmpeg" in system_deps
 
@@ -135,9 +124,7 @@ class TestStructureAnalyzer:
 
     def test_detect_python_cli(self, tmp_path):
         """Detect Python CLI project."""
-        (tmp_path / "main.py").write_text(
-            "import click\n@click.command()\ndef main(): pass\n"
-        )
+        (tmp_path / "main.py").write_text("import click\n@click.command()\ndef main(): pass\n")
         (tmp_path / "cli.py").write_text("import argparse\n")
 
         analyzer = StructureAnalyzer(tmp_path)
@@ -148,9 +135,7 @@ class TestStructureAnalyzer:
 
     def test_detect_fastapi(self, tmp_path):
         """Detect FastAPI project."""
-        (tmp_path / "app.py").write_text(
-            "from fastapi import FastAPI\napp = FastAPI()\n"
-        )
+        (tmp_path / "app.py").write_text("from fastapi import FastAPI\napp = FastAPI()\n")
         routes_dir = tmp_path / "routes"
         routes_dir.mkdir()
         (routes_dir / "users.py").write_text("from fastapi import APIRouter\n")
@@ -165,9 +150,7 @@ class TestStructureAnalyzer:
         (tmp_path / "conftest.py").write_text("import pytest\n")
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
-        (tests_dir / "test_main.py").write_text(
-            "import pytest\ndef test_something(): pass\n"
-        )
+        (tests_dir / "test_main.py").write_text("import pytest\ndef test_something(): pass\n")
 
         analyzer = StructureAnalyzer(tmp_path)
         framework = analyzer.detect_test_framework()
@@ -212,15 +195,9 @@ class TestEnhancedProjectParser:
     def test_extract_full_context_python_project(self, tmp_path):
         """Test full context extraction for a Python project."""
         # Setup test project
-        (tmp_path / "README.md").write_text(
-            "# My CLI Tool\n\nA Python CLI tool.\n\n## Tech\n- python\n- click\n"
-        )
-        (tmp_path / "requirements.txt").write_text(
-            "click>=8.0\npydantic>=2.0\npytest>=7.0\n"
-        )
-        (tmp_path / "main.py").write_text(
-            "import click\n@click.command()\ndef main(): pass\n"
-        )
+        (tmp_path / "README.md").write_text("# My CLI Tool\n\nA Python CLI tool.\n\n## Tech\n- python\n- click\n")
+        (tmp_path / "requirements.txt").write_text("click>=8.0\npydantic>=2.0\npytest>=7.0\n")
+        (tmp_path / "main.py").write_text("import click\n@click.command()\ndef main(): pass\n")
 
         tests_dir = tmp_path / "tests"
         tests_dir.mkdir()
@@ -262,14 +239,10 @@ class TestEnhancedProjectParser:
         )
         src = tmp_path / "src"
         src.mkdir()
-        (src / "App.tsx").write_text(
-            'import React from "react";\nexport default function App() {}\n'
-        )
+        (src / "App.tsx").write_text('import React from "react";\nexport default function App() {}\n')
         components = src / "components"
         components.mkdir()
-        (components / "Button.tsx").write_text(
-            "export const Button = () => <button />\n"
-        )
+        (components / "Button.tsx").write_text("export const Button = () => <button />\n")
 
         parser = EnhancedProjectParser(tmp_path)
         context = parser.extract_full_context()
@@ -281,9 +254,7 @@ class TestEnhancedProjectParser:
     def test_no_react_in_python_project(self, tmp_path):
         """React skills should NOT appear in Python-only projects."""
         (tmp_path / "requirements.txt").write_text("fastapi>=0.100.0\npydantic>=2.0\n")
-        (tmp_path / "main.py").write_text(
-            "from fastapi import FastAPI\napp = FastAPI()\n"
-        )
+        (tmp_path / "main.py").write_text("from fastapi import FastAPI\napp = FastAPI()\n")
 
         parser = EnhancedProjectParser(tmp_path)
         context = parser.extract_full_context()

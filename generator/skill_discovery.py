@@ -195,9 +195,11 @@ class SkillDiscovery:
 
         root = {
             "builtin": self.global_builtin,
-            "learned": self.project_learned_link
-            if self.project_learned_link and self.project_learned_link.exists()
-            else self.global_learned,
+            "learned": (
+                self.project_learned_link
+                if self.project_learned_link and self.project_learned_link.exists()
+                else self.global_learned
+            ),
             "project": self.project_local_dir,
         }.get(layer)
 

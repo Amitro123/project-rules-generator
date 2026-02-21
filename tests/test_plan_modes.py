@@ -169,9 +169,7 @@ class TestTaskStatus:
 
     def test_is_blocking_false_completed(self):
         """Test non-blocking when task completed."""
-        task = TaskStatus(
-            description="Task 1", completed=True, subtasks_total=2, subtasks_completed=2
-        )
+        task = TaskStatus(description="Task 1", completed=True, subtasks_total=2, subtasks_completed=2)
         assert task.is_blocking is False
 
 

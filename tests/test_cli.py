@@ -22,9 +22,7 @@ class TestCLI:
         runner = CliRunner()
 
         # Run on sample project
-        result = runner.invoke(
-            main, [str(sample_project_path), "--verbose", "--no-commit"]
-        )
+        result = runner.invoke(main, [str(sample_project_path), "--verbose", "--no-commit"])
 
         assert (
             result.exit_code == 0

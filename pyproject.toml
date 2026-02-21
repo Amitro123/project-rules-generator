@@ -54,3 +54,24 @@ exclude = [
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = ["F401", "E501"]
+
+[tool.black]
+line-length = 120
+target-version = ['py38']
+exclude = '''
+(
+  /(
+      \.claude
+    | \.clinerules
+    | \.git
+    | \.venv
+    | \.mypy_cache
+    | \.pytest_cache
+    | \.ruff_cache
+    | __pycache__
+    | generator/templates
+    | build
+    | dist
+  )/
+)
+'''

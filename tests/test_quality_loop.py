@@ -53,13 +53,9 @@ class TestImproveWithFeedback:
         ]
 
         mock_analyzer.analyze.side_effect = reports
-        mock_analyzer.apply_fix.side_effect = lambda fp, patch: fp.write_text(
-            patch, encoding="utf-8"
-        )
+        mock_analyzer.apply_fix.side_effect = lambda fp, patch: fp.write_text(patch, encoding="utf-8")
 
-        result = improve_with_feedback(
-            sample_file, mock_analyzer, target_score=90, max_iterations=5, verbose=False
-        )
+        result = improve_with_feedback(sample_file, mock_analyzer, target_score=90, max_iterations=5, verbose=False)
 
         # Should stop after reaching 92 (target is 90)
         assert result.score >= 90
@@ -78,13 +74,9 @@ class TestImproveWithFeedback:
         )
 
         mock_analyzer.analyze.return_value = low_report
-        mock_analyzer.apply_fix.side_effect = lambda fp, patch: fp.write_text(
-            patch, encoding="utf-8"
-        )
+        mock_analyzer.apply_fix.side_effect = lambda fp, patch: fp.write_text(patch, encoding="utf-8")
 
-        result = improve_with_feedback(
-            sample_file, mock_analyzer, target_score=90, max_iterations=3, verbose=False
-        )
+        result = improve_with_feedback(sample_file, mock_analyzer, target_score=90, max_iterations=3, verbose=False)
 
         # 3 loop iterations + 1 final re-score = 4 analyze calls
         assert mock_analyzer.analyze.call_count == 4
@@ -102,9 +94,7 @@ class TestImproveWithFeedback:
 
         mock_analyzer.analyze.return_value = high_report
 
-        result = improve_with_feedback(
-            sample_file, mock_analyzer, target_score=90, max_iterations=5, verbose=False
-        )
+        result = improve_with_feedback(sample_file, mock_analyzer, target_score=90, max_iterations=5, verbose=False)
 
         # Should return immediately without applying fixes
         assert result.score == 95
@@ -123,9 +113,7 @@ class TestImproveWithFeedback:
 
         mock_analyzer.analyze.return_value = report_no_patch
 
-        result = improve_with_feedback(
-            sample_file, mock_analyzer, target_score=90, max_iterations=5, verbose=False
-        )
+        result = improve_with_feedback(sample_file, mock_analyzer, target_score=90, max_iterations=5, verbose=False)
 
         # 1 loop iteration + 1 final re-score = 2 analyze calls
         assert mock_analyzer.analyze.call_count == 2
@@ -145,9 +133,7 @@ class TestImproveWithFeedback:
         mock_analyzer.analyze.return_value = report
         mock_analyzer.apply_fix.side_effect = IOError("Write failed")
 
-        result = improve_with_feedback(
-            sample_file, mock_analyzer, target_score=90, max_iterations=5, verbose=False
-        )
+        result = improve_with_feedback(sample_file, mock_analyzer, target_score=90, max_iterations=5, verbose=False)
 
         # Should handle error gracefully and return best report
         # 1 loop iteration + 1 final re-score = 2 analyze calls
@@ -158,21 +144,15 @@ class TestImproveWithFeedback:
         """Test input validation."""
         # Invalid target_score
         with pytest.raises(ValueError, match="target_score must be 0-100"):
-            improve_with_feedback(
-                sample_file, mock_analyzer, target_score=150, max_iterations=5
-            )
+            improve_with_feedback(sample_file, mock_analyzer, target_score=150, max_iterations=5)
 
         # Invalid max_iterations
         with pytest.raises(ValueError, match="max_iterations must be >= 1"):
-            improve_with_feedback(
-                sample_file, mock_analyzer, target_score=90, max_iterations=0
-            )
+            improve_with_feedback(sample_file, mock_analyzer, target_score=90, max_iterations=0)
 
         # Non-existent file
         with pytest.raises(FileNotFoundError):
-            improve_with_feedback(
-                Path("nonexistent.md"), mock_analyzer, target_score=90, max_iterations=5
-            )
+            improve_with_feedback(Path("nonexistent.md"), mock_analyzer, target_score=90, max_iterations=5)
 
     def test_tracks_best_attempt(self, mock_analyzer, sample_file):
         """Test that best score is tracked even if later iterations regress."""
@@ -202,13 +182,9 @@ class TestImproveWithFeedback:
         ]
 
         mock_analyzer.analyze.side_effect = reports
-        mock_analyzer.apply_fix.side_effect = lambda fp, patch: fp.write_text(
-            patch, encoding="utf-8"
-        )
+        mock_analyzer.apply_fix.side_effect = lambda fp, patch: fp.write_text(patch, encoding="utf-8")
 
-        result = improve_with_feedback(
-            sample_file, mock_analyzer, target_score=90, max_iterations=3, verbose=False
-        )
+        result = improve_with_feedback(sample_file, mock_analyzer, target_score=90, max_iterations=3, verbose=False)
 
         # Should return best score (85), not final score (80)
         assert result.score == 85
@@ -248,17 +224,13 @@ class TestBatchImproveWithFeedback:
             return QualityReport(
                 filepath=filepath,
                 score=score,
-                breakdown=QualityBreakdown(
-                    score // 5, score // 5, score // 5, score // 5, score // 5
-                ),
+                breakdown=QualityBreakdown(score // 5, score // 5, score // 5, score // 5, score // 5),
                 suggestions=[],
                 patch=None if score >= 90 else "Improved",
             )
 
         mock_analyzer.analyze.side_effect = mock_analyze
-        mock_analyzer.apply_fix.side_effect = lambda fp, patch: fp.write_text(
-            patch, encoding="utf-8"
-        )
+        mock_analyzer.apply_fix.side_effect = lambda fp, patch: fp.write_text(patch, encoding="utf-8")
 
         results = batch_improve_with_feedback(
             sample_files,
@@ -316,9 +288,7 @@ Some text.
 
         # Use real analyzer (will use heuristic scoring)
         # Pass tmp_path as allowed_base_path to avoid security check
-        analyzer = ContentAnalyzer(
-            provider="groq", client=Mock(), allowed_base_path=tmp_path
-        )
+        analyzer = ContentAnalyzer(provider="groq", client=Mock(), allowed_base_path=tmp_path)
 
         # Mock the AI client to avoid actual API calls
         mock_client = Mock()
@@ -346,14 +316,9 @@ def example_function(param: str) -> int:
 
         # Run improvement
         # Run improvement
-        improve_with_feedback(
-            filepath, analyzer, target_score=90, max_iterations=3, verbose=False
-        )
+        improve_with_feedback(filepath, analyzer, target_score=90, max_iterations=3, verbose=False)
 
         # Verify file was updated
         updated_content = filepath.read_text(encoding="utf-8")
         assert len(updated_content) > len(low_quality_content)
-        assert (
-            "type hints" in updated_content.lower()
-            or "examples" in updated_content.lower()
-        )
+        assert "type hints" in updated_content.lower() or "examples" in updated_content.lower()

@@ -28,33 +28,25 @@ class TestQualityReport:
     def test_excellent_status(self):
         """Test status for excellent score."""
         breakdown = QualityBreakdown(18, 19, 18, 19, 18)
-        report = QualityReport(
-            filepath="test.md", score=92, breakdown=breakdown, suggestions=[]
-        )
+        report = QualityReport(filepath="test.md", score=92, breakdown=breakdown, suggestions=[])
         assert report.status == "✅ Excellent"
 
     def test_good_status(self):
         """Test status for good score."""
         breakdown = QualityBreakdown(17, 17, 17, 17, 17)
-        report = QualityReport(
-            filepath="test.md", score=85, breakdown=breakdown, suggestions=[]
-        )
+        report = QualityReport(filepath="test.md", score=85, breakdown=breakdown, suggestions=[])
         assert report.status == "✅ Good"
 
     def test_needs_improvement_status(self):
         """Test status for needs improvement score."""
         breakdown = QualityBreakdown(15, 14, 15, 14, 14)
-        report = QualityReport(
-            filepath="test.md", score=72, breakdown=breakdown, suggestions=[]
-        )
+        report = QualityReport(filepath="test.md", score=72, breakdown=breakdown, suggestions=[])
         assert report.status == "⚠️  Needs improvement"
 
     def test_poor_status(self):
         """Test status for poor score."""
         breakdown = QualityBreakdown(10, 12, 8, 11, 9)
-        report = QualityReport(
-            filepath="test.md", score=50, breakdown=breakdown, suggestions=[]
-        )
+        report = QualityReport(filepath="test.md", score=50, breakdown=breakdown, suggestions=[])
         assert report.status == "❌ Poor quality"
 
 
@@ -121,10 +113,7 @@ Some random text without structure or examples.
         # Should score poorly
         assert report.score < 70
         assert len(report.suggestions) > 0
-        assert (
-            "header" in " ".join(report.suggestions).lower()
-            or "structure" in " ".join(report.suggestions).lower()
-        )
+        assert "header" in " ".join(report.suggestions).lower() or "structure" in " ".join(report.suggestions).lower()
 
     def test_analyze_minimal_content(self, analyzer):
         """Test analysis of minimal content."""
@@ -133,9 +122,7 @@ Some random text without structure or examples.
 
         # Should identify lack of detail
         assert report.score < 80
-        assert any(
-            "detail" in s.lower() or "brief" in s.lower() for s in report.suggestions
-        )
+        assert any("detail" in s.lower() or "brief" in s.lower() for s in report.suggestions)
 
     def test_analyze_missing_code_examples(self, analyzer):
         """Test detection of missing code examples."""
@@ -151,9 +138,7 @@ You should use it properly.
 
         # Should identify lack of actionability
         assert report.breakdown.actionability < 18
-        assert any(
-            "code" in s.lower() or "example" in s.lower() for s in report.suggestions
-        )
+        assert any("code" in s.lower() or "example" in s.lower() for s in report.suggestions)
 
     def test_patch_generation_for_low_score(self, analyzer):
         """Test that patch is generated for scores < 85."""
@@ -199,9 +184,7 @@ uvicorn main:app
         # Create analyzer with tmp_path as allowed base for security validation
         analyzer = ContentAnalyzer(client=Mock(), allowed_base_path=tmp_path)
 
-        improved_content = (
-            "# Improved\n\nBetter content with examples\n\n```bash\ncommand\n```"
-        )
+        improved_content = "# Improved\n\nBetter content with examples\n\n```bash\ncommand\n```"
         analyzer.apply_fix(test_file, improved_content)
 
         result = test_file.read_text(encoding="utf-8")

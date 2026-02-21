@@ -29,9 +29,7 @@ class TestTwoStageWorkflow:
                 "--verbose",
             ],
         )
-        assert (
-            result1.exit_code == 0
-        ), f"Design failed: {result1.output}\n{result1.exception}"
+        assert result1.exit_code == 0, f"Design failed: {result1.output}\n{result1.exception}"
 
         design_path = tmp_path / "DESIGN.md"
         assert design_path.exists()
@@ -52,9 +50,7 @@ class TestTwoStageWorkflow:
                 "--verbose",
             ],
         )
-        assert (
-            result2.exit_code == 0
-        ), f"Plan failed: {result2.output}\n{result2.exception}"
+        assert result2.exit_code == 0, f"Plan failed: {result2.output}\n{result2.exception}"
 
         plan_path = tmp_path / "PLAN.md"
         assert plan_path.exists()
@@ -107,9 +103,7 @@ class TestTwoStageWorkflow:
         # Should have: 2 arch decisions + 1 data model + 2 API contracts + 1 verification = 6
         assert len(tasks) >= 5
         # Last task should be verification
-        assert (
-            "verif" in tasks[-1].title.lower() or "criteria" in tasks[-1].title.lower()
-        )
+        assert "verif" in tasks[-1].title.lower() or "criteria" in tasks[-1].title.lower()
         assert len(tasks[-1].tests) == 2  # two success criteria
 
     def test_plan_from_design_generates_coherent_plan(self, tmp_path):
@@ -165,13 +159,9 @@ class TestDesignGeneratorIntegration:
 
     def test_design_with_real_project(self, tmp_path):
         """Generate design using actual project context."""
-        (tmp_path / "README.md").write_text(
-            "# My API\n\nA FastAPI REST API.\n\n## Tech\n- python\n- fastapi\n"
-        )
+        (tmp_path / "README.md").write_text("# My API\n\nA FastAPI REST API.\n\n## Tech\n- python\n- fastapi\n")
         (tmp_path / "requirements.txt").write_text("fastapi>=0.100\nuvicorn>=0.23\n")
-        (tmp_path / "app.py").write_text(
-            "from fastapi import FastAPI\napp = FastAPI()\n"
-        )
+        (tmp_path / "app.py").write_text("from fastapi import FastAPI\napp = FastAPI()\n")
 
         from generator.parsers.enhanced_parser import EnhancedProjectParser
 

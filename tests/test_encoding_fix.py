@@ -32,9 +32,7 @@ class TestEncodingFix:
             mock_instance = MockGroq.return_value
             mock_chat_completion = MagicMock()
             mock_message = MagicMock()
-            mock_message.content = (
-                "Groq content \u05d2\u20ac\u201d with artifacts \u05d2"
-            )
+            mock_message.content = "Groq content \u05d2\u20ac\u201d with artifacts \u05d2"
             mock_chat_completion.choices = [MagicMock(message=mock_message)]
 
             mock_instance.chat.completions.create.return_value = mock_chat_completion

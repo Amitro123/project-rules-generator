@@ -73,9 +73,7 @@ class TestPreflightReport:
 
 class TestPreflightChecker:
 
-    def _make_project(
-        self, tmp_path, rules=True, skills=3, plan=True, tasks=True, design=True
-    ):
+    def _make_project(self, tmp_path, rules=True, skills=3, plan=True, tasks=True, design=True):
         """Create a minimal project structure for testing."""
         if rules:
             rules_dir = tmp_path / ".clinerules"
@@ -86,9 +84,7 @@ class TestPreflightChecker:
             skills_dir = tmp_path / ".clinerules" / "skills" / "learned"
             skills_dir.mkdir(parents=True, exist_ok=True)
             for i in range(skills):
-                (skills_dir / f"skill-{i}.md").write_text(
-                    f"# Skill {i}", encoding="utf-8"
-                )
+                (skills_dir / f"skill-{i}.md").write_text(f"# Skill {i}", encoding="utf-8")
 
         if plan:
             (tmp_path / "PLAN.md").write_text("# PLAN\n", encoding="utf-8")
@@ -152,9 +148,7 @@ class TestPreflightChecker:
         assert "DESIGN.md" in failed_names
 
     def test_fix_commands_present(self, tmp_path):
-        proj = self._make_project(
-            tmp_path, rules=False, plan=False, design=False, tasks=False, skills=0
-        )
+        proj = self._make_project(tmp_path, rules=False, plan=False, design=False, tasks=False, skills=0)
         checker = PreflightChecker(proj, task_description="Add cache")
         report = checker.run_checks()
         for c in report.failed_checks:
