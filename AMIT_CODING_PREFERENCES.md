@@ -27,3 +27,4 @@ Learned:
 - **Workflow Stability**: Don't over-engineer. Use simple, proven patterns (e.g., Global Cache + Symlinks) instead of complex new abstractions unless necessary.
 - **Naming Conventions**: Stick to functional names (e.g., `pytest-testing-workflow`) over abstract ones (e.g., `tech-patterns`) to maintain clarity and reusability.
 - **Config Single Source of Truth**: NEVER allow duplicate configuration files (e.g., `.clinerules/clinerules.yaml` vs `.clinerules.yaml`). Always enforce a single root source of truth to avoid cache confusion.
+- **Testing LLM Prompts**: When testing functions that build LLM prompts from dictionaries (e.g., `generate_readme_with_llm`), ALWAYS provide a complete input dictionary in mocks/tests to avoid `KeyError`. Verify both instantiation and method calls on mocked AI generators.

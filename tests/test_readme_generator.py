@@ -135,8 +135,14 @@ class TestReadmeGenerator(unittest.TestCase):
 
         mock_fallback.return_value = "# Fallback Template"
 
-        # Inputs
-        user_input = {"name": "Test"}
+        # Inputs - Provide complete user_input to avoid KeyError
+        user_input = {
+            "name": "Test Project",
+            "description": "A test project",
+            "purpose": "Testing",
+            "tech_stack": "Python",
+            "features": "Feature 1",
+        }
         context = {"tech_stack": {}, "structure": {}}
 
         # Run
@@ -144,4 +150,10 @@ class TestReadmeGenerator(unittest.TestCase):
 
         # Verify fallback
         self.assertEqual(content, "# Fallback Template")
+        
+        # Verify LLM was attempted
+        mock_llm_gen_cls.assert_called_once()
+        mock_llm_gen.generate_content.assert_called_once()
+        
+        # Verify fallback was called
         mock_fallback.assert_called_once_with(user_input, context)

@@ -15,10 +15,12 @@ setup(
         "gitpython>=3.1.0",
         "rich>=13.0.0",
         "opik>=0.1.0",
+        "pathspec>=0.11.0",
+        "jinja2>=3.1.0",
     ],
     entry_points={
         "console_scripts": [
-            "prg=main:main",
+            "prg=main:cli",
         ],
     },
     author="Codeium User",
