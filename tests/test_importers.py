@@ -90,7 +90,7 @@ def test_vercel_importer_truncates_large_file(tmp_path):
 
 
 def test_agent_rules_importer_handles_large_file(tmp_path):
-    from generator.importers import AgentRulesImporter, MAX_IMPORT_FILE_SIZE
+    from generator.importers import MAX_IMPORT_FILE_SIZE, AgentRulesImporter
 
     rule_file = tmp_path / "large-rule.mdc"
 

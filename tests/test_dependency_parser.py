@@ -2,6 +2,7 @@
 
 import unittest
 from pathlib import Path
+
 from generator.parsers.dependency_parser import DependencyParser
 
 
@@ -15,8 +16,8 @@ class TestDependencyParser(unittest.TestCase):
         # to verify that the scanner deduplicates paths.
         # Since we can't easily mock the file system scan without refactoring,
         # we will verify the logic by creating a temporary directory structure.
-        import tempfile
         import shutil
+        import tempfile
 
         test_dir = Path(tempfile.mkdtemp())
         try:

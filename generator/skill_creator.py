@@ -19,12 +19,8 @@ from typing import Dict, List, Optional, Set, Tuple
 import yaml
 
 from generator.skill_discovery import SkillDiscovery
-from generator.utils.tech_detector import (
-    detect_from_dependencies as _detect_from_deps_util,
-)
-from generator.utils.tech_detector import (
-    detect_tech_stack as _detect_tech_stack_util,
-)
+from generator.utils.tech_detector import detect_from_dependencies as _detect_from_deps_util
+from generator.utils.tech_detector import detect_tech_stack as _detect_tech_stack_util
 
 try:
     from jinja2 import Environment, FileSystemLoader

@@ -1,10 +1,10 @@
 """Integration tests for the full enhanced pipeline (Phase 5)."""
 
-from pathlib import Path
-
 import os
-import yaml
+from pathlib import Path
 from unittest.mock import patch
+
+import yaml
 from click.testing import CliRunner
 
 from generator.extractors.code_extractor import CodeExampleExtractor

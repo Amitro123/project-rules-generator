@@ -1,10 +1,11 @@
 """Tests for the design generator (Stage 1 of two-stage planning)."""
 
+from unittest.mock import patch
+
 from click.testing import CliRunner
 
 from generator.design_generator import ArchitectureDecision, Design, DesignGenerator
 from main import cli
-from unittest.mock import patch
 
 
 class TestDesignModel:

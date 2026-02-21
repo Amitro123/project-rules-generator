@@ -1,6 +1,7 @@
 """Test detection for AI video projects like MediaLens"""
 
 import pytest
+
 from generator.analyzers.project_type_detector import detect_project_type
 
 # NOTE: skills_generator.py removed in v1.1 - use SkillsManager.create_skill()

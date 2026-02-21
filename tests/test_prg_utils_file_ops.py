@@ -1,8 +1,10 @@
 """Tests for file operations utilities."""
 
-import pytest
 from pathlib import Path
-from prg_utils.file_ops import read_file, save_markdown, file_exists, ensure_dir
+
+import pytest
+
+from prg_utils.file_ops import ensure_dir, file_exists, read_file, save_markdown
 
 
 def test_read_file(tmp_path):

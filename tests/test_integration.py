@@ -1,8 +1,10 @@
 """Integration tests for end-to-end flow."""
 
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+
 from click.testing import CliRunner
+
 from main import main
 
 

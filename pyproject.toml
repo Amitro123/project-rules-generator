@@ -56,7 +56,7 @@ select = ["E", "F", "I"]
 ignore = ["F401", "E501"]
 
 [tool.black]
-line-length = 120
+line_length = 120
 target-version = ['py38']
 exclude = '''
 (
@@ -75,3 +75,15 @@ exclude = '''
   )/
 )
 '''
+
+[tool.isort]
+profile = "black"
+line_length = 120
+skip = [
+    ".claude",
+    ".clinerules",
+    ".venv",
+    "generator/templates",
+    "build",
+    "dist"
+]

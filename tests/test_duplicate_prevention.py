@@ -4,8 +4,9 @@ Verifies that the system correctly detects existing skills and
 prevents duplicate creation unless force=True is passed.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
