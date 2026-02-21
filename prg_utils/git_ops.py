@@ -24,9 +24,7 @@ def is_git_repo(path: Union[str, Path]) -> bool:
         return False
 
 
-def stage_files(
-    paths: List[Union[str, Path]], repo_path: Union[str, Path] = "."
-) -> None:
+def stage_files(paths: List[Union[str, Path]], repo_path: Union[str, Path] = ".") -> None:
     """Stage files for commit."""
     repo = _posix(repo_path)
     for path in paths:
@@ -41,9 +39,7 @@ def stage_files(
             # Check if failure is due to .gitignore
             # git usually returns 1 and prints "The following paths are ignored..." to stderr
             if "paths are ignored by" in e.stderr:
-                print(
-                    f"[IGNORED] Files generated successfully (ignored by .gitignore): {path}"
-                )
+                print(f"[IGNORED] Files generated successfully (ignored by .gitignore): {path}")
                 continue
             # Re-raise real errors
             raise e
@@ -72,10 +68,7 @@ def commit_changes(
     )
 
     if result.returncode != 0:
-        if (
-            "nothing to commit" in result.stdout.lower()
-            or "nothing to commit" in result.stderr.lower()
-        ):
+        if "nothing to commit" in result.stdout.lower() or "nothing to commit" in result.stderr.lower():
             return "Nothing to commit"
         raise RuntimeError(f"Git commit failed: {result.stderr}")
 
@@ -153,6 +146,7 @@ def rollback_to_head(repo_path: Union[str, Path] = ".") -> None:
         check=True,
         text=True,
     )
+
 
 def get_current_branch(repo_path: Union[str, Path] = ".") -> str:
     """Get the name of the current branch."""

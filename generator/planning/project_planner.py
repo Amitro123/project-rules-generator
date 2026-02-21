@@ -140,9 +140,7 @@ class Plan:
 class ProjectPlanner:
     """Generate project plans from README or manual queries."""
 
-    def __init__(
-        self, provider: str = "gemini", api_key: Optional[str] = None, client=None
-    ):
+    def __init__(self, provider: str = "gemini", api_key: Optional[str] = None, client=None):
         """Initialize planner with AI client.
 
         Args:
@@ -152,9 +150,7 @@ class ProjectPlanner:
         """
         self.client = client or create_ai_client(provider=provider, api_key=api_key)
 
-    def generate_roadmap_from_readme(
-        self, readme_path: Path, project_path: Optional[Path] = None
-    ) -> Plan:
+    def generate_roadmap_from_readme(self, readme_path: Path, project_path: Optional[Path] = None) -> Plan:
         """Generate project roadmap from README.md.
 
         Args:
@@ -188,9 +184,7 @@ class ProjectPlanner:
 
         return plan
 
-    def generate_task_plan(
-        self, query: str, project_path: Optional[Path] = None
-    ) -> Plan:
+    def generate_task_plan(self, query: str, project_path: Optional[Path] = None) -> Plan:
         """Generate task-specific plan from query.
 
         Args:
@@ -274,13 +268,9 @@ class ProjectPlanner:
 
         return "\n\n".join(context_parts) if context_parts else "No additional context"
 
-    def _build_roadmap_prompt(
-        self, readme_content: str, features: List[str], project_path: Optional[Path]
-    ) -> str:
+    def _build_roadmap_prompt(self, readme_content: str, features: List[str], project_path: Optional[Path]) -> str:
         """Build prompt for roadmap generation with strict context isolation."""
-        features_list = (
-            "\n".join(f"- {f}" for f in features) if features else "No features listed"
-        )
+        features_list = "\n".join(f"- {f}" for f in features) if features else "No features listed"
 
         prompt = f"""Generate a project roadmap using ONLY the content below.
 
@@ -367,21 +357,15 @@ Generate the plan now:
 """
         return prompt
 
-    def _detect_hallucinations(
-        self, roadmap_text: str, readme_content: str
-    ) -> List[str]:
+    def _detect_hallucinations(self, roadmap_text: str, readme_content: str) -> List[str]:
         """Find capitalized multi-word terms in roadmap that don't appear in README."""
         hallucinated = []
         readme_lower = readme_content.lower()
 
         # Find capitalized terms that look like proper nouns / project names
         # Match PascalCase, hyphenated names, or multi-word capitalized phrases
-        candidates = set(
-            re.findall(r"\b[A-Z][a-zA-Z]+-[A-Z][a-zA-Z]+\b", roadmap_text)
-        )  # e.g. DevLens-AI
-        candidates |= set(
-            re.findall(r"\b[A-Z][a-z]+[A-Z][a-zA-Z]+\b", roadmap_text)
-        )  # e.g. GithubAgent
+        candidates = set(re.findall(r"\b[A-Z][a-zA-Z]+-[A-Z][a-zA-Z]+\b", roadmap_text))  # e.g. DevLens-AI
+        candidates |= set(re.findall(r"\b[A-Z][a-z]+[A-Z][a-zA-Z]+\b", roadmap_text))  # e.g. GithubAgent
 
         for term in candidates:
             if term.lower() not in readme_lower:
@@ -406,9 +390,7 @@ Generate the plan now:
         title = title_match.group(1) if title_match else "Project Roadmap"
 
         # Extract description (text between title and first phase)
-        desc_match = re.search(
-            r"^#\s+.+\n+(.+?)(?=\n##)", response, re.DOTALL | re.MULTILINE
-        )
+        desc_match = re.search(r"^#\s+.+\n+(.+?)(?=\n##)", response, re.DOTALL | re.MULTILINE)
         description = desc_match.group(1).strip() if desc_match else ""
         description = description.replace("---", "").strip()
 
@@ -422,14 +404,8 @@ Generate the plan now:
         title = f"Plan: {query}"
 
         # Extract description
-        desc_match = re.search(
-            r"^#\s+.+\n+(.+?)(?=\n##)", response, re.DOTALL | re.MULTILINE
-        )
-        description = (
-            desc_match.group(1).strip()
-            if desc_match
-            else f"Implementation plan for: {query}"
-        )
+        desc_match = re.search(r"^#\s+.+\n+(.+?)(?=\n##)", response, re.DOTALL | re.MULTILINE)
+        description = desc_match.group(1).strip() if desc_match else f"Implementation plan for: {query}"
         description = description.replace("---", "").strip()
 
         # Extract phases
@@ -477,9 +453,7 @@ Generate the plan now:
                 match = re.match(r"^-\s+\[([ x])\]\s+(.+)$", line)
                 completed = match.group(1) == "x"
                 description = match.group(2).strip()
-                current_task = Task(
-                    description=description, subtasks=[], completed=completed
-                )
+                current_task = Task(description=description, subtasks=[], completed=completed)
 
             # Subtask (starts with  - [ ] - indented)
             elif current_task and re.match(r"^\s+-\s+\[([ x])\]\s+(.+)$", line):
@@ -492,9 +466,7 @@ Generate the plan now:
 
         return tasks
 
-    def _generate_template_roadmap(
-        self, features: List[str], readme_content: str
-    ) -> Plan:
+    def _generate_template_roadmap(self, features: List[str], readme_content: str) -> Plan:
         """Generate template-based roadmap when AI is unavailable."""
         # Extract project name from README
         name_match = re.search(r"^#\s+(.+)$", readme_content, re.MULTILINE)
@@ -544,9 +516,7 @@ Generate the plan now:
                         "Write comprehensive tests",
                         ["Unit tests", "Integration tests", "E2E tests"],
                     ),
-                    Task(
-                        "Update documentation", ["API docs", "User guide", "Examples"]
-                    ),
+                    Task("Update documentation", ["API docs", "User guide", "Examples"]),
                 ],
             ),
         ]

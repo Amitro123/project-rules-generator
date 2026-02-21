@@ -26,6 +26,7 @@ from generator.utils.readme_bridge import bridge_missing_context, is_readme_suff
 
 # ── Strategy Protocol ─────────────────────────────────────────────────────────
 
+
 class _RulesStrategy:
     """Base class for inline rules generation strategies."""
 
@@ -41,6 +42,7 @@ class _RulesStrategy:
 
 
 # ── CoworkStrategy ────────────────────────────────────────────────────────────
+
 
 class _CoworkStrategy(_RulesStrategy):
     """
@@ -76,6 +78,7 @@ class _CoworkStrategy(_RulesStrategy):
 
 # ── LegacyStrategy ────────────────────────────────────────────────────────────
 
+
 class _LegacyStrategy(_RulesStrategy):
     """
     Context-aware rules generation from actual project analysis.
@@ -105,6 +108,7 @@ class _LegacyStrategy(_RulesStrategy):
 
 # ── StubStrategy ──────────────────────────────────────────────────────────────
 
+
 class _StubStrategy(_RulesStrategy):
     """Minimal fallback when no context is available."""
 
@@ -121,6 +125,7 @@ class _StubStrategy(_RulesStrategy):
 
 
 # ── RulesGenerator (Orchestrator) ─────────────────────────────────────────────
+
 
 class RulesGenerator:
     """
@@ -215,9 +220,8 @@ class RulesGenerator:
 # verbatim — no changes to the rules content, only wrapped in the new structure.
 # ═════════════════════════════════════════════════════════════════════════════
 
-def _generate_enhanced_rules(
-    project_data: Dict[str, Any], config: Dict[str, Any], ctx: Dict[str, Any]
-) -> str:
+
+def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any], ctx: Dict[str, Any]) -> str:
     """Generate rules grounded in actual project analysis."""
     name = project_data["name"]
     max_desc = config.get("generation", {}).get("max_description_length", 200)
@@ -258,9 +262,7 @@ def _generate_enhanced_rules(
         arch_lines.append(f"- **Languages**: {', '.join(languages)}")
     arch_section = "\n".join(arch_lines) if arch_lines else "- Standard project layout"
 
-    do_rules = _build_do_rules(
-        tech_stack, python_deps, node_deps, project_type, test_framework, structure
-    )
+    do_rules = _build_do_rules(tech_stack, python_deps, node_deps, project_type, test_framework, structure)
     dont_rules = _build_dont_rules(tech_stack, python_deps, project_type, structure)
 
     features = project_data.get("features", [])
@@ -272,12 +274,8 @@ def _generate_enhanced_rules(
     test_section = _build_test_section(test_framework, test_files, test_info)
     dep_section = _build_dep_section(python_deps, node_deps)
     file_structure = _build_file_structure(structure, entry_points, patterns)
-    workflow_section = _build_workflow_section(
-        installation, usage, troubleshooting, test_framework, tech_stack
-    )
-    context_strategy = _build_context_strategy(
-        structure, entry_points, project_type, test_info
-    )
+    workflow_section = _build_workflow_section(installation, usage, troubleshooting, test_framework, tech_stack)
+    context_strategy = _build_context_strategy(structure, entry_points, project_type, test_info)
 
     template = f"""---
 project: {name}
@@ -351,9 +349,7 @@ def _build_do_rules(
     if test_framework == "pytest":
         rules.append("- Run `pytest` before committing; add tests for new features")
         if "conftest" in str(structure):
-            rules.append(
-                "- Use shared fixtures from `conftest.py` — don't duplicate test setup"
-            )
+            rules.append("- Use shared fixtures from `conftest.py` — don't duplicate test setup")
     elif test_framework == "jest":
         rules.append("- Run `npx jest` before committing; add tests for new features")
     elif test_framework:
@@ -366,9 +362,7 @@ def _build_do_rules(
         if "pydantic" in python_deps:
             rules.append("- Use Pydantic models for data validation (not raw dicts)")
         if "click" in python_deps:
-            rules.append(
-                "- Use Click decorators for CLI arguments — don't parse sys.argv manually"
-            )
+            rules.append("- Use Click decorators for CLI arguments — don't parse sys.argv manually")
         if "typer" in python_deps:
             rules.append("- Use Typer for CLI commands — keep command functions thin")
 
@@ -385,9 +379,7 @@ def _build_do_rules(
 
     if "react" in node_deps or "react" in tech_stack:
         rules.append("- Use functional components with hooks — no class components")
-        rules.append(
-            "- Keep components under 200 lines; extract sub-components when needed"
-        )
+        rules.append("- Keep components under 200 lines; extract sub-components when needed")
     if "typescript" in tech_stack or "typescript" in node_deps:
         rules.append("- Use TypeScript strict mode; avoid `any` type")
 
@@ -400,24 +392,18 @@ def _build_do_rules(
         if t in ("perplexity", "groq", "mistral", "cohere", "openai", "anthropic", "gemini", "langchain")
     ]
     if ai_techs:
-        rules.append(
-            f"- Store API keys in `.env` or environment variables — never hardcode ({', '.join(ai_techs)})"
-        )
+        rules.append(f"- Store API keys in `.env` or environment variables — never hardcode ({', '.join(ai_techs)})")
         rules.append("- Add retry logic with exponential backoff for external API calls")
         rules.append("- Validate and type-check API responses before using them")
 
     rules.append("- Follow existing project structure and naming conventions")
     if any(ep.endswith(".py") for ep in structure.get("entry_points", [])):
-        rules.append(
-            "- Keep module imports at file top; use absolute imports within the project"
-        )
+        rules.append("- Keep module imports at file top; use absolute imports within the project")
 
     return "\n".join(rules)
 
 
-def _build_dont_rules(
-    tech_stack: List[str], python_deps: List[str], project_type: str, structure: Dict
-) -> str:
+def _build_dont_rules(tech_stack: List[str], python_deps: List[str], project_type: str, structure: Dict) -> str:
     """Build DON'T rules specific to this project."""
     rules = []
 
@@ -425,15 +411,11 @@ def _build_dont_rules(
         rules.append("- Don't use `print()` for logging — use the `logging` module")
         rules.append("- Don't catch bare `Exception` — catch specific exceptions")
         if "click" in python_deps:
-            rules.append(
-                "- Don't use `sys.exit()` in library code — raise exceptions, let Click handle exit"
-            )
+            rules.append("- Don't use `sys.exit()` in library code — raise exceptions, let Click handle exit")
 
     if "fastapi" in python_deps or project_type == "fastapi-api":
         rules.append("- Don't use sync functions for I/O in async route handlers")
-        rules.append(
-            "- Don't skip Pydantic validation by accessing `request.json()` directly"
-        )
+        rules.append("- Don't skip Pydantic validation by accessing `request.json()` directly")
 
     if "react" in tech_stack:
         rules.append("- Don't mutate state directly — use setState/dispatch")
@@ -448,9 +430,7 @@ def _build_dont_rules(
         if t in ("perplexity", "groq", "mistral", "cohere", "openai", "anthropic", "gemini", "langchain")
     ]
     if ai_techs:
-        rules.append(
-            "- Don't log or print full API responses in production (may contain PII)"
-        )
+        rules.append("- Don't log or print full API responses in production (may contain PII)")
         rules.append("- Don't ignore rate-limit headers from API providers")
 
     rules.append("- Don't commit secrets, API keys, or `.env` files")
@@ -501,15 +481,11 @@ def _build_dep_section(python_deps: List[str], node_deps: List[str]) -> str:
     """Build dependency section from parsed deps."""
     lines = []
     if python_deps:
-        lines.append(
-            f"**Python** ({len(python_deps)} packages): {', '.join(python_deps[:15])}"
-        )
+        lines.append(f"**Python** ({len(python_deps)} packages): {', '.join(python_deps[:15])}")
         if len(python_deps) > 15:
             lines.append(f"  ... and {len(python_deps) - 15} more")
     if node_deps:
-        lines.append(
-            f"**Node** ({len(node_deps)} packages): {', '.join(node_deps[:15])}"
-        )
+        lines.append(f"**Node** ({len(node_deps)} packages): {', '.join(node_deps[:15])}")
         if len(node_deps) > 15:
             lines.append(f"  ... and {len(node_deps) - 15} more")
     if not lines:
@@ -517,9 +493,7 @@ def _build_dep_section(python_deps: List[str], node_deps: List[str]) -> str:
     return "\n".join(lines)
 
 
-def _build_file_structure(
-    structure: Dict, entry_points: List[str], patterns: List[str]
-) -> str:
+def _build_file_structure(structure: Dict, entry_points: List[str], patterns: List[str]) -> str:
     """Build file structure section."""
     lines = []
     if entry_points:
@@ -561,9 +535,7 @@ def _build_workflow_section(
         sections.append(f"### Usage\n{_sanitize_readme_section(usage)}")
 
     if troubleshooting:
-        sections.append(
-            f"### Troubleshooting\n{_sanitize_readme_section(troubleshooting, 300)}"
-        )
+        sections.append(f"### Troubleshooting\n{_sanitize_readme_section(troubleshooting, 300)}")
 
     dev_lines = ["### Development"]
     dev_lines.append("```bash")
@@ -584,9 +556,7 @@ def _build_workflow_section(
     return "\n\n".join(sections)
 
 
-def _build_context_strategy(
-    structure: Dict, entry_points: List[str], project_type: str, test_info: Dict
-) -> str:
+def _build_context_strategy(structure: Dict, entry_points: List[str], project_type: str, test_info: Dict) -> str:
     """Build context strategy section with file loading hints per task type."""
     lines: List[str] = []
 
@@ -628,9 +598,7 @@ def _build_context_strategy(
     ]
     if project_type in ("django-app",):
         exclude_patterns.append("`**/migrations/**`")
-    if "docker" in project_type or any(
-        "docker" in p for p in structure.get("patterns", [])
-    ):
+    if "docker" in project_type or any("docker" in p for p in structure.get("patterns", [])):
         exclude_patterns.append("`**/docker-compose.override.yml`")
 
     for pat in exclude_patterns:
@@ -642,9 +610,7 @@ def _build_context_strategy(
 def _generate_basic_rules(project_data: Dict[str, Any], config: Dict[str, Any]) -> str:
     """Generate basic rules without enhanced context (fallback)."""
     name = project_data["name"]
-    description = project_data["description"][
-        : config.get("generation", {}).get("max_description_length", 200)
-    ]
+    description = project_data["description"][: config.get("generation", {}).get("max_description_length", 200)]
     tech_stack = project_data["tech_stack"]
     features = project_data["features"]
 
@@ -671,7 +637,7 @@ generated: auto
 
 ## CONTEXT
 
-{description}{'...' if len(project_data['description']) > len(description) else ''}
+{description}{"..." if len(project_data["description"]) > len(description) else ""}
 
 This project uses: {tech_str}
 
@@ -744,6 +710,7 @@ _Generated by project-rules-generator_
 # BACKWARD COMPATIBILITY — module-level functions
 # analyze_cmd.py imports these directly; they now delegate to RulesGenerator.
 # ═════════════════════════════════════════════════════════════════════════════
+
 
 def generate_rules(
     project_data: Dict[str, Any],

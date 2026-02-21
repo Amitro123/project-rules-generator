@@ -18,9 +18,7 @@ class Skill:
     content: str = ""  # Full markdown content
     category: str = "general"  # core, tech, ml_pipeline, agent, etc.
     triggers: List[str] = field(default_factory=list)  # Manual legacy triggers
-    auto_triggers: List[Dict[str, Any]] = field(
-        default_factory=list
-    )  # Smart auto-triggers
+    auto_triggers: List[Dict[str, Any]] = field(default_factory=list)  # Smart auto-triggers
     tools: List[str] = field(default_factory=list)
     when_to_use: List[str] = field(default_factory=list)
     avoid_if: List[str] = field(default_factory=list)

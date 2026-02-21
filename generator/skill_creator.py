@@ -28,6 +28,7 @@ from generator.utils.tech_detector import (
 
 try:
     from jinja2 import Environment, FileSystemLoader
+
     HAS_JINJA2 = True
 except ImportError:
     HAS_JINJA2 = False
@@ -128,8 +129,8 @@ class CoworkSkillCreator:
         GLOBAL LEARNED LIBRARY Flow (User's Vision!):
         1. Detect skill needs (e.g. pytest-testing-workflow)
         2. Check GLOBAL learned/
-        3. Exists Γזע Γש╗∩╕ן Reuse (Link to project)
-        4. Not exists Γזע Γ£¿ Create (Cowork) Γזע Save to GLOBAL learned/ Γזע Link
+        3. Exists -> ♻️ Reuse (Link to project)
+        4. Not exists -> ✨ Create (Cowork) -> Save to GLOBAL learned/ -> Link
         """
         proj_path = project_path or self.project_path
 
@@ -143,28 +144,27 @@ class CoworkSkillCreator:
 
         # 1. Detect needed skills
         needed_skills = self.detect_skill_needs(proj_path)
-        print(f"≡ƒמ» Detected Needs: {needed_skills if needed_skills else ['None']}")
+        print(f"🔍 Detected Needs: {needed_skills if needed_skills else ['None']}")
 
         if not needed_skills:
             return
 
         created = 0
         reused = 0
-        
+
         # 2. Process each skill
         for skill_name in needed_skills:
-            
             # Check GLOBAL learned
             if self.exists_in_learned(skill_name):
-                print(f"Γש╗∩╕ן  Reusing: {skill_name}")
+                print(f"♻️  Reusing: {skill_name}")
                 self.link_from_learned(skill_name)
                 reused += 1
                 continue
 
             # Create NEW with Cowork quality
-            print(f"\n{'='*60}")
-            print(f"Γ£¿ Creating: {skill_name}")
-            print(f"{'='*60}\n")
+            print(f"\n{'=' * 60}")
+            print(f"✨ Creating: {skill_name}")
+            print(f"{'=' * 60}\n")
 
             try:
                 # We need to determine the main tech for this skill to pass to create_skill
@@ -172,50 +172,50 @@ class CoworkSkillCreator:
                 # extraction: 'pytest' from 'pytest-testing-workflow'
                 tech_hint = skill_name.split("-")[0]
                 tech_stack_hint = [tech_hint] if tech_hint else None
-                
+
                 content, metadata, quality = self.create_skill(
-                    skill_name, readme_content, tech_stack=tech_stack_hint,
-                    use_ai=use_ai, provider=provider
+                    skill_name, readme_content, tech_stack=tech_stack_hint, use_ai=use_ai, provider=provider
                 )
 
-                print(f"≡ƒףט Quality: {quality.score:.1f}/100")
+                print(f"📊 Quality: {quality.score:.1f}/100")
                 if not quality.passed and quality.issues:
                     print(f"Issues: {', '.join(quality.issues[:2])}")
 
                 # Save to GLOBAL learned
                 self.save_to_learned(skill_name, content)
-                
+
                 # Link to project
                 self.link_from_learned(skill_name)
 
-                print(f"≡ƒע╛ Saved to: ~/.project-rules-generator/learned/{skill_name}.md")
-                print(f"Γ£ו Linked to: .clinerules/skills/project/{skill_name}.md")
-                print(f"≡ƒףך Triggers: {len(metadata.auto_triggers)} | Tools: {len(metadata.tools)}")
+                print(f"💾 Saved to: ~/.project-rules-generator/learned/{skill_name}.md")
+                print(f"🔗 Linked to: .clinerules/skills/project/{skill_name}.md")
+                print(f"⚡ Triggers: {len(metadata.auto_triggers)} | Tools: {len(metadata.tools)}")
 
                 created += 1
 
             except Exception as e:
-                print(f"Γ¥ל Failed to create {skill_name}: {e}")
+                print(f"❌ Failed to create {skill_name}: {e}")
                 import traceback
+
                 traceback.print_exc()
                 continue
 
-        print(f"\n{'='*60}")
-        print(f"≡ƒףך Summary: Γ£¿ Created: {created} | Γש╗∩╕ן Reused: {reused}")
-        print(f"{'='*60}")
+        print(f"\n{'=' * 60}")
+        print(f"⚡ Summary: ✨ Created: {created} | ♻️  Reused: {reused}")
+        print(f"{'=' * 60}")
 
     def detect_skill_needs(self, project_path: Path) -> List[str]:
         """Detect needed skills based on tech stack and context."""
         readme_path = project_path / "README.md"
         readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
-        
+
         tech_stack = self._detect_tech_stack(readme_content)
         skill_names = []
 
         if not tech_stack:
             skill_names.append(f"{project_path.name}-workflow")
         else:
-             # Basic mapping - can be expanded
+            # Basic mapping - can be expanded
             tool_map = {
                 "fastapi": "fastapi-api-workflow",
                 "flask": "flask-api-workflow",
@@ -225,15 +225,15 @@ class CoworkSkillCreator:
                 "pytest": "pytest-testing-workflow",
                 "docker": "docker-deployment-workflow",
             }
-            
+
             for tech in tech_stack:
                 if tech.lower() in tool_map:
                     skill_names.append(tool_map[tech.lower()])
-            
+
             # If nothing specific, generic
             if not skill_names:
-                 skill_names.append(f"{project_path.name}-workflow")
-                 
+                skill_names.append(f"{project_path.name}-workflow")
+
         return list(set(skill_names))
 
     def exists_in_learned(self, skill_name: str) -> bool:
@@ -246,11 +246,11 @@ class CoworkSkillCreator:
 
     def save_to_learned(self, skill_name: str, content: str):
         """Save skill to global learned cache."""
-        # We prefer flat files for simplicity unless it needs resources, but 
-        # Cowork flow often uses directories? 
+        # We prefer flat files for simplicity unless it needs resources, but
+        # Cowork flow often uses directories?
         # Let's use flat .md for now as per previous patterns, or match existing.
         # implementation_plan said "global/learned/"
-        
+
         target = self.discovery.global_learned / f"{skill_name}.md"
         target.write_text(content, encoding="utf-8")
 
@@ -258,22 +258,22 @@ class CoworkSkillCreator:
         """Link a learned skill from Global Cache to Project Local Skills."""
         # Source: ~/.project-rules-generator/learned/<skill_name>.md
         # Target: <project>/.clinerules/skills/project/<skill_name>.md
-        
+
         source = self.discovery.global_learned / f"{skill_name}.md"
         if not source.exists():
             # Check for directory based skill
             source_dir = self.discovery.global_learned / skill_name
             if source_dir.exists() and source_dir.is_dir():
-                 # For directories, we might need to handle differently or link the dir
-                 # But current save_to_learned saves as .md
-                 pass
-        
+                # For directories, we might need to handle differently or link the dir
+                # But current save_to_learned saves as .md
+                pass
+
         target = self.discovery.project_local_dir / f"{skill_name}.md"
-        
+
         if source.exists():
-             self.discovery._link_or_copy(source, target)
+            self.discovery._link_or_copy(source, target)
         else:
-             print(f"Γתá∩╕ן Could not link {skill_name}: Source not found in global learned.")
+            print(f"⚠️  Could not link {skill_name}: Source not found in global learned.")
 
     def setup_symlinks(self):
         """Ensure project symlinks are set up."""
@@ -312,9 +312,7 @@ class CoworkSkillCreator:
         metadata = self._build_metadata(skill_name, readme_content, tech_stack)
 
         # 2. Generate skill content (WITH actual project context!)
-        content = self._generate_content(
-            skill_name, readme_content, metadata, custom_context, use_ai, provider
-        )
+        content = self._generate_content(skill_name, readme_content, metadata, custom_context, use_ai, provider)
 
         # 3. Quality validation (will catch hallucinated paths!)
         quality = self._validate_quality(content, metadata)
@@ -326,9 +324,7 @@ class CoworkSkillCreator:
 
         return content, metadata, quality
 
-    def _analyze_project_structure(
-        self, skill_name: str, tech_stack: Optional[List[str]]
-    ) -> Dict:
+    def _analyze_project_structure(self, skill_name: str, tech_stack: Optional[List[str]]) -> Dict:
         """
         Analyze ACTUAL project structure - NO HALLUCINATIONS!
 
@@ -435,9 +431,7 @@ class CoworkSkillCreator:
             tools=tools,
         )
 
-    def _generate_triggers(
-        self, skill_name: str, readme_content: str, tech_stack: List[str]
-    ) -> List[str]:
+    def _generate_triggers(self, skill_name: str, readme_content: str, tech_stack: List[str]) -> List[str]:
         """
         Generate smart auto-triggers with Cowork-style variations.
 
@@ -475,16 +469,22 @@ class CoworkSkillCreator:
         # Deduplicate and limit to top 8 most relevant
         return list(sorted(expanded))[:8]
 
-    def _extract_action_triggers(
-        self, readme_content: str, skill_base: str
-    ) -> Set[str]:
+    def _extract_action_triggers(self, readme_content: str, skill_base: str) -> Set[str]:
         """Extract action-based triggers from README."""
         triggers = set()
 
         # Look for imperative verbs near skill topic
         action_verbs = [
-            "run", "execute", "check", "validate", "analyze",
-            "generate", "create", "build", "test", "deploy"
+            "run",
+            "execute",
+            "check",
+            "validate",
+            "analyze",
+            "generate",
+            "create",
+            "build",
+            "test",
+            "deploy",
         ]
 
         # Simple pattern matching
@@ -566,10 +566,24 @@ class CoworkSkillCreator:
 
         # Common Python/Node tools that are always available
         system_tools = {
-            "git", "docker", "curl", "bash",
-            "pytest", "python", "pip", "npm", "node",
-            "pylint", "ruff", "black", "mypy", "coverage",
-            "radon", "vulture", "bandit", "safety"
+            "git",
+            "docker",
+            "curl",
+            "bash",
+            "pytest",
+            "python",
+            "pip",
+            "npm",
+            "node",
+            "pylint",
+            "ruff",
+            "black",
+            "mypy",
+            "coverage",
+            "radon",
+            "vulture",
+            "bandit",
+            "safety",
         }
 
         for tool in tools:
@@ -590,13 +604,11 @@ class CoworkSkillCreator:
         self._tech_stack = detected
         return list(detected)
 
-
     def _detect_from_dependencies(self) -> Set[str]:
         """Detect tech from actual dependency files.
         Delegates to generator.utils.tech_detector.detect_from_dependencies().
         """
         return _detect_from_deps_util(self.project_path)
-
 
     def _detect_from_files(self) -> Set[str]:
         """Detect tech from actual project files."""
@@ -628,13 +640,30 @@ class CoworkSkillCreator:
     def _detect_from_readme(self, readme_content: str) -> Set[str]:
         """Detect tech from README (least reliable - use only for confirmation)."""
         tech_keywords = {
-            "fastapi", "flask", "django", "express", "react", "vue",
-            "pytest", "jest", "docker", "kubernetes", "postgresql",
-            "mongodb", "redis", "celery", "sqlalchemy", "pydantic",
-            "openai", "anthropic", "langchain", "typescript", "python"
+            "fastapi",
+            "flask",
+            "django",
+            "express",
+            "react",
+            "vue",
+            "pytest",
+            "jest",
+            "docker",
+            "kubernetes",
+            "postgresql",
+            "mongodb",
+            "redis",
+            "celery",
+            "sqlalchemy",
+            "pydantic",
+            "openai",
+            "anthropic",
+            "langchain",
+            "typescript",
+            "python",
         }
 
-        readme_lower = readme_content.lower()
+        readme_content.lower()
 
         # Look for tech in structured sections (more reliable)
         detected = set()
@@ -701,9 +730,20 @@ class CoworkSkillCreator:
         Capped at max_items entries to stay within token budget.
         """
         EXCLUDE = {
-            ".git", "__pycache__", ".venv", "venv", "node_modules",
-            ".pytest_cache", "dist", "build", ".mypy_cache", ".ruff_cache",
-            ".clinerules", ".claude", ".eggs", "eggs",
+            ".git",
+            "__pycache__",
+            ".venv",
+            "venv",
+            "node_modules",
+            ".pytest_cache",
+            "dist",
+            "build",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".clinerules",
+            ".claude",
+            ".eggs",
+            "eggs",
         }
 
         lines: List[str] = [f"{self.project_path.name}/"]
@@ -718,10 +758,7 @@ class CoworkSkillCreator:
             except PermissionError:
                 return
 
-            visible = [
-                e for e in entries
-                if not e.name.startswith(".") and e.name not in EXCLUDE
-            ]
+            visible = [e for e in entries if not e.name.startswith(".") and e.name not in EXCLUDE]
             for i, item in enumerate(visible):
                 if count >= max_items:
                     lines.append(f"{prefix}... (truncated)")
@@ -739,9 +776,7 @@ class CoworkSkillCreator:
         _walk(self.project_path, 1, "")
         return "\n".join(lines)
 
-    def _generate_description(
-        self, skill_name: str, readme_content: str
-    ) -> str:
+    def _generate_description(self, skill_name: str, readme_content: str) -> str:
         """Generate concise skill description."""
         # Extract purpose from first paragraph mentioning skill topic
         skill_words = skill_name.replace("-", " ").split()
@@ -763,16 +798,40 @@ class CoworkSkillCreator:
 
     # Filenames that are noise — never useful as skill context
     _DOCS_SKIP = {
-        "readme.md", "changelog.md", "changelog", "license.md", "license",
-        "contributing.md", "contributors.md", "authors.md", "history.md",
-        "news.md", "releases.md", "security.md", "code_of_conduct.md",
+        "readme.md",
+        "changelog.md",
+        "changelog",
+        "license.md",
+        "license",
+        "contributing.md",
+        "contributors.md",
+        "authors.md",
+        "history.md",
+        "news.md",
+        "releases.md",
+        "security.md",
+        "code_of_conduct.md",
     }
 
     # Filename signals that indicate high-value context docs (any project)
     _DOCS_HIGH_VALUE = {
-        "spec", "architecture", "design", "constitution", "features",
-        "preferences", "coding", "style", "guide", "workflow", "overview",
-        "plan", "roadmap", "rules", "standards", "conventions", "adr",
+        "spec",
+        "architecture",
+        "design",
+        "constitution",
+        "features",
+        "preferences",
+        "coding",
+        "style",
+        "guide",
+        "workflow",
+        "overview",
+        "plan",
+        "roadmap",
+        "rules",
+        "standards",
+        "conventions",
+        "adr",
     }
 
     def _score_doc(self, path: Path, content: str) -> int:
@@ -800,8 +859,7 @@ class CoworkSkillCreator:
         candidates: List[Path] = []
 
         search_dirs = [self.project_path] + [
-            d for d in self.project_path.iterdir()
-            if d.is_dir() and d.name.lower() in ("docs", "doc", "documentation")
+            d for d in self.project_path.iterdir() if d.is_dir() and d.name.lower() in ("docs", "doc", "documentation")
         ]
 
         for directory in search_dirs:
@@ -881,11 +939,12 @@ class CoworkSkillCreator:
         provider: str = "gemini",
     ) -> str:
         """Generate complete skill content using AI or templates."""
-        
+
         # 1. AI Generation (if requested)
         if use_ai:
             try:
                 from generator.llm_skill_generator import LLMSkillGenerator
+
                 generator = LLMSkillGenerator(provider=provider)
 
                 # Categorize tech stack for richer LLM context
@@ -923,9 +982,7 @@ class CoworkSkillCreator:
         # 2. Try Jinja2 template first, fallback to inline generation
         if HAS_JINJA2:
             try:
-                return self._generate_with_jinja2(
-                    skill_name, readme_content, metadata, custom_context
-                )
+                return self._generate_with_jinja2(skill_name, readme_content, metadata, custom_context)
             except Exception as e:
                 print(f"Warning: Jinja2 template failed ({e}), using inline generation")
 
@@ -1007,7 +1064,7 @@ class CoworkSkillCreator:
 
 {metadata.description}
 
-This skill provides step-by-step guidance for {skill_name.replace('-', ' ')}.
+This skill provides step-by-step guidance for {skill_name.replace("-", " ")}.
 
 ## Auto-Trigger
 
@@ -1028,7 +1085,7 @@ The agent should activate this skill when:
 
 ### 2. Execute Core Steps
 
-**Tools Required:** {', '.join(f"`{t}`" for t in metadata.tools)}
+**Tools Required:** {", ".join(f"`{t}`" for t in metadata.tools)}
 
 ```bash
 # Example workflow
@@ -1060,15 +1117,15 @@ This skill generates:
 
 ## Tech Stack Notes
 
-**Detected Technologies:** {', '.join(self._detect_tech_stack(readme_content))}
+**Detected Technologies:** {", ".join(self._detect_tech_stack(readme_content))}
 
-**Compatible Tools:** {', '.join(metadata.tools)}
+**Compatible Tools:** {", ".join(metadata.tools)}
 
 ## Project Context
 
 ```
 Project: {self.project_path.name}
-Signals: {', '.join(metadata.project_signals)}
+Signals: {", ".join(metadata.project_signals)}
 ```
 
 ---
@@ -1087,9 +1144,7 @@ Signals: {', '.join(metadata.project_signals)}
             return "- None detected"
         return "\n".join(f"- `{s}`" for s in signals)
 
-    def _validate_quality(
-        self, content: str, metadata: SkillMetadata
-    ) -> QualityReport:
+    def _validate_quality(self, content: str, metadata: SkillMetadata) -> QualityReport:
         """
         Cowork's quality gates: ensure skill is actionable and specific.
 
@@ -1106,10 +1161,7 @@ Signals: {', '.join(metadata.project_signals)}
         score = 100.0
 
         # 1. Check for placeholders
-        placeholders = [
-            "[describe", "[example", "[your", "[add", "[insert",
-            "TODO", "FIXME", "XXX"
-        ]
+        placeholders = ["[describe", "[example", "[your", "[add", "[insert", "TODO", "FIXME", "XXX"]
         for placeholder in placeholders:
             if placeholder.lower() in content.lower():
                 issues.append(f"Contains placeholder: {placeholder}")
@@ -1180,9 +1232,7 @@ Signals: {', '.join(metadata.project_signals)}
 
         return hallucinated
 
-    def _auto_fix_quality_issues(
-        self, content: str, quality: QualityReport
-    ) -> str:
+    def _auto_fix_quality_issues(self, content: str, quality: QualityReport) -> str:
         """Attempt to auto-fix common quality issues."""
 
         # Fix generic paths
@@ -1255,24 +1305,22 @@ Signals: {', '.join(metadata.project_signals)}
                     skill_names.append("docker-deployment")
                 elif tech_lower == "git":
                     skill_names.append("git-workflow")
-            
+
             # Use detected skills + generic project workflow
             if not skill_names:
                 skill_names.append(f"{self.project_path.name}-workflow")
 
         generated_files = []
-        for skill_name in set(skill_names): # Deduplicate
+        for skill_name in set(skill_names):  # Deduplicate
             try:
-                content, metadata, quality = self.create_skill(
-                    skill_name, readme_content
-                )
-                
+                content, metadata, quality = self.create_skill(skill_name, readme_content)
+
                 if quality.score >= quality_threshold or auto_fix:
-                     # Attempt auto-fix implies we use the potentially fixed content returned by create_skill
-                     # (create_skill already calls _auto_fix_quality_issues if needed)
-                     path = self.export_to_file(content, metadata, output_dir)
-                     generated_files.append(path)
+                    # Attempt auto-fix implies we use the potentially fixed content returned by create_skill
+                    # (create_skill already calls _auto_fix_quality_issues if needed)
+                    path = self.export_to_file(content, metadata, output_dir)
+                    generated_files.append(path)
             except Exception as e:
                 print(f"Warning: Failed to generate {skill_name}: {e}")
-                
+
         return generated_files

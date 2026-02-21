@@ -216,8 +216,8 @@ class TaskCreator:
         lines.append("")
 
         content = "\n".join(lines)
-        
+
         if subtask.type == "py":
             return f'"""\n{content}\n"""\n\nif __name__ == "__main__":\n    print("Task: {subtask.title}")\n    print("Goal: {subtask.goal}")\n'
-        
+
         return content

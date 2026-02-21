@@ -20,11 +20,7 @@ class BuiltinSkillsSource(SkillSource):
         if templates_dir:
             self.templates_path = templates_dir
         else:
-            cfg_path = (
-                config.get("skill_sources", {})
-                .get("builtin", {})
-                .get("path", "templates/skills")
-            )
+            cfg_path = config.get("skill_sources", {}).get("builtin", {}).get("path", "templates/skills")
             # Resolve relative to project root (assuming we are running from project root or package)
             # Better approach: If relative, assume relative to this file's package parent
             if not os.path.isabs(cfg_path):

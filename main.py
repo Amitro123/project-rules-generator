@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """CLI orchestrator for project rules and skills generator."""
 
 import sys

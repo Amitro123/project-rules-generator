@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """CLI orchestrator for project rules and skills generator."""
 
 import sys
@@ -28,11 +29,7 @@ class DefaultGroup(click.Group):
 
     def parse_args(self, ctx, args):
         # Let group-level flags (--help, --version) pass through
-        if (
-            args
-            and args[0] not in self.commands
-            and args[0] not in ("--help", "--version", "-h")
-        ):
+        if args and args[0] not in self.commands and args[0] not in ("--help", "--version", "-h"):
             args = [self.default_cmd] + list(args)
         elif not args:
             args = [self.default_cmd]

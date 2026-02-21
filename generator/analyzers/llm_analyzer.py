@@ -3,9 +3,7 @@
 from typing import Any, Dict
 
 
-def analyze_with_llm(
-    project_data: Dict[str, Any], config: Dict[str, Any]
-) -> Dict[str, Any]:
+def analyze_with_llm(project_data: Dict[str, Any], config: Dict[str, Any]) -> Dict[str, Any]:
     """Use LLM API for deeper project analysis.
 
     This is a scaffold for future implementation.

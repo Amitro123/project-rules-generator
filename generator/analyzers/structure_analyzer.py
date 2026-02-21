@@ -184,9 +184,7 @@ class StructureAnalyzer:
             # 'library' is a generic fallback that matches packaging files
             # (setup.py, pyproject.toml) which most Python projects have.
             if best == "library":
-                app_types = {
-                    k: v for k, v in scores.items() if k != "library" and v >= 2
-                }
+                app_types = {k: v for k, v in scores.items() if k != "library" and v >= 2}
                 if app_types:
                     best = max(app_types, key=app_types.get)
                     max_score = scores[best]
@@ -346,8 +344,7 @@ class StructureAnalyzer:
         has_setup = (self.project_path / "setup.py").exists()
         has_pyproject = (self.project_path / "pyproject.toml").exists()
         has_main = any(
-            (self.project_path / f).exists()
-            for f in ["main.py", "app.py", "run.py", "server.py", "manage.py"]
+            (self.project_path / f).exists() for f in ["main.py", "app.py", "run.py", "server.py", "manage.py"]
         )
         has_src_init = (self.project_path / "src" / "__init__.py").exists()
 
@@ -432,9 +429,7 @@ class StructureAnalyzer:
         key = str(path)
         if key not in self._content_cache:
             try:
-                self._content_cache[key] = path.read_text(
-                    encoding="utf-8", errors="replace"
-                )[:5000]
+                self._content_cache[key] = path.read_text(encoding="utf-8", errors="replace")[:5000]
             except Exception:
                 self._content_cache[key] = ""
         return self._content_cache[key]

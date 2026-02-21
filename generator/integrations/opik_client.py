@@ -66,7 +66,7 @@ class OpikEvaluator:
             }
             if output_props:
                 output_data.update(output_props)
-            
+
             # Since log_metric is not available on this Trace object, we include metrics in output
             # Removed: if metrics: output_data.update(metrics)
 
@@ -84,7 +84,7 @@ class OpikEvaluator:
                     try:
                         trace.log_feedback_score(name=k, value=float(v))
                     except Exception:
-                        pass # Ignore individual metric failures
+                        pass  # Ignore individual metric failures
 
             # Log local check metrics as feedback scores too
             if metadata and "quick_check" in metadata:

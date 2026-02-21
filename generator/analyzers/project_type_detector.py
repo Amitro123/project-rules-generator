@@ -31,18 +31,14 @@ def _detect_project_type_cached(
     return _calculate_final_scores(scores)
 
 
-def detect_project_type(
-    project_data: Dict[str, Any], project_path: str
-) -> Dict[str, Any]:
+def detect_project_type(project_data: Dict[str, Any], project_path: str) -> Dict[str, Any]:
     """
     Detect project type from metadata.
     Public interface compatible with original signature.
     """
     return _detect_project_type_cached(
         project_name=project_data["name"],
-        tech_stack=tuple(
-            project_data.get("tech_stack", [])
-        ),  # Convert to tuple for hashing
+        tech_stack=tuple(project_data.get("tech_stack", [])),  # Convert to tuple for hashing
         readme_content=project_data.get("raw_readme", "").lower(),
         project_path=str(project_path),
     )
@@ -64,9 +60,7 @@ def _initialize_scores() -> Dict[str, float]:
     }
 
 
-def _detect_agent_signals(
-    scores: Dict[str, float], tech_stack: Tuple[str, ...], readme: str
-) -> None:
+def _detect_agent_signals(scores: Dict[str, float], tech_stack: Tuple[str, ...], readme: str) -> None:
     """Detect AI agent project signals."""
     llm_providers = {"gemini", "openai", "anthropic", "claude", "gpt", "langchain"}
     agent_keywords = {
@@ -90,9 +84,7 @@ def _detect_agent_signals(
     scores["agent"] += min(keyword_count * 0.15, 0.5)
 
 
-def _detect_ml_pipeline_signals(
-    scores: Dict[str, float], tech_stack: Tuple[str, ...], readme: str
-) -> None:
+def _detect_ml_pipeline_signals(scores: Dict[str, float], tech_stack: Tuple[str, ...], readme: str) -> None:
     """Detect ML/data pipeline signals."""
     ml_frameworks = {
         "pytorch",
@@ -155,9 +147,7 @@ def _detect_web_app_signals(
         scores["web_app"] += 0.5
 
     # API directory structure
-    if any(Path(project_path).glob("**/api/**")) or any(
-        Path(project_path).glob("**/routers/**")
-    ):
+    if any(Path(project_path).glob("**/api/**")) or any(Path(project_path).glob("**/routers/**")):
         scores["web_app"] += 0.3
 
     readme_lower = readme.lower()
@@ -191,9 +181,7 @@ def _detect_cli_tool_signals(
         scores["cli_tool"] += 0.2
 
 
-def _detect_library_signals(
-    scores: Dict[str, float], project_path: str, readme: str
-) -> None:
+def _detect_library_signals(scores: Dict[str, float], project_path: str, readme: str) -> None:
     """Detect library/package signals."""
     has_setup = Path(project_path, "setup.py").exists()
     has_pyproject = Path(project_path, "pyproject.toml").exists()
@@ -203,15 +191,11 @@ def _detect_library_signals(
         scores["library"] += 0.4
 
     readme_lower = readme.lower()
-    if any(
-        kw in readme_lower for kw in ["import", "package", "library", "pip install"]
-    ):
+    if any(kw in readme_lower for kw in ["import", "package", "library", "pip install"]):
         scores["library"] += 0.3
 
 
-def _detect_generator_signals(
-    scores: Dict[str, float], project_name: str, readme: str, project_path: str
-) -> None:
+def _detect_generator_signals(scores: Dict[str, float], project_name: str, readme: str, project_path: str) -> None:
     """Detect generator/scaffolding tool signals."""
     generator_keywords = {"generate", "template", "scaffold", "boilerplate", "create-"}
 

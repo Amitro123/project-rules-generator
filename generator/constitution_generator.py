@@ -31,16 +31,10 @@ def generate_constitution(
     tech_stack = metadata.get("tech_stack", [])
     project_type = metadata.get("project_type", "unknown")
 
-    code_quality = _build_code_quality_section(
-        tech_stack, python_deps, node_deps, project_path
-    )
+    code_quality = _build_code_quality_section(tech_stack, python_deps, node_deps, project_path)
     testing = _build_testing_standards_section(test_info, python_deps, tech_stack)
-    architecture = _build_architecture_section(
-        structure, project_type, python_deps, node_deps
-    )
-    dev_guidelines = _build_dev_guidelines_section(
-        tech_stack, python_deps, project_path, structure, project_type
-    )
+    architecture = _build_architecture_section(structure, project_type, python_deps, node_deps)
+    dev_guidelines = _build_dev_guidelines_section(tech_stack, python_deps, project_path, structure, project_type)
 
     return f"""# {project_name} — Constitution
 
@@ -103,9 +97,7 @@ def _build_code_quality_section(
 
     type_lines: List[str] = []
     if has_mypy:
-        type_lines.append(
-            "- Enforce type hints on all public APIs (`mypy` is configured)"
-        )
+        type_lines.append("- Enforce type hints on all public APIs (`mypy` is configured)")
     elif "python" in tech_stack:
         type_lines.append("- Use type hints on all public function signatures")
     if has_pydantic:
@@ -121,9 +113,7 @@ def _build_code_quality_section(
     # Validation patterns
     validation_lines: List[str] = []
     if has_pydantic:
-        validation_lines.append(
-            "- Validate inputs with Pydantic models — not raw dicts"
-        )
+        validation_lines.append("- Validate inputs with Pydantic models — not raw dicts")
     if "marshmallow" in python_deps:
         validation_lines.append("- Validate inputs with Marshmallow schemas")
     if "zod" in node_deps:
@@ -135,16 +125,12 @@ def _build_code_quality_section(
         lines.append("")
 
     if not lines:
-        lines.append(
-            "- Follow standard code quality practices for the project's tech stack"
-        )
+        lines.append("- Follow standard code quality practices for the project's tech stack")
 
     return "\n".join(lines).rstrip()
 
 
-def _build_testing_standards_section(
-    test_info: Dict[str, Any], python_deps: List[str], tech_stack: List[str]
-) -> str:
+def _build_testing_standards_section(test_info: Dict[str, Any], python_deps: List[str], tech_stack: List[str]) -> str:
     """Build testing standards from test analysis results."""
     lines: List[str] = []
     framework = test_info.get("framework", "")
@@ -174,9 +160,7 @@ def _build_testing_standards_section(
 
     # Fixtures
     if has_conftest:
-        lines.append(
-            "- Use shared fixtures from `conftest.py` — avoid duplicating test setup"
-        )
+        lines.append("- Use shared fixtures from `conftest.py` — avoid duplicating test setup")
     if has_fixtures:
         lines.append("- Store test data in `tests/fixtures/`")
 
@@ -204,9 +188,7 @@ def _build_architecture_section(
 
     entry_points = structure.get("entry_points", [])
     if entry_points:
-        lines.append(
-            f"- **Entry points**: {', '.join(f'`{ep}`' for ep in entry_points)}"
-        )
+        lines.append(f"- **Entry points**: {', '.join(f'`{ep}`' for ep in entry_points)}")
 
     # Only show primary type + test pattern, filter false-positive secondary detections
     raw_patterns = structure.get("patterns", [])
@@ -224,9 +206,7 @@ def _build_architecture_section(
 
     # CLI patterns
     if "click" in python_deps:
-        lines.append(
-            "- Use Click decorators for CLI commands — keep command functions thin"
-        )
+        lines.append("- Use Click decorators for CLI commands — keep command functions thin")
     if "typer" in python_deps:
         lines.append("- Use Typer for CLI commands with type-annotated parameters")
 
@@ -287,8 +267,6 @@ def _build_dev_guidelines_section(
     lines.append("- Never commit secrets, API keys, or `.env` files")
     lines.append("- Write descriptive commit messages following conventional commits")
     if "python" in tech_stack:
-        lines.append(
-            "- Keep module imports at file top; use absolute imports within the project"
-        )
+        lines.append("- Keep module imports at file top; use absolute imports within the project")
 
     return "\n".join(lines).rstrip()

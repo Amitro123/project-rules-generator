@@ -116,10 +116,7 @@ def create_rules(
         # Generate rules
         click.echo("Analyzing project...")
 
-        content, metadata, quality = creator.create_rules(
-            readme_content,
-            tech_stack=tech_stack
-        )
+        content, metadata, quality = creator.create_rules(readme_content, tech_stack=tech_stack)
 
         # Display metadata
         click.echo(f"\nDetected Tech Stack: {', '.join(metadata.tech_stack) or 'none'}")
@@ -148,11 +145,6 @@ def create_rules(
         click.echo(f"\nRules generated: {rules_file.name}")
 
         # Display rule count
-        all_rules = (
-            content.count("- [x]")
-            + content.count("### High Priority")
-            + content.count("### Medium Priority")
-        )
         click.echo("\nRules Summary:")
         click.echo(f"   - Tech-specific rules: {sum(1 for t in metadata.tech_stack if t in content.lower())}")
         click.echo(f"   - Priority areas: {len(metadata.priority_areas)}")
@@ -184,6 +176,7 @@ def create_rules(
         click.echo(f"\nError generating rules: {e}", err=True)
         if verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 
@@ -202,7 +195,7 @@ def _display_quality_report(quality, verbose: bool):
     click.echo("\nQuality Assessment:")
     click.echo("   Score: ", nl=False)
     click.secho(f"{quality.score:.1f}/100", fg=score_color, bold=True)
-    click.echo(f"   Completeness: {quality.completeness*100:.0f}%")
+    click.echo(f"   Completeness: {quality.completeness * 100:.0f}%")
 
     if quality.passed:
         click.secho("   [PASSED]", fg="green")

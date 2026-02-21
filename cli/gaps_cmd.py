@@ -4,10 +4,10 @@ from pathlib import Path
 
 import click
 
+from cli.agent import _detect_provider, _set_api_key
 from generator.planning.task_creator import TaskManifest
 from generator.requirements import Requirement, RequirementsInferrer
 from generator.tasks import TraceabilityMatrix
-from cli.agent import _detect_provider, _set_api_key
 
 
 @click.command(name="gaps")
@@ -30,10 +30,11 @@ def gaps(project_path, spec, infer, provider, api_key):
         content = Path(spec).read_text(encoding="utf-8")
         # Extract ID: DESC: pattern
         import re
+
         matches = re.finditer(r"ID:\s*(.+)\nDESC:\s*(.+)", content)
         for m in matches:
             requirements.append(Requirement(id=m.group(1).strip(), description=m.group(2).strip(), source="spec.md"))
-    
+
     if infer or not requirements:
         click.echo("Inferring requirements...")
         requirements.extend(inferrer.infer(project_path))
@@ -50,8 +51,9 @@ def gaps(project_path, spec, infer, provider, api_key):
 
     from rich.console import Console
     from rich.markdown import Markdown
+
     console = Console()
-    
+
     click.echo("\nTraceability Matrix:")
     console.print(Markdown(matrix.format_table()))
 
@@ -62,6 +64,7 @@ def gaps(project_path, spec, infer, provider, api_key):
             click.echo(f"  - [{m.id}] {m.description}")
     else:
         click.echo("\nRequirement Coverage: 100%")
+
 
 @click.command(name="spec")
 @click.argument("project_path", type=click.Path(exists=True, file_okay=False), default=".")

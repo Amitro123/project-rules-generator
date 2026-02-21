@@ -60,9 +60,7 @@ class EnhancedProjectParser:
                     logger.warning(f"README parsing failed: {e}")
                     # Return raw content as fallback
                     try:
-                        content = readme_path.read_text(
-                            encoding="utf-8", errors="replace"
-                        )
+                        content = readme_path.read_text(encoding="utf-8", errors="replace")
                         return {
                             "name": self.path.name,
                             "tech_stack": [],
@@ -116,9 +114,7 @@ class EnhancedProjectParser:
         ]:
             extra_file = self.path / extra
             if extra_file.exists():
-                result["python_dev"].extend(
-                    self._dep_parser.parse_requirements_txt(extra_file)
-                )
+                result["python_dev"].extend(self._dep_parser.parse_requirements_txt(extra_file))
 
         # Python: pyproject.toml
         pyproject = self.path / "pyproject.toml"
@@ -147,9 +143,7 @@ class EnhancedProjectParser:
                     readme_deps = self._dep_parser.parse_readme_pip_install(readme_path)
                     if readme_deps:
                         result["python"] = readme_deps
-                        logger.info(
-                            f"Extracted {len(readme_deps)} deps from {filename} pip install commands"
-                        )
+                        logger.info(f"Extracted {len(readme_deps)} deps from {filename} pip install commands")
                     break
 
         # System dependencies
@@ -294,9 +288,7 @@ class EnhancedProjectParser:
             readme_path_str = readme_data.get("readme_path")
             if readme_path_str:
                 try:
-                    raw_readme = Path(readme_path_str).read_text(
-                        encoding="utf-8", errors="replace"
-                    )
+                    raw_readme = Path(readme_path_str).read_text(encoding="utf-8", errors="replace")
                 except Exception:
                     pass
         if raw_readme:
@@ -305,17 +297,21 @@ class EnhancedProjectParser:
             readme_tech = detect_from_readme(raw_readme)
             # Only add specialized techs that wouldn't be in dep files
             readme_primary = {
-                "konva", "canvas", "dxf", "threejs", "babylon",
-                "supabase", "reportlab", "pdf",
+                "konva",
+                "canvas",
+                "dxf",
+                "threejs",
+                "babylon",
+                "supabase",
+                "reportlab",
+                "pdf",
             }
             for tech in readme_tech:
                 if tech in readme_primary:
                     tech_stack.add(tech)
 
         # Detect docker
-        has_docker = (self.path / "Dockerfile").exists() or (
-            self.path / "docker-compose.yml"
-        ).exists()
+        has_docker = (self.path / "Dockerfile").exists() or (self.path / "docker-compose.yml").exists()
         if has_docker:
             tech_stack.add("docker")
 
@@ -332,9 +328,7 @@ class EnhancedProjectParser:
             "tech_stack": sorted(tech_stack),
             "project_type": structure.get("type", "unknown"),
             "languages": sorted(languages),
-            "frameworks": sorted(
-                tech_stack - languages - {"docker", "pytest", "jest", "unittest"}
-            ),
+            "frameworks": sorted(tech_stack - languages - {"docker", "pytest", "jest", "unittest"}),
             "has_tests": tests.get("test_files", 0) > 0,
             "has_docker": has_docker,
             "confidence": structure.get("confidence", 0.0),

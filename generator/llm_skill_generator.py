@@ -44,9 +44,7 @@ class LLMSkillGenerator:
     def generate_content(self, prompt: str, max_tokens: int = 2000) -> str:
         """Generate content from prompt using the configured model."""
         try:
-            return self.client.generate(
-                prompt, max_tokens=max_tokens, model=self.model_name
-            )
+            return self.client.generate(prompt, max_tokens=max_tokens, model=self.model_name)
         except Exception as e:
             raise RuntimeError(f"LLM generation failed: {e}")
 
@@ -70,9 +68,7 @@ class LLMSkillGenerator:
         if tech.get("languages"):
             tech_summary.append(f"**Languages**: {', '.join(tech['languages'])}")
 
-        tech_str = (
-            "\n".join(tech_summary) if tech_summary else "Tech stack not detected"
-        )
+        tech_str = "\n".join(tech_summary) if tech_summary else "Tech stack not detected"
 
         # Build project structure summary
         structure_items = []
@@ -87,9 +83,7 @@ class LLMSkillGenerator:
         if structure.get("has_docker"):
             structure_items.append("- Uses Docker")
 
-        structure_str = (
-            "\n".join(structure_items) if structure_items else "Structure not analyzed"
-        )
+        structure_str = "\n".join(structure_items) if structure_items else "Structure not analyzed"
 
         # Build key files snippets
         snippets = []
@@ -103,14 +97,12 @@ class LLMSkillGenerator:
             ]:
                 snippets.append(f"**{filename}**:\n```\n{content[:400]}\n```")
 
-        snippets_str = (
-            "\n\n".join(snippets[:3]) if snippets else "No code samples available"
-        )
+        snippets_str = "\n\n".join(snippets[:3]) if snippets else "No code samples available"
 
         prompt = f"""# Generate AI Agent Skill
 
 ## Skill Name
-{skill_name.replace('-', ' ').title()}
+{skill_name.replace("-", " ").title()}
 
 ## Project Context
 
@@ -136,7 +128,7 @@ Create a **complete, actionable skill** for an AI agent.
 
 ```markdown
 ---
-name: {skill_name.lower().replace(' ', '-')}
+name: {skill_name.lower().replace(" ", "-")}
 description: [Short description]
 auto_triggers:
   - keywords: [[list, of, keywords]]
@@ -144,7 +136,7 @@ auto_triggers:
 tools: [[list, of, tools, needed]]
 ---
 
-# Skill: {skill_name.replace('-', ' ').title()}
+# Skill: {skill_name.replace("-", " ").title()}
 
 ## Purpose
 [ONE clear sentence about what this solves in THIS project]

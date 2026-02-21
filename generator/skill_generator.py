@@ -113,10 +113,10 @@ class SkillGenerator:
 
         # Target: prefer Local Learned if project context exists, else Global Learned
         if self.discovery.project_learned_link:
-             target_root = self.discovery.project_learned_link
+            target_root = self.discovery.project_learned_link
         else:
-             target_root = self.discovery.global_learned
-        
+            target_root = self.discovery.global_learned
+
         target_dir = target_root / safe_name
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -140,8 +140,6 @@ class SkillGenerator:
 
         skill_file.write_text(content, encoding="utf-8")
         return target_dir
-
-
 
     def check_global_skill_reuse(self, tech_stack: List[str]) -> Dict[str, str]:
         """Check which skills already exist in global learned for a given tech stack.
@@ -200,9 +198,7 @@ class SkillGenerator:
         reuse_map = self.check_global_skill_reuse(tech_stack)
 
         # Map tech to project-specific skill content (for adapt/create cases)
-        skill_templates = self._derive_project_skills(
-            tech_stack, readme_content, project_name
-        )
+        skill_templates = self._derive_project_skills(tech_stack, readme_content, project_name)
 
         generated = []
         for skill_name, skill_content in skill_templates.items():
@@ -214,6 +210,7 @@ class SkillGenerator:
                 resolved = self.discovery.resolve_skill(skill_name)
                 if resolved and resolved.exists():
                     import shutil
+
                     shutil.copy2(resolved, dest)
                     print(f"  [reuse]  {skill_name} (from global learned)")
                     generated.append(f"{skill_name} (reused)")
@@ -288,7 +285,7 @@ class SkillGenerator:
     @staticmethod
     def _is_generic_stub(filepath: Path, project_path: Optional[Path] = None) -> bool:
         """Check if a skill file is a generic stub or contains hallucinations.
-        
+
         Delegates to generator.utils.quality_checker.is_stub().
         Kept for backward compatibility.
         """

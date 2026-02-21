@@ -6,9 +6,7 @@ from typing import Any, Dict
 import yaml
 
 
-def load_template(
-    template_name: str, templates_dir: str = "templates"
-) -> Dict[str, Any]:
+def load_template(template_name: str, templates_dir: str = "templates") -> Dict[str, Any]:
     """Load a YAML template file.
 
     Args:

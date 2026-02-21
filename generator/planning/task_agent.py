@@ -16,35 +16,34 @@ print("Hello World")
 
 Only provide the files that need to be created or modified."""
 
+
 class TaskImplementationAgent:
     """Agent that generates code changes for a subtask."""
 
-    def __init__(
-        self, provider: str = "groq", api_key: Optional[str] = None, client=None
-    ):
+    def __init__(self, provider: str = "groq", api_key: Optional[str] = None, client=None):
         self.client = client or create_ai_client(provider=provider, api_key=api_key)
 
     def implement(self, subtask: SubTask, project_context: Optional[Dict] = None) -> Dict[str, str]:
         """Generate file changes for a subtask.
-        
+
         Returns a dict mapping file paths to their new content.
         """
         prompt = self._build_prompt(subtask, project_context)
-        
+
         response = self.client.generate(
             prompt,
             temperature=0.2,
             max_tokens=4000,
             system_message=TASK_AGENT_SYSTEM_PROMPT,
         )
-        
+
         return self._parse_response(response)
 
     def _build_prompt(self, subtask: SubTask, project_context: Optional[Dict]) -> str:
         ctx_str = ""
         if project_context:
             ctx_str = f"\nProject Context: {project_context.get('metadata', {})}"
-        
+
         files_str = ", ".join(subtask.files) if subtask.files else "N/A"
         changes_str = "\n".join(f"- {c}" for c in subtask.changes) if subtask.changes else "N/A"
         tests_str = "\n".join(f"- {t}" for t in subtask.tests) if subtask.tests else "N/A"
@@ -66,19 +65,19 @@ Tests to Verify:
         # Simple parsing for [FILE: path]
         current_file = None
         current_content = []
-        
+
         for line in response.split("\n"):
             if line.startswith("[FILE:"):
                 if current_file:
                     files[current_file] = "\n".join(current_content).strip()
-                
+
                 # Extract path: [FILE: path/to/file] -> path/to/file
                 current_file = line.replace("[FILE:", "").replace("]", "").strip()
                 current_content = []
             elif current_file:
                 current_content.append(line)
-        
+
         if current_file:
             files[current_file] = "\n".join(current_content).strip()
-            
+
         return files

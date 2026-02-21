@@ -75,9 +75,7 @@ def design(description, project_path, output, api_key, provider, verbose):
         enhanced_context = parser.extract_full_context()
         if verbose:
             meta = enhanced_context.get("metadata", {})
-            click.echo(
-                f"Context: {meta.get('project_type', 'unknown')} ({', '.join(meta.get('tech_stack', []))})"
-            )
+            click.echo(f"Context: {meta.get('project_type', 'unknown')} ({', '.join(meta.get('tech_stack', []))})")
     except Exception as exc:
         if verbose:
             click.echo(f"Context extraction skipped: {exc}")
@@ -152,9 +150,7 @@ def design(description, project_path, output, api_key, provider, verbose):
     default=None,
     help="AI Provider (gemini, groq). Auto-detected if omitted.",
 )
-@click.option(
-    "--interactive", is_flag=True, help="Open files in IDE as tasks are listed"
-)
+@click.option("--interactive", is_flag=True, help="Open files in IDE as tasks are listed")
 @click.option(
     "--auto-execute",
     is_flag=True,
@@ -213,9 +209,7 @@ def plan(
 
         if not plan_files:
             click.echo("No plan files found in project directory.")
-            click.echo(
-                "Tip: Generate a plan with 'prg plan <task>' or 'prg plan --from-readme README.md'"
-            )
+            click.echo("Tip: Generate a plan with 'prg plan <task>' or 'prg plan --from-readme README.md'")
             sys.exit(0)
 
         # Show status for each plan
@@ -243,9 +237,7 @@ def plan(
             click.echo(f"Generating roadmap with {provider}...")
 
         planner = ProjectPlanner(provider=provider, api_key=api_key)
-        plan_obj = planner.generate_roadmap_from_readme(
-            Path(from_readme), project_path=project_path
-        )
+        plan_obj = planner.generate_roadmap_from_readme(Path(from_readme), project_path=project_path)
 
         # Auto-generate output filename if not provided
         if not output:
@@ -327,9 +319,7 @@ def plan(
         enhanced_context = parser.extract_full_context()
         if verbose:
             meta = enhanced_context.get("metadata", {})
-            click.echo(
-                f"Context: {meta.get('project_type', 'unknown')} ({', '.join(meta.get('tech_stack', []))})"
-            )
+            click.echo(f"Context: {meta.get('project_type', 'unknown')} ({', '.join(meta.get('tech_stack', []))})")
     except Exception as exc:
         if verbose:
             click.echo(f"Context extraction skipped: {exc}")
@@ -423,9 +413,7 @@ def plan(
                     click.echo(f"  [{action}] {fpath}")
                     if auto_execute and not full_path.exists():
                         full_path.parent.mkdir(parents=True, exist_ok=True)
-                        full_path.write_text(
-                            f"# TODO: {task.title}\\n", encoding="utf-8"
-                        )
+                        full_path.write_text(f"# TODO: {task.title}\\n", encoding="utf-8")
                     try:
                         subprocess.Popen([editor, str(full_path)])
                     except Exception as e:
@@ -465,9 +453,7 @@ def plan(
     help="AI Provider (gemini, groq). Auto-detected if omitted.",
 )
 @click.option("--api-key", help="API Key (overrides env var)")
-@click.option(
-    "--tasks", is_flag=True, help="Generate executable tasks from review"
-)
+@click.option("--tasks", is_flag=True, help="Generate executable tasks from review")
 @click.option("--verbose/--quiet", default=True, help="Verbose output")
 def review(filepath, project_path, output, provider, api_key, tasks, verbose):
     """Review a generated artifact for quality and hallucinations."""
@@ -481,7 +467,6 @@ def review(filepath, project_path, output, provider, api_key, tasks, verbose):
         click.echo("Project Rules Generator v0.1.0 — Self-Review")
         click.echo(f"Reviewing: {filepath}")
         click.echo(f"Provider: {provider}")
-
 
     from generator.planning import SelfReviewer
 
@@ -576,7 +561,6 @@ def review(filepath, project_path, output, provider, api_key, tasks, verbose):
             click.echo(f"❌ Failed to generate tasks: {e}", err=True)
 
 
-
 @click.command(name="start")
 @click.argument("task_description")
 @click.option(
@@ -649,9 +633,7 @@ def setup(task_description, project_path, provider, api_key, verbose):
     try:
         manifest = workflow.run_setup()
         click.echo(f"\\nSetup complete: {len(manifest.tasks)} tasks created.")
-        click.echo(
-            "Run 'prg status' to see progress or 'prg exec tasks/<file>' to begin."
-        )
+        click.echo("Run 'prg status' to see progress or 'prg exec tasks/<file>' to begin.")
     except Exception as e:
         click.echo(f"Setup failed: {e}", err=True)
         sys.exit(1)

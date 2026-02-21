@@ -309,31 +309,54 @@ class CoworkRulesCreator:
             detected_signals=signals,
         )
 
-    def _detect_tech_stack(
-        self, readme_content: str, enhanced_context: Optional[Dict]
-    ) -> List[str]:
+    def _detect_tech_stack(self, readme_content: str, enhanced_context: Optional[Dict]) -> List[str]:
         """Auto-detect tech stack from README, project files, and context."""
         tech_keywords = {
             # Web frameworks
-            "fastapi", "flask", "django", "express",
+            "fastapi",
+            "flask",
+            "django",
+            "express",
             # Frontend
-            "react", "vue", "angular",
+            "react",
+            "vue",
+            "angular",
             # Testing
-            "pytest", "jest", "vitest",
+            "pytest",
+            "jest",
+            "vitest",
             # DevOps
-            "docker", "kubernetes",
+            "docker",
+            "kubernetes",
             # Async
-            "asyncio", "celery",
+            "asyncio",
+            "celery",
             # Databases
-            "sqlalchemy", "prisma", "mongoose",
+            "sqlalchemy",
+            "prisma",
+            "mongoose",
             # Languages
-            "typescript", "python", "node", "go", "rust",
+            "typescript",
+            "python",
+            "node",
+            "go",
+            "rust",
             # Databases
-            "postgresql", "mongodb", "redis",
+            "postgresql",
+            "mongodb",
+            "redis",
             # AI/LLM
-            "openai", "anthropic", "langchain", "groq", "gemini",
+            "openai",
+            "anthropic",
+            "langchain",
+            "groq",
+            "gemini",
             # CLI / validation / templates
-            "click", "typer", "argparse", "pydantic", "jinja2",
+            "click",
+            "typer",
+            "argparse",
+            "pydantic",
+            "jinja2",
         }
 
         detected = set()
@@ -398,9 +421,7 @@ class CoworkRulesCreator:
         if (self.project_path / "templates").exists():
             detected.add("jinja2")
 
-    def _detect_project_type(
-        self, tech_stack: List[str], enhanced_context: Optional[Dict]
-    ) -> str:
+    def _detect_project_type(self, tech_stack: List[str], enhanced_context: Optional[Dict]) -> str:
         """Detect project type (python-cli, fastapi-api, react-app, etc.)."""
 
         # Inference from tech stack (authoritative — checked first)
@@ -425,9 +446,7 @@ class CoworkRulesCreator:
 
         return "python-library"
 
-    def _identify_priority_areas(
-        self, tech_stack: List[str], project_type: str
-    ) -> List[str]:
+    def _identify_priority_areas(self, tech_stack: List[str], project_type: str) -> List[str]:
         """Identify high-priority areas for this project."""
         priorities = []
 
@@ -509,7 +528,15 @@ class CoworkRulesCreator:
 
         # Load a few key files for grounding (lightweight version)
         snippets: list[str] = []
-        for fname in ["main.py", "app.py", "pyproject.toml", "requirements.txt", "package.json", "Cargo.toml", "go.mod"]:
+        for fname in [
+            "main.py",
+            "app.py",
+            "pyproject.toml",
+            "requirements.txt",
+            "package.json",
+            "Cargo.toml",
+            "go.mod",
+        ]:
             p = self.project_path / fname
             if p.exists():
                 try:
@@ -520,15 +547,15 @@ class CoworkRulesCreator:
         prompt = f"""You are generating coding rules for a software project.
 
 Project: {metadata.project_name}
-Tech stack detected: {', '.join(metadata.tech_stack) or 'unknown'}
+Tech stack detected: {", ".join(metadata.tech_stack) or "unknown"}
 Project tree:
 {tree}
 
 Key files:
-{chr(10).join(snippets) or 'No key files found.'}
+{chr(10).join(snippets) or "No key files found."}
 
 README excerpt:
-{readme_content[:600] or 'No README.'}
+{readme_content[:600] or "No README."}
 
 Generate 6-10 specific, actionable coding rules for this project.
 Format strictly as:
@@ -542,6 +569,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
 
         try:
             from generator.llm_skill_generator import LLMSkillGenerator
+
             generator = LLMSkillGenerator(provider=self.provider)
             response = generator.generate_content(prompt, max_tokens=600)
 
@@ -549,23 +577,29 @@ No explanations, no markdown, just the DO:/DONT: lines."""
             for line in response.splitlines():
                 line = line.strip()
                 if line.upper().startswith("DO:"):
-                    rules_by_category["Coding Standards"].append(Rule(
-                        content=line[3:].strip(),
-                        priority="High",
-                        category="Coding Standards",
-                        source="llm_fallback",
-                    ))
+                    rules_by_category["Coding Standards"].append(
+                        Rule(
+                            content=line[3:].strip(),
+                            priority="High",
+                            category="Coding Standards",
+                            source="llm_fallback",
+                        )
+                    )
                 elif line.upper().startswith("DONT:") or line.upper().startswith("DON'T:"):
                     content = line.split(":", 1)[-1].strip()
-                    rules_by_category["Coding Standards"].append(Rule(
-                        content=f"Don't {content}",
-                        priority="High",
-                        category="Coding Standards",
-                        source="llm_fallback",
-                    ))
+                    rules_by_category["Coding Standards"].append(
+                        Rule(
+                            content=f"Don't {content}",
+                            priority="High",
+                            category="Coding Standards",
+                            source="llm_fallback",
+                        )
+                    )
 
             if rules_by_category:
-                print(f"✨ LLM generated {sum(len(v) for v in rules_by_category.values())} rules for unknown tech stack.")
+                print(
+                    f"✨ LLM generated {sum(len(v) for v in rules_by_category.values())} rules for unknown tech stack."
+                )
                 return dict(rules_by_category)
 
         except Exception as e:
@@ -640,9 +674,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
 
         # 3. Testing rules — populate if pytest in tech_stack OR has_tests signal
         has_test_signal = (
-            "pytest" in metadata.tech_stack
-            or "jest" in metadata.tech_stack
-            or "has_tests" in metadata.detected_signals
+            "pytest" in metadata.tech_stack or "jest" in metadata.tech_stack or "has_tests" in metadata.detected_signals
         )
         if has_test_signal:
             test_rules = self._generate_testing_rules(metadata)
@@ -802,9 +834,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
                         file_changes[line] += 1
 
                 # Find hot spots (files changed > 10 times)
-                hotspots = [
-                    f for f, count in file_changes.items() if count > 10
-                ]
+                hotspots = [f for f, count in file_changes.items() if count > 10]
 
                 if hotspots:
                     antipatterns.append(
@@ -887,11 +917,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
 """
 
         # Collect all rules flat for priority view
-        all_rules_flat = [
-            rule
-            for rules in rules_by_category.values()
-            for rule in rules
-        ]
+        all_rules_flat = [rule for rules in rules_by_category.values() for rule in rules]
 
         # Add rules by priority (Coding Standards section)
         shown_in_priority: Set[str] = set()
@@ -969,7 +995,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
         completeness = sum(1 for sec in required_sections if sec in content) / len(required_sections)
 
         if completeness < 1.0:
-            issues.append(f"Missing sections (completeness: {completeness*100:.0f}%)")
+            issues.append(f"Missing sections (completeness: {completeness * 100:.0f}%)")
             score -= 20
 
         # 2. Check for sufficient rules
@@ -979,10 +1005,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
             score -= 10
 
         # 3. Check for priority distribution
-        high_priority = sum(
-            1 for rules in rules_by_category.values()
-            for rule in rules if rule.priority == "High"
-        )
+        high_priority = sum(1 for rules in rules_by_category.values() for rule in rules if rule.priority == "High")
 
         if high_priority < 2:
             warnings.append("Few high-priority rules (recommend 3+)")
@@ -1010,9 +1033,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
             conflicts=conflicts,
         )
 
-    def _detect_rule_conflicts(
-        self, rules_by_category: Dict[str, List[Rule]]
-    ) -> List[str]:
+    def _detect_rule_conflicts(self, rules_by_category: Dict[str, List[Rule]]) -> List[str]:
         """Detect genuinely contradictory rules (same topic, opposite direction)."""
         conflicts = []
 

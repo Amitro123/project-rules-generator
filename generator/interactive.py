@@ -11,9 +11,7 @@ console = Console()
 def create_readme_interactive(project_path: Path) -> Dict[str, Any]:
     console.print("\n[bold cyan]📝 README Generator[/bold cyan]")
     console.print("Let's create a professional README!\n")
-    console.print(
-        "[yellow]⚠️  Enter SINGLE LINE answers (no copy-paste multi-line text)[/yellow]\n"
-    )
+    console.print("[yellow]⚠️  Enter SINGLE LINE answers (no copy-paste multi-line text)[/yellow]\n")
 
     default_name = project_path.name
 
@@ -94,8 +92,7 @@ def show_generated_files(files: List[Path], skills_stats: Dict[str, int]):
 
     if skills_stats.get("builtin", 0) > 0:
         console.print(
-            f"  🔧 [blue]{skills_stats['builtin']}[/blue] universal patterns "
-            f"[dim](BUILTIN - always useful)[/dim]"
+            f"  🔧 [blue]{skills_stats['builtin']}[/blue] universal patterns [dim](BUILTIN - always useful)[/dim]"
         )
 
     if skills_stats.get("generated", 0) > 0:

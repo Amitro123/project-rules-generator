@@ -1,6 +1,5 @@
 """Autopilot orchestrator — manages the end-to-end discovery and execution loop."""
 
-
 import re
 import subprocess
 from pathlib import Path
@@ -81,9 +80,9 @@ class AutopilotOrchestrator:
                 self._print_summary(completed, skipped)
                 break
 
-            click.echo(f"\n{'='*60}")
+            click.echo(f"\n{'=' * 60}")
             click.echo(f"🎯  Task #{nxt.id}: {nxt.title}")
-            click.echo(f"{'='*60}")
+            click.echo(f"{'=' * 60}")
 
             branch_name = f"autopilot/task-{nxt.id}"
             if main_branch:
@@ -185,16 +184,12 @@ class AutopilotOrchestrator:
         """Return (runner, args) based on project config and subtask files."""
         # pytest
         has_pytest = any(
-            (self.project_path / f).exists()
-            for f in ["pytest.ini", "pyproject.toml", "setup.cfg", "conftest.py"]
+            (self.project_path / f).exists() for f in ["pytest.ini", "pyproject.toml", "setup.cfg", "conftest.py"]
         )
         if has_pytest:
             args = ["-x", "-q"]
             # Narrow scope to affected test files if available
-            test_files = [
-                f for f in (subtask.files or [])
-                if "test" in f
-            ]
+            test_files = [f for f in (subtask.files or []) if "test" in f]
             if test_files:
                 args += test_files
             return "pytest", args
@@ -242,11 +237,11 @@ class AutopilotOrchestrator:
 
     def _print_summary(self, completed: int, skipped: int) -> None:
         """Print end-of-run summary."""
-        click.echo(f"\n{'='*60}")
+        click.echo(f"\n{'=' * 60}")
         click.echo("🎉 Autopilot run complete")
         click.echo(f"   ✅ Completed : {completed}")
         click.echo(f"   ⏭️  Skipped   : {skipped}")
-        click.echo(f"{'='*60}")
+        click.echo(f"{'=' * 60}")
 
     def _load_subtask_details(self, entry) -> SubTask:
         """Load full SubTask details from the task file."""

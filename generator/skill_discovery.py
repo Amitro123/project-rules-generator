@@ -55,7 +55,7 @@ class SkillDiscovery:
             self.project_local_dir = None
             self.project_learned_link = None
             self.project_builtin_link = None
-            
+
         self._skills_cache = None
 
     def _build_cache(self):
@@ -153,9 +153,7 @@ class SkillDiscovery:
                     if source.is_dir():
                         shutil.copytree(source, target)
                 except Exception as copy_err:
-                    print(
-                        f"[Warning] Failed to link or copy {source} to {target}: {copy_err}"
-                    )
+                    print(f"[Warning] Failed to link or copy {source} to {target}: {copy_err}")
 
     def list_skills(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -197,7 +195,9 @@ class SkillDiscovery:
 
         root = {
             "builtin": self.global_builtin,
-            "learned": self.project_learned_link if self.project_learned_link and self.project_learned_link.exists() else self.global_learned,
+            "learned": self.project_learned_link
+            if self.project_learned_link and self.project_learned_link.exists()
+            else self.global_learned,
             "project": self.project_local_dir,
         }.get(layer)
 
@@ -224,7 +224,8 @@ class SkillDiscovery:
             # Check if this path is inside a skill directory (and not the SKILL.md itself)
             is_inside_skill_dir = False
             for sd in skill_dirs:
-                if sd == "": continue # SKILL.md in root doesn't hide anything
+                if sd == "":
+                    continue  # SKILL.md in root doesn't hide anything
                 if rel.startswith(f"{sd}/") and rel != f"{sd}/SKILL.md":
                     is_inside_skill_dir = True
                     break
@@ -295,7 +296,6 @@ class SkillDiscovery:
 
         return None
 
-
     def skill_exists(self, skill_name: str, scope: str = "learned") -> bool:
         """Check if a skill already exists, preventing duplicates.
 
@@ -336,7 +336,6 @@ class SkillDiscovery:
                 if (category_dir / skill_name / "SKILL.md").exists():
                     return True
         return False
-
 
     def get_all_skills_content(self) -> Dict[str, Dict]:
         """Get full content of all skills for export (Project > Learned > Builtin)."""

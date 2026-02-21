@@ -39,10 +39,7 @@ class SkillPathManager:
         for skill_item in cls.BUILTIN_SOURCE.iterdir():
             if skill_item.is_file() and skill_item.suffix in (".md", ".yaml", ".yml"):
                 target = cls.GLOBAL_BUILTIN / skill_item.name
-                if (
-                    not target.exists()
-                    or skill_item.stat().st_mtime > target.stat().st_mtime
-                ):
+                if not target.exists() or skill_item.stat().st_mtime > target.stat().st_mtime:
                     shutil.copy2(skill_item, target)
                     synced_count += 1
                     logger.info(f"Synced builtin: {skill_item.name}")
@@ -57,17 +54,12 @@ class SkillPathManager:
                         rel = sub_file.relative_to(skill_item)
                         target_file = target_dir / rel
                         target_file.parent.mkdir(parents=True, exist_ok=True)
-                        if (
-                            not target_file.exists()
-                            or sub_file.stat().st_mtime > target_file.stat().st_mtime
-                        ):
+                        if not target_file.exists() or sub_file.stat().st_mtime > target_file.stat().st_mtime:
                             shutil.copy2(sub_file, target_file)
                             synced_count += 1
 
         if synced_count > 0:
-            logger.info(
-                f"Synced {synced_count} builtin skill files to {cls.GLOBAL_BUILTIN}"
-            )
+            logger.info(f"Synced {synced_count} builtin skill files to {cls.GLOBAL_BUILTIN}")
 
     @classmethod
     def save_learned_skill(cls, skill: Dict, category: str) -> Path:
@@ -90,9 +82,7 @@ class SkillPathManager:
         skill_content = skill.get("content", "")
 
         # Determine file extension based on content
-        if skill_content.strip().startswith("---") or skill_content.strip().startswith(
-            "name:"
-        ):
+        if skill_content.strip().startswith("---") or skill_content.strip().startswith("name:"):
             ext = ".yaml"
         else:
             ext = ".md"

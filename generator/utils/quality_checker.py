@@ -26,6 +26,7 @@ STUB_MARKERS = [
 @dataclass
 class QualityReport:
     """Quality assessment of a generated skill."""
+
     score: float
     passed: bool
     issues: List[str] = field(default_factory=list)
@@ -65,10 +66,7 @@ def is_stub(filepath: Path, project_path: Optional[Path] = None) -> bool:
     # 3. Detect fake file path patterns in code blocks
     file_refs = re.findall(r"#\s*File:\s*(\S+)", content)
     if file_refs and project_path:
-        fake_count = sum(
-            1 for ref in file_refs
-            if not (project_path / ref.split(":")[0]).exists()
-        )
+        fake_count = sum(1 for ref in file_refs if not (project_path / ref.split(":")[0]).exists())
         if fake_count > 0 and fake_count >= len(file_refs) / 2:
             return True
 

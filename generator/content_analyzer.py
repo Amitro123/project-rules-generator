@@ -70,16 +70,10 @@ class ContentAnalyzer:
     ):
         self.client = client or create_ai_client(provider=provider, api_key=api_key)
         self.config = config or AnalyzerConfig()
-        self.allowed_base_path = (
-            allowed_base_path.resolve() if allowed_base_path else Path.cwd().resolve()
-        )
-        self.opik = (
-            OpikEvaluator() if getattr(self.config, "enable_opik", False) else None
-        )
+        self.allowed_base_path = allowed_base_path.resolve() if allowed_base_path else Path.cwd().resolve()
+        self.opik = OpikEvaluator() if getattr(self.config, "enable_opik", False) else None
 
-    def analyze(
-        self, filepath: str, content: str, project_path: Optional[Path] = None
-    ) -> QualityReport:
+    def analyze(self, filepath: str, content: str, project_path: Optional[Path] = None) -> QualityReport:
         if not content.strip():
             raise ValidationError("Content cannot be empty")
 
@@ -89,12 +83,12 @@ class ContentAnalyzer:
             breakdown = self._skills_breakdown(content)
         else:
             breakdown = self._heuristic_breakdown(filepath, content)
-            
+
         score = min(100, max(0, breakdown.total))
 
         suggestions: List[str] = []
         if is_skills_index:
-             # Specialized suggestions for skills
+            # Specialized suggestions for skills
             if breakdown.structure < 16:
                 suggestions.append("Ensure specific sections: Project Context, Core Skills, Usage")
             if breakdown.actionability < 16:
@@ -102,7 +96,7 @@ class ContentAnalyzer:
             if breakdown.project_grounding < 12:
                 suggestions.append("Reference specific project tools (e.g. pytest) or paths (src/)")
             if breakdown.clarity < 15:
-                 suggestions.append("Use concise, clear skill names and descriptions")
+                suggestions.append("Use concise, clear skill names and descriptions")
             if breakdown.consistency < 15:
                 suggestions.append("Ensure all skills follow the same format (e.g. all have triggers)")
         else:
@@ -125,9 +119,7 @@ class ContentAnalyzer:
             try:
                 if self.client and hasattr(self.client, "generate"):
                     # Provide a minimal deterministic prompt; tests replace client with Mock
-                    proposal = self.client.generate(
-                        "Improve document quality with examples and clear sections."
-                    )
+                    proposal = self.client.generate("Improve document quality with examples and clear sections.")
                     if isinstance(proposal, str) and len(proposal.strip()) > 0:
                         patch = proposal
             except Exception:
@@ -159,7 +151,7 @@ class ContentAnalyzer:
                     "score_consistency": breakdown.consistency,
                 }
 
-            # Prepare breakdown dict for output
+                # Prepare breakdown dict for output
                 import dataclasses
 
                 breakdown_dict = dataclasses.asdict(breakdown)
@@ -167,9 +159,7 @@ class ContentAnalyzer:
                 output_props = {
                     "score_total": score,
                     "score_breakdown": breakdown_dict,
-                    "status": "Good"
-                    if score >= 80
-                    else ("Needs Improvement" if score >= 65 else "Poor"),
+                    "status": "Good" if score >= 80 else ("Needs Improvement" if score >= 65 else "Poor"),
                     "top_issue": suggestions[0] if suggestions else None,
                     "suggestions": suggestions,
                 }
@@ -198,16 +188,16 @@ class ContentAnalyzer:
 
     def _skills_breakdown(self, content: str) -> QualityBreakdown:
         text = content if isinstance(content, str) else str(content)
-        
+
         # Structure: Look for Project Context, Core Skills, Agent Skills
         has_context = bool(re.search(r"^##\s+PROJECT CONTEXT", text, flags=re.MULTILINE | re.IGNORECASE))
         has_skills = bool(re.search(r"^##\s+(CORE|AGENT)?\s*SKILLS", text, flags=re.MULTILINE | re.IGNORECASE))
         has_usage = bool(re.search(r"^##\s+USAGE", text, flags=re.MULTILINE | re.IGNORECASE))
-        
+
         # Check for consistent skill format (### skill-name)
         skill_headers = re.findall(r"^###\s+[\w\-]+", text, flags=re.MULTILINE)
         skill_count = len(skill_headers)
-        
+
         structure_score = 5
         if has_context:
             structure_score += 5
@@ -223,19 +213,21 @@ class ContentAnalyzer:
         # Deduct if skills are missing descriptions
         # (This is a simplified heuristic; robust checking would parse each block)
         if skill_count > 0:
-             # Check if we have roughly enough paragraphs for the skills
-             paragraphs = len([p for p in text.split("\n\n") if p.strip()])
-             if paragraphs < skill_count * 2: # Very rough proxy
-                 clarity_score -= 5
+            # Check if we have roughly enough paragraphs for the skills
+            paragraphs = len([p for p in text.split("\n\n") if p.strip()])
+            if paragraphs < skill_count * 2:  # Very rough proxy
+                clarity_score -= 5
         else:
-            clarity_score = 10 # No skills found??
+            clarity_score = 10  # No skills found??
 
         clarity_score = max(0, min(20, clarity_score))
-        
+
         # Project Grounding: References to src, rules, tests, or standard tools
         grounding_score = 5
-        refs = len(re.findall(r"\b(src|tests?|\.clinerules|pytest|analyze-code|refactor|git)\b", text, flags=re.IGNORECASE))
-        grounding_score += min(15, refs * 2) # Cap at 20 total
+        refs = len(
+            re.findall(r"\b(src|tests?|\.clinerules|pytest|analyze-code|refactor|git)\b", text, flags=re.IGNORECASE)
+        )
+        grounding_score += min(15, refs * 2)  # Cap at 20 total
         grounding_score = max(0, min(20, grounding_score))
 
         # Actionability: Triggers, Inputs, Outputs, Examples
@@ -243,7 +235,7 @@ class ContentAnalyzer:
         has_triggers = bool(re.search(r"\*\*Triggers:\*\*", text, flags=re.IGNORECASE))
         has_tools = bool(re.search(r"\*\*Tools:\*\*", text, flags=re.IGNORECASE))
         has_examples = "```bash" in text or "```python" in text
-        
+
         if has_triggers:
             actionability_score += 5
         if has_tools:
@@ -254,12 +246,12 @@ class ContentAnalyzer:
 
         # Consistency: Unified format
         consistency_score = 20
-        # If we have skills, check if they all look similar? 
+        # If we have skills, check if they all look similar?
         # Hard to do with regex alone, but we can check if triggers count matches skill count approx
         trigger_count = len(re.findall(r"\*\*Triggers:\*\*", text, flags=re.IGNORECASE))
         if skill_count > 0 and trigger_count < skill_count:
-             consistency_score -= 5
-        
+            consistency_score -= 5
+
         return QualityBreakdown(
             structure=structure_score,
             clarity=clarity_score,
@@ -276,17 +268,13 @@ class ContentAnalyzer:
         headers = len(re.findall(r"^#{1,3}\s", text, flags=re.MULTILINE))
         code_blocks = len(re.findall(r"```[\s\S]*?```", text))
         has_title = bool(re.match(r"^#\s", text.strip())) if is_markdown else True
-        structure_score = (
-            8 + min(6, headers) + (2 if code_blocks else 0) + (4 if has_title else 0)
-        )
+        structure_score = 8 + min(6, headers) + (2 if code_blocks else 0) + (4 if has_title else 0)
         structure_score = max(0, min(20, structure_score))
 
         # Actionability: code, commands, bullet lists
         commands = len(re.findall(r"^```bash[\s\S]*?```", text, flags=re.MULTILINE))
         bullets = len(re.findall(r"^[\-\*]\s", text, flags=re.MULTILINE))
-        actionability_score = (
-            6 + (4 if code_blocks else 0) + min(5, commands) + min(5, bullets)
-        )
+        actionability_score = 6 + (4 if code_blocks else 0) + min(5, commands) + min(5, bullets)
         actionability_score = max(0, min(20, actionability_score))
 
         # Project grounding: references to files, tests, configs
@@ -323,17 +311,8 @@ class ContentAnalyzer:
                 flags=re.IGNORECASE | re.MULTILINE,
             )
         )
-        has_testing = bool(
-            re.search(
-                r"^##\s+(testing|tests)", text, flags=re.IGNORECASE | re.MULTILINE
-            )
-        )
-        consistency_score = (
-            6
-            + (4 if has_overview else 0)
-            + (4 if has_guidelines else 0)
-            + (4 if has_testing else 0)
-        )
+        has_testing = bool(re.search(r"^##\s+(testing|tests)", text, flags=re.IGNORECASE | re.MULTILINE))
+        consistency_score = 6 + (4 if has_overview else 0) + (4 if has_guidelines else 0) + (4 if has_testing else 0)
         consistency_score = max(0, min(20, consistency_score))
 
         return QualityBreakdown(
@@ -353,9 +332,7 @@ class ContentAnalyzer:
             improved += "\n\n```bash\n# example command\npytest -q\n```\n"
         return improved
 
-    def _parse_analysis_response(
-        self, response: str
-    ) -> Tuple[QualityBreakdown, List[str]]:
+    def _parse_analysis_response(self, response: str) -> Tuple[QualityBreakdown, List[str]]:
         text = response or ""
 
         def extract(label: str) -> int:

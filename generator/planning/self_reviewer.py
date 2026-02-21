@@ -61,14 +61,10 @@ class ReviewReport:
 class SelfReviewer:
     """Critique generated artifacts for quality and hallucinations."""
 
-    def __init__(
-        self, provider: str = "groq", api_key: Optional[str] = None, client=None
-    ):
+    def __init__(self, provider: str = "groq", api_key: Optional[str] = None, client=None):
         self.client = client or create_ai_client(provider=provider, api_key=api_key)
 
-    def review(
-        self, filepath: Path, project_path: Optional[Path] = None
-    ) -> ReviewReport:
+    def review(self, filepath: Path, project_path: Optional[Path] = None) -> ReviewReport:
         """Critique a generated artifact.
 
         Args:
@@ -175,11 +171,7 @@ ACTION_PLAN:
         action_plan = self._extract_section(response, "ACTION_PLAN")
 
         # Clean up "None" entries
-        hallucinations = [
-            h
-            for h in hallucinations
-            if h.lower() not in ("none", "n/a", "none detected")
-        ]
+        hallucinations = [h for h in hallucinations if h.lower() not in ("none", "n/a", "none detected")]
 
         return ReviewReport(
             verdict=verdict,

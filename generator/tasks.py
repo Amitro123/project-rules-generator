@@ -9,9 +9,10 @@ from .requirements import Requirement
 @dataclass
 class TraceabilityMatrix:
     """Maps requirements to task coverage."""
+
     requirements: List[Requirement]
     tasks: List[TaskEntry]
-    mapping: Dict[str, List[int]] = field(default_factory=dict) # req_id -> list of task_ids
+    mapping: Dict[str, List[int]] = field(default_factory=dict)  # req_id -> list of task_ids
 
     def build(self):
         """Build the mapping using AI or heuristics."""
@@ -36,7 +37,7 @@ class TraceabilityMatrix:
         for req in self.requirements:
             task_ids = self.mapping.get(req.id, [])
             tid_str = ", ".join(f"#{tid}" for tid in task_ids) if task_ids else "-"
-            
+
             coverage = "COV" if task_ids else "MISSING"
             # In progress or done based on tasks
             status = "pending"
@@ -46,5 +47,5 @@ class TraceabilityMatrix:
                 status = "mapped"
 
             lines.append(f"| {req.id} | {req.source} | {tid_str} | {status} | {coverage} |")
-        
+
         return "\n".join(lines)

@@ -83,9 +83,7 @@ def generate_clinerules(
                 global_path = SkillPathManager.GLOBAL_LEARNED / category / f"{name}.md"
                 if not global_path.exists():
                     for ext in (".yaml", ".yml"):
-                        alt = (
-                            SkillPathManager.GLOBAL_LEARNED / category / f"{name}{ext}"
-                        )
+                        alt = SkillPathManager.GLOBAL_LEARNED / category / f"{name}{ext}"
                         if alt.exists():
                             global_path = alt
                             break
@@ -143,9 +141,7 @@ def generate_clinerules(
     # Context configuration
     clinerules["context"] = _build_context_config(project_context)
 
-    return yaml.dump(
-        clinerules, default_flow_style=False, sort_keys=False, allow_unicode=True
-    )
+    return yaml.dump(clinerules, default_flow_style=False, sort_keys=False, allow_unicode=True)
 
 
 def generate_clinerules_with_inline(

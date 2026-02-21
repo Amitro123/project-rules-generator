@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 
 class ProjectAnalyzer:
@@ -83,9 +83,7 @@ class ProjectAnalyzer:
         if req_file.exists():
             tech["languages"].append("Python")
             try:
-                req_content = req_file.read_text(
-                    encoding="utf-8", errors="replace"
-                ).lower()
+                req_content = req_file.read_text(encoding="utf-8", errors="replace").lower()
                 if "fastapi" in req_content:
                     tech["backend"].append("FastAPI")
                 if "flask" in req_content:
@@ -110,9 +108,7 @@ class ProjectAnalyzer:
         if pkg_file.exists():
             tech["languages"].append("JavaScript/TypeScript")
             try:
-                pkg_content = pkg_file.read_text(
-                    encoding="utf-8", errors="replace"
-                ).lower()
+                pkg_content = pkg_file.read_text(encoding="utf-8", errors="replace").lower()
                 if "react" in pkg_content:
                     tech["frontend"].append("React")
                 if "vue" in pkg_content:
@@ -215,14 +211,10 @@ class ProjectAnalyzer:
         pkg_file = self.project_path / "package.json"
         if pkg_file.exists():
             try:
-                pkg_data = json.loads(
-                    pkg_file.read_text(encoding="utf-8", errors="replace")
-                )
+                pkg_data = json.loads(pkg_file.read_text(encoding="utf-8", errors="replace"))
                 if "scripts" in pkg_data:
                     for name, command in pkg_data["scripts"].items():
-                        workflows.append(
-                            {"type": "npm", "name": name, "command": command}
-                        )
+                        workflows.append({"type": "npm", "name": name, "command": command})
             except Exception:
                 pass
 

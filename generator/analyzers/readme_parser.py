@@ -1,4 +1,4 @@
-﻿"""README parsing and metadata extraction"""
+"""README parsing and metadata extraction"""
 
 import re
 from pathlib import Path
@@ -90,9 +90,7 @@ IGNORE_SECTIONS_RE = re.compile(
 )
 
 TITLE_RE = re.compile(r"^#\s+(.+?)\s*#*\s*$", re.MULTILINE)
-DESC_AFTER_TITLE_RE = re.compile(
-    r"^#.+?\n+\s*(.+?)(?=\n\n##|\n\n#|$)", re.DOTALL | re.MULTILINE
-)
+DESC_AFTER_TITLE_RE = re.compile(r"^#.+?\n+\s*(.+?)(?=\n\n##|\n\n#|$)", re.DOTALL | re.MULTILINE)
 FIRST_PARA_RE = re.compile(r"\n\n([\s\S]{20,500}?)(?=\n\n)")
 
 # ==========================
@@ -134,13 +132,9 @@ def parse_readme(readme_path: Union[str, Path]) -> Dict[str, Any]:
         "tech_stack": extract_tech_stack(content, project_path=project_path),
         "features": _extract_features(content),
         "description": _extract_description(content),
-        "installation": _extract_section(
-            content, ["installation", "setup", "getting started"]
-        ),
+        "installation": _extract_section(content, ["installation", "setup", "getting started"]),
         "usage": _extract_section(content, ["usage", "how to run", "quick start"]),
-        "troubleshooting": _extract_section(
-            content, ["troubleshooting", "faq", "common issues", "gotchas"]
-        ),
+        "troubleshooting": _extract_section(content, ["troubleshooting", "faq", "common issues", "gotchas"]),
         "raw_readme": content,
         "readme_path": str(path),
     }
@@ -174,11 +168,7 @@ def extract_tech_stack(content: str, project_path: Optional[Path] = None) -> Lis
     content_cleaned = BADGE_LINKED_RE.sub("", content_cleaned)
 
     content_lower = content_cleaned.lower()
-    found = [
-        tech
-        for tech in TECH_KEYWORDS
-        if re.search(rf"\b{re.escape(tech)}\b", content_lower)
-    ]
+    found = [tech for tech in TECH_KEYWORDS if re.search(rf"\b{re.escape(tech)}\b", content_lower)]
 
     # Cross-reference with actual dependencies if project_path is provided
     if project_path:
@@ -227,9 +217,7 @@ def _extract_project_name(content: str, path: Path) -> str:
         name = match.group(1).strip()
         # Clean badges, emojis, extra text
         name = re.sub(r"\[!\[.*?\]\(.*?\)\]", "", name)  # Remove badges
-        name = re.sub(
-            r"[\U0001F3AF\U0001F680\u2728\U0001F525\U0001F4A1]", "", name
-        )  # Remove emojis
+        name = re.sub(r"[\U0001F3AF\U0001F680\u2728\U0001F525\U0001F4A1]", "", name)  # Remove emojis
         name = re.sub(r"[^\w\s-]", "", name).lower().strip()
         name = re.sub(r"\s+", "-", name)
         return name
@@ -259,9 +247,7 @@ def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List
         "setup.cfg",
     ]
     has_any_deps = any((project_path / f).exists() for f in dep_files)
-    has_any_source = (
-        list(project_path.glob("*.py")) or (project_path / "package.json").exists()
-    )
+    has_any_source = list(project_path.glob("*.py")) or (project_path / "package.json").exists()
     if not has_any_deps and not has_any_source:
         return readme_tech
 
@@ -277,9 +263,7 @@ def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List
     # Infrastructure from files
     if (project_path / "Dockerfile").exists():
         confirmed.add("docker")
-    if (project_path / "docker-compose.yml").exists() or (
-        project_path / "docker-compose.yaml"
-    ).exists():
+    if (project_path / "docker-compose.yml").exists() or (project_path / "docker-compose.yaml").exists():
         confirmed.add("docker")
     if any(project_path.glob("*.tf")):
         confirmed.add("terraform")
@@ -294,28 +278,21 @@ def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List
         dep_path = project_path / dep_file
         if dep_path.exists():
             try:
-                dep_content += (
-                    dep_path.read_text(encoding="utf-8", errors="replace").lower()
-                    + "\n"
-                )
+                dep_content += dep_path.read_text(encoding="utf-8", errors="replace").lower() + "\n"
             except Exception:
                 pass
 
     pyproject = project_path / "pyproject.toml"
     if pyproject.exists():
         try:
-            dep_content += (
-                pyproject.read_text(encoding="utf-8", errors="replace").lower() + "\n"
-            )
+            dep_content += pyproject.read_text(encoding="utf-8", errors="replace").lower() + "\n"
         except Exception:
             pass
 
     pkg_json = project_path / "package.json"
     if pkg_json.exists():
         try:
-            dep_content += (
-                pkg_json.read_text(encoding="utf-8", errors="replace").lower() + "\n"
-            )
+            dep_content += pkg_json.read_text(encoding="utf-8", errors="replace").lower() + "\n"
         except Exception:
             pass
 
@@ -524,9 +501,7 @@ def extract_process_steps(readme: str) -> List[str]:
     return steps[:10]
 
 
-def extract_anti_patterns(
-    readme: str, tech: List[str], project_path: Optional[Path] = None
-) -> List[str]:
+def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[Path] = None) -> List[str]:
     """Generate anti-patterns grounded in actual project analysis.
 
     Only returns patterns that can be verified against the actual project, not hypothetical issues.
@@ -540,10 +515,7 @@ def extract_anti_patterns(
 
     if "ffmpeg" in tech:
         for py_file in project_path.rglob("*.py"):
-            if any(
-                skip in py_file.parts
-                for skip in (".venv", "venv", "__pycache__", ".git", "node_modules")
-            ):
+            if any(skip in py_file.parts for skip in (".venv", "venv", "__pycache__", ".git", "node_modules")):
                 continue
             try:
                 py_content = py_file.read_text(encoding="utf-8", errors="replace")
@@ -564,9 +536,7 @@ def extract_anti_patterns(
             or (project_path / "pyproject.toml").exists()
         )
         if not has_mypy_config:
-            anti_patterns.append(
-                "No type checking config found ג†’ Run: `mypy --install-types --strict .`"
-            )
+            anti_patterns.append("No type checking config found ג†’ Run: `mypy --install-types --strict .`")
 
     if "pytest" in tech:
         has_pytest_config = any(
@@ -577,8 +547,6 @@ def extract_anti_patterns(
             ]
         )
         if not has_pytest_config:
-            anti_patterns.append(
-                "No pytest config found ג†’ Run: `pytest --co -q` to verify test discovery"
-            )
+            anti_patterns.append("No pytest config found ג†’ Run: `pytest --co -q` to verify test discovery")
 
     return anti_patterns

@@ -47,6 +47,7 @@ target-version = "py38"
 exclude = [
     "generator/templates/*",
     ".clinerules/*",
+    ".claude/*",
     "tests/*",
 ]
 

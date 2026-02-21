@@ -116,9 +116,7 @@ class CodeExampleExtractor:
 
         for source_file in source_files:
             try:
-                file_examples = self._extract_from_file(
-                    source_file, project_path, search_patterns
-                )
+                file_examples = self._extract_from_file(source_file, project_path, search_patterns)
                 examples.extend(file_examples)
             except Exception as e:
                 logger.debug(f"Failed to extract from {source_file}: {e}")
@@ -128,9 +126,7 @@ class CodeExampleExtractor:
                 break
 
         # Sort by relevance (good examples first, then by specificity)
-        examples.sort(
-            key=lambda x: (not x.get("is_good_example", True), -x.get("relevance", 0))
-        )
+        examples.sort(key=lambda x: (not x.get("is_good_example", True), -x.get("relevance", 0)))
 
         return examples[:10]
 
@@ -195,14 +191,10 @@ class CodeExampleExtractor:
 
         # Try AST parsing for Python files
         if file_path.suffix == ".py":
-            examples.extend(
-                self._extract_with_ast(content, lines, relative_path, search_patterns)
-            )
+            examples.extend(self._extract_with_ast(content, lines, relative_path, search_patterns))
 
         # Fallback: regex-based extraction for all file types
-        examples.extend(
-            self._extract_with_regex(content, lines, relative_path, search_patterns)
-        )
+        examples.extend(self._extract_with_regex(content, lines, relative_path, search_patterns))
 
         # Deduplicate by line number
         seen_lines = set()
@@ -231,9 +223,7 @@ class CodeExampleExtractor:
 
         for node in ast.walk(tree):
             # Function definitions
-            if isinstance(node, ast.FunctionDef) or isinstance(
-                node, ast.AsyncFunctionDef
-            ):
+            if isinstance(node, ast.FunctionDef) or isinstance(node, ast.AsyncFunctionDef):
                 func_name = node.name
                 is_async = isinstance(node, ast.AsyncFunctionDef)
 
@@ -260,9 +250,7 @@ class CodeExampleExtractor:
                     dec_str = self._decorator_to_string(decorator)
                     for pattern in search_patterns.get("decorators", []):
                         if pattern.lower() in dec_str.lower():
-                            code_snippet = self._extract_snippet(
-                                lines, node.lineno - 1, 10
-                            )
+                            code_snippet = self._extract_snippet(lines, node.lineno - 1, 10)
                             examples.append(
                                 {
                                     "file": relative_path,
@@ -283,9 +271,7 @@ class CodeExampleExtractor:
                 for pattern in search_patterns.get("classes", []):
                     # Check class name or base classes
                     base_names = [self._name_to_string(b) for b in node.bases]
-                    if pattern.lower() in class_name.lower() or any(
-                        pattern.lower() in b.lower() for b in base_names
-                    ):
+                    if pattern.lower() in class_name.lower() or any(pattern.lower() in b.lower() for b in base_names):
                         code_snippet = self._extract_snippet(lines, node.lineno - 1, 12)
                         examples.append(
                             {
@@ -311,11 +297,7 @@ class CodeExampleExtractor:
 
                 for pattern in search_patterns.get("imports", []):
                     if pattern.lower() in module.lower():
-                        code_snippet = (
-                            lines[node.lineno - 1].strip()
-                            if node.lineno <= len(lines)
-                            else ""
-                        )
+                        code_snippet = lines[node.lineno - 1].strip() if node.lineno <= len(lines) else ""
                         examples.append(
                             {
                                 "file": relative_path,

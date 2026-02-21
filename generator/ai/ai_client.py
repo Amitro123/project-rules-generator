@@ -21,6 +21,3 @@ class AIClient(ABC):
     ) -> str:
         """Generate content from prompt."""
         pass
-
-
-

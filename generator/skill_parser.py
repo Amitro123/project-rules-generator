@@ -31,21 +31,17 @@ class SkillParser:
     @staticmethod
     def extract_tech_context(tech: str, readme_content: str) -> List[str]:
         """Extract lines from README that mention a specific technology.
-        
+
         Delegates to generator.utils.tech_detector.extract_context().
         Kept for backward compatibility.
         """
         return _extract_context(tech, readme_content)
 
     @staticmethod
-    def summarize_purpose(
-        tech: str, context_lines: List[str], project_name: str
-    ) -> str:
+    def summarize_purpose(tech: str, context_lines: List[str], project_name: str) -> str:
         """Build a purpose statement from extracted context."""
         if not context_lines:
-            return (
-                f"Integration patterns for {tech} in {project_name or 'this project'}."
-            )
+            return f"Integration patterns for {tech} in {project_name or 'this project'}."
 
         # Find the most descriptive line — skip commands, tables, arrows-only
         best = ""
@@ -109,17 +105,10 @@ class SkillParser:
         for line in context_lines:
             clean = SkillParser.clean_markdown(line)
             # Skip non-actionable lines
-            if (
-                not clean
-                or clean.startswith("#")
-                or clean.startswith("|")
-                or len(clean) < 10
-            ):
+            if not clean or clean.startswith("#") or clean.startswith("|") or len(clean) < 10:
                 continue
             # Skip raw shell commands
-            if re.match(
-                r"^(pip |npm |yarn |uvicorn |docker |git clone|cd |mkdir )", clean
-            ):
+            if re.match(r"^(pip |npm |yarn |uvicorn |docker |git clone|cd |mkdir )", clean):
                 continue
             # Skip lines that are mostly arrows/diagrams
             if clean.count("→") + clean.count("->") > 2:
@@ -162,9 +151,7 @@ class SkillParser:
                 content = skill_data["content"]
 
                 # Match "## Auto-Trigger" section
-                match = re.search(
-                    r"## Auto-Trigger\n(.*?)(?:\n## |\Z)", content, re.DOTALL
-                )
+                match = re.search(r"## Auto-Trigger\n(.*?)(?:\n## |\Z)", content, re.DOTALL)
                 if match:
                     trigger_text = match.group(1)
                     conditions = []
@@ -223,9 +210,9 @@ class SkillParser:
             "command": "",
             "input_output": "",
         }
-        
+
         lines = content.split("\n")
-        
+
         # 1. Extract Description (First non-header paragraph)
         for line in lines:
             clean = line.strip()
@@ -233,7 +220,7 @@ class SkillParser:
                 continue
             parsed["description"] = clean
             break
-            
+
         # 2. Extract Sections using Regex for robustness
         # Triggers
         triggers_match = re.search(r"##\s+Triggers\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
@@ -241,16 +228,16 @@ class SkillParser:
             raw_triggers = triggers_match.group(1).strip()
             # Parse list items
             parsed["triggers"] = [
-                line.strip("- *").strip() 
-                for line in raw_triggers.split("\n") 
+                line.strip("- *").strip()
+                for line in raw_triggers.split("\n")
                 if line.strip().startswith("-") or line.strip().startswith("*")
             ]
-        
+
         # When to Use
         when_match = re.search(r"##\s+When to use\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
         if when_match:
             parsed["when_to_use"] = when_match.group(1).strip()
-            
+
         # Tools
         tools_match = re.search(r"##\s+Tools\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
         if tools_match:
@@ -259,12 +246,12 @@ class SkillParser:
             tools_list = re.findall(r"\b\w+\b", raw_tools)
             if tools_list:
                 parsed["tools"] = tools_list
-                
+
         # Command / Usage
         usage_match = re.search(r"##\s+(?:Command|Usage)\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
         if usage_match:
             parsed["command"] = usage_match.group(1).strip()
-            
+
         # Input / Output
         io_match = re.search(r"##\s+(?:Input/Output|I/O)\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
         if io_match:
@@ -289,12 +276,12 @@ class SkillParser:
                 for line in parsed["when_to_use"].split("\n")
                 if line.strip().startswith("-")
             ]
-            
+
         if not parsed["command"]:
             # Default command pattern
             parsed["command"] = f"`prg {parsed['name']}`"
-            
+
         if not parsed["input_output"]:
             parsed["input_output"] = "Standard CLI I/O"
-            
+
         return parsed

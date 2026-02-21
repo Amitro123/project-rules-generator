@@ -74,9 +74,7 @@ lint:  [runnable command]
 """
 
 
-def detect_project_tools(
-    project_path: Optional[Path] = None, tech_stack: Optional[List[str]] = None
-) -> Dict[str, str]:
+def detect_project_tools(project_path: Optional[Path] = None, tech_stack: Optional[List[str]] = None) -> Dict[str, str]:
     """Detect available tools/linters in the project.
 
     Returns dict like:
@@ -89,16 +87,12 @@ def detect_project_tools(
         project_path = Path(project_path)
 
         # Python linting
-        if (project_path / "ruff.toml").exists() or (
-            project_path / ".ruff.toml"
-        ).exists():
+        if (project_path / "ruff.toml").exists() or (project_path / ".ruff.toml").exists():
             tools["check"] = "ruff check ."
             tools["format"] = "ruff format ."
         elif (project_path / "pyproject.toml").exists():
             try:
-                content = (project_path / "pyproject.toml").read_text(
-                    encoding="utf-8", errors="replace"
-                )
+                content = (project_path / "pyproject.toml").read_text(encoding="utf-8", errors="replace")
                 if "ruff" in content:
                     tools["check"] = "ruff check ."
                     tools["format"] = "ruff format ."
@@ -116,9 +110,7 @@ def detect_project_tools(
             req_path = project_path / req_file
             if req_path.exists():
                 try:
-                    content = req_path.read_text(
-                        encoding="utf-8", errors="replace"
-                    ).lower()
+                    content = req_path.read_text(encoding="utf-8", errors="replace").lower()
                     if "ruff" in content and "check" not in tools:
                         tools["check"] = "ruff check ."
                     if "mypy" in content and "lint" not in tools:
@@ -176,9 +168,7 @@ def build_skill_prompt(
 
     # Format patterns
     patterns_str = (
-        "\n".join(f"- {p}" for p in detected_patterns)
-        if detected_patterns
-        else "No specific patterns detected."
+        "\n".join(f"- {p}" for p in detected_patterns) if detected_patterns else "No specific patterns detected."
     )
 
     # Format code examples
@@ -187,22 +177,14 @@ def build_skill_prompt(
     # Detect tools
     tech_stack = context.get("metadata", {}).get("tech_stack", [])
     tools = detect_project_tools(project_path, tech_stack)
-    tools_str = (
-        "\n".join(f"{k}: {v}" for k, v in tools.items())
-        if tools
-        else "No specific tools detected."
-    )
+    tools_str = "\n".join(f"{k}: {v}" for k, v in tools.items()) if tools else "No specific tools detected."
 
     if not topic_description:
         topic_description = f"Best practices and patterns for {skill_topic.replace('-', ' ')} in this project."
 
     # Detect relevant/exclude files for this skill topic
     relevant, exclude = _detect_relevant_files(skill_topic, context, project_path)
-    relevant_files_str = (
-        "\n".join(f"- {f}" for f in relevant)
-        if relevant
-        else "No specific files detected."
-    )
+    relevant_files_str = "\n".join(f"- {f}" for f in relevant) if relevant else "No specific files detected."
     exclude_files_str = "\n".join(f"- {f}" for f in exclude) if exclude else "None."
     relevant_files_list = ", ".join(f'"{f}"' for f in relevant) if relevant else ""
     exclude_files_list = ", ".join(f'"{f}"' for f in exclude) if exclude else ""
@@ -250,9 +232,7 @@ def _format_context(context: Dict[str, Any]) -> str:
 
     tests = context.get("test_patterns", {})
     if tests.get("framework"):
-        parts.append(
-            f"Test Framework: {tests['framework']} ({tests.get('test_files', 0)} test files)"
-        )
+        parts.append(f"Test Framework: {tests['framework']} ({tests.get('test_files', 0)} test files)")
 
     structure = context.get("structure", {})
     entry_points = structure.get("entry_points", [])
@@ -262,9 +242,7 @@ def _format_context(context: Dict[str, Any]) -> str:
     return "\n".join(parts)
 
 
-def _detect_relevant_files(
-    skill_topic: str, context: Dict[str, Any], project_path: Optional[Path] = None
-) -> tuple:
+def _detect_relevant_files(skill_topic: str, context: Dict[str, Any], project_path: Optional[Path] = None) -> tuple:
     """Map skill topics to relevant file patterns.
 
     Returns:

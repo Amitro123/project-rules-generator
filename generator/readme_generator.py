@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """Interactive README generation."""
 
 from pathlib import Path
@@ -62,9 +63,7 @@ def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
 
     user_input["purpose"] = click.prompt("What problem does it solve?", default="")
 
-    user_input["tech_stack"] = click.prompt(
-        "Main technologies (comma-separated)", default=""
-    )
+    user_input["tech_stack"] = click.prompt("Main technologies (comma-separated)", default="")
 
     user_input["features"] = click.prompt("Key features (comma-separated)", default="")
 
@@ -87,9 +86,7 @@ def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
     click.echo("=" * 60)
     click.echo("📄 Generated README Preview:")
     click.echo("=" * 60)
-    preview = readme_content[:600] + (
-        "\n...\n(truncated)" if len(readme_content) > 600 else ""
-    )
+    preview = readme_content[:600] + ("\n...\n(truncated)" if len(readme_content) > 600 else "")
     click.echo(preview)
     click.echo("=" * 60 + "\n")
 
@@ -122,18 +119,18 @@ def generate_readme_with_llm(
         prompt = f"""# Generate Professional README.md
 
 ## User Input
-- **Project Name**: {user_input['name']}
-- **Description**: {user_input['description']}
-- **Purpose**: {user_input['purpose']}
-- **Tech Stack (User)**: {user_input['tech_stack']}
-- **Key Features**: {user_input['features']}
+- **Project Name**: {user_input["name"]}
+- **Description**: {user_input["description"]}
+- **Purpose**: {user_input["purpose"]}
+- **Tech Stack (User)**: {user_input["tech_stack"]}
+- **Key Features**: {user_input["features"]}
 
 ## Auto-Detected Context
 - **Tech Stack (Detected)**: {tech_str}
-- **Has Backend**: {context['structure'].get('has_backend', False)}
-- **Has Frontend**: {context['structure'].get('has_frontend', False)}
-- **Has Tests**: {context['structure'].get('has_tests', False)}
-- **Has Docker**: {context['structure'].get('has_docker', False)}
+- **Has Backend**: {context["structure"].get("has_backend", False)}
+- **Has Frontend**: {context["structure"].get("has_frontend", False)}
+- **Has Tests**: {context["structure"].get("has_tests", False)}
+- **Has Docker**: {context["structure"].get("has_docker", False)}
 
 ## Task
 
@@ -179,27 +176,16 @@ def generate_readme_template(user_input: Dict, context: Dict) -> str:
         if context["tech_stack"].get(category):
             tech_list.extend(context["tech_stack"][category])
 
-    tech_display = (
-        ", ".join(tech_list)
-        if tech_list
-        else user_input.get("tech_stack", "Various technologies")
-    )
+    tech_display = ", ".join(tech_list) if tech_list else user_input.get("tech_stack", "Various technologies")
 
     # Format features - Sanitize input
     raw_features = user_input.get("features", "")
     # Check for placeholder text capture
-    if (
-        "comma-separated" in raw_features.lower()
-        or "one per line" in raw_features.lower()
-    ):
+    if "comma-separated" in raw_features.lower() or "one per line" in raw_features.lower():
         raw_features = ""
 
     features = [f.strip() for f in raw_features.split(",") if f.strip()]
-    features_md = (
-        "\n".join([f"- **{feat}**" for feat in features])
-        if features
-        else "- (Add features here)"
-    )
+    features_md = "\n".join([f"- **{feat}**" for feat in features]) if features else "- (Add features here)"
 
     # Installation steps
     install_steps = []
@@ -210,13 +196,13 @@ def generate_readme_template(user_input: Dict, context: Dict) -> str:
 
     install_md = "\n".join(install_steps) if install_steps else "# Install dependencies"
 
-    readme = f"""# {user_input.get('name', 'My Project')}
+    readme = f"""# {user_input.get("name", "My Project")}
 
-{user_input.get('description', 'A brief description of the project.')}
+{user_input.get("description", "A brief description of the project.")}
 
 ## Purpose
 
-{user_input.get('purpose', 'This project aims to solve...')}
+{user_input.get("purpose", "This project aims to solve...")}
 
 ## Key Features
 
@@ -238,7 +224,7 @@ def generate_readme_template(user_input: Dict, context: Dict) -> str:
 ```bash
 # Clone the repository
 git clone <your-repo-url>
-cd {user_input.get('name', 'project').lower().replace(' ', '-')}
+cd {user_input.get("name", "project").lower().replace(" ", "-")}
 
 # Install dependencies
 {install_md}
@@ -254,8 +240,8 @@ cd {user_input.get('name', 'project').lower().replace(' ', '-')}
 ## Project Structure
 
 ```text
-{user_input.get('name', 'project')}/
-├── {', '.join(context['structure'].get('main_directories', [])[:5])}
+{user_input.get("name", "project")}/
+├── {", ".join(context["structure"].get("main_directories", [])[:5])}
 ```
 
 ## License

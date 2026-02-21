@@ -118,15 +118,10 @@ class IncrementalAnalyzer:
         for f in files:
             # Skip venvs, node_modules, __pycache__
             parts = f.relative_to(self.project_path).parts
-            if any(
-                p in (".venv", "venv", "node_modules", "__pycache__", ".git")
-                for p in parts
-            ):
+            if any(p in (".venv", "venv", "node_modules", "__pycache__", ".git") for p in parts):
                 continue
             try:
-                h.update(
-                    f"{f.relative_to(self.project_path)}:{f.stat().st_size}".encode()
-                )
+                h.update(f"{f.relative_to(self.project_path)}:{f.stat().st_size}".encode())
             except OSError:
                 pass
         return h.hexdigest()
@@ -138,9 +133,7 @@ class IncrementalAnalyzer:
             if td.is_dir():
                 for f in sorted(td.rglob("*.py")):
                     try:
-                        h.update(
-                            f"{f.relative_to(self.project_path)}:{f.stat().st_size}".encode()
-                        )
+                        h.update(f"{f.relative_to(self.project_path)}:{f.stat().st_size}".encode())
                     except OSError:
                         pass
         return h.hexdigest()
@@ -152,8 +145,7 @@ class IncrementalAnalyzer:
             [
                 p.name
                 for p in self.project_path.iterdir()
-                if not p.name.startswith(".")
-                and p.name not in ("__pycache__", "node_modules", ".venv", "venv")
+                if not p.name.startswith(".") and p.name not in ("__pycache__", "node_modules", ".venv", "venv")
             ]
         )
         h.update(",".join(top_items).encode())
@@ -215,9 +207,7 @@ class IncrementalAnalyzer:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def merge_rules(
-        existing_content: str, new_content: str, changed_sections: Set[str]
-    ) -> str:
+    def merge_rules(existing_content: str, new_content: str, changed_sections: Set[str]) -> str:
         """Merge new sections into existing rules.md.
 
         Strategy:
@@ -232,7 +222,6 @@ class IncrementalAnalyzer:
             return new_content
 
         # Try to preserve header and merge skills section
-        skills_marker = "\n# "
         # Look for the Agent Skills section boundary
         for marker in ("# Agent Skills", "# 🧠 Agent Skills"):
             if marker in existing_content and marker in new_content:
@@ -244,11 +233,7 @@ class IncrementalAnalyzer:
 
         # Context strategy only
         ctx_marker = "## CONTEXT STRATEGY"
-        if (
-            changed_sections == {"structure"}
-            and ctx_marker in existing_content
-            and ctx_marker in new_content
-        ):
+        if changed_sections == {"structure"} and ctx_marker in existing_content and ctx_marker in new_content:
             # Extract new context strategy section
             new_parts = new_content.split(ctx_marker, 1)
             old_parts = existing_content.split(ctx_marker, 1)
@@ -259,13 +244,7 @@ class IncrementalAnalyzer:
                 new_section = re.split(r"\n## ", new_parts[1], 1)
                 old_section = re.split(r"\n## ", old_parts[1], 1)
                 if len(old_section) == 2:
-                    return (
-                        old_parts[0]
-                        + ctx_marker
-                        + new_section[0]
-                        + "\n## "
-                        + old_section[1]
-                    )
+                    return old_parts[0] + ctx_marker + new_section[0] + "\n## " + old_section[1]
 
         # Fallback: full replacement
         return new_content

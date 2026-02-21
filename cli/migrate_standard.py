@@ -1,4 +1,3 @@
-
 import shutil
 import sys
 from pathlib import Path
@@ -8,7 +7,7 @@ def merge_directories(src: Path, dst: Path):
     """Recursively merge src directory into dst."""
     if not dst.exists():
         dst.mkdir(parents=True)
-    
+
     for item in src.iterdir():
         dest_path = dst / item.name
         if item.is_dir():
@@ -16,15 +15,16 @@ def merge_directories(src: Path, dst: Path):
             merge_directories(item, dest_path)
             # Remove source dir after successful merge
             try:
-                item.rmdir() 
+                item.rmdir()
             except OSError:
-                pass # Might not be empty if something failed
+                pass  # Might not be empty if something failed
         else:
             if not dest_path.exists():
                 print(f"   -> Moving file {item.name}")
                 shutil.move(str(item), str(dest_path))
             else:
                 print(f"   ⚠️  Target file {item.name} exists. Skipping.")
+
 
 def migrate_project(project_path: str = "."):
     """
@@ -38,7 +38,7 @@ def migrate_project(project_path: str = "."):
 
     # 1. Target Directory: .clinerules/skills
     target_skills_dir = clinerules_dir / "skills"
-    
+
     # 2. Source Directory: skills (root)
     source_skills_dir = project_path / "skills"
 
@@ -59,7 +59,7 @@ def migrate_project(project_path: str = "."):
     if nested_skills.exists() and nested_skills.is_dir():
         print("🔧 Detected nested 'skills/skills'. Fixing...")
         merge_directories(nested_skills, target_skills_dir)
-        
+
         # Remove empty nested dir
         try:
             nested_skills.rmdir()
@@ -68,6 +68,7 @@ def migrate_project(project_path: str = "."):
             print("   ⚠️  Could not remove nested 'skills' dir (not empty?)")
 
     print("\n✅ Migration complete! Skills are now in .clinerules/skills/")
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

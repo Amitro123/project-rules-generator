@@ -34,9 +34,7 @@ class SkillTriggerDetector:
 
                 rel_root = root.relative_to(self.project_path)
                 for file in files:
-                    self._cache_file_list.append(
-                        str(rel_root / file).replace("\\", "/")
-                    )
+                    self._cache_file_list.append(str(rel_root / file).replace("\\", "/"))
         except AttributeError:
             # Fallback for older python
             for root, dirs, files in os.walk(self.project_path):
@@ -46,9 +44,7 @@ class SkillTriggerDetector:
                     dirs.remove("node_modules")
                 rel_root = Path(root).relative_to(self.project_path)
                 for file in files:
-                    self._cache_file_list.append(
-                        str(rel_root / file).replace("\\", "/")
-                    )
+                    self._cache_file_list.append(str(rel_root / file).replace("\\", "/"))
         except Exception:
             pass
 
@@ -124,6 +120,3 @@ class SkillTriggerDetector:
         # If we got here, all conditions in this group passed
         results.extend(matches)
         return True
-
-
-

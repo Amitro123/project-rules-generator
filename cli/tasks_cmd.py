@@ -4,10 +4,10 @@ from pathlib import Path
 
 import click
 
+from cli.agent import _detect_provider, _set_api_key
 from generator.planning.task_creator import TaskCreator
 from generator.requirements import RequirementsInferrer
 from generator.task_decomposer import TaskDecomposer
-from cli.agent import _detect_provider, _set_api_key
 
 
 @click.command(name="tasks")
@@ -25,7 +25,7 @@ def tasks_cmd(project_path, infer_spec, provider, api_key, verbose):
     # 1. Gather requirements
     spec_path = project_path / "spec.md"
     requirements = []
-    
+
     if infer_spec or not spec_path.exists():
         if verbose:
             click.echo("Inferring requirements...")
@@ -35,6 +35,7 @@ def tasks_cmd(project_path, infer_spec, provider, api_key, verbose):
         # Load from spec.md
         content = spec_path.read_text(encoding="utf-8")
         import re
+
         matches = re.finditer(r"ID:\s*(.+)\nDESC:\s*(.+)", content)
         for m in matches:
             requirements.append(m.group(2).strip())
@@ -47,13 +48,13 @@ def tasks_cmd(project_path, infer_spec, provider, api_key, verbose):
     if verbose:
         click.echo(f"Decomposing {len(requirements)} requirements into tasks...")
     decomposer = TaskDecomposer(api_key=api_key)
-    
+
     # Simple consolidation: feed all requirements as context
     req_context = "\n".join([f"- {r if isinstance(r, str) else r.description}" for r in requirements])
     subtasks = decomposer.decompose(
         user_task="Fully implement all project requirements",
         project_context={"metadata": {"requirements": req_context}},
-        project_path=project_path
+        project_path=project_path,
     )
 
     # 3. Create manifest and files
@@ -63,7 +64,7 @@ def tasks_cmd(project_path, infer_spec, provider, api_key, verbose):
         subtasks,
         plan_file="requirements-inference",
         task_description="Generated from comprehensive requirement inference",
-        output_dir=output_dir
+        output_dir=output_dir,
     )
-    
+
     click.echo(f"Generated {len(subtasks)} tasks in {output_dir}")

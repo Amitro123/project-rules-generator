@@ -205,15 +205,17 @@ def detect_tech_stack(project_path: Path, readme_content: str = "") -> List[str]
         # These techs rarely appear in dependency files (CDN, inline, or specialized)
         # so README is the primary source for them
         readme_primary_techs = {
-            "konva", "canvas", "dxf", "threejs", "babylon", "supabase",
-            "reportlab", "pdf",
+            "konva",
+            "canvas",
+            "dxf",
+            "threejs",
+            "babylon",
+            "supabase",
+            "reportlab",
+            "pdf",
         }
         for tech in readme_detected:
-            if (
-                tech in detected
-                or tech in {"python", "typescript", "javascript"}
-                or tech in readme_primary_techs
-            ):
+            if tech in detected or tech in {"python", "typescript", "javascript"} or tech in readme_primary_techs:
                 detected.add(tech)
 
     return list(detected)

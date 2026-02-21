@@ -44,9 +44,7 @@ def validate_project_data(data: Dict[str, Any]) -> ValidationResult:
     # Name format check
     if data.get("name"):
         if not re.match(r"^[a-z0-9-]+$", data["name"]):
-            result.add_warning(
-                f"Project name '{data['name']}' contains special characters"
-            )
+            result.add_warning(f"Project name '{data['name']}' contains special characters")
 
     # Description quality
     desc = data.get("description", "")
@@ -96,10 +94,7 @@ def validate_generated_content(content: str, content_type: str) -> ValidationRes
     if content_type == "rules":
         required_sections = ["CONTEXT", "DO", "DON'T", "PRIORITIES", "WORKFLOWS"]
         for section in required_sections:
-            if (
-                f"## {section}" not in content
-                and f"## {section.upper()}" not in content
-            ):
+            if f"## {section}" not in content and f"## {section.upper()}" not in content:
                 result.add_error(f"Missing required section: {section}")
 
     # Check required sections for skills
@@ -146,6 +141,6 @@ def check_markdown_syntax(content: str) -> List[str]:
         levels = [len(h) for h in headings]
         for i, level in enumerate(levels[1:], 1):
             if level > levels[i - 1] + 1:
-                issues.append(f"Heading level jump: {levels[i-1]} to {level}")
+                issues.append(f"Heading level jump: {levels[i - 1]} to {level}")
 
     return issues

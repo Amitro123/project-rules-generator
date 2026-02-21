@@ -52,8 +52,8 @@ version: {skill_file.version}
 ---
 
 ## PROJECT CONTEXT
-- **Type**: {skill_file.project_type.replace('_', ' ').title()}
-- **Tech Stack**: {', '.join(skill_file.tech_stack) if skill_file.tech_stack else 'general'}
+- **Type**: {skill_file.project_type.replace("_", " ").title()}
+- **Tech Stack**: {", ".join(skill_file.tech_stack) if skill_file.tech_stack else "general"}
 - **Domain**: {skill_file.description[:100]}...
 
 """

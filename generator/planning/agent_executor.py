@@ -49,7 +49,7 @@ class AgentExecutor:
                     # We assume standard structure now: .clinerules/skills/learned/<skill>/SKILL.md or .md
                     skill_path = self.project_path / ".clinerules" / "skills" / "learned" / skill
                     flat_path = self.project_path / ".clinerules" / "skills" / "learned" / f"{skill}.md"
-                    
+
                     if skill_path.exists() or flat_path.exists():
                         print(f"[DEBUG] MATCH FOUND for skill: {skill}")
                         return skill

@@ -90,11 +90,7 @@ def improve_with_feedback(
     for iteration in range(1, max_iterations + 1):
         # Analyze current content
         report = analyzer.analyze(
-            str(
-                filepath.relative_to(filepath.parent.parent)
-                if filepath.parent.parent.exists()
-                else filepath.name
-            ),
+            str(filepath.relative_to(filepath.parent.parent) if filepath.parent.parent.exists() else filepath.name),
             content,
             project_path=project_path,
         )
@@ -138,9 +134,7 @@ def improve_with_feedback(
 
         # Reject patches that contain leaked prompt content
         if _patch_has_leakage(report.patch):
-            logger.warning(
-                f"Patch for {filepath} contains prompt leakage, skipping iteration {iteration}"
-            )
+            logger.warning(f"Patch for {filepath} contains prompt leakage, skipping iteration {iteration}")
             break
 
         # Apply the improvement
@@ -162,11 +156,7 @@ def improve_with_feedback(
     try:
         final_content = filepath.read_text(encoding="utf-8")
         final_report = analyzer.analyze(
-            str(
-                filepath.relative_to(filepath.parent.parent)
-                if filepath.parent.parent.exists()
-                else filepath.name
-            ),
+            str(filepath.relative_to(filepath.parent.parent) if filepath.parent.parent.exists() else filepath.name),
             final_content,
             project_path=project_path,
         )
@@ -179,10 +169,7 @@ def improve_with_feedback(
     # Max iterations reached or error occurred
     if verbose:
         if best_score < target_score:
-            logger.warning(
-                f"  ⚠️  Target not reached. Best score: {best_score}/100 "
-                f"(target: {target_score})"
-            )
+            logger.warning(f"  ⚠️  Target not reached. Best score: {best_score}/100 (target: {target_score})")
         else:
             logger.info(f"  ✅ Completed in {max_iterations} iterations")
 

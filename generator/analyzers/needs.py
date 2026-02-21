@@ -7,9 +7,7 @@ from generator.types import SkillNeed
 class ProjectNeedsAnalyzer:
     """Analyzes project data to identify skill needs."""
 
-    def analyze(
-        self, project_data: Dict[str, Any], project_path: str
-    ) -> List[SkillNeed]:
+    def analyze(self, project_data: Dict[str, Any], project_path: str) -> List[SkillNeed]:
         """
         Convert project metadata into a list of specific needs.
 
@@ -64,8 +62,6 @@ class ProjectNeedsAnalyzer:
             )
 
         # 3. Core Need (Always present)
-        needs.append(
-            SkillNeed(type="core", name="core", confidence=1.0, priority="critical")
-        )
+        needs.append(SkillNeed(type="core", name="core", confidence=1.0, priority="critical"))
 
         return needs

@@ -29,10 +29,10 @@ def normalize_mojibake(text: str) -> str:
     # CP862 (Hebrew DOS) / UTF-8 mismatches
     # ❌ (U+274C) -> E2 9D 8C -> Γ¥ל
     cleaned = cleaned.replace("\u0393\u00a5\u05dc", "❌")
-    
+
     # ✅ (U+2705) -> E2 9C 85 -> Γ£ו
     cleaned = cleaned.replace("\u0393\u00a3\u05d5", "✅")
-    
+
     # → (U+2192) -> E2 86 92 -> Γזע
     cleaned = cleaned.replace("\u0393\u05d6\u05e2", "→")
 

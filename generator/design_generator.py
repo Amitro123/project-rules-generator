@@ -13,9 +13,7 @@ class ArchitectureDecision(BaseModel):
 
     title: str = Field(description="Decision title, e.g. 'Auth Method'")
     choice: str = Field(description="Chosen approach, e.g. 'JWT tokens'")
-    alternatives: List[str] = Field(
-        default_factory=list, description="Rejected alternatives"
-    )
+    alternatives: List[str] = Field(default_factory=list, description="Rejected alternatives")
     pros: List[str] = Field(default_factory=list, description="Benefits of the choice")
     cons: List[str] = Field(default_factory=list, description="Drawbacks / risks")
 
@@ -26,15 +24,9 @@ class Design(BaseModel):
     title: str = Field(description="Design title")
     problem_statement: str = Field(description="What problem this solves")
     architecture_decisions: List[ArchitectureDecision] = Field(default_factory=list)
-    api_contracts: List[str] = Field(
-        default_factory=list, description="API endpoint specs"
-    )
-    data_models: List[str] = Field(
-        default_factory=list, description="Data model descriptions"
-    )
-    success_criteria: List[str] = Field(
-        default_factory=list, description="Definition of done"
-    )
+    api_contracts: List[str] = Field(default_factory=list, description="API endpoint specs")
+    data_models: List[str] = Field(default_factory=list, description="Data model descriptions")
+    success_criteria: List[str] = Field(default_factory=list, description="Definition of done")
 
     def to_markdown(self) -> str:
         """Render the design as a DESIGN.md markdown document."""
@@ -49,9 +41,7 @@ class Design(BaseModel):
         if self.architecture_decisions:
             lines += ["## Architecture Decisions", ""]
             for dec in self.architecture_decisions:
-                alt_str = (
-                    f' (vs {", ".join(dec.alternatives)})' if dec.alternatives else ""
-                )
+                alt_str = f" (vs {', '.join(dec.alternatives)})" if dec.alternatives else ""
                 lines.append(f"- **{dec.title}**: {dec.choice}{alt_str}")
                 for pro in dec.pros:
                     lines.append(f"  - Pro: {pro}")
@@ -109,23 +99,13 @@ class Design(BaseModel):
         # Parse architecture decisions
         arch_text = sections.get("Architecture Decisions", "")
         if arch_text:
-            for m in re.finditer(
-                r"-\s+\*\*(.+?)\*\*:\s*(.+?)(?=\n-\s+\*\*|\Z)", arch_text, re.DOTALL
-            ):
+            for m in re.finditer(r"-\s+\*\*(.+?)\*\*:\s*(.+?)(?=\n-\s+\*\*|\Z)", arch_text, re.DOTALL):
                 dec_title = m.group(1).strip()
                 dec_body = m.group(2).strip()
                 # Extract choice (before any " (vs ...)")
-                choice_m = re.match(
-                    r"(.+?)(?:\s*\(vs\s+(.+?)\))?$", dec_body.split("\n")[0]
-                )
-                choice = (
-                    choice_m.group(1).strip() if choice_m else dec_body.split("\n")[0]
-                )
-                alts = (
-                    [a.strip() for a in choice_m.group(2).split(",")]
-                    if choice_m and choice_m.group(2)
-                    else []
-                )
+                choice_m = re.match(r"(.+?)(?:\s*\(vs\s+(.+?)\))?$", dec_body.split("\n")[0])
+                choice = choice_m.group(1).strip() if choice_m else dec_body.split("\n")[0]
+                alts = [a.strip() for a in choice_m.group(2).split(",")] if choice_m and choice_m.group(2) else []
                 pros = re.findall(r"Pro:\s*(.+)", dec_body)
                 cons = re.findall(r"Con:\s*(.+)", dec_body)
                 decisions.append(
@@ -422,13 +402,9 @@ NOW generate the complete design following this structure. Be specific, detailed
             print("Warning: No AI client available")
             return ""
         try:
-            result = self.client.generate(
-                prompt, max_tokens=8000, model=self.model_name, temperature=0.7
-            )
+            result = self.client.generate(prompt, max_tokens=8000, model=self.model_name, temperature=0.7)
             if not result or len(result.strip()) < 100:
-                print(
-                    f"Warning: LLM returned short/empty response ({len(result)} chars)"
-                )
+                print(f"Warning: LLM returned short/empty response ({len(result)} chars)")
             return result
         except Exception as e:
             print(f"Error calling LLM: {e}")
@@ -454,8 +430,8 @@ NOW generate the complete design following this structure. Be specific, detailed
         """
         # Extract key terms from request for customization
         is_cache = "cache" in user_request.lower() or "redis" in user_request.lower()
-        is_api = "api" in user_request.lower() or "endpoint" in user_request.lower()
-        is_auth = "auth" in user_request.lower() or "login" in user_request.lower()
+        "api" in user_request.lower() or "endpoint" in user_request.lower()
+        "auth" in user_request.lower() or "login" in user_request.lower()
 
         # Create comprehensive architecture decisions
         decisions = []

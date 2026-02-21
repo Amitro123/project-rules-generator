@@ -63,10 +63,7 @@ class AgentWorkflow:
         if self.verbose:
             executor = TaskExecutor(manifest)
             summary = executor.get_progress_summary()
-            click.echo(
-                f"\nReady: {summary['total']} tasks, "
-                f"~{summary['est_remaining_minutes']} min estimated"
-            )
+            click.echo(f"\nReady: {summary['total']} tasks, ~{summary['est_remaining_minutes']} min estimated")
             nxt = executor.get_next_task()
             if nxt:
                 click.echo(f"Next task: #{nxt.id} {nxt.title}")
@@ -118,9 +115,7 @@ class AgentWorkflow:
         """Generate PLAN.md via TaskDecomposer."""
         from generator.task_decomposer import TaskDecomposer
 
-        api_key = (
-            self.api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
-        )
+        api_key = self.api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
         decomposer = TaskDecomposer(api_key=api_key)
 
         # Gather project context

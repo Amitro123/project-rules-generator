@@ -13,21 +13,11 @@ class SubTask(BaseModel):
     id: int = Field(description="Sequential subtask ID")
     title: str = Field(description="Short imperative title")
     goal: str = Field(description="What this subtask achieves")
-    files: List[str] = Field(
-        default_factory=list, description="Files to create or modify"
-    )
-    changes: List[str] = Field(
-        default_factory=list, description="Specific changes to make"
-    )
-    tests: List[str] = Field(
-        default_factory=list, description="Tests to write or verify"
-    )
-    dependencies: List[int] = Field(
-        default_factory=list, description="IDs of prerequisite subtasks"
-    )
-    estimated_minutes: int = Field(
-        default=5, ge=1, le=10, description="Time estimate (2-5 min target)"
-    )
+    files: List[str] = Field(default_factory=list, description="Files to create or modify")
+    changes: List[str] = Field(default_factory=list, description="Specific changes to make")
+    tests: List[str] = Field(default_factory=list, description="Tests to write or verify")
+    dependencies: List[int] = Field(default_factory=list, description="IDs of prerequisite subtasks")
+    estimated_minutes: int = Field(default=5, ge=1, le=10, description="Time estimate (2-5 min target)")
     type: str = Field(default="py", description="Task file extension (e.g. py, md)")
 
 
@@ -59,10 +49,10 @@ class TaskDecomposer:
     ) -> List[SubTask]:
         """Parse an existing PLAN.md and convert it back to SubTasks."""
         from generator.planning.plan_parser import PlanParser
-        
+
         parser = PlanParser()
         status = parser.parse_plan(plan_path)
-        
+
         tasks: List[SubTask] = []
         task_id = 1
         for phase in status.phases:
@@ -191,21 +181,9 @@ class TaskDecomposer:
         for dec in design.architecture_decisions:
             decisions_block += f"- {dec.title}: {dec.choice}\n"
 
-        contracts_block = (
-            "\n".join(f"- {c}" for c in design.api_contracts)
-            if design.api_contracts
-            else "None"
-        )
-        models_block = (
-            "\n".join(f"- {m}" for m in design.data_models)
-            if design.data_models
-            else "None"
-        )
-        criteria_block = (
-            "\n".join(f"- {c}" for c in design.success_criteria)
-            if design.success_criteria
-            else "None"
-        )
+        contracts_block = "\n".join(f"- {c}" for c in design.api_contracts) if design.api_contracts else "None"
+        models_block = "\n".join(f"- {m}" for m in design.data_models) if design.data_models else "None"
+        criteria_block = "\n".join(f"- {c}" for c in design.success_criteria) if design.success_criteria else "None"
 
         return f"""# Task Decomposition from Design
 
@@ -276,11 +254,7 @@ Generate the subtasks now:
         ]
 
         for task in tasks:
-            dep_str = (
-                ", ".join(f"#{d}" for d in task.dependencies)
-                if task.dependencies
-                else "none"
-            )
+            dep_str = ", ".join(f"#{d}" for d in task.dependencies) if task.dependencies else "none"
             lines += [
                 f"## {task.id}. {task.title}",
                 "",
@@ -423,23 +397,15 @@ Generate exactly 5-8 subtasks now:
 
                 title = content.split("\n", 1)[0].strip()
                 goal = self._extract_field(content, "Goal")
-                files = [
-                    f.strip().strip("`")
-                    for f in self._extract_field(content, "Files").split(",")
-                    if f.strip()
-                ]
+                files = [f.strip().strip("`") for f in self._extract_field(content, "Files").split(",") if f.strip()]
                 changes = self._extract_list(content, "Changes")
                 tests = self._extract_list(content, "Tests")
                 deps_str = self._extract_field(content, "Dependencies")
                 deps = [
-                    int(d.strip().strip("#"))
-                    for d in deps_str.split(",")
-                    if d.strip() and d.strip().lower() != "none"
+                    int(d.strip().strip("#")) for d in deps_str.split(",") if d.strip() and d.strip().lower() != "none"
                 ]
                 est = self._extract_field(content, "Estimated")
-                est_min = (
-                    int(re.search(r"\d+", est).group()) if re.search(r"\d+", est) else 5
-                )
+                est_min = int(re.search(r"\d+", est).group()) if re.search(r"\d+", est) else 5
                 est_min = max(1, min(est_min, 10))
 
                 tasks.append(
@@ -459,9 +425,7 @@ Generate exactly 5-8 subtasks now:
             i += 2
 
         if not tasks:
-            return [
-                SubTask(id=1, title=user_task[:80], goal=user_task, estimated_minutes=5)
-            ]
+            return [SubTask(id=1, title=user_task[:80], goal=user_task, estimated_minutes=5)]
 
         return tasks
 
@@ -485,9 +449,7 @@ Generate exactly 5-8 subtasks now:
         return [item.strip() for item in items if item.strip()]
 
     @staticmethod
-    def _ensure_minimum_tasks(
-        tasks: List["SubTask"], user_task: str, minimum: int = 3
-    ) -> List["SubTask"]:
+    def _ensure_minimum_tasks(tasks: List["SubTask"], user_task: str, minimum: int = 3) -> List["SubTask"]:
         """Ensure at least *minimum* subtasks by splitting large ones.
 
         When the AI returns fewer tasks than desired, pad with planning,

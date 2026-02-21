@@ -129,11 +129,7 @@ class PreflightChecker:
                 path=str(plan_path),
                 detail="Plan file found.",
             )
-        fix_cmd = (
-            f'prg plan "{self.task_description}"'
-            if self.task_description
-            else "prg plan <task>"
-        )
+        fix_cmd = f'prg plan "{self.task_description}"' if self.task_description else "prg plan <task>"
         return CheckResult(
             name="PLAN.md",
             passed=False,
@@ -176,11 +172,7 @@ class PreflightChecker:
                 path=str(design_path),
                 detail="Design document found.",
             )
-        fix_cmd = (
-            f'prg design "{self.task_description}"'
-            if self.task_description
-            else "prg design <task>"
-        )
+        fix_cmd = f'prg design "{self.task_description}"' if self.task_description else "prg design <task>"
         return CheckResult(
             name="DESIGN.md",
             passed=False,

@@ -46,12 +46,7 @@ class DependencyParser:
             line = line.strip()
 
             # Skip blanks, comments, options, recursive includes
-            if (
-                not line
-                or line.startswith("#")
-                or line.startswith("-r")
-                or line.startswith("--")
-            ):
+            if not line or line.startswith("#") or line.startswith("-r") or line.startswith("--"):
                 continue
 
             # Editable installs
@@ -165,15 +160,9 @@ class DependencyParser:
         if poetry:
             for name, spec in poetry.get("dependencies", {}).items():
                 if name.lower() == "python":
-                    result["python_requires"] = (
-                        spec if isinstance(spec, str) else str(spec)
-                    )
+                    result["python_requires"] = spec if isinstance(spec, str) else str(spec)
                     continue
-                version = (
-                    spec
-                    if isinstance(spec, str)
-                    else spec.get("version", "") if isinstance(spec, dict) else ""
-                )
+                version = spec if isinstance(spec, str) else spec.get("version", "") if isinstance(spec, dict) else ""
                 result["dependencies"].append(
                     {
                         "name": name.lower(),
@@ -182,14 +171,8 @@ class DependencyParser:
                         "raw": f"{name} = {spec}",
                     }
                 )
-            for name, spec in (
-                poetry.get("group", {}).get("dev", {}).get("dependencies", {}).items()
-            ):
-                version = (
-                    spec
-                    if isinstance(spec, str)
-                    else spec.get("version", "") if isinstance(spec, dict) else ""
-                )
+            for name, spec in poetry.get("group", {}).get("dev", {}).get("dependencies", {}).items():
+                version = spec if isinstance(spec, str) else spec.get("version", "") if isinstance(spec, dict) else ""
                 result["dev_dependencies"].append(
                     {
                         "name": name.lower(),
@@ -294,28 +277,29 @@ class DependencyParser:
         """Parse a PEP 508 dependency string."""
         if not dep_str.strip():
             return None
-            
+
         try:
             from packaging.requirements import Requirement
+
             req = Requirement(dep_str)
-            
+
             # Extract extras
             extras = ",".join(sorted(req.extras)) if req.extras else ""
-            
+
             # Extract version/specifier
             # packaging stores it as SpecifierSet, convert to string
             version = str(req.specifier) if req.specifier else ""
-            
+
             # Extract marker
             marker = str(req.marker) if req.marker else ""
-            
+
             # Extract URL if present
             url = req.url if hasattr(req, "url") and req.url else ""
 
             return {
                 "name": req.name.lower().replace("_", "-"),
                 "version": version,
-                "constraint": "", # Kept for compatibility, mostly empty or part of version
+                "constraint": "",  # Kept for compatibility, mostly empty or part of version
                 "extras": extras,
                 "marker": marker,
                 "url": url,
@@ -408,7 +392,7 @@ class DependencyParser:
         scan_files = set()
         scan_files.update(project_path.glob("*.py"))
         scan_files.update(project_path.glob("README*"))
-        
+
         # Add recursive scan, but the set will handle duplicates if logic changes
         # Previously: glob("*.py") AND glob("**/*.py") caused root files to be double counted
         # The glob("**/*.py") includes root files !!
@@ -423,9 +407,7 @@ class DependencyParser:
         combined_content = ""
         for f in scan_files_list:
             try:
-                combined_content += f.read_text(encoding="utf-8", errors="replace")[
-                    :2000
-                ]
+                combined_content += f.read_text(encoding="utf-8", errors="replace")[:2000]
             except Exception:
                 continue
 

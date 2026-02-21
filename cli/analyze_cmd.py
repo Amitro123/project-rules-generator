@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """Analyzer module for project rules generator."""
 
 import os
@@ -105,10 +106,7 @@ def setup_orchestrator(config):
 
 
 @click.command(name="analyze")
-@click.argument(
-    "project_path", type=click.Path(exists=True, file_okay=False), default="."
-)
-
+@click.argument("project_path", type=click.Path(exists=True, file_okay=False), default=".")
 @click.option("--commit/--no-commit", default=True, help="Auto-commit to git")
 @click.option("--interactive", "-i", is_flag=True, help="Interactive prompts")
 @click.option("--verbose/--quiet", default=True, help="Verbose output")
@@ -119,17 +117,13 @@ def setup_orchestrator(config):
     is_flag=True,
     help="Save newly generated skills to learned library",
 )
-@click.option(
-    "--include-pack", multiple=True, help="Include external skill pack (name or path)"
-)
+@click.option("--include-pack", multiple=True, help="Include external skill pack (name or path)")
 @click.option(
     "--external-packs-dir",
     type=click.Path(exists=True, file_okay=False),
     help="Directory containing external packs",
 )
-@click.option(
-    "--list-skills", is_flag=True, help="List all available skills from all sources"
-)
+@click.option("--list-skills", is_flag=True, help="List all available skills from all sources")
 @click.option("--create-skill", help="Create a new learned skill with the given name")
 @click.option(
     "--from-readme",
@@ -147,9 +141,7 @@ def setup_orchestrator(config):
     default=".clinerules",
     help="Output directory (default: .clinerules)",
 )
-@click.option(
-    "--with-skills", is_flag=True, default=True, help="Include skills in output"
-)
+@click.option("--with-skills", is_flag=True, default=True, help="Include skills in output")
 @click.option(
     "--auto-generate-skills",
     is_flag=True,
@@ -161,9 +153,7 @@ def setup_orchestrator(config):
     is_flag=True,
     help="Generate constitution.md with project-specific coding principles",
 )
-@click.option(
-    "--merge", is_flag=True, help="Preserve existing skill files, only add new ones"
-)
+@click.option("--merge", is_flag=True, help="Preserve existing skill files, only add new ones")
 @click.option(
     "--mode",
     type=click.Choice(["manual", "ai", "constitution"]),
@@ -175,9 +165,7 @@ def setup_orchestrator(config):
     is_flag=True,
     help="Only regenerate changed sections (skip if nothing changed)",
 )
-@click.option(
-    "--ide", help="Register rules with IDE (antigravity, cline, cursor, vscode)"
-)
+@click.option("--ide", help="Register rules with IDE (antigravity, cline, cursor, vscode)")
 @click.option(
     "--provider",
     type=click.Choice(["gemini", "groq"]),
@@ -274,7 +262,7 @@ def analyze(
     """Analyze project and generate rules.md and skills.md from README.md"""
     project_path = Path(project_path).resolve()
     cleanup_awesome_skills()
-    
+
     # Invoke with default skills_dir=None to allow SkillDiscovery to use its default (.clinerules/skills)
     # skills_dir = skills_dir or "skills"
 
@@ -325,20 +313,14 @@ def analyze(
         # Non-fatal, might just be symlink issues, meaningful error printed inside manager
 
     # Incremental mode: check for changes before doing heavy work
-    inc_analyzer = (
-        IncrementalAnalyzer(project_path, output_dir) if incremental else None
-    )
+    inc_analyzer = IncrementalAnalyzer(project_path, output_dir) if incremental else None
     if inc_analyzer:
         changed_sections = inc_analyzer.detect_changes()
         if not changed_sections:
-            click.echo(
-                "No changes detected. Skipping regeneration. (use without --incremental to force)"
-            )
+            click.echo("No changes detected. Skipping regeneration. (use without --incremental to force)")
             sys.exit(0)
         if verbose:
-            click.echo(
-                f"Incremental: changed sections: {', '.join(sorted(changed_sections))}"
-            )
+            click.echo(f"Incremental: changed sections: {', '.join(sorted(changed_sections))}")
 
     if verbose:
         setup_logging(verbose=True)
@@ -379,7 +361,6 @@ def analyze(
             if "learned" not in config["skill_sources"]:
                 config["skill_sources"]["learned"] = {}
             config["skill_sources"]["learned"]["auto_save"] = True
-
 
         # Skill Management (CLI Flags)
         if create_skill or add_skill:
@@ -458,9 +439,7 @@ def analyze(
             click.echo(f"\\nAvailable Skills ({total}):")
 
             if display_groups["project"]:
-                click.echo(
-                    f"\\n📁 Project Overrides ({len(display_groups['project'])}):"
-                )
+                click.echo(f"\\n📁 Project Overrides ({len(display_groups['project'])}):")
                 for s in sorted(display_groups["project"]):
                     click.echo(f"  - {s} (Local)")
 
@@ -538,9 +517,7 @@ def analyze(
                         readme_path = project_path / "README.md"
 
                     readme_path.write_text(content, encoding="utf-8")
-                    click.echo(
-                        f"✅ README.md created/updated and saved to {readme_path}\\n"
-                    )
+                    click.echo(f"✅ README.md created/updated and saved to {readme_path}\\n")
 
                 except Exception as e:
                     click.echo(f"⚠️  README generation failed: {e}")
@@ -548,13 +525,9 @@ def analyze(
             else:
                 if not readme_path:
                     click.echo("⚠️  No README found. Context will be limited.")
-                    click.echo(
-                        "💡 Tip: Use --interactive to auto-generate a professional README."
-                    )
+                    click.echo("💡 Tip: Use --interactive to auto-generate a professional README.")
                 else:
-                    click.echo(
-                        f"⚠️  README ({readme_path.name}) is minimal. Context may be limited."
-                    )
+                    click.echo(f"⚠️  README ({readme_path.name}) is minimal. Context may be limited.")
                     click.echo("💡 Tip: Use --interactive to improve it.")
 
         # Fallback if still no README (create dummy or skip)
@@ -578,9 +551,7 @@ def analyze(
 
             project_data = {
                 "name": project_path.name,
-                "tech_stack": sorted(
-                    list(set(sum(context["tech_stack"].values(), [])))
-                ),
+                "tech_stack": sorted(list(set(sum(context["tech_stack"].values(), [])))),
                 "features": [],
                 "description": "No README provided.",
                 "raw_name": project_path.name,
@@ -631,9 +602,7 @@ def analyze(
             # Constitution generation (before rules so it appears early in output)
             if constitution and enhanced_context:
                 pbar.set_description("Generating Constitution")
-                constitution_content = generate_constitution(
-                    project_name, enhanced_context, project_path=project_path
-                )
+                constitution_content = generate_constitution(project_name, enhanced_context, project_path=project_path)
                 constitution_path = output_dir / "constitution.md"
                 constitution_path.write_text(constitution_content, encoding="utf-8")
                 generated_files.append(constitution_path)
@@ -641,14 +610,10 @@ def analyze(
                     click.echo("   Generated constitution.md")
             elif constitution and not enhanced_context:
                 if verbose:
-                    click.echo(
-                        "   Skipping constitution (enhanced analysis unavailable)"
-                    )
+                    click.echo("   Skipping constitution (enhanced analysis unavailable)")
 
             pbar.set_description("Generating Rules")
-            rules_content = generate_rules(
-                project_data, config, enhanced_context=enhanced_context
-            )
+            rules_content = generate_rules(project_data, config, enhanced_context=enhanced_context)
             pbar.update(1)
 
             pbar.set_description("Processing Skills")
@@ -663,29 +628,19 @@ def analyze(
                         enhanced_parser = EnhancedProjectParser(project_path)
                         enhanced_context = enhanced_parser.extract_full_context()
 
-                    detected_tech = enhanced_context.get("metadata", {}).get(
-                        "tech_stack", []
-                    )
-                    project_type = enhanced_context.get("metadata", {}).get(
-                        "project_type", "unknown"
-                    )
+                    detected_tech = enhanced_context.get("metadata", {}).get("tech_stack", [])
+                    project_type = enhanced_context.get("metadata", {}).get("project_type", "unknown")
 
                     if verbose:
                         click.echo("\\n   Enhanced Analysis:")
                         click.echo(f"   Project Type: {project_type}")
                         click.echo(f"   Tech Stack: {', '.join(detected_tech)}")
-                        dep_count = len(
-                            enhanced_context.get("dependencies", {}).get("python", [])
-                        )
-                        dep_count += len(
-                            enhanced_context.get("dependencies", {}).get("node", [])
-                        )
+                        dep_count = len(enhanced_context.get("dependencies", {}).get("python", []))
+                        dep_count += len(enhanced_context.get("dependencies", {}).get("node", []))
                         click.echo(f"   Dependencies: {dep_count} parsed")
                         test_info = enhanced_context.get("test_patterns", {})
                         if test_info.get("framework"):
-                            click.echo(
-                                f"   Tests: {test_info['framework']} ({test_info.get('test_files', 0)} files)"
-                            )
+                            click.echo(f"   Tests: {test_info['framework']} ({test_info.get('test_files', 0)} files)")
 
                     # Step 2: Match skills using EnhancedSkillMatcher
                     enhanced_matcher = EnhancedSkillMatcher()
@@ -702,9 +657,7 @@ def analyze(
                     )
 
                     if verbose:
-                        click.echo(
-                            f"   Matched Skills: {len(enhanced_selected_skills)}"
-                        )
+                        click.echo(f"   Matched Skills: {len(enhanced_selected_skills)}")
                         for s in sorted(enhanced_selected_skills):
                             click.echo(f"     - {s}")
 
@@ -731,9 +684,7 @@ def analyze(
 
                             # Extract code examples for this skill
                             skill_topic = skill_ref.split("/")[-1]
-                            examples = extractor.extract_examples_for_skill(
-                                project_path, skill_topic, detected_tech
-                            )
+                            examples = extractor.extract_examples_for_skill(project_path, skill_topic, detected_tech)
 
                             # Build enhanced prompt
                             prompt = build_skill_prompt(
@@ -741,9 +692,7 @@ def analyze(
                                 project_name=project_name,
                                 context=enhanced_context,
                                 code_examples=examples,
-                                detected_patterns=enhanced_context.get(
-                                    "structure", {}
-                                ).get("patterns", []),
+                                detected_patterns=enhanced_context.get("structure", {}).get("patterns", []),
                                 project_path=project_path,
                             )
 
@@ -754,9 +703,7 @@ def analyze(
 
                                 current_provider = kwargs.get("provider", "groq")
                                 llm_gen = LLMSkillGenerator(provider=current_provider)
-                                skill_content = llm_gen.generate_content(
-                                    prompt, max_tokens=2000
-                                )
+                                skill_content = llm_gen.generate_content(prompt, max_tokens=2000)
 
                                 # Save using SkillPathManager
                                 parts = skill_ref.split("/")
@@ -768,18 +715,14 @@ def analyze(
                                 click.echo(f"   💾 Generated: {skill_ref}")
                             except Exception as e:
                                 err_str = str(e)
-                                click.echo(
-                                    f"   ⚠️  Failed to generate {skill_ref}: {e}"
-                                )
+                                click.echo(f"   ⚠️  Failed to generate {skill_ref}: {e}")
                                 # Fail fast on auth errors — no point retrying
                                 if (
                                     "invalid_api_key" in err_str
                                     or "401" in err_str
                                     or "authentication" in err_str.lower()
                                 ):
-                                    click.echo(
-                                        "   ❌ API key invalid — skipping remaining LLM generations"
-                                    )
+                                    click.echo("   ❌ API key invalid — skipping remaining LLM generations")
                                     llm_auth_failed = True
 
                 except Exception as e:
@@ -816,17 +759,12 @@ def analyze(
                     # Find which category this skill belongs to
                     found_content = None
                     for category in ["project", "learned", "builtin"]:
-                        if (
-                            category in all_skills
-                            and skill_name in all_skills[category]
-                        ):
+                        if category in all_skills and skill_name in all_skills[category]:
                             found_content = all_skills[category][skill_name]["content"]
                             break
 
                     if found_content:
-                        unified_content += (
-                            f"\\n### Skill: {skill_name}\\n{found_content}\\n"
-                        )
+                        unified_content += f"\\n### Skill: {skill_name}\\n{found_content}\\n"
 
             # If enhanced matching was done, also generate lightweight clinerules
             if enhanced_selected_skills:
@@ -844,16 +782,12 @@ def analyze(
                 lightweight_path.write_text(lightweight_yaml, encoding="utf-8")
                 generated_files.append(lightweight_path)
                 if verbose:
-                    click.echo(
-                        f"   Generated clinerules.yaml ({len(enhanced_selected_skills)} skills)"
-                    )
+                    click.echo(f"   Generated clinerules.yaml ({len(enhanced_selected_skills)} skills)")
 
                 # Generate project-specific learned skills from README
                 # (runs BEFORE stub creation so project context takes priority)
                 if readme_path and readme_path.exists():
-                    readme_text = readme_path.read_text(
-                        encoding="utf-8", errors="replace"
-                    )
+                    readme_text = readme_path.read_text(encoding="utf-8", errors="replace")
                     project_tech = project_data.get("tech_stack", [])
 
                     # Cross-project reuse report
@@ -873,9 +807,7 @@ def analyze(
                         project_path=project_path,
                     )
                     if generated_skills and verbose:
-                        click.echo(
-                            f"   Generated {len(generated_skills)} project-specific skills:"
-                        )
+                        click.echo(f"   Generated {len(generated_skills)} project-specific skills:")
                         for s in generated_skills:
                             click.echo(f"     - {s}")
 
@@ -895,9 +827,7 @@ def analyze(
                 for skill_ref in sorted(enhanced_selected_skills):
                     skill_path = SkillPathManager.get_skill_path(skill_ref)
                     ref_name = skill_ref.split("/")[-1]
-                    dest_name = (
-                        f"{ref_name}.md" if not ref_name.endswith(".md") else ref_name
-                    )
+                    dest_name = f"{ref_name}.md" if not ref_name.endswith(".md") else ref_name
                     if skill_ref.startswith("builtin/"):
                         dest = output_dir / "skills" / "builtin" / dest_name
                     elif skill_ref.startswith("learned/"):
@@ -918,19 +848,13 @@ def analyze(
                         if readme_path and readme_path.exists():
                             stub_context_lines = skills_manager._extract_tech_context(
                                 category,
-                                readme_path.read_text(
-                                    encoding="utf-8", errors="replace"
-                                ),
+                                readme_path.read_text(encoding="utf-8", errors="replace"),
                             )
 
                         if stub_context_lines:
                             # Build a context-aware stub
-                            purpose = skills_manager._summarize_purpose(
-                                category, stub_context_lines, project_name
-                            )
-                            guidelines = skills_manager._build_guidelines(
-                                category, stub_context_lines
-                            )
+                            purpose = skills_manager._summarize_purpose(category, stub_context_lines, project_name)
+                            guidelines = skills_manager._build_guidelines(category, stub_context_lines)
                             stub = (
                                 f"# {title}\\n\\n"
                                 f"**Project:** {project_name}\\n"
@@ -967,9 +891,7 @@ def analyze(
             rules_path = output_dir / "rules.md"
             if inc_analyzer and rules_path.exists():
                 existing_rules = rules_path.read_text(encoding="utf-8")
-                unified_content = IncrementalAnalyzer.merge_rules(
-                    existing_rules, unified_content, changed_sections
-                )
+                unified_content = IncrementalAnalyzer.merge_rules(existing_rules, unified_content, changed_sections)
             save_markdown(rules_path, unified_content)
             generated_files.append(rules_path)
 
@@ -1003,11 +925,7 @@ def analyze(
             # Save learned skills if requested
             if save_learned:
                 learned_source = next(
-                    (
-                        s
-                        for s in orchestrator.sources
-                        if isinstance(s, LearnedSkillsSource)
-                    ),
+                    (s for s in orchestrator.sources if isinstance(s, LearnedSkillsSource)),
                     None,
                 )
                 if learned_source:
@@ -1090,16 +1008,12 @@ def analyze(
                 else:
                     click.echo("\\nWARNING: Not a git repository, skipping commit")
             else:
-                commit_msg = config.get("git", {}).get(
-                    "commit_message", "Auto-generated rules and skills"
-                )
+                commit_msg = config.get("git", {}).get("commit_message", "Auto-generated rules and skills")
                 user_name = config.get("git", {}).get("commit_user_name")
                 user_email = config.get("git", {}).get("commit_user_email")
 
                 try:
-                    result = commit_files(
-                        generated_files, commit_msg, project_path, user_name, user_email
-                    )
+                    result = commit_files(generated_files, commit_msg, project_path, user_name, user_email)
                     click.echo("\\nCommitted to git")
                     if "nothing to commit" in result.lower():
                         click.echo("   (or files already tracked)")
@@ -1132,9 +1046,7 @@ def analyze(
             # Merge with loaded config if needed (though AnalyzerConfig handles defaults)
             # For now, just ensuring enable_opik is passed is sufficient for this feature
 
-            analyzer = ContentAnalyzer(
-                provider=provider, api_key=api_key, config=analyzer_config
-            )
+            analyzer = ContentAnalyzer(provider=provider, api_key=api_key, config=analyzer_config)
             if eval_opik and analyzer.opik:
                 analyzer.opik.enabled = True  # Force enable if flag provided
 
@@ -1177,9 +1089,7 @@ def analyze(
                     if len(top_issue) > 40:
                         top_issue = top_issue[:37] + "..."
 
-                    table.add_row(
-                        filepath.name, f"{report.score}/100", report.status, top_issue
-                    )
+                    table.add_row(filepath.name, f"{report.score}/100", report.status, top_issue)
 
                 console.print(table)
 
@@ -1206,9 +1116,7 @@ def analyze(
                         elif hasattr(report, "quick_check") and report.quick_check:
                             for check, passed in report.quick_check.items():
                                 icon = "✅" if passed else "⚠️"
-                                click.echo(
-                                    f"     {icon} {check.replace('_', ' ').title()}"
-                                )
+                                click.echo(f"     {icon} {check.replace('_', ' ').title()}")
                         if report.suggestions:
                             click.echo("     Suggestions:")
                             for s in report.suggestions:
@@ -1216,17 +1124,13 @@ def analyze(
 
                         # Opik confirmation
                         if eval_opik and analyzer.opik and analyzer.opik.enabled:
-                            click.echo(
-                                f"     🚀 Logged to Opik (Trace ID: {report.status})"
-                            )
+                            click.echo(f"     🚀 Logged to Opik (Trace ID: {report.status})")
 
                         # Auto-fix logic (simplified for now, relies on old score or new status)
                         if auto_fix and "Needs Review" in report.status:
                             click.echo(f"     🔧 Auto-fixing {filepath.name}...")
                             # ... (auto-fix logic placeholder) ...
-                            click.echo(
-                                "     (Auto-fix temporarily disabled in v1.2.0 Opik update)"
-                            )
+                            click.echo("     (Auto-fix temporarily disabled in v1.2.0 Opik update)")
 
         # Cowork Rules Creator integration (delegation)
         if create_rules_flag:
@@ -1271,6 +1175,7 @@ def analyze(
                 click.echo(f"   ⚠️  Cowork rules generation failed: {e}", err=True)
                 if verbose:
                     import traceback
+
                     traceback.print_exc()
 
         click.echo("\\nDone!")
@@ -1300,6 +1205,7 @@ def analyze(
             traceback.print_exc()
         click.echo(f"❌ Unexpected Error: {e}", err=True)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     analyze()

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 import click
 
@@ -40,16 +40,16 @@ class ProjectManager:
         self.verbose = verbose
         self.workflow = AgentWorkflow(
             project_path=self.project_path,
-            task_description="Complete project", # Default generic task
+            task_description="Complete project",  # Default generic task
             provider=provider,
             api_key=api_key,
-            verbose=verbose
+            verbose=verbose,
         )
 
     def run_lifecycle(self):
         """Execute the full 4-phase lifecycle."""
         click.echo("👨‍💼 PRODUCT MANAGER AGENT: Initializing...")
-        
+
         self.phase1_setup()
         self.phase2_verify()
         self.phase3_copilot()
@@ -60,10 +60,10 @@ class ProjectManager:
     def phase1_setup(self):
         """PHASE 1: Setup Checklist & Doc Generation."""
         click.echo("\n📋 PHASE 1: SEMI-AUTO SETUP")
-        
+
         # 1. Generate PROJECT-MANAGER.md
         self._update_manager_checklist()
-        
+
         # 2. Check for missing docs and attempt generation
         missing = self._get_missing_docs()
         if missing:
@@ -79,7 +79,7 @@ class ProjectManager:
 
     def _doc_exists(self, doc_path: str) -> bool:
         path = self.project_path / doc_path
-        if doc_path.endswith("/"): # Directory check
+        if doc_path.endswith("/"):  # Directory check
             return path.is_dir()
         # Special case for TASKS.yaml which might be TASKS.json in some versions
         if "TASKS.yaml" in doc_path and not path.exists():
@@ -88,7 +88,7 @@ class ProjectManager:
 
     def _generate_missing_docs(self, missing: List[str]):
         """Trigger specific generators for missing artifacts."""
-        
+
         # Group 1: Analysis (rules, skills)
         if any(x in missing for x in [".clinerules/rules.md", ".clinerules/skills/index.md"]):
             click.echo("   ⚙️  Running analysis (rules + skills)...")
@@ -96,17 +96,16 @@ class ProjectManager:
             # Using AgentWorkflow.run_setup() covers a lot, but might be too broad.
             # Let's use the CLI logic roughly:
             from refactor.analyze_cmd import AnalyzeCommand
+
             cmd = AnalyzeCommand(
-                project_path=self.project_path,
-                mode="ai" if self.api_key else "manual",
-                api_key=self.api_key
+                project_path=self.project_path, mode="ai" if self.api_key else "manual", api_key=self.api_key
             )
             cmd.execute()
 
         # Group 2: Planning (PLAN.md, tasks/)
         if "PLAN.md" in missing or "tasks/TASKS.yaml" in missing:
-             click.echo("   ⚙️  Running planning...")
-             self.workflow.run_setup() # Generates plan and tasks if missing
+            click.echo("   ⚙️  Running planning...")
+            self.workflow.run_setup()  # Generates plan and tasks if missing
 
         # Group 3: Architecture
         if "ARCHITECTURE.md" in missing:
@@ -114,19 +113,20 @@ class ProjectManager:
             # Need a client
             from generator.ai.factory import create_ai_client
             from generator.design_generator import DesignGenerator
+
             client = create_ai_client(provider=self.provider, api_key=self.api_key)
             gen = DesignGenerator(client)
             design = gen.generate_design(
                 user_request="Complete full project implementation. Focus on high-level architecture.",
-                project_context=self._get_context()
+                project_context=self._get_context(),
             )
             (self.project_path / "ARCHITECTURE.md").write_text(design.to_markdown(), encoding="utf-8")
 
         # Group 4: Spec (Requirements)
         if "spec.md" in missing:
-             click.echo("   ⚙️  Generating spec.md...")
-             self._generate_spec_md()
-        
+            click.echo("   ⚙️  Generating spec.md...")
+            self._generate_spec_md()
+
         # Group 5: Tests (Scaffolding)
         if "tests/" in missing or "pytest.ini" in missing:
             click.echo("   ⚙️  Scaffolding tests...")
@@ -137,6 +137,7 @@ class ProjectManager:
     def _generate_spec_md(self):
         """Generate a structured project specification using LLM (spec-kit-inspired)."""
         import subprocess
+
         from generator.ai.factory import create_ai_client
         from generator.utils.readme_bridge import build_project_tree, is_readme_sufficient
 
@@ -159,7 +160,9 @@ class ProjectManager:
         try:
             result = subprocess.run(
                 ["git", "-C", str(self.project_path), "log", "--oneline", "-20"],
-                capture_output=True, text=True, timeout=10
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             git_log = result.stdout.strip() if result.returncode == 0 else ""
         except Exception:
@@ -217,7 +220,7 @@ Rules:
         spec_content = client.generate(
             prompt,
             temperature=0.3,
-            system_message="You are a senior product manager. Write precise, actionable project specifications."
+            system_message="You are a senior product manager. Write precise, actionable project specifications.",
         )
 
         # Encoding safety
@@ -234,18 +237,18 @@ Rules:
             "",
             "## Phase 1: Setup Artifacts",
         ]
-        
+
         ready_count = 0
         for doc in self.REQUIRED_DOCS:
             exists = self._doc_exists(doc)
             icon = "✅" if exists else "❌"
             if exists:
                 ready_count += 1
-            lines.append(f"- [{ 'x' if exists else ' ' }] {icon} `{doc}`")
-            
+            lines.append(f"- [{'x' if exists else ' '}] {icon} `{doc}`")
+
         lines.append("")
         lines.append(f"**Status:** {ready_count}/{len(self.REQUIRED_DOCS)} documents ready.")
-        
+
         (self.project_path / "PROJECT-MANAGER.md").write_text("\n".join(lines), encoding="utf-8")
         click.echo(f"   📄 Updated PROJECT-MANAGER.md ({ready_count}/{len(self.REQUIRED_DOCS)} ready)")
 
@@ -260,9 +263,9 @@ Rules:
         click.echo("\n🛡️  PHASE 2: READINESS VERIFICATION")
         checker = PreflightChecker(self.project_path, task_description="Project Manager Check")
         report = checker.run_checks()
-        
+
         click.echo(report.format_report())
-        
+
         if not report.all_passed:
             click.echo("❌ Verification failed. Please fix issues before proceeding.")
             # In interactive mode we might pause here, but for now we stop.
@@ -274,30 +277,27 @@ Rules:
     def phase3_copilot(self):
         """PHASE 3: Copilot Execution."""
         click.echo("\n✈️  PHASE 3: COPILOT EXECUTION")
-        
+
         # Delegate to AutopilotOrchestrator, but maybe wrapper it to enforce reports?
         # For now, let's just run the execute loop.
         orchestrator = AutopilotOrchestrator(
-            project_path=self.project_path, 
-            provider=self.provider, 
-            api_key=self.api_key,
-            verbose=self.verbose
+            project_path=self.project_path, provider=self.provider, api_key=self.api_key, verbose=self.verbose
         )
-        
+
         # Load manifest
         manifest_path = self.project_path / "tasks" / "TASKS.yaml"
         if manifest_path.exists():
             manifest = TaskManifest.from_yaml(manifest_path)
             orchestrator.execution_loop(manifest)
         else:
-             click.echo("❌ No TASKS.yaml found. Skipping execution.")
+            click.echo("❌ No TASKS.yaml found. Skipping execution.")
 
     # -- Phase 4: Summary -------------------------------------------------
 
     def phase4_summary(self):
         """PHASE 4: Final Summary."""
         click.echo("\n🎉 PHASE 4: FINAL SUMMARY")
-        
+
         # Basic stats
         manifest_path = self.project_path / "tasks" / "TASKS.yaml"
         stats = "No tasks found."
@@ -306,7 +306,7 @@ Rules:
             total = len(manifest.tasks)
             done = sum(1 for t in manifest.tasks if t.status == "done")
             stats = f"Tasks: {done}/{total} complete."
-            
+
         report = [
             "# Project Completion Report",
             f"Date: {datetime.now().strftime('%Y-%m-%d')}",
@@ -323,6 +323,6 @@ Rules:
             "## 🎯 Achievements",
             "See `TASKS.yaml` for detailed task logs.",
         ]
-        
+
         (self.project_path / "PROJECT-COMPLETION.md").write_text("\n".join(report), encoding="utf-8")
         click.echo(f"   📄 Generated PROJECT-COMPLETION.md\n   {stats}")

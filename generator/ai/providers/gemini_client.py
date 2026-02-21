@@ -24,9 +24,7 @@ class GeminiClient(AIClient):
 
     def __init__(self, api_key: Optional[str] = None):
         if not GEMINI_AVAILABLE:
-            raise ImportError(
-                "google-genai not installed. Run: pip install google-genai"
-            )
+            raise ImportError("google-genai not installed. Run: pip install google-genai")
 
         super().__init__(api_key or os.getenv("GEMINI_API_KEY"))
         if not self.api_key:

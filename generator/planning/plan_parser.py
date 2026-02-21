@@ -24,11 +24,7 @@ class TaskStatus:
         - It has subtasks (subtasks_total > 0)
         - All its subtasks are completed
         """
-        return (
-            not self.completed
-            and self.subtasks_total > 0
-            and self.subtasks_completed == self.subtasks_total
-        )
+        return not self.completed and self.subtasks_total > 0 and self.subtasks_completed == self.subtasks_total
 
 
 @dataclass
@@ -145,17 +141,11 @@ class PlanParser:
 
                 # Extract content between this header and next
                 start_pos = match.end()
-                end_pos = (
-                    header_matches[i + 1].start()
-                    if i + 1 < len(header_matches)
-                    else len(content)
-                )
+                end_pos = header_matches[i + 1].start() if i + 1 < len(header_matches) else len(content)
                 task_content = content[start_pos:end_pos].strip()
 
                 # Check if task is completed (look for [x] or ✓ in content)
-                is_completed = bool(
-                    re.search(r"\[x\]|✓|✅", task_content, re.IGNORECASE)
-                )
+                is_completed = bool(re.search(r"\[x\]|✓|✅", task_content, re.IGNORECASE))
 
                 # Create a single task for this phase
                 task = TaskStatus(
@@ -165,9 +155,7 @@ class PlanParser:
                     subtasks_completed=0,
                 )
 
-                phases.append(
-                    PhaseStatus(name=f"{task_num}. {task_name}", tasks=[task])
-                )
+                phases.append(PhaseStatus(name=f"{task_num}. {task_name}", tasks=[task]))
         else:
             # Fall back to old checkbox-based parsing
             # Find all phase sections (## headers, not ###)
@@ -195,9 +183,7 @@ class PlanParser:
             stripped = line.strip()
 
             # Main task (starts with - [ ] or - [x] at beginning of line, not indented)
-            if re.match(r"^-\s+\[([ x])\]\s+(.+)$", stripped) and not line.startswith(
-                " "
-            ):
+            if re.match(r"^-\s+\[([ x])\]\s+(.+)$", stripped) and not line.startswith(" "):
                 # Save previous task if exists
                 if current_task:
                     tasks.append(current_task)
@@ -213,11 +199,7 @@ class PlanParser:
                 )
 
             # Subtask (indented - [ ] or - [x])
-            elif (
-                current_task
-                and line.startswith(" ")
-                and re.match(r"^-\s+\[([ x])\]\s+(.+)$", stripped)
-            ):
+            elif current_task and line.startswith(" ") and re.match(r"^-\s+\[([ x])\]\s+(.+)$", stripped):
                 match = re.match(r"^-\s+\[([ x])\]\s+(.+)$", stripped)
                 current_task.subtasks_total += 1
                 if match.group(1) == "x":
@@ -286,9 +268,7 @@ class PlanParser:
         for phase in status.phases:
             progress_bar = self._create_progress_bar(phase.progress_percent)
             status_icon = "✅" if phase.progress_percent == 100 else "🔄"
-            lines.append(
-                f"  {status_icon} {phase.name}: {phase.completed_tasks}/{phase.total_tasks} {progress_bar}"
-            )
+            lines.append(f"  {status_icon} {phase.name}: {phase.completed_tasks}/{phase.total_tasks} {progress_bar}")
 
         return "\n".join(lines)
 

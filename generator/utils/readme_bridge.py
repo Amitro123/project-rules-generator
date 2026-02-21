@@ -20,9 +20,20 @@ from typing import List, Optional
 README_MIN_WORDS = 80  # Below this → README is too sparse
 
 _TREE_EXCLUDE = {
-    ".git", "__pycache__", ".venv", "venv", "node_modules",
-    ".pytest_cache", "dist", "build", ".mypy_cache", ".ruff_cache",
-    ".clinerules", ".claude", ".eggs", "eggs",
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "node_modules",
+    ".pytest_cache",
+    "dist",
+    "build",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".clinerules",
+    ".claude",
+    ".eggs",
+    "eggs",
 }
 
 
@@ -58,10 +69,7 @@ def build_project_tree(
         except PermissionError:
             return
 
-        visible = [
-            e for e in entries
-            if not e.name.startswith(".") and e.name not in _TREE_EXCLUDE
-        ]
+        visible = [e for e in entries if not e.name.startswith(".") and e.name not in _TREE_EXCLUDE]
         for i, item in enumerate(visible):
             if count >= max_items:
                 lines.append(f"{prefix}... (truncated)")
@@ -109,10 +117,7 @@ def bridge_missing_context(
     if is_interactive:
         print(f"\n⚠️  README is missing or too sparse to generate a good '{name}'.")
         print("\n" + tree_block)
-        print(
-            "\n💬 In 2-3 sentences, describe what this project does "
-            "(press Enter to skip):"
-        )
+        print("\n💬 In 2-3 sentences, describe what this project does (press Enter to skip):")
         try:
             description = input("> ").strip()
         except (EOFError, KeyboardInterrupt):

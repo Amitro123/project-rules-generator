@@ -30,9 +30,7 @@ class AgentRulesImporter(SkillImporter):
             files = [source_path]
         else:
             # Look for .mdc and .md files
-            files = list(source_path.glob("**/*.mdc")) + list(
-                source_path.glob("**/*.md")
-            )
+            files = list(source_path.glob("**/*.mdc")) + list(source_path.glob("**/*.md"))
 
         for file_path in files:
             if file_path.name.lower() == "readme.md":

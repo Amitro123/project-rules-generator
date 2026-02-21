@@ -37,9 +37,7 @@ class SkillSourceConfig(BaseModel):
 
 
 class SkillSourcesConfig(BaseModel):
-    builtin: SkillSourceConfig = Field(
-        default_factory=lambda: SkillSourceConfig(enabled=True, path="templates/skills")
-    )
+    builtin: SkillSourceConfig = Field(default_factory=lambda: SkillSourceConfig(enabled=True, path="templates/skills"))
     learned: SkillSourceConfig = Field(
         default_factory=lambda: SkillSourceConfig(
             enabled=True,
@@ -47,12 +45,8 @@ class SkillSourcesConfig(BaseModel):
             auto_save=True,
         )
     )
-    awesome: SkillSourceConfig = Field(
-        default_factory=lambda: SkillSourceConfig(enabled=False, path="")
-    )
-    preference_order: List[str] = Field(
-        default_factory=lambda: ["learned", "awesome", "builtin"]
-    )
+    awesome: SkillSourceConfig = Field(default_factory=lambda: SkillSourceConfig(enabled=False, path=""))
+    preference_order: List[str] = Field(default_factory=lambda: ["learned", "awesome", "builtin"])
 
 
 class RootConfig(BaseModel):

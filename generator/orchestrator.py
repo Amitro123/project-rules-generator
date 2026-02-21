@@ -32,9 +32,7 @@ class SkillOrchestrator:
         # So REVERSE=True is correct sort order for index.
         self.sources.sort(key=lambda s: s.priority, reverse=True)
 
-    def orchestrate(
-        self, project_data: Dict[str, Any], project_path: str
-    ) -> List[Skill]:
+    def orchestrate(self, project_data: Dict[str, Any], project_path: str) -> List[Skill]:
         """
         Main orchestration flow.
 
@@ -65,9 +63,7 @@ class SkillOrchestrator:
 
         return adapted_skills
 
-    def _detect_triggered_skills(
-        self, project_path: str, project_data: Dict[str, Any]
-    ) -> List[Skill]:
+    def _detect_triggered_skills(self, project_path: str, project_data: Dict[str, Any]) -> List[Skill]:
         """Detect skills that should be active based on triggers."""
         from pathlib import Path
 
@@ -129,9 +125,7 @@ class SkillOrchestrator:
 
         return list(unique_skills.values())
 
-    def _adapt_skills(
-        self, skills: List[Skill], project_data: Dict[str, Any]
-    ) -> List[Skill]:
+    def _adapt_skills(self, skills: List[Skill], project_data: Dict[str, Any]) -> List[Skill]:
         """Adapt generic skills to project context."""
         project_name = project_data.get("name", "project")
 
@@ -139,9 +133,7 @@ class SkillOrchestrator:
             # Simple placeholder replacement
             # TODO: More robust Jinja2 templating later
             if skill.description:
-                skill.description = skill.description.replace(
-                    "{project_name}", project_name
-                )
+                skill.description = skill.description.replace("{project_name}", project_name)
 
             # Update metadata
             skill.adapted_for = project_name

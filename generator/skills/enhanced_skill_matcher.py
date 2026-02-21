@@ -154,7 +154,7 @@ class EnhancedSkillMatcher:
     def _has_import(self, context: Dict, pattern: str) -> bool:
         """Check if any source file contains the import pattern."""
         structure = context.get("structure", {})
-        entry_points = structure.get("entry_points", [])
+        structure.get("entry_points", [])
 
         # Also check based on dependencies (if the package is installed, import is likely)
         deps = context.get("dependencies", {})
@@ -174,7 +174,7 @@ class EnhancedSkillMatcher:
         """Check if project has files matching the pattern."""
         structure = context.get("structure", {})
         entry_points = structure.get("entry_points", [])
-        detected_patterns = structure.get("patterns", [])
+        structure.get("patterns", [])
 
         # Simple filename match
         if "*" not in pattern and "/" not in pattern:
@@ -185,15 +185,9 @@ class EnhancedSkillMatcher:
 
         # Test framework files
         test_info = context.get("test_patterns", {})
-        if (
-            pattern in ("conftest.py", "test_*.py")
-            and test_info.get("framework") == "pytest"
-        ):
+        if pattern in ("conftest.py", "test_*.py") and test_info.get("framework") == "pytest":
             return True
-        if (
-            pattern in ("jest.config.*", "*.test.js", "*.test.ts")
-            and test_info.get("framework") == "jest"
-        ):
+        if pattern in ("jest.config.*", "*.test.js", "*.test.ts") and test_info.get("framework") == "jest":
             return True
 
         # Docker files
