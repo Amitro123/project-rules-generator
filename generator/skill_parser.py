@@ -273,9 +273,7 @@ class SkillParser:
             # Infer triggers from 'When to use' bullets
             when_to_use: str = parsed["when_to_use"]  # type: ignore[assignment]
             parsed["triggers"] = [
-                line.strip("- *").strip().lower()
-                for line in when_to_use.split("\n")
-                if line.strip().startswith("-")
+                line.strip("- *").strip().lower() for line in when_to_use.split("\n") if line.strip().startswith("-")
             ]
 
         if not parsed["command"]:

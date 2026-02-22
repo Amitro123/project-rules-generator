@@ -13,10 +13,12 @@ logger = logging.getLogger(__name__)
 _tomllib: Optional[types.ModuleType] = None
 try:
     import tomllib as _tomllib_impl
+
     _tomllib = _tomllib_impl
 except ModuleNotFoundError:
     try:
         import tomli as _tomllib_impl2  # type: ignore[import-untyped]
+
         _tomllib = _tomllib_impl2
     except ModuleNotFoundError:
         _tomllib = None
