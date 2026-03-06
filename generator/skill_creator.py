@@ -191,7 +191,15 @@ class CoworkSkillCreator:
         print(f"{'=' * 60}")
 
     def detect_skill_needs(self, project_path: Path) -> List[str]:
-        """Detect needed skills based on tech stack and context."""
+        """Detect needed skills based on tech stack and context.
+
+        Uses SkillGenerator.TECH_SKILL_NAMES as the single source of truth for
+        the tech→skill mapping (covers 40+ technologies).
+        """
+        # Lazy import to avoid circular dependency
+        # (skill_generator → strategies → cowork_strategy → skill_creator)
+        from generator.skill_generator import SkillGenerator
+
         readme_path = project_path / "README.md"
         readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
 
@@ -201,22 +209,12 @@ class CoworkSkillCreator:
         if not tech_stack:
             skill_names.append(f"{project_path.name}-workflow")
         else:
-            # Basic mapping - can be expanded
-            tool_map = {
-                "fastapi": "fastapi-api-workflow",
-                "flask": "flask-api-workflow",
-                "django": "django-app-workflow",
-                "react": "react-component-workflow",
-                "vue": "vue-component-workflow",
-                "pytest": "pytest-testing-workflow",
-                "docker": "docker-deployment-workflow",
-            }
-
             for tech in tech_stack:
-                if tech.lower() in tool_map:
-                    skill_names.append(tool_map[tech.lower()])
+                skill_name = SkillGenerator.TECH_SKILL_NAMES.get(tech.lower())
+                if skill_name:
+                    skill_names.append(skill_name)
 
-            # If nothing specific, generic
+            # If nothing matched, fall back to a generic project workflow
             if not skill_names:
                 skill_names.append(f"{project_path.name}-workflow")
 
@@ -247,12 +245,10 @@ class CoworkSkillCreator:
 
         source = self.discovery.global_learned / f"{skill_name}.md"
         if not source.exists():
-            # Check for directory based skill
+            # Directory-style skill: <name>/SKILL.md
             source_dir = self.discovery.global_learned / skill_name
             if source_dir.exists() and source_dir.is_dir():
-                # For directories, we might need to handle differently or link the dir
-                # But current save_to_learned saves as .md
-                pass
+                source = source_dir / "SKILL.md"
 
         if not self.discovery.project_local_dir:
             print(f"⚠️  Could not link {skill_name}: No project path configured.")
@@ -1010,7 +1006,9 @@ class CoworkSkillCreator:
             "project_path": str(self.project_path),
             "tech_stack": self._detect_tech_stack(readme_content),
             "readme_context": readme_content[:500] if readme_content else None,
-            "quality_score": 95,  # Will be updated after validation
+            # quality_score intentionally omitted: quality is computed *after*
+            # content generation in create_skill(), so any value here would be
+            # a lie.  Templates must not render a quality score at gen time.
         }
 
         # Merge custom context
@@ -1136,65 +1134,28 @@ Signals: {", ".join(metadata.project_signals)}
         """
         Cowork's quality gates: ensure skill is actionable and specific.
 
-        Checks:
-        1. No placeholder text
-        2. Specific commands/paths
-        3. Proper trigger coverage
-        4. Tool validation
-        5. No hallucinated file paths
+        Delegates shared checks to quality_checker.validate_quality(), then adds
+        the project-specific hallucination check that requires self.project_path.
         """
-        issues = []
-        warnings = []
-        suggestions = []
-        score = 100.0
+        from generator.utils.quality_checker import validate_quality
 
-        # 1. Check for placeholders
-        placeholders = ["[describe", "[example", "[your", "[add", "[insert", "TODO", "FIXME", "XXX"]
-        for placeholder in placeholders:
-            if placeholder.lower() in content.lower():
-                issues.append(f"Contains placeholder: {placeholder}")
-                score -= 10
+        report = validate_quality(content, metadata.auto_triggers, metadata.tools)
 
-        # 2. Check for specific paths/commands
-        if "cd project_name" in content or "cd /path/to" in content:
-            issues.append("Contains generic path placeholders")
-            score -= 15
-
-        # 3. Validate triggers coverage
-        if len(metadata.auto_triggers) < 3:
-            warnings.append(f"Only {len(metadata.auto_triggers)} triggers (recommend 5+)")
-            score -= 5
-
-        # 4. Check for hallucinated file paths
+        # Project-specific: detect hallucinated file paths (needs self.project_path)
         hallucinated = self._detect_hallucinated_paths(content)
         if hallucinated:
-            issues.append(f"Hallucinated file paths: {', '.join(hallucinated[:3])}")
-            score -= 20
+            extra_issue = f"Hallucinated file paths: {', '.join(hallucinated[:3])}"
+            score = max(0.0, report.score - 20)
+            issues = report.issues + [extra_issue]
+            return QualityReport(
+                score=score,
+                passed=score >= 70 and not issues,
+                issues=issues,
+                warnings=report.warnings,
+                suggestions=report.suggestions,
+            )
 
-        # 5. Tool validation
-        if not metadata.tools:
-            warnings.append("No tools specified")
-            score -= 5
-
-        # 6. Check for actionability (has code blocks or commands)
-        if "```" not in content and "bash" not in content.lower():
-            warnings.append("No code examples found (skill may not be actionable)")
-            score -= 10
-
-        # 7. Check for anti-patterns section
-        if "## Anti-Patterns" not in content:
-            suggestions.append("Add anti-patterns section")
-            score -= 5
-
-        passed = score >= 70 and len(issues) == 0
-
-        return QualityReport(
-            score=max(0, score),
-            passed=passed,
-            issues=issues,
-            warnings=warnings,
-            suggestions=suggestions,
-        )
+        return report
 
     def _detect_hallucinated_paths(self, content: str) -> List[str]:
         """

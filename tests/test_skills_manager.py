@@ -120,7 +120,7 @@ Description of test project.
         assert "## Anti-Patterns" in content
 
         # Context
-        assert "## Context (from README.md)" in content
+        assert "## Context (from README)" in content
 
 
 def test_create_duplicate_skill(temp_skills_dir, mock_manager):
