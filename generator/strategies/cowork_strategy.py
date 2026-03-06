@@ -44,7 +44,7 @@ class CoworkStrategy:
                     readme_content = supplement + "\n\n" + readme_content
 
             content, metadata, quality = creator.create_skill(
-                skill_name, readme_content, use_ai=True, provider=provider
+                skill_name, readme_content, use_ai=False, provider=provider
             )
             print(f"✅ Cowork quality score: {quality.score}/100")
             return content

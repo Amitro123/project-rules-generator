@@ -1,4 +1,5 @@
 import re
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -106,7 +107,7 @@ class SkillGenerator:
             existing = self.discovery.resolve_skill(safe_name)
             print(f"Skill '{safe_name}' already exists — skipping. (use force=True to overwrite)")
             if existing is not None:
-                return existing.parent if existing.name == "SKILL.md" else existing.parent
+                return existing.parent if existing.name == "SKILL.md" else existing.parent / safe_name
             # Fallback: return the expected directory path
             return self.discovery.global_learned / safe_name
         # ─────────────────────────────────────────────────────────────────────
@@ -209,14 +210,18 @@ class SkillGenerator:
                 # Rich global skill exists — copy it to project dir as-is
                 resolved = self.discovery.resolve_skill(skill_name)
                 if resolved and resolved.exists():
-                    import shutil
-
                     shutil.copy2(resolved, dest)
                     print(f"  [reuse]  {skill_name} (from global learned)")
                     generated.append(f"{skill_name} (reused)")
-                continue
+                    continue
+                # BUG-4 fix: resolve_skill returned None (stale cache or file deleted).
+                # Log a warning and fall through to the create path so the skill
+                # is not silently lost. We use a second `if` below (not elif) so that
+                # the reassigned action='create' is actually evaluated.
+                print(f"  [warn]  {skill_name}: cached skill not found, falling through to create")
+                action = "create"
 
-            elif action == "adapt":
+            if action == "adapt":
                 # Stub exists globally — write project-adapted version to project dir
                 # and also update the global stub with the richer content
                 dest.write_text(skill_content, encoding="utf-8")
@@ -229,7 +234,7 @@ class SkillGenerator:
                     print(f"  [adapt]  {skill_name} (project override)")
                 generated.append(f"{skill_name} (adapted)")
 
-            else:  # create
+            elif action == "create":
                 # No global skill — write to project dir and save to global learned
                 dest.write_text(skill_content, encoding="utf-8")
                 global_dest = self.discovery.global_learned / f"{skill_name}.md"

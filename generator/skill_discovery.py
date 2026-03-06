@@ -92,6 +92,17 @@ class SkillDiscovery:
         if self.project_local_dir:
             self._skills_cache["project"] = _scan(self.project_local_dir)
 
+    def invalidate_cache(self) -> None:
+        """Reset the skills cache so the next lookup rebuilds it from disk.
+
+        Call this after creating or deleting skills to prevent stale-data bugs
+        where list_skills() / resolve_skill() return outdated results.
+        """
+        self._skills_cache = None
+        if hasattr(self, "_layer_skills_cache"):
+            del self._layer_skills_cache
+
+
     def ensure_global_structure(self):
         """Ensure global cache directories exist and are synced."""
         self.global_root.mkdir(parents=True, exist_ok=True)

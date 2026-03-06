@@ -64,7 +64,10 @@ class SkillsManager:
         Args:
             force: If True, overwrite an existing skill. Default False (skip).
         """
-        return self.generator.create_skill(name, from_readme, project_path, use_ai, provider, force=force)
+        result = self.generator.create_skill(name, from_readme, project_path, use_ai, provider, force=force)
+        # DESIGN-4: Invalidate cache so list_skills() / resolve_skill() see the new skill.
+        self.discovery.invalidate_cache()
+        return result
 
     def check_global_skill_reuse(self, tech_stack: List[str]) -> dict:
         """Check which skills already exist globally: 'reuse' | 'adapt' | 'create'.

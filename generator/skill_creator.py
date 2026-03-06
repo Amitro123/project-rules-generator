@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import yaml
 
 from generator.skill_discovery import SkillDiscovery
+from generator.utils.quality_checker import QualityReport
 from generator.utils.tech_detector import detect_from_dependencies as _detect_from_deps_util
 from generator.utils.tech_detector import detect_tech_stack as _detect_tech_stack_util
 
@@ -41,17 +42,6 @@ class SkillMetadata:
     tools: List[str] = field(default_factory=list)
     category: str = "project"
     priority: int = 50  # 0-100, higher = more priority
-
-
-@dataclass
-class QualityReport:
-    """Quality assessment of generated skill."""
-
-    score: float  # 0-100
-    passed: bool
-    issues: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    suggestions: List[str] = field(default_factory=list)
 
 
 class CoworkSkillCreator:
@@ -616,16 +606,16 @@ class CoworkSkillCreator:
 
         # Check for specific file types
         # React/Vue: .jsx, .tsx files
-        if list(self.project_path.rglob("*.jsx")) or list(self.project_path.rglob("*.tsx")):
+        if any(self.project_path.rglob("*.jsx")) or any(self.project_path.rglob("*.tsx")):
             detected.add("react")
-            if list(self.project_path.rglob("*.tsx")):
+            if any(self.project_path.rglob("*.tsx")):
                 detected.add("typescript")
 
-        if list(self.project_path.rglob("*.vue")):
+        if any(self.project_path.rglob("*.vue")):
             detected.add("vue")
 
         # Python files
-        if list(self.project_path.rglob("*.py")):
+        if any(self.project_path.rglob("*.py")):
             detected.add("python")
 
         # Tests
@@ -662,8 +652,6 @@ class CoworkSkillCreator:
             "typescript",
             "python",
         }
-
-        readme_content.lower()
 
         # Look for tech in structured sections (more reliable)
         detected = set()
@@ -1174,7 +1162,7 @@ Signals: {", ".join(metadata.project_signals)}
 
         # 3. Validate triggers coverage
         if len(metadata.auto_triggers) < 3:
-            warnings.append("Only {len(metadata.auto_triggers)} triggers (recommend 5+)")
+            warnings.append(f"Only {len(metadata.auto_triggers)} triggers (recommend 5+)")
             score -= 5
 
         # 4. Check for hallucinated file paths

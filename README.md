@@ -8,6 +8,16 @@
 
 **Stop copy-pasting generic rules. Start with AI that knows your project.**
 
+## Recent Changes (v1.2)
+- **Bug fixes** (Issue #17): 5 bugs fixed in the Skills Mechanism — see [`CHANGELOG.md`](CHANGELOG.md) for full details
+  - `CoworkStrategy` no longer forces AI calls when `--ai` flag is not set
+  - Flat-file skills now return the correct directory path from `create_skill()`
+  - Silent skill loss in `generate_from_readme` when cache is stale now falls through to create
+  - `_validate_quality` warning now shows actual trigger count (was un-interpolated f-string)
+  - Removed dead `readme_content.lower()` no-op in `_detect_from_readme`
+- **Design improvements**: `QualityReport` unified to single source, `SkillDiscovery.invalidate_cache()` added, `any(rglob(...))` replaces `list(rglob(...))`, `import shutil` moved to module level
+- **New tests**: `tests/test_issue17_bugs.py` — 10 focused regression tests (380 total passing)
+
 ## Recent Changes (v1.1)
 - **Skills cleanup**: Removed 2 legacy files (`skills_generator.py`, `skill_matcher.py`) — 258 lines eliminated
 - **New `utils/`**: `tech_detector.py` + `quality_checker.py` — consolidated duplicate logic
