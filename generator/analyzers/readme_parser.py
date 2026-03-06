@@ -472,6 +472,29 @@ def extract_auto_triggers(readme: str, skill_name: str) -> List[str]:
     if re.search(r"\*\.(mp4|avi|mov)", readme):
         triggers.append("Working with video files: *.mp4, *.avi, *.mov")
 
+    # Detect domain-specific file extensions from the README (cap at 2 extra triggers).
+    # Two sources:
+    #   1. Explicit glob patterns:  *.j2, *.jinja2
+    #   2. File paths in backtick code spans:  `templates/model.py.j2`  → *.j2
+    _generic = {
+        "*.py", "*.js", "*.ts", "*.tsx", "*.jsx",
+        "*.mp4", "*.avi", "*.mov",
+        "*.md", "*.txt", "*.json", "*.yaml", "*.yml",
+        "*.toml", "*.cfg", "*.ini", "*.sh",
+    }
+    seen_exts: set = set()
+    candidates = list(re.findall(r"\*\.\w{1,8}", readme))  # explicit globs
+    candidates += [
+        f"*.{m}"
+        for m in re.findall(r"`[^`]*\.([a-z][a-z0-9]{0,7})`", readme)  # backtick paths
+    ]
+    for ext in candidates:
+        if ext not in _generic and ext not in seen_exts:
+            triggers.append(f"Working with {ext} files")
+            seen_exts.add(ext)
+            if len(seen_exts) >= 2:
+                break
+
     return triggers
 
 
@@ -502,11 +525,21 @@ def extract_process_steps(readme: str) -> List[str]:
 
 
 def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[Path] = None) -> List[str]:
-    """Generate anti-patterns grounded in actual project analysis.
+    """Extract anti-patterns from both README text and project structure.
 
-    Only returns patterns that can be verified against the actual project, not hypothetical issues.
+    Priority 1: explicit ❌ markers the author wrote in the README.
+    Priority 2: structural checks against the actual project on disk.
     """
     anti_patterns: List[str] = []
+
+    # --- Priority 1: parse ❌ markers the README author explicitly wrote ---
+    for line in readme.split("\n"):
+        stripped = line.strip()
+        # Match lines starting with ❌ (U+274C) or the text "anti-pattern" style bullets
+        if stripped.startswith("\u274c"):
+            pattern = stripped[1:].strip()
+            if len(pattern) > 10:
+                anti_patterns.append(pattern)
 
     if not project_path:
         return anti_patterns

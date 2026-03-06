@@ -120,7 +120,7 @@ def validate_quality(
     triggers = metadata_triggers or []
     if len(triggers) < 2:
         score -= 10
-        warnings.append("Too few auto-triggers (recommend 3+)")
+        warnings.append(f"Only {len(triggers)} auto-triggers (recommend 3+)")
     elif len(triggers) < 3:
         suggestions.append("Consider adding more trigger variations")
 
@@ -145,6 +145,28 @@ def validate_quality(
         if step_count < 2:
             score -= 10
             warnings.append("Process section has fewer than 2 numbered steps")
+
+    # Check for placeholder text
+    placeholders = ["[describe", "[example", "[your", "[add", "[insert", "TODO", "FIXME", "XXX"]
+    for placeholder in placeholders:
+        if placeholder.lower() in content.lower():
+            issues.append(f"Contains placeholder: {placeholder}")
+            score -= 10
+
+    # Check for generic path placeholders
+    if "cd project_name" in content or "cd /path/to" in content:
+        issues.append("Contains generic path placeholders")
+        score -= 15
+
+    # Check for code examples
+    if "```" not in content and "bash" not in content.lower():
+        warnings.append("No code examples found (skill may not be actionable)")
+        score -= 10
+
+    # Check for anti-patterns section
+    if "## Anti-Patterns" not in content:
+        suggestions.append("Add anti-patterns section")
+        score -= 5
 
     score = max(0.0, score)
     passed = score >= 70.0

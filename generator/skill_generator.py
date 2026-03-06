@@ -123,6 +123,13 @@ class SkillGenerator:
 
         skill_file = target_dir / "SKILL.md"
 
+        # Normalise from_readme: if it looks like a file path, read the content.
+        # The CLI passes a path string; internal callers may pass content directly.
+        if from_readme:
+            readme_as_path = Path(from_readme)
+            if readme_as_path.is_file():
+                from_readme = readme_as_path.read_text(encoding="utf-8", errors="replace")
+
         # Strategy chain: try each strategy until one succeeds
         strategies: List[Any] = []
         if use_ai:
@@ -222,16 +229,13 @@ class SkillGenerator:
                 action = "create"
 
             if action == "adapt":
-                # Stub exists globally — write project-adapted version to project dir
-                # and also update the global stub with the richer content
+                # Stub exists globally — write project-adapted version to project dir only.
+                # Do NOT back-propagate to the global cache: skill_content is derived from
+                # _derive_project_skills() which embeds project-specific names, README
+                # context, and triggers.  Writing it back would pollute future unrelated
+                # projects with this project's context.
                 dest.write_text(skill_content, encoding="utf-8")
-                # Update global stub so future projects benefit
-                resolved = self.discovery.resolve_skill(skill_name)
-                if resolved and resolved.exists() and self._is_generic_stub(resolved, project_path=project_path):
-                    resolved.write_text(skill_content, encoding="utf-8")
-                    print(f"  [adapt]  {skill_name} (updated global stub)")
-                else:
-                    print(f"  [adapt]  {skill_name} (project override)")
+                print(f"  [adapt]  {skill_name} (project override)")
                 generated.append(f"{skill_name} (adapted)")
 
             elif action == "create":
