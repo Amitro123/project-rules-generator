@@ -820,6 +820,36 @@ class CoworkSkillCreator:
 
         return list(dict.fromkeys(tags))[:6]  # deduplicate, cap at 6
 
+    def _generate_critical_rules(self, skill_name: str, tech_stack: List[str]) -> List[str]:
+        """Generate non-negotiable rules for the ## CRITICAL section (GAP-5).
+
+        Returns a short list of rules Claude must always follow when this skill
+        is active. Generic rules always apply; additional ones are added based
+        on the skill domain.
+        """
+        rules: List[str] = [
+            "Read existing files before modifying them.",
+            "Run tests after any code change and verify they pass.",
+            "Never generate or reference file paths that don't exist in the project.",
+        ]
+
+        name_lower = skill_name.lower()
+        techs_lower = [t.lower() for t in tech_stack]
+
+        if any(x in name_lower or x in techs_lower for x in ("test", "pytest", "jest", "coverage")):
+            rules.append("Never skip tests or suppress coverage with `--no-cov` / `--no-cover`.")
+
+        if any(x in name_lower or x in techs_lower for x in ("docker", "deploy", "kubernetes", "k8s")):
+            rules.append("Never deploy to production without confirming the target environment first.")
+
+        if any(x in name_lower or x in techs_lower for x in ("sql", "database", "postgres", "mysql", "mongo")):
+            rules.append("Never run destructive SQL (DROP, TRUNCATE, DELETE without WHERE) without a dry-run first.")
+
+        if any(x in name_lower or x in techs_lower for x in ("auth", "security", "oauth", "jwt")):
+            rules.append("Never log or expose secrets, tokens, or credentials in output.")
+
+        return rules
+
     def _render_frontmatter(self, metadata: "SkillMetadata") -> str:
         """Emit Anthropic-spec-compliant YAML frontmatter (GAP 1 + GAP 4 + GAP 5).
 
@@ -1087,6 +1117,8 @@ class CoworkSkillCreator:
         desc_with_triggers = desc_with_triggers[:1024]
 
         tags = metadata.tags if metadata.tags else [metadata.category]
+        tech_stack = self._detect_tech_stack(readme_content)
+        critical_rules = self._generate_critical_rules(skill_name, tech_stack)
 
         # Build template context
         context = {
@@ -1096,6 +1128,7 @@ class CoworkSkillCreator:
             "desc_with_triggers": desc_with_triggers,  # GAP 1/4/5
             "negative_triggers": metadata.negative_triggers,  # GAP 5
             "tags": tags,  # GAP 8
+            "critical_rules": critical_rules,  # GAP-5 CRITICAL section
             "purpose": metadata.description,
             "purpose_extended": f"This skill provides step-by-step guidance for {skill_name.replace('-', ' ')}.",
             "auto_triggers": metadata.auto_triggers,
@@ -1105,7 +1138,7 @@ class CoworkSkillCreator:
             "priority": metadata.priority,
             "project_name": self.project_path.name,
             "project_path": str(self.project_path),
-            "tech_stack": self._detect_tech_stack(readme_content),
+            "tech_stack": tech_stack,
             "readme_context": readme_content[:500] if readme_content else None,
             # BUG-C fix: quality_score removed — it is computed by _validate_quality()
             # *after* content generation. Hardcoding 95 here was misleading.
@@ -1127,6 +1160,17 @@ class CoworkSkillCreator:
         title = skill_name.replace("-", " ").title()
 
         # Build content sections — frontmatter now follows Anthropic spec (GAP 1)
+        tech_stack_inline = self._detect_tech_stack(readme_content)
+        critical_rules = self._generate_critical_rules(skill_name, tech_stack_inline)
+        critical_block = ""
+        if critical_rules:
+            rules_md = "\n".join(f"- {r}" for r in critical_rules)
+            critical_block = (
+                f"\n## CRITICAL\n\n"
+                f"> These rules are non-negotiable. Claude must follow them on every activation.\n\n"
+                f"{rules_md}\n"
+            )
+
         content = self._render_frontmatter(metadata)
         content += f"""# Skill: {title}
 
@@ -1144,7 +1188,7 @@ The agent should activate this skill when:
 
 **Project Signals:**
 {self._format_signals(metadata.project_signals)}
-
+{critical_block}
 ## Process
 
 ### 1. Analyze Current State

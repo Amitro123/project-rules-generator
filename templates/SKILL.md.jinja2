@@ -36,6 +36,15 @@ The agent should activate this skill when the user requests:
 - No specific signals required
 {% endif %}
 
+{% if critical_rules %}
+## CRITICAL
+
+> These rules are non-negotiable. Claude must follow them on every activation.
+
+{% for rule in critical_rules -%}
+- {{ rule }}
+{% endfor %}
+{% endif %}
 ## Process
 
 ### 1. {{ step1_title | default("Analyze Current State") }}
