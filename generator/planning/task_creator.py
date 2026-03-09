@@ -2,7 +2,7 @@
 
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -76,7 +76,7 @@ class TaskManifest:
 
     def __post_init__(self):
         if not self.created:
-            self.created = datetime.now().isoformat()
+            self.created = datetime.now(timezone.utc).isoformat()
         if not self.updated:
             self.updated = self.created
 
@@ -101,7 +101,7 @@ class TaskManifest:
 
     def save(self, path: Path) -> None:
         """Write manifest to a YAML file."""
-        self.updated = datetime.now().isoformat()
+        self.updated = datetime.now(timezone.utc).isoformat()
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             yaml.safe_dump(self.to_dict(), default_flow_style=False, sort_keys=False),

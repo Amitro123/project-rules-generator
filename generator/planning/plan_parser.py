@@ -16,15 +16,20 @@ class TaskStatus:
     subtasks_completed: int
 
     @property
-    def is_blocking(self) -> bool:
-        """Check if this task is blocking progress.
+    def is_stale(self) -> bool:
+        """Check if this task is stale (subtasks done but parent not marked complete).
 
-        A task is blocking only if:
+        A task is stale when:
         - It is not completed
         - It has subtasks (subtasks_total > 0)
         - All its subtasks are completed
         """
         return not self.completed and self.subtasks_total > 0 and self.subtasks_completed == self.subtasks_total
+
+    @property
+    def is_blocking(self) -> bool:
+        """Deprecated alias for is_stale — kept for backward compatibility."""
+        return self.is_stale
 
 
 @dataclass
@@ -88,11 +93,11 @@ class PlanStatus:
 
     @property
     def blocking_tasks(self) -> List[Tuple[str, TaskStatus]]:
-        """Get list of blocking tasks with their phase names."""
+        """Get list of stale tasks (subtasks done but parent not complete) with their phase names."""
         blocking = []
         for phase in self.phases:
             for task in phase.tasks:
-                if task.is_blocking:
+                if task.is_stale:
                     blocking.append((phase.name, task))
         return blocking
 
@@ -134,9 +139,9 @@ class PlanParser:
         header_matches = list(re.finditer(header_pattern, content))
 
         if header_matches:
-            # Parse header-based format
+            # Parse header-based format — group all tasks into a single phase
+            tasks: List[TaskStatus] = []
             for i, match in enumerate(header_matches):
-                task_num = match.group(1)
                 task_name = match.group(2).strip()
 
                 # Extract content between this header and next
@@ -147,15 +152,17 @@ class PlanParser:
                 # Check if task is completed (look for [x] or ✓ in content)
                 is_completed = bool(re.search(r"\[x\]|✓|✅", task_content, re.IGNORECASE))
 
-                # Create a single task for this phase
-                task = TaskStatus(
-                    description=task_name,
-                    completed=is_completed,
-                    subtasks_total=0,
-                    subtasks_completed=0,
+                tasks.append(
+                    TaskStatus(
+                        description=task_name,
+                        completed=is_completed,
+                        subtasks_total=0,
+                        subtasks_completed=0,
+                    )
                 )
 
-                phases.append(PhaseStatus(name=f"{task_num}. {task_name}", tasks=[task]))
+            if tasks:
+                phases.append(PhaseStatus(name="Tasks", tasks=tasks))
         else:
             # Fall back to old checkbox-based parsing
             # Find all phase sections (## headers, not ###)

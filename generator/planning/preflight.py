@@ -63,7 +63,7 @@ class PreflightChecker:
     def run_checks(self) -> PreflightReport:
         """Run all pre-flight checks and return a report."""
         report = PreflightReport()
-        report.checks.append(self._check_rules_json())
+        report.checks.append(self._check_rules_md())
         report.checks.append(self._check_skills())
         report.checks.append(self._check_plan())
         report.checks.append(self._check_task_files())
@@ -72,25 +72,27 @@ class PreflightChecker:
 
     # -- Individual checks ------------------------------------------------
 
-    def _check_rules_json(self) -> CheckResult:
-        """Check that rules.json exists in .clinerules/."""
+    def _check_rules_md(self) -> CheckResult:
+        """Check that rules.md (or legacy rules.json) exists in .clinerules/."""
         candidates = [
+            self.project_path / ".clinerules" / "rules.md",
             self.project_path / ".clinerules" / "rules.json",
+            self.project_path / "rules.md",
             self.project_path / "rules.json",
         ]
         for p in candidates:
             if p.exists():
                 return CheckResult(
-                    name="rules.json",
+                    name="rules.md",
                     passed=True,
                     path=str(p),
                     detail="Project rules found.",
                 )
         return CheckResult(
-            name="rules.json",
+            name="rules.md",
             passed=False,
             fix_command="prg analyze .",
-            detail="No rules.json found. Run analyze first.",
+            detail="No rules.md found. Run analyze first.",
         )
 
     def _check_skills(self) -> CheckResult:
@@ -147,7 +149,7 @@ class PreflightChecker:
                 fix_command="prg setup <task>",
                 detail="No tasks/ directory found.",
             )
-        task_files = sorted(tasks_dir.glob("0*.md"))
+        task_files = sorted(tasks_dir.glob("0*.md")) + sorted(tasks_dir.glob("0*.py"))
         if task_files:
             return CheckResult(
                 name="Task files",

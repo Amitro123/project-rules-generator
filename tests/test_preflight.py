@@ -78,7 +78,7 @@ class TestPreflightChecker:
         if rules:
             rules_dir = tmp_path / ".clinerules"
             rules_dir.mkdir(parents=True)
-            (rules_dir / "rules.json").write_text("{}", encoding="utf-8")
+            (rules_dir / "rules.md").write_text("# Rules\n", encoding="utf-8")
 
         if skills > 0:
             skills_dir = tmp_path / ".clinerules" / "skills" / "learned"
@@ -110,7 +110,7 @@ class TestPreflightChecker:
         checker = PreflightChecker(proj)
         report = checker.run_checks()
         failed_names = [c.name for c in report.failed_checks]
-        assert "rules.json" in failed_names
+        assert "rules.md" in failed_names
 
     def test_insufficient_skills(self, tmp_path):
         proj = self._make_project(tmp_path, skills=1)

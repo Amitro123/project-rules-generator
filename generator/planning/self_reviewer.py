@@ -61,7 +61,7 @@ class ReviewReport:
 class SelfReviewer:
     """Critique generated artifacts for quality and hallucinations."""
 
-    def __init__(self, provider: str = "groq", api_key: Optional[str] = None, client=None):
+    def __init__(self, provider: str = "gemini", api_key: Optional[str] = None, client=None):
         self.client = client or create_ai_client(provider=provider, api_key=api_key)
 
     def review(self, filepath: Path, project_path: Optional[Path] = None) -> ReviewReport:
@@ -183,7 +183,7 @@ ACTION_PLAN:
 
     def _extract_section(self, text: str, header: str) -> List[str]:
         """Extract bullet items under a section header."""
-        pattern = rf"{header}:\s*\n((?:\s*-\s+.+\n?)+)"
+        pattern = rf"{header}:\s*\n(?:\s*\n)*((?:\s*-\s+.+\n?)+)"
         match = re.search(pattern, text)
         if not match:
             return []

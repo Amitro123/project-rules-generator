@@ -818,7 +818,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
         try:
             # Check for frequently modified files (hot spots)
             result = subprocess.run(
-                ["git", "log", "--pretty=format:", "--name-only"],
+                ["git", "log", "--pretty=format:", "--name-only", "--max-count=200"],
                 cwd=self.project_path,
                 capture_output=True,
                 text=True,
@@ -917,6 +917,18 @@ No explanations, no markdown, just the DO:/DONT: lines."""
 """
 
         # Collect all rules flat for priority view
+        # Deduplicate rules by (category, content) before rendering
+        seen_category_content: Set[tuple] = set()
+        deduped: Dict[str, List[Rule]] = {}
+        for cat, rules in rules_by_category.items():
+            deduped[cat] = []
+            for rule in rules:
+                key = (rule.category, rule.content)
+                if key not in seen_category_content:
+                    seen_category_content.add(key)
+                    deduped[cat].append(rule)
+        rules_by_category = deduped
+
         all_rules_flat = [rule for rules in rules_by_category.values() for rule in rules]
 
         # Add rules by priority (Coding Standards section)

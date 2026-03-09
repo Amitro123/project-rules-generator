@@ -83,7 +83,7 @@ class AgentWorkflow:
     def _auto_fix(self, report: PreflightReport) -> None:
         """Attempt to fix failed checks by invoking generators directly."""
         for check in report.failed_checks:
-            if check.name == "rules.json":
+            if check.name == "rules.md":
                 self._fix_analyze()
             elif check.name == "Skills (3+)":
                 self._fix_analyze()
@@ -116,7 +116,7 @@ class AgentWorkflow:
         from generator.task_decomposer import TaskDecomposer
 
         api_key = self.api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
-        decomposer = TaskDecomposer(api_key=api_key)
+        decomposer = TaskDecomposer(api_key=api_key, provider=self.provider)
 
         # Gather project context
         enhanced_context = self._get_project_context()
@@ -163,14 +163,11 @@ class AgentWorkflow:
         return manifest
 
     def _parse_plan_subtasks(self, plan_path: Path):
-        """Extract SubTask objects from an existing PLAN.md."""
+        """Extract SubTask objects from an existing PLAN.md (no AI call)."""
         from generator.task_decomposer import TaskDecomposer
 
         content = plan_path.read_text(encoding="utf-8")
-        # Reuse the decomposer's parser
-        decomposer = TaskDecomposer(api_key="dummy")  # no AI call needed
-        subtasks = decomposer._parse_response(content, self.task_description)
-        return subtasks
+        return TaskDecomposer._parse_response(content, self.task_description)
 
     # -- Auto-fix helpers -------------------------------------------------
 
@@ -186,24 +183,16 @@ class AgentWorkflow:
             return
 
         try:
-            from generator.analyzers.readme_parser import parse_readme
-            from generator.rules_generator import generate_rules
+            from generator.rules_generator import RulesGenerator
 
-            readme_text = readme_path.read_text(encoding="utf-8")
-            parsed = parse_readme(readme_text)
-
-            rules = generate_rules(parsed, {})
             output_dir = self.project_path / ".clinerules"
             output_dir.mkdir(parents=True, exist_ok=True)
 
-            # Write rules.json
-            import json
-
-            rules_path = output_dir / "rules.json"
-            rules_path.write_text(json.dumps(rules, indent=2), encoding="utf-8")
+            generator = RulesGenerator(self.project_path)
+            output_path, _metadata, _quality = generator.create_rules(output_dir=output_dir)
 
             if self.verbose:
-                click.echo("  Generated rules.json")
+                click.echo(f"  Generated {output_path.name}")
         except Exception as exc:
             if self.verbose:
                 click.echo(f"  Analyze auto-fix failed: {exc}")

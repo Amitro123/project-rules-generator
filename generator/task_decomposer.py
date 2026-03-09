@@ -18,14 +18,20 @@ class SubTask(BaseModel):
     tests: List[str] = Field(default_factory=list, description="Tests to write or verify")
     dependencies: List[int] = Field(default_factory=list, description="IDs of prerequisite subtasks")
     estimated_minutes: int = Field(default=5, ge=1, le=10, description="Time estimate (2-5 min target)")
-    type: str = Field(default="py", description="Task file extension (e.g. py, md)")
+    type: str = Field(default="md", description="Task file extension (e.g. md, py)")
 
 
 class TaskDecomposer:
     """Break a high-level task into subtasks using an AI model."""
 
-    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model_name: Optional[str] = None,
+        provider: str = "gemini",
+    ):
+        self.provider = provider
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
         self.model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
     def decompose(
@@ -348,27 +354,19 @@ Generate exactly 5-8 subtasks now:
 """
 
     def _call_llm(self, prompt: str) -> str:
-        """Call the AI model. Falls back to empty string if unavailable."""
+        """Call the AI model via provider abstraction. Falls back to empty string if unavailable."""
         if not self.api_key:
             return ""
         try:
-            from google import genai
-            from google.genai import types
+            from generator.ai.factory import create_ai_client
 
-            client = genai.Client(api_key=self.api_key)
-            response = client.models.generate_content(
-                model=self.model_name or "gemini-2.0-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.4,
-                    max_output_tokens=3000,
-                ),
-            )
-            return response.text or ""
+            client = create_ai_client(provider=self.provider, api_key=self.api_key)
+            return client.generate(prompt, max_tokens=3000, temperature=0.4)
         except Exception:
             return ""
 
-    def _parse_response(self, raw: str, user_task: str) -> List[SubTask]:
+    @staticmethod
+    def _parse_response(raw: str, user_task: str) -> List[SubTask]:
         """Parse the LLM response into SubTask objects.
 
         If parsing fails or raw is empty, returns a single fallback subtask.
@@ -396,15 +394,19 @@ Generate exactly 5-8 subtasks now:
                 content = blocks[i + 1]
 
                 title = content.split("\n", 1)[0].strip()
-                goal = self._extract_field(content, "Goal")
-                files = [f.strip().strip("`") for f in self._extract_field(content, "Files").split(",") if f.strip()]
-                changes = self._extract_list(content, "Changes")
-                tests = self._extract_list(content, "Tests")
-                deps_str = self._extract_field(content, "Dependencies")
+                goal = TaskDecomposer._extract_field(content, "Goal")
+                files = [
+                    f.strip().strip("`")
+                    for f in TaskDecomposer._extract_field(content, "Files").split(",")
+                    if f.strip()
+                ]
+                changes = TaskDecomposer._extract_list(content, "Changes")
+                tests = TaskDecomposer._extract_list(content, "Tests")
+                deps_str = TaskDecomposer._extract_field(content, "Dependencies")
                 deps = [
                     int(d.strip().strip("#")) for d in deps_str.split(",") if d.strip() and d.strip().lower() != "none"
                 ]
-                est = self._extract_field(content, "Estimated")
+                est = TaskDecomposer._extract_field(content, "Estimated")
                 _est_m = re.search(r"\d+", est)
                 est_min = int(_est_m.group()) if _est_m else 5
                 est_min = max(1, min(est_min, 10))
@@ -451,7 +453,7 @@ Generate exactly 5-8 subtasks now:
 
     @staticmethod
     def _ensure_minimum_tasks(tasks: List["SubTask"], user_task: str, minimum: int = 3) -> List["SubTask"]:
-        """Ensure at least *minimum* subtasks by splitting large ones.
+        """Ensure at least *minimum* subtasks by padding with standard phases.
 
         When the AI returns fewer tasks than desired, pad with planning,
         implementation, and verification subtasks derived from the original task.
@@ -459,10 +461,11 @@ Generate exactly 5-8 subtasks now:
         if len(tasks) >= minimum:
             return tasks
 
-        # If we have a single fallback task, expand it into a standard pattern
+        # Build a standard 5-task expansion seeded from the existing tasks
         if len(tasks) == 1 and tasks[0].title == user_task[:80]:
+            # Single fallback stub — replace with full expansion
             next_id = 1
-            expanded = [
+            return [
                 SubTask(
                     id=next_id,
                     title="Research and plan approach",
@@ -499,6 +502,28 @@ Generate exactly 5-8 subtasks now:
                     dependencies=[next_id + 2, next_id + 3],
                 ),
             ]
-            return expanded
+
+        # Fewer than minimum but more than 1 — pad with missing standard phases
+        pad_templates = [
+            ("Write tests", "Add tests covering the new behaviour", 4),
+            ("Update documentation", "Update relevant docs and comments", 2),
+            ("Verify and clean up", "Run full test suite, fix lint, confirm success", 3),
+        ]
+        next_id = max(t.id for t in tasks) + 1
+        last_ids = [t.id for t in tasks[-1:]]
+        for title, goal, minutes in pad_templates:
+            if len(tasks) >= minimum:
+                break
+            tasks.append(
+                SubTask(
+                    id=next_id,
+                    title=title,
+                    goal=goal,
+                    estimated_minutes=minutes,
+                    dependencies=last_ids,
+                )
+            )
+            last_ids = [next_id]
+            next_id += 1
 
         return tasks
