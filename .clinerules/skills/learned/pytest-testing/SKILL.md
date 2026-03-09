@@ -8,7 +8,7 @@ metadata:
   author: PRG
   version: 1.0.0
   category: project
-  tags: [pytest, testing, pydantic, python]
+  tags: [pytest, testing, python, pydantic]
 ---
 
 # Skill: Pytest Testing
@@ -30,18 +30,29 @@ The agent should activate this skill when the user requests:
 
 **Project Context Signals:**
 
-- `has_tests` Γזע Test suite available
-- `has_ci` 
 - `has_docs` 
+- `has_ci` 
+- `has_tests` Γזע Test suite available
 - `has_api` Γזע API endpoints present
 
+
+
+
+## CRITICAL
+
+> These rules are non-negotiable. Claude must follow them on every activation.
+
+- Read existing files before modifying them.
+- Run tests after any code change and verify they pass.
+- Never generate or reference file paths that don't exist in the project.
+- Never skip tests or suppress coverage with `--no-cov` / `--no-cover`.
 
 
 ## Process
 
 ### 1. Analyze Current State
 
-- Review project structure in `project-rules-generator/`
+- Review project structure in `/`
 - Check configuration files
 - Identify existing patterns
 
@@ -51,7 +62,7 @@ The agent should activate this skill when the user requests:
 
 ```bash
 # Navigate to project
-cd project-rules-generator
+cd 
 
 # Execute skill-specific commands
 # (customize based on detected tech stack)
@@ -70,7 +81,7 @@ cd project-rules-generator
 This skill generates:
 
 
-- Modified/created files in `project-rules-generator/`
+- Modified/created files in `/`
 - Status report with changes
 - Recommendations for next steps
 
@@ -79,7 +90,7 @@ This skill generates:
 
 
 ❌ **Don't** use generic commands without project context
-✅ **Do** reference actual files from `project-rules-generator/`
+✅ **Do** reference actual files from `/`
 
 ❌ **Don't** skip validation steps
 ✅ **Do** always verify changes with tests
@@ -93,8 +104,8 @@ This skill generates:
 
 **Detected Technologies:**
 - `pytest`
-- `pydantic`
 - `python`
+- `pydantic`
 
 
 
@@ -107,7 +118,7 @@ This skill generates:
 
 ```bash
 # Basic usage workflow
-cd project-rules-generator
+cd 
 
 # 1. Check status
 git status
@@ -123,17 +134,17 @@ pytest
 ## Project Context
 
 ```
-Project: project-rules-generator
-Path: C:\Users\Dana\.gemini\antigravity\scratch\project-rules-generator
-Signals: has_tests, has_ci, has_docs, has_api
-Tech Stack: pytest, pydantic, python
+Project: 
+Path: .
+Signals: has_docs, has_ci, has_tests, has_api
+Tech Stack: pytest, python, pydantic
 ```
 
 
 ### README Context
 
 [Project structure]
-project-rules-generator/
+/
 ├── cli/
 │   ├── tests/
 │   │   ├── __init__.py
@@ -155,7 +166,8 @@ project-rules-generator/
 │   ├── architecture.md
 │   ├── autopilot-architecture.md
 │   ├── cli.md
-│ ...
+│   ├── features.md
+│   ├...
 
 
 ---
