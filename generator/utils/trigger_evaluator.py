@@ -101,18 +101,14 @@ class TriggerEvaluator:
         pos_triggers = self.extract_triggers(skill_md)
 
         for t in pos_triggers:
-            test_cases.append(
-                TriggerTestCase(query=t, should_fire=True, label=f"positive: {t!r}")
-            )
+            test_cases.append(TriggerTestCase(query=t, should_fire=True, label=f"positive: {t!r}"))
 
         for t in self._extract_negative_triggers(skill_md):
             # Skip negative cases that contain a positive trigger — substring
             # matching would always fire on them, making the test meaningless.
             overlaps = any(pt.lower() in t.lower() for pt in pos_triggers)
             if not overlaps:
-                test_cases.append(
-                    TriggerTestCase(query=t, should_fire=False, label=f"negative: {t!r}")
-                )
+                test_cases.append(TriggerTestCase(query=t, should_fire=False, label=f"negative: {t!r}"))
 
         return test_cases
 
@@ -126,9 +122,7 @@ class TriggerEvaluator:
         desc = TriggerEvaluator._get_description(skill_md)
         if not desc:
             return []
-        match = re.search(
-            r"mentions\s+(.+?)(?:\.\s*Do NOT|\.?\s*$)", desc, re.DOTALL
-        )
+        match = re.search(r"mentions\s+(.+?)(?:\.\s*Do NOT|\.?\s*$)", desc, re.DOTALL)
         if not match:
             return []
         return re.findall(r'"([^"]+)"', match.group(1))

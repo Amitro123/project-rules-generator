@@ -42,5 +42,9 @@
     "let's implement this",
     "create a plan",
     "starting implementation"
+  ],
+  "click-cli": [
+    "working with click integration code",
+    "editing files that import or configure click"
   ]
 }

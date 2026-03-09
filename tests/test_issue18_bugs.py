@@ -31,8 +31,7 @@ def test_readme_strategy_uses_content_not_path(tmp_path):
     it tried Path(<content string>).exists() which is always False."""
     readme_content = (
         "# My Project\n\nThis project uses FastAPI for REST endpoints.\n"
-        "Run with uvicorn. Deploy with Docker.\n"
-        * 5  # ensure > 80 words
+        "Run with uvicorn. Deploy with Docker.\n" * 5  # ensure > 80 words
     )
 
     strategy = READMEStrategy()
@@ -47,9 +46,7 @@ def test_readme_strategy_uses_content_not_path(tmp_path):
 
     # Must produce content (even if the analyzers produce minimal output)
     # rather than silently returning None.
-    assert result is not None, (
-        "READMEStrategy returned None — still treating from_readme as a path"
-    )
+    assert result is not None, "READMEStrategy returned None — still treating from_readme as a path"
 
 
 def test_readme_strategy_returns_none_when_empty():
@@ -67,9 +64,9 @@ def test_readme_strategy_no_path_warning_for_content(tmp_path, capsys):
     strategy.generate("fastapi-api-workflow", tmp_path, readme_content, "groq")
 
     captured = capsys.readouterr()
-    assert "not found" not in captured.out.lower(), (
-        "READMEStrategy printed a 'not found' warning — still path-checking content"
-    )
+    assert (
+        "not found" not in captured.out.lower()
+    ), "READMEStrategy printed a 'not found' warning — still path-checking content"
 
 
 # ---------------------------------------------------------------------------
@@ -123,9 +120,9 @@ def test_adapt_branch_does_not_pollute_global_cache(tmp_path):
         )
 
     # Global file must be unchanged
-    assert global_skill_file.read_text(encoding="utf-8") == original_stub_content, (
-        "adapt branch overwrote the global learned skill with project-specific content"
-    )
+    assert (
+        global_skill_file.read_text(encoding="utf-8") == original_stub_content
+    ), "adapt branch overwrote the global learned skill with project-specific content"
 
 
 # ---------------------------------------------------------------------------
@@ -164,16 +161,14 @@ def test_jinja2_context_has_no_hardcoded_quality_score(tmp_path):
         import inspect
 
         source = inspect.getsource(creator._generate_with_jinja2)
-        assert "quality_score" not in source or "quality_score" not in source.split("context = {")[1].split("}")[0], (
-            "quality_score still present in Jinja2 context dict"
-        )
+        assert (
+            "quality_score" not in source or "quality_score" not in source.split("context = {")[1].split("}")[0]
+        ), "quality_score still present in Jinja2 context dict"
         return ""  # Return empty string so test doesn't fail on missing template
 
     with patch.object(creator, "_generate_with_jinja2", side_effect=mock_jinja2):
         try:
-            creator._generate_content(
-                "test-skill", "# Test\n" * 20, metadata, use_ai=False
-            )
+            creator._generate_content("test-skill", "# Test\n" * 20, metadata, use_ai=False)
         except Exception:
             pass  # Template may not exist in test env — that's fine
 
@@ -187,9 +182,9 @@ def test_jinja2_source_has_no_quality_score_95():
     source = inspect.getsource(CoworkSkillCreator._generate_with_jinja2)
     # The dict assignment `"quality_score": 95` must not exist.
     # A comment mentioning the key is fine; an active dict entry is not.
-    assert '"quality_score": 95' not in source, (
-        'quality_score: 95 still in _generate_with_jinja2 context dict — remove it'
-    )
+    assert (
+        '"quality_score": 95' not in source
+    ), "quality_score: 95 still in _generate_with_jinja2 context dict — remove it"
 
 
 # ---------------------------------------------------------------------------
@@ -272,9 +267,7 @@ def test_validate_quality_delegates_to_quality_checker(tmp_path):
         bad_content,
         SkillMetadata("s", "d", auto_triggers=triggers, tools=tools),
     )
-    assert bad_report.score < report.score, (
-        "Missing required sections should lower the score (delegation not working)"
-    )
+    assert bad_report.score < report.score, "Missing required sections should lower the score (delegation not working)"
 
 
 def test_validate_quality_placeholder_check_unified(tmp_path):

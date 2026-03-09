@@ -327,11 +327,7 @@ class SkillGenerator:
             fm_triggers = [tech, f"add {tech}", f"implement {tech}", skill_name.replace("-", " ")]
             trigger_str = ", ".join(f'"{t}"' for t in fm_triggers)
             fm_desc = f"{purpose.rstrip('.')}. Use when user mentions {trigger_str}."[:1024]
-            fm_tags = list(
-                dict.fromkeys(
-                    [p for p in skill_name.split("-") if len(p) > 2] + [tech.lower()]
-                )
-            )[:5]
+            fm_tags = list(dict.fromkeys([p for p in skill_name.split("-") if len(p) > 2] + [tech.lower()]))[:5]
             fm_tags_str = "[" + ", ".join(fm_tags) + "]"
             content = (
                 f"---\n"

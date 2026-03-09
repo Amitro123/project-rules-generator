@@ -33,7 +33,8 @@ from generator.utils.quality_checker import validate_quality, QualityReport
 # Shared fixtures
 # ---------------------------------------------------------------------------
 
-JINJA2_README = textwrap.dedent("""
+JINJA2_README = textwrap.dedent(
+    """
     # Jinja2 Template Engine — Code Generator
 
     > Build dynamic code and configuration files from structured templates.
@@ -99,7 +100,8 @@ JINJA2_README = textwrap.dedent("""
 
     Templates are loaded from `./templates/` by default.
     Override with `CODEGEN_TEMPLATE_DIR` env variable or `--template-dir` flag.
-""")
+"""
+)
 
 
 @pytest.fixture
@@ -118,8 +120,7 @@ def project_with_readme(tmp_path) -> Path:
 
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(
-        '[project]\nname = "jinja2-codegen"\n'
-        'dependencies = ["jinja2", "click", "pydantic>=2.0", "pytest"]\n',
+        '[project]\nname = "jinja2-codegen"\n' 'dependencies = ["jinja2", "click", "pydantic>=2.0", "pytest"]\n',
         encoding="utf-8",
     )
 
@@ -133,6 +134,7 @@ def project_with_readme(tmp_path) -> Path:
 # ---------------------------------------------------------------------------
 # 1. READMEStrategy: unit-level — content in, skill content out
 # ---------------------------------------------------------------------------
+
 
 class TestREADMEStrategyUnit:
     """Test READMEStrategy in isolation, passing README content directly."""
@@ -189,6 +191,7 @@ class TestREADMEStrategyUnit:
 # ---------------------------------------------------------------------------
 # 2. Full pipeline: SkillGenerator.create_skill() via file path
 # ---------------------------------------------------------------------------
+
 
 class TestFullPipelineFromPath:
     """Test the full pipeline: CLI-style path in → SKILL.md written out."""
@@ -253,6 +256,7 @@ class TestFullPipelineFromPath:
 # 3. Quality validation of the generated skill
 # ---------------------------------------------------------------------------
 
+
 class TestGeneratedSkillQuality:
     """Generate a skill and assert it meets quality thresholds."""
 
@@ -285,9 +289,7 @@ class TestGeneratedSkillQuality:
 
         report = validate_quality(generated_content, trigger_lines, metadata_tools=["python"])
         assert report.score >= 70, (
-            f"Quality score {report.score} < 70.\n"
-            f"Issues: {report.issues}\n"
-            f"Warnings: {report.warnings}"
+            f"Quality score {report.score} < 70.\n" f"Issues: {report.issues}\n" f"Warnings: {report.warnings}"
         )
 
     def test_no_critical_issues(self, generated_content):
@@ -301,15 +303,12 @@ class TestGeneratedSkillQuality:
             assert section in generated_content, f"Required section missing: {section}"
 
     def test_content_length_reasonable(self, generated_content):
-        assert len(generated_content) >= 500, (
-            f"Generated skill is too short ({len(generated_content)} chars)"
-        )
+        assert len(generated_content) >= 500, f"Generated skill is too short ({len(generated_content)} chars)"
 
     def test_no_generic_stub_markers(self, generated_content):
         from generator.utils.quality_checker import is_stub_content
-        assert not is_stub_content(generated_content), (
-            "Generated skill still contains generic stub markers"
-        )
+
+        assert not is_stub_content(generated_content), "Generated skill still contains generic stub markers"
 
     def test_quality_report_is_qualityreport_instance(self, generated_content):
         report = validate_quality(generated_content)
@@ -327,16 +326,15 @@ class TestGeneratedSkillQuality:
         assert "## Anti-Patterns" in generated_content, "Anti-Patterns section missing"
         # At least one of the explicit README anti-patterns must be present
         explicit_patterns = [
-            "StrictUndefined",      # "Never use Undefined — always use StrictUndefined"
-            "business logic",       # "Don't put business logic in templates"
+            "StrictUndefined",  # "Never use Undefined — always use StrictUndefined"
+            "business logic",  # "Don't put business logic in templates"
             "render_template_string",  # "Don't use render_template_string on untrusted input"
         ]
         found = [p for p in explicit_patterns if p.lower() in generated_content.lower()]
         assert found, (
             f"None of the README's explicit ❌ anti-patterns were extracted.\n"
             f"Expected at least one of: {explicit_patterns}\n"
-            f"Anti-Patterns section:\n"
-            + generated_content.split("## Anti-Patterns")[1].split("##")[0]
+            f"Anti-Patterns section:\n" + generated_content.split("## Anti-Patterns")[1].split("##")[0]
         )
 
     def test_domain_specific_triggers_extracted(self, generated_content):
@@ -344,14 +342,15 @@ class TestGeneratedSkillQuality:
         in Auto-Trigger — not just the generic '*.py' backend trigger."""
         trigger_section = generated_content.split("## Auto-Trigger")[1].split("##")[0]
         # The Jinja2 README mentions *.j2 files
-        assert ".j2" in trigger_section, (
-            f"Domain-specific .j2 trigger missing from Auto-Trigger section:\n{trigger_section}"
-        )
+        assert (
+            ".j2" in trigger_section
+        ), f"Domain-specific .j2 trigger missing from Auto-Trigger section:\n{trigger_section}"
 
 
 # ---------------------------------------------------------------------------
 # 4. Regression: poor README produces lower quality than rich README
 # ---------------------------------------------------------------------------
+
 
 class TestQualityComparison:
     """Quality should be measurably better for a rich README vs a bare one."""
@@ -372,14 +371,12 @@ class TestQualityComparison:
         bare_report = validate_quality(bare_content)
         rich_report = validate_quality(rich_content)
 
-        assert rich_report.score >= bare_report.score, (
-            f"Rich README score ({rich_report.score}) should be >= bare ({bare_report.score})"
-        )
+        assert (
+            rich_report.score >= bare_report.score
+        ), f"Rich README score ({rich_report.score}) should be >= bare ({bare_report.score})"
 
     def test_rich_readme_generates_more_content(self, tmp_path):
         bare_content = self._generate_via_strategy(self.BARE_README, tmp_path)
         rich_content = self._generate_via_strategy(self.RICH_README, tmp_path)
 
-        assert len(rich_content) > len(bare_content), (
-            "Rich README should produce more content than a bare one"
-        )
+        assert len(rich_content) > len(bare_content), "Rich README should produce more content than a bare one"

@@ -142,9 +142,7 @@ def test_create_skill_directory_style_returns_parent(tmp_path):
     generator = SkillGenerator(discovery)
     result_path = generator.create_skill("myskill", force=False)
 
-    assert result_path == skill_dir, (
-        f"Expected learned/myskill/ but got {result_path}"
-    )
+    assert result_path == skill_dir, f"Expected learned/myskill/ but got {result_path}"
 
 
 # ---------------------------------------------------------------------------
@@ -200,6 +198,7 @@ def test_cowork_strategy_does_not_force_use_ai(tmp_path):
         # Return a valid tuple so the strategy completes
         from generator.skill_creator import SkillMetadata
         from generator.utils.quality_checker import QualityReport
+
         meta = SkillMetadata(name=skill_name, description="test")
         quality = QualityReport(score=80.0, passed=True)
         return "# Skill content", meta, quality
@@ -208,9 +207,9 @@ def test_cowork_strategy_does_not_force_use_ai(tmp_path):
         result = strategy.generate("test-skill", tmp_path, "# README content", "gemini")
 
     assert "use_ai" in captured_kwargs, "create_skill was not called with use_ai kwarg"
-    assert captured_kwargs["use_ai"] is False, (
-        f"CoworkStrategy must pass use_ai=False, got: {captured_kwargs['use_ai']}"
-    )
+    assert (
+        captured_kwargs["use_ai"] is False
+    ), f"CoworkStrategy must pass use_ai=False, got: {captured_kwargs['use_ai']}"
 
 
 # ---------------------------------------------------------------------------
@@ -293,6 +292,6 @@ def test_cache_invalidated_after_invalidate_call(tmp_path):
     assert discovery._skills_cache is None, "invalidate_cache() must set _skills_cache to None"
 
     fresh_skills = discovery.list_skills()
-    assert "new-skill" in fresh_skills, (
-        f"After invalidate_cache(), new skill must appear in list_skills(). Got: {list(fresh_skills.keys())}"
-    )
+    assert (
+        "new-skill" in fresh_skills
+    ), f"After invalidate_cache(), new skill must appear in list_skills(). Got: {list(fresh_skills.keys())}"

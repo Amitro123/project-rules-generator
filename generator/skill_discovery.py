@@ -102,7 +102,6 @@ class SkillDiscovery:
         if hasattr(self, "_layer_skills_cache"):
             del self._layer_skills_cache
 
-
     def ensure_global_structure(self):
         """Ensure global cache directories exist and are synced."""
         self.global_root.mkdir(parents=True, exist_ok=True)
@@ -351,11 +350,7 @@ class SkillDiscovery:
             ]
             for skill_path in candidates:
                 # Use parent-dir name (for SKILL.md) or stem (for flat .md) as skill name
-                skill_name = (
-                    skill_path.parent.name
-                    if skill_path.name == "SKILL.md"
-                    else skill_path.stem
-                )
+                skill_name = skill_path.parent.name if skill_path.name == "SKILL.md" else skill_path.stem
                 if skill_name in seen_names:
                     continue
                 seen_names.add(skill_name)

@@ -477,17 +477,27 @@ def extract_auto_triggers(readme: str, skill_name: str) -> List[str]:
     #   1. Explicit glob patterns:  *.j2, *.jinja2
     #   2. File paths in backtick code spans:  `templates/model.py.j2`  → *.j2
     _generic = {
-        "*.py", "*.js", "*.ts", "*.tsx", "*.jsx",
-        "*.mp4", "*.avi", "*.mov",
-        "*.md", "*.txt", "*.json", "*.yaml", "*.yml",
-        "*.toml", "*.cfg", "*.ini", "*.sh",
+        "*.py",
+        "*.js",
+        "*.ts",
+        "*.tsx",
+        "*.jsx",
+        "*.mp4",
+        "*.avi",
+        "*.mov",
+        "*.md",
+        "*.txt",
+        "*.json",
+        "*.yaml",
+        "*.yml",
+        "*.toml",
+        "*.cfg",
+        "*.ini",
+        "*.sh",
     }
     seen_exts: set = set()
     candidates = list(re.findall(r"\*\.\w{1,8}", readme))  # explicit globs
-    candidates += [
-        f"*.{m}"
-        for m in re.findall(r"`[^`]*\.([a-z][a-z0-9]{0,7})`", readme)  # backtick paths
-    ]
+    candidates += [f"*.{m}" for m in re.findall(r"`[^`]*\.([a-z][a-z0-9]{0,7})`", readme)]  # backtick paths
     for ext in candidates:
         if ext not in _generic and ext not in seen_exts:
             triggers.append(f"Working with {ext} files")

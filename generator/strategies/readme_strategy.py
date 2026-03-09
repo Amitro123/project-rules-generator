@@ -52,9 +52,9 @@ class READMEStrategy:
             # section and may contain raw markdown formatting.
             skill_label = skill_name.replace("-", " ")
             parts = [p for p in skill_name.split("-") if len(p) > 2]
-            fm_triggers = list(dict.fromkeys(
-                parts[:2] + [skill_label, f"add {parts[0]}" if parts else skill_label]
-            ))[:4]
+            fm_triggers = list(dict.fromkeys(parts[:2] + [skill_label, f"add {parts[0]}" if parts else skill_label]))[
+                :4
+            ]
             trigger_str = ", ".join(f'"{t}"' for t in fm_triggers)
             base_desc = purpose.rstrip(".")
             desc = f"{base_desc}. Use when user mentions {trigger_str}."
@@ -62,10 +62,9 @@ class READMEStrategy:
             desc += f" Do NOT activate for {neg_str}."
             desc = desc[:1024]
 
-            tags = list(dict.fromkeys(
-                [p for p in skill_name.split("-") if len(p) > 2]
-                + ([tech[0].lower()] if tech else [])
-            ))[:5]
+            tags = list(
+                dict.fromkeys([p for p in skill_name.split("-") if len(p) > 2] + ([tech[0].lower()] if tech else []))
+            )[:5]
             tags_str = "[" + ", ".join(tags) + "]"
 
             content = (
