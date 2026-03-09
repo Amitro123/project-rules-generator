@@ -123,18 +123,19 @@ class SkillGenerator:
 
         skill_file = target_dir / "SKILL.md"
 
-        # Normalise from_readme: if it looks like a file path, read the content.
-        # The CLI passes a path string; internal callers may pass content directly.
-        if from_readme:
-            readme_as_path = Path(from_readme)
-            if readme_as_path.is_file():
-                from_readme = readme_as_path.read_text(encoding="utf-8", errors="replace")
-
         # Strategy chain: try each strategy until one succeeds
         strategies: List[Any] = []
         if use_ai:
             strategies.append(AIStrategy())
-        if from_readme:
+
+        # BUG-A fix: from_readme may be a file path (from CLI --from-readme) or
+        # raw content (from generate_from_readme).  Normalise to content here so
+        # every strategy in the chain receives the same contract.
+        readme_content = from_readme
+        if from_readme and Path(from_readme).is_file():
+            readme_content = Path(from_readme).read_text(encoding="utf-8", errors="replace")
+
+        if readme_content:
             strategies.append(READMEStrategy())
         if project_path:
             strategies.append(CoworkStrategy())
@@ -142,12 +143,59 @@ class SkillGenerator:
 
         content = None
         for strategy in strategies:
-            content = strategy.generate(safe_name, project_path, from_readme, provider)
+            content = strategy.generate(safe_name, project_path, readme_content, provider)
             if content:
                 break
 
         skill_file.write_text(content or "", encoding="utf-8")
+
+        # GAP 3: Progressive disclosure — scaffold Level 3 subdirectories
+        self._scaffold_level3(target_dir, safe_name)
+
         return target_dir
+
+    @staticmethod
+    def _scaffold_level3(skill_dir: Path, skill_name: str) -> None:
+        """Create Level 3 progressive-disclosure subdirectories (GAP 3).
+
+        Anthropic spec levels:
+          Level 1 — YAML frontmatter (always in system prompt)
+          Level 2 — SKILL.md body (loaded when skill is relevant)
+          Level 3 — scripts/, references/, assets/ (on-demand navigation)
+        """
+        subdirs = {
+            "scripts": (
+                f"# {skill_name} — Scripts\n\n"
+                "Place executable helper scripts here.\n"
+                "Claude will read these on demand when it needs to run validations\n"
+                "or generate code for this skill.\n\n"
+                "Examples:\n"
+                "- `validate.py` — verify the skill's output is correct\n"
+                "- `generate.py` — code-generation helper\n"
+            ),
+            "references": (
+                f"# {skill_name} — References\n\n"
+                "Place on-demand reference documentation here.\n"
+                "Claude will read these when it needs deeper context beyond SKILL.md.\n\n"
+                "Examples:\n"
+                "- `patterns.md` — detailed pattern catalogue\n"
+                "- `api-reference.md` — API surface summary\n"
+            ),
+            "assets": (
+                f"# {skill_name} — Assets\n\n"
+                "Place reusable template files here.\n"
+                "Claude will reference these when generating boilerplate for this skill.\n\n"
+                "Examples:\n"
+                "- `template.py.j2` — Jinja2 code template\n"
+                "- `config.yaml.j2` — configuration template\n"
+            ),
+        }
+        for dirname, readme_content in subdirs.items():
+            subdir = skill_dir / dirname
+            subdir.mkdir(exist_ok=True)
+            readme = subdir / "README.md"
+            if not readme.exists():
+                readme.write_text(readme_content, encoding="utf-8")
 
     def check_global_skill_reuse(self, tech_stack: List[str]) -> Dict[str, str]:
         """Check which skills already exist in global learned for a given tech stack.
@@ -229,11 +277,10 @@ class SkillGenerator:
                 action = "create"
 
             if action == "adapt":
-                # Stub exists globally — write project-adapted version to project dir only.
-                # Do NOT back-propagate to the global cache: skill_content is derived from
-                # _derive_project_skills() which embeds project-specific names, README
-                # context, and triggers.  Writing it back would pollute future unrelated
-                # projects with this project's context.
+                # Stub exists globally — write project-adapted version to project dir ONLY.
+                # BUG-B fix: Do NOT write project-specific content back to the global
+                # learned cache — that would pollute it with project-name, project-specific
+                # triggers, and README context that don't apply to other projects.
                 dest.write_text(skill_content, encoding="utf-8")
                 print(f"  [adapt]  {skill_name} (project override)")
                 generated.append(f"{skill_name} (adapted)")
@@ -276,7 +323,31 @@ class SkillGenerator:
             triggers = SkillParser.build_triggers(tech, context_lines)
             guidelines = SkillParser.build_guidelines(tech, context_lines)
 
-            content = f"# {title}\n\n"
+            # GAP 1: prepend Anthropic-spec-compliant YAML frontmatter
+            fm_triggers = [tech, f"add {tech}", f"implement {tech}", skill_name.replace("-", " ")]
+            trigger_str = ", ".join(f'"{t}"' for t in fm_triggers)
+            fm_desc = f"{purpose.rstrip('.')}. Use when user mentions {trigger_str}."[:1024]
+            fm_tags = list(
+                dict.fromkeys(
+                    [p for p in skill_name.split("-") if len(p) > 2] + [tech.lower()]
+                )
+            )[:5]
+            fm_tags_str = "[" + ", ".join(fm_tags) + "]"
+            content = (
+                f"---\n"
+                f"name: {skill_name}\n"
+                f"description: |\n"
+                f"  {fm_desc}\n"
+                f"license: MIT\n"
+                f'allowed-tools: "Bash Read Write Edit Glob Grep"\n'
+                f"metadata:\n"
+                f"  author: PRG\n"
+                f"  version: 1.0.0\n"
+                f"  category: project\n"
+                f"  tags: {fm_tags_str}\n"
+                f"---\n\n"
+            )
+            content += f"# {title}\n\n"
             content += f"**Project:** {project_name or 'this project'}\n\n"
             content += f"## Purpose\n\n{purpose}\n\n"
             content += f"## Auto-Trigger\n\n{triggers}\n\n"

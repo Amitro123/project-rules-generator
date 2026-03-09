@@ -42,6 +42,8 @@ class SkillMetadata:
     tools: List[str] = field(default_factory=list)
     category: str = "project"
     priority: int = 50  # 0-100, higher = more priority
+    negative_triggers: List[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
 
 
 class CoworkSkillCreator:
@@ -409,12 +411,20 @@ class CoworkSkillCreator:
         # Generate description
         description = self._generate_description(skill_name, readme_content)
 
+        # GAP 5: negative triggers prevent over-activation
+        negative_triggers = self._generate_negative_triggers(skill_name, tech_stack)
+
+        # GAP 8: tags for search/filter
+        tags = self._generate_tags(skill_name, tech_stack)
+
         return SkillMetadata(
             name=skill_name,
             description=description,
             auto_triggers=triggers,
             project_signals=list(signals),
             tools=tools,
+            negative_triggers=negative_triggers,
+            tags=tags,
         )
 
     def _generate_triggers(self, skill_name: str, readme_content: str, tech_stack: List[str]) -> List[str]:
@@ -777,6 +787,83 @@ class CoworkSkillCreator:
         action_part = skill_name.split("-")[-1] if "-" in skill_name else "workflow"
         return f"{tech_part} {action_part} for this project"
 
+    def _generate_negative_triggers(self, skill_name: str, tech_stack: List[str]) -> List[str]:
+        """Generate negative triggers to prevent over-activation (GAP 5)."""
+        negatives: List[str] = []
+        tech = skill_name.split("-")[0].lower()
+
+        # Generic queries that shouldn't activate a specific-tech skill
+        if tech and tech not in ("project", "workflow"):
+            negatives.append(f"general {tech} questions")
+            negatives.append(f"{tech} theory")
+
+        # If skill is about testing, don't activate on production topics
+        if "test" in skill_name:
+            negatives.append("production deployment")
+        # If skill is about deployment, don't activate on writing tests
+        if "deploy" in skill_name or "docker" in skill_name:
+            negatives.append("writing unit tests")
+
+        return negatives[:3]  # cap at 3 per spec recommendation
+
+    def _generate_tags(self, skill_name: str, tech_stack: List[str]) -> List[str]:
+        """Derive searchable tags from skill name and detected tech stack (GAP 8)."""
+        tags: List[str] = []
+
+        # Parts of the skill name are always good tags
+        tags.extend(p for p in skill_name.split("-") if len(p) > 2)
+
+        # Add detected tech stack entries (deduplicated)
+        for tech in tech_stack:
+            if tech.lower() not in tags:
+                tags.append(tech.lower())
+
+        return list(dict.fromkeys(tags))[:6]  # deduplicate, cap at 6
+
+    def _render_frontmatter(self, metadata: "SkillMetadata") -> str:
+        """Emit Anthropic-spec-compliant YAML frontmatter (GAP 1 + GAP 4 + GAP 5).
+
+        Spec requirements:
+          - name: kebab-case, matches folder name
+          - description: "[What it does]. Use when user mentions [triggers]."
+          - license: MIT
+          - allowed-tools: space-separated Claude tool names
+          - metadata.author / version / category / tags
+        """
+        # GAP 4: embed trigger phrases directly in description text
+        trigger_str = ", ".join(f'"{t}"' for t in metadata.auto_triggers[:5])
+        base_desc = metadata.description.rstrip(".")
+        desc = f"{base_desc}. Use when user mentions {trigger_str}."
+        # GAP 5: append negative triggers to description
+        if metadata.negative_triggers:
+            neg_str = ", ".join(f'"{t}"' for t in metadata.negative_triggers[:3])
+            desc += f" Do NOT activate for {neg_str}."
+        desc = desc[:1024]
+
+        # GAP 1: allowed-tools uses Claude's tool names, not CLI tools
+        claude_tools = "Bash Read Write Edit Glob Grep"
+
+        # GAP 8: tags derived from skill name + tech stack
+        tags = metadata.tags if metadata.tags else [metadata.category]
+        tags_str = "[" + ", ".join(tags) + "]"
+
+        lines = [
+            "---",
+            f"name: {metadata.name}",
+            "description: |",
+            f"  {desc}",
+            "license: MIT",
+            f'allowed-tools: "{claude_tools}"',
+            "metadata:",
+            "  author: PRG",
+            "  version: 1.0.0",
+            f"  category: {metadata.category}",
+            f"  tags: {tags_str}",
+            "---",
+            "",
+        ]
+        return "\n".join(lines)
+
     # Max total chars for supplementary docs (to stay within token budget)
     SUPPLEMENTARY_BUDGET = 1500
 
@@ -990,11 +1077,25 @@ class CoworkSkillCreator:
         env = Environment(loader=FileSystemLoader(str(template_dir)))
         template = env.get_template("SKILL.md.jinja2")
 
+        # GAP 1/4/5: pre-compute spec-compliant description for the template
+        trigger_str = ", ".join(f'"{t}"' for t in metadata.auto_triggers[:5])
+        base_desc = metadata.description.rstrip(".")
+        desc_with_triggers = f"{base_desc}. Use when user mentions {trigger_str}."
+        if metadata.negative_triggers:
+            neg_str = ", ".join(f'"{t}"' for t in metadata.negative_triggers[:3])
+            desc_with_triggers += f" Do NOT activate for {neg_str}."
+        desc_with_triggers = desc_with_triggers[:1024]
+
+        tags = metadata.tags if metadata.tags else [metadata.category]
+
         # Build template context
         context = {
             "name": skill_name,
             "title": skill_name.replace("-", " ").title(),
             "description": metadata.description,
+            "desc_with_triggers": desc_with_triggers,  # GAP 1/4/5
+            "negative_triggers": metadata.negative_triggers,  # GAP 5
+            "tags": tags,  # GAP 8
             "purpose": metadata.description,
             "purpose_extended": f"This skill provides step-by-step guidance for {skill_name.replace('-', ' ')}.",
             "auto_triggers": metadata.auto_triggers,
@@ -1006,9 +1107,8 @@ class CoworkSkillCreator:
             "project_path": str(self.project_path),
             "tech_stack": self._detect_tech_stack(readme_content),
             "readme_context": readme_content[:500] if readme_content else None,
-            # quality_score intentionally omitted: quality is computed *after*
-            # content generation in create_skill(), so any value here would be
-            # a lie.  Templates must not render a quality score at gen time.
+            # BUG-C fix: quality_score removed — it is computed by _validate_quality()
+            # *after* content generation. Hardcoding 95 here was misleading.
         }
 
         # Merge custom context
@@ -1026,25 +1126,9 @@ class CoworkSkillCreator:
         """Fallback inline generation (no Jinja2)."""
         title = skill_name.replace("-", " ").title()
 
-        # Build YAML frontmatter
-        frontmatter = {
-            "name": skill_name,
-            "description": metadata.description,
-            "auto_triggers": {
-                "keywords": metadata.auto_triggers,
-                "project_signals": metadata.project_signals,
-            },
-            "tools": metadata.tools,
-            "category": metadata.category,
-        }
-
-        yaml_str = yaml.dump(frontmatter, sort_keys=False, allow_unicode=True)
-
-        # Build content sections
-        content = f"""---
-{yaml_str}---
-
-# Skill: {title}
+        # Build content sections — frontmatter now follows Anthropic spec (GAP 1)
+        content = self._render_frontmatter(metadata)
+        content += f"""# Skill: {title}
 
 ## Purpose
 

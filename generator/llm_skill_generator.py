@@ -130,17 +130,28 @@ Create a **complete, actionable skill** for an AI agent.
 ```markdown
 ---
 name: {skill_name.lower().replace(" ", "-")}
-description: [Short description]
-auto_triggers:
-  - keywords: [[list, of, keywords]]
-    project_signals: [[has_docker, has_tests, etc]]
-tools: [[list, of, tools, needed]]
+description: |
+  [ONE sentence: what this skill does]. Use when user mentions "[keyword1]", "[keyword2]", "[keyword3]". Do NOT activate for "[unrelated topic]".
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  author: PRG
+  version: 1.0.0
+  category: [backend|frontend|testing|devops|project]
+  tags: [[tag1, tag2, tag3]]
 ---
 
 # Skill: {skill_name.replace("-", " ").title()}
 
 ## Purpose
 [ONE clear sentence about what this solves in THIS project]
+
+## Auto-Trigger
+
+The agent should activate this skill when:
+- [Trigger phrase 1]
+- [Trigger phrase 2]
+- [Trigger phrase 3]
 
 ## Process
 
@@ -167,7 +178,8 @@ tools: [[list, of, tools, needed]]
 1. **Be SPECIFIC**: Use actual paths, commands, APIs from this project
 2. **Be ACTIONABLE**: Agent should know exactly what to do
 3. **No placeholders**: Fill in all sections with real content
-4. **Use YAML Frontmatter**: Include metadata for automation
+4. **Anthropic-spec frontmatter**: description must embed trigger phrases using the exact format shown above
+5. **No `auto_triggers` or `tools` YAML keys** — those are internal-only; the description field carries triggers
 
 Generate the skill now:
 """

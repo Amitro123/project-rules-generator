@@ -138,10 +138,11 @@ def validate_quality(
         score -= 5
         warnings.append("Content is brief - consider expanding")
 
-    # Check for actionable steps
+    # Check for actionable steps — match "1. foo" OR "### 1. Foo" (Jinja2 template format)
+    # Use regex split on "\n## " to avoid splitting on "### " sub-section headers
     if "## Process" in content:
-        process_section = content.split("## Process")[1].split("##")[0]
-        step_count = len(re.findall(r"^\s*\d+\.", process_section, re.MULTILINE))
+        process_section = re.split(r"\n## ", content.split("## Process", 1)[1])[0]
+        step_count = len(re.findall(r"(?:^\s*\d+\.|^#{2,3}\s+\d+\.)", process_section, re.MULTILINE))
         if step_count < 2:
             score -= 10
             warnings.append("Process section has fewer than 2 numbered steps")
