@@ -1,5 +1,6 @@
 """Cowork analysis strategy for skill generation."""
 
+import logging
 from pathlib import Path
 from typing import Optional
 
@@ -33,7 +34,7 @@ class CoworkStrategy:
         try:
             from generator.skill_creator import CoworkSkillCreator
 
-            print(f"📚 Using Cowork analysis for '{skill_name}'...")
+            logging.info("📚 Using Cowork analysis for '%s'...", skill_name)
             creator = CoworkSkillCreator(Path(project_path))
             readme_content = from_readme or ""
 
@@ -46,9 +47,9 @@ class CoworkStrategy:
             content, metadata, quality = creator.create_skill(
                 skill_name, readme_content, use_ai=False, provider=provider
             )
-            print(f"✅ Cowork quality score: {quality.score}/100")
+            logging.info("✅ Cowork quality score: %s/100", quality.score)
             return content
 
         except Exception as e:
-            print(f"[!] Warning: Cowork fallback failed ({e}). Using stub template.")
+            logging.warning("[!] Cowork fallback failed (%s). Using stub template.", e)
             return None

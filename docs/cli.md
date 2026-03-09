@@ -1,191 +1,218 @@
 # CLI Reference
 
-## Main Command
+## Provider Auto-Detection
+
+PRG resolves the AI provider automatically from environment variables.
+Priority order: **Gemini → Groq**.
+
+```bash
+export GEMINI_API_KEY=...   # https://aistudio.google.com/app/apikey
+export GROQ_API_KEY=...     # https://console.groq.com/keys
+```
+
+If neither key is set, commands fall back to README-only mode and print setup
+instructions.
+
+---
+
+## `prg init` — First-Run Wizard
+
+```bash
+prg init [PROJECT_PATH] [OPTIONS]
+```
+
+Detects project stack, checks API keys, generates initial `rules.md`, and
+prints actionable next steps. The recommended starting point for new projects.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `PROJECT_PATH` | `.` | Project root directory |
+| `--yes / -y` | false | Skip confirmation prompts |
+| `--provider` | auto | Force `gemini` or `groq` |
+
+---
+
+## `prg analyze` — Full Analysis
 
 ```bash
 prg analyze [PROJECT_PATH] [OPTIONS]
 ```
 
-### Options
+Full pipeline: README parsing → rules → skills → clinerules.yaml → git commit.
 
-| Flag | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `[PROJECT_PATH]` | argument | `.` (current dir) | The root directory of the project to analyze. |
-| `--output` | dir | `.clinerules/` | Custom output directory for generated rules. |
-| `--mode` | choice | `manual` | Analysis mode: `manual` (fast, local), `ai` (deep, requires key), `constitution` (principles only). |
-| `--incremental` | flag | `false` | Only regenerate sections that have changed (much faster). |
-| `--quality-check` 🆕 | flag | `false` | Score generated files (0-100) across 5 quality criteria. |
-| `--eval-opik` 🆕 | flag | `false` | Log generation traces to Comet Opik (requires `OPIK_API_KEY`). |
-| `--auto-fix` 🆕 | flag | `false` | Automatically improve files scoring below 85. Requires `--quality-check`. |
-| `--constitution` | flag | `false` | Generate `constitution.md` with high-level principles. |
-| `--auto-generate-skills` | flag | `false` | Enable AI skill matching and generation (requires `--ai`). |
-| `--ai` | flag | `false` | Use AI (LLM) for analysis. Implies `--mode ai`. |
-| `--api-key` | str | `env` | Gemini/Claude API key. Can be set via `GEMINI_API_KEY` env var. |
-| `--list-skills` | flag | `false` | List all available skills (builtin + learned). |
-| `--add-skill` | str | - | Add a skill by name (e.g., `builtin/debugging`) or file path. |
-| `--remove-skill` | str | - | Remove a skill from the project configuration. |
-| `--merge` | flag | `false` | Merge new rules with existing files instead of overwriting. |
-| `--no-commit` | flag | `false` | Skip the automatic git commit of `.clinerules` changes. |
-| `--verbose` | flag | `false` | Enable detailed output for debugging. |
+| Flag | Default | Description |
+|------|---------|-------------|
+| `PROJECT_PATH` | `.` | Project root |
+| `--mode` | `manual` | `manual` / `ai` / `constitution` |
+| `--ai` | false | Enable LLM analysis |
+| `--auto-generate-skills` | false | Match and generate skills with AI |
+| `--constitution` | false | Generate `constitution.md` |
+| `--incremental` | false | Skip unchanged sections |
+| `--output DIR` | `.clinerules` | Output directory |
+| `--provider` | auto | `gemini` or `groq` |
+| `--api-key` | env | Override env var key |
+| `--merge` | false | Keep existing skill files |
+| `--commit / --no-commit` | true | Auto-commit generated files |
+| `--quality-check` | false | Score files 0–100 |
+| `--auto-fix` | false | Improve files below threshold (needs `--quality-check`) |
+| `--create-rules` | false | Also run Cowork rules creator |
+| `--list-skills` | false | List all skills then exit |
+| `--create-skill NAME` | — | Create a new learned skill |
+| `--remove-skill NAME` | — | Remove a learned skill |
+| `--verbose / --quiet` | true | Detailed output |
 
-## Secondary Commands
+---
 
-### Design
-
-Generate an architectural design for a feature.
+## `prg create-rules` — Cowork Rules Creator
 
 ```bash
-prg design <TASK_DESCRIPTION> [OPTIONS]
+prg create-rules [PROJECT_PATH] [OPTIONS]
 ```
 
-| Flag | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `--output` | file | `DESIGN.md` | Output file path. |
-| `--api-key` | str | `env` | AI API key. |
+Generates high-quality, priority-scored rules using the Cowork pipeline.
+Includes quality validation with conflict detection.
 
-### Plan
+| Flag | Default | Description |
+|------|---------|-------------|
+| `PROJECT_PATH` | `.` | Project root |
+| `--tech` | auto | Comma-separated tech stack (e.g. `fastapi,pytest,docker`) |
+| `--quality-threshold` | `85` | Minimum score to accept (0–100) |
+| `--output DIR` | `.clinerules` | Output directory |
+| `--export-report` | false | Write `rules.quality.json` |
+| `--verbose / -v` | false | Show warnings and full detail |
 
-Break down a task into smaller subtasks.
+**Examples:**
+
+```bash
+prg create-rules .
+prg create-rules . --tech "fastapi,pytest,docker"
+prg create-rules . --quality-threshold 90 --verbose --export-report
+```
+
+---
+
+## `prg skills` — Skill Management
+
+```bash
+prg skills COMMAND [OPTIONS]
+```
+
+### `prg skills list`
+
+```bash
+prg skills list [PATH] [--all]
+```
+
+Lists all `SKILL.md` files under `.clinerules/skills/`. Shows name, layer
+(project/learned/builtin), trigger count, allowed tools, and frontmatter
+status. Add `--all` to include global builtin skills.
+
+### `prg skills validate`
+
+```bash
+prg skills validate <NAME_OR_PATH> [PATH]
+```
+
+Validates a skill against 7 checks. Exits 1 if any fail.
+
+### `prg skills show`
+
+```bash
+prg skills show <NAME_OR_PATH> [PATH]
+```
+
+Pretty-prints a skill's frontmatter as a table and body as a panel.
+
+See [skills.md](skills.md) for the full skill authoring guide.
+
+---
+
+## `prg plan` — Task Planning
 
 ```bash
 prg plan <TASK_DESCRIPTION> [OPTIONS]
 ```
 
-| Flag | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `[TASK_DESCRIPTION]` | argument | - | Task to plan (e.g., "Add Redis cache"). Optional if using `--from-design` or `--from-readme`. |
-| `--output` | file | auto | Output file path for the plan. Defaults to `PLAN.md` or `PROJECT-ROADMAP.md`. |
-| `--from-design` | file | - | Generate tasks from an existing `DESIGN.md` file. |
-| `--from-readme` 🆕 | file | - | Generate project roadmap from `README.md` features. |
-| `--status` 🆕 | flag | `false` | Show progress on existing plan files with visual progress bars. |
-| `--interactive` | flag | `false` | Open files in IDE as tasks are listed. |
-| `--auto-execute` | flag | `false` | Automatically create files and open them (requires `--interactive`). |
-| `--api-key` | str | `env` | AI API key for the planning agent. |
-| `--provider` | choice | auto | AI provider: `gemini` or `groq`. Auto-detected from API key if not specified. |
+AI-powered task decomposition into subtasks.
 
-## Task Automation 🆕
+| Flag | Default | Description |
+|------|---------|-------------|
+| `TASK_DESCRIPTION` | — | What to build |
+| `--output` | `PLAN.md` | Output file |
+| `--from-design FILE` | — | Generate from `DESIGN.md` |
+| `--from-readme FILE` | — | Generate roadmap from `README.md` |
+| `--status` | false | Show progress on existing plan |
+| `--interactive` | false | Open files in IDE |
+| `--provider` | auto | `gemini` or `groq` |
 
-Reduce cognitive load by letting the agent manage the task lifecycle.
+---
 
-### `prg start`
-
-Runs the **fast workflow** from idea to execution readiness.
+## `prg design` — Architecture Design
 
 ```bash
-prg start "Refactor auth middleware to use JWT"
+prg design <TASK_DESCRIPTION> [OPTIONS]
 ```
 
-**Steps:**
-1.  **Plan**: Generates `PLAN.md` using the Two-Stage Planning agent.
-2.  **Tasks**: Breaks plan into `tasks/001-init.md`, `tasks/002-impl.md`, etc.
-3.  **Preflight**: Checks for missing dependencies or potential conflicts.
-4.  **Auto-Fix**: Attempts to fix preflight issues automatically.
-5.  **Ready**: Prepares the environment for the first task.
+Generates a `DESIGN.md` with problem statement, architecture decisions, API
+contracts, data models, and success criteria.
 
-### `prg autopilot` 🆕
+---
 
-Full end-to-end autonomous orchestration. Unlike `start`, `autopilot` manages the discovery phase and the execution loop automatically.
+## `prg start` — Fast Setup
+
+```bash
+prg start "Add Redis caching"
+```
+
+Plan → Tasks → Preflight → Auto-Fix → Ready. Generates `PLAN.md` and
+`tasks/` directory, then reports the next task to run.
+
+---
+
+## `prg autopilot` — Autonomous Agent
 
 ```bash
 prg autopilot [PROJECT_PATH] [OPTIONS]
 ```
 
-**Workflow:**
-1.  **Discovery**: Automatically runs `analyze`, `plan`, and `tasks`.
-2.  **Branching**: Creates a git branch for each task (`autopilot/task-{id}`).
-3.  **Autonomous Agent**: Uses a task agent to generate code changes.
-4.  **Approval**: Prompts the user for approval before merging changes.
-5.  **Cleanup**: Merges branch and deletes it on pass; rolls back on failure/rejection.
+Full autonomous loop: Analyze → Plan → Tasks → Branch → Implement → Verify →
+Merge. Each task runs in its own git branch.
 
-**Options:**
-- `--discovery-only`: Stop after rule generation and task creation.
-- `--execute-only`: Assume tasks exist and start execution loop.
-- `--provider`: AI provider (`gemini`, `groq`).
-- `--api-key`: API key for the agent.
+| Flag | Description |
+|------|-------------|
+| `--discovery-only` | Stop after rule generation and task creation |
+| `--execute-only` | Skip discovery, run execution loop only |
+| `--provider` | AI provider |
 
-- `--provider`: AI provider (`gemini`, `groq`).
-- `--api-key`: API key for the agent.
+---
 
-### `prg manager` 🆕
+## `prg status` / `prg exec` / `prg next`
 
-Complete 4-phase project lifecycle orchestration.
+| Command | Description |
+|---------|-------------|
+| `prg status` | Show task progress table from `TASKS.yaml` or `PLAN.md` |
+| `prg exec tasks/001-foo.md` | Execute / complete / skip a task |
+| `prg next` | Print the next pending task |
+| `prg query` | Query tasks by status |
+
+---
+
+## `prg agent` — Trigger Simulation
+
+```bash
+prg agent "I need to fix a bug in the auth module"
+```
+
+Simulates the auto-trigger engine to show which skill would activate for a
+given query. Useful for testing trigger phrases.
+
+---
+
+## `prg manager` — Full Lifecycle
 
 ```bash
 prg manager [PROJECT_PATH] [OPTIONS]
 ```
 
-**Phases:**
-1.  **Setup**: Automatically generates missing artifacts (`rules.md`, `PLAN.md`, `spec.md`, `ARCHITECTURE.md`, `PROJECT-MANAGER.md`).
-2.  **Verify**: Runs pre-flight checks to ensure system readiness.
-3.  **Copilot**: Runs the implementation loop (same as `autopilot` with checkpoints).
-4.  **Summary**: Generates a completion report with metrics.
-
-**Options:**
-- `--provider`: AI provider (`gemini`, `groq`).
-- `--api-key`: API key for the agent.
-
-### `prg setup`
-
-Same as `start`, but stops after generating tasks. Useful if you want to inspect manual work before execution.
-
-```bash
-prg setup "Refactor auth middleware"
-```
-
-### `prg exec`
-
-Execute, complete, or skip a specific task file.
-
-```bash
-# Execute a task (opens context, sets up instructions)
-prg exec tasks/001-setup-jwt.md
-
-# Mark a task as complete manually
-prg exec tasks/001-setup-jwt.md --complete
-
-# Skip a task
-prg exec tasks/001-setup-jwt.md --skip
-```
-
-### `prg status`
-
-Shows a high-level progress table of the current sprint.
-
-```bash
-prg status
-```
-
-**Output:**
-- Reads from `TASKS.yaml` (new format) or falls back to parsing `PLAN.md`.
-- Displays: Task ID, Status (Pending/In Progress/Done), Description.
-
-## Agent Commands
-
-### `prg agent`
-
-Simulate the auto-trigger matching engine.
-
-```bash
-prg agent "I need to fix a bug"
-```
-
-**Output:**
-```
-🎯 Auto-trigger: systematic-debugging
-```
-
-**Use Case:**
-Verify which skill will be selected for a given user query. Useful for debugging triggers or integrating PRG into other agent loops.
-
-
-### `prg leaderboard`
-
-Open the Comet Opik dashboard to check quality metrics.
-
-```bash
-prg leaderboard
-```
-
-**Output:**
-Opens `https://www.comet.com/opik/dashboard` in your default browser.
-
+4-phase orchestration: Setup → Verify → Copilot → Summary. Generates all
+missing artifacts before starting the execution loop.
