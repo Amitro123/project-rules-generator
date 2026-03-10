@@ -15,7 +15,8 @@ Purpose: Handle exceptions and failures in CI/CD pipelines (e.g., GitHub Actions
 1. **Analyze the error**: 
    - View CI logs locally or via the provided link (using `gh run view <run-id> --log` if available, or fetch the URL directly).
    - Identify which step failed (e.g., linting, formatting, type checking, tests).
-2. **Reproduce locally**:
+2. **Reproduce locally & Check Environment Parity**:
+   - Check if the CI pipeline installs the latest versions of tools (e.g., `black`, `isort`, `pytest`). If your local tools differ in version from the CI's, upgrade your local tools (`pip install --upgrade black` etc.) before reproducing.
    - Run the exact commands from `.github/workflows/ci.yml` locally to reproduce the issue.
    - For formatting: run `black --check .` and `isort --profile black --check-only .`
    - For linting: run `ruff check .`
