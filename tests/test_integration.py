@@ -106,16 +106,14 @@ Install and run.
 
             tech_list = "\n".join([f"- {t}" for t in case["tech"]])
             readme = project_dir / "README.md"
-            readme.write_text(
-                f"""# {case['name'].replace('-', ' ').title()}
+            readme.write_text(f"""# {case['name'].replace('-', ' ').title()}
 
 Description.
 
 ## Tech
 
 {tech_list}
-"""
-            )
+""")
 
             result = runner.invoke(
                 main,

@@ -32,8 +32,7 @@ from generator.utils.quality_checker import QualityReport, validate_quality
 # Shared fixtures
 # ---------------------------------------------------------------------------
 
-JINJA2_README = textwrap.dedent(
-    """
+JINJA2_README = textwrap.dedent("""
     # Jinja2 Template Engine — Code Generator
 
     > Build dynamic code and configuration files from structured templates.
@@ -99,8 +98,7 @@ JINJA2_README = textwrap.dedent(
 
     Templates are loaded from `./templates/` by default.
     Override with `CODEGEN_TEMPLATE_DIR` env variable or `--template-dir` flag.
-"""
-)
+""")
 
 
 @pytest.fixture

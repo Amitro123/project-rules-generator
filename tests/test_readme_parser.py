@@ -33,13 +33,11 @@ class TestReadmeParser:
     def test_extract_tech_stack(self, tmp_path):
         """Test tech stack detection from keywords."""
         readme = tmp_path / "README.md"
-        readme.write_text(
-            """# Test
+        readme.write_text("""# Test
         
 This project uses Python and FastAPI for the backend.
 We also use Docker for deployment and PyTorch for ML.
-"""
-        )
+""")
 
         result = parse_readme(readme)
         assert "python" in result["tech_stack"]
@@ -72,16 +70,14 @@ A description here.
     def test_extract_description(self, tmp_path):
         """Test description extraction from first paragraph."""
         readme = tmp_path / "README.md"
-        readme.write_text(
-            """# Test Project
+        readme.write_text("""# Test Project
 
 This is a detailed description of the project that explains what it does and how it works. It should be extracted correctly.
 
 ## Features
 
 Some features here.
-"""
-        )
+""")
 
         result = parse_readme(readme)
         assert "detailed description" in result["description"]
@@ -121,8 +117,7 @@ Some features here.
     def test_extract_tech_stack_ignores_examples(self, tmp_path):
         """Test that tech extraction ignores Examples sections."""
         readme = tmp_path / "README.md"
-        readme.write_text(
-            """# Project
+        readme.write_text("""# Project
 Uses Python.
         
 ## Examples
@@ -134,8 +129,7 @@ Here is how to use ffmpeg and opencv in your own project.
 | Type | Tech |
 |---|---|
 | ML | PyTorch |
-"""
-        )
+""")
 
         result = parse_readme(readme)
         assert "python" in result["tech_stack"]
@@ -147,8 +141,7 @@ Here is how to use ffmpeg and opencv in your own project.
     def test_ignores_tech_in_fenced_code_blocks(self, tmp_path):
         """Should not detect tech keywords that only appear inside fenced code blocks."""
         readme = tmp_path / "README.md"
-        readme.write_text(
-            """# Title
+        readme.write_text("""# Title
 
 Some text.
 
@@ -157,8 +150,7 @@ pip install tensorflow opencv-python
 ```
 
 Regular mention: Python backend.
-"""
-        )
+""")
         result = parse_readme(readme)
         assert "python" in result["tech_stack"]
         assert "tensorflow" not in result["tech_stack"]
@@ -185,8 +177,7 @@ Regular mention: Python backend.
     def test_nested_lists_parsing_in_features(self, tmp_path):
         """Should extract top-level features and ignore nested sub-items noise."""
         readme = tmp_path / "README.md"
-        readme.write_text(
-            """# Project
+        readme.write_text("""# Project
 
 ## Features
 - Top level A
@@ -197,8 +188,7 @@ Regular mention: Python backend.
 
 ## Usage
 Do things.
-"""
-        )
+""")
         result = parse_readme(readme)
         assert isinstance(result["features"], list)
         assert any("Top level A" in f for f in result["features"])

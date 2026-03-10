@@ -510,8 +510,7 @@ NOW generate the complete design following this structure. Be specific, detailed
         # Create data models
         data_models = []
         if is_cache:
-            data_models.append(
-                """```python
+            data_models.append("""```python
 class CacheConfig(BaseModel):
     \"\"\"Configuration for cache layer.\"\"\"
     host: str = Field(default="localhost", description="Redis host")
@@ -522,10 +521,8 @@ class CacheConfig(BaseModel):
     
     class Config:
         frozen = True  # Immutable config
-```"""
-            )
-            data_models.append(
-                """```python
+```""")
+            data_models.append("""```python
 class CacheEntry(BaseModel):
     \"\"\"Represents a cached value with metadata.\"\"\"
     key: str
@@ -536,24 +533,20 @@ class CacheEntry(BaseModel):
     def is_expired(self) -> bool:
         age = (datetime.utcnow() - self.created_at).total_seconds()
         return age > self.ttl
-```"""
-            )
+```""")
         else:
-            data_models.append(
-                f"""```python
+            data_models.append(f"""```python
 class {user_request.split()[0].title()}Config(BaseModel):
     \"\"\"Configuration for {user_request}.\"\"\"
     enabled: bool = Field(default=True)
     timeout_seconds: int = Field(default=30, ge=1)
     max_retries: int = Field(default=3, ge=0)
-```"""
-            )
+```""")
 
         # Create API contracts
         api_contracts = []
         if is_cache:
-            api_contracts.append(
-                """### `get_cached(key: str, fetch_fn: Callable[[], T]) -> T`
+            api_contracts.append("""### `get_cached(key: str, fetch_fn: Callable[[], T]) -> T`
 
 **Purpose**: Retrieve value from cache or fetch and cache it
 
@@ -573,10 +566,8 @@ def fetch_user(user_id: int) -> User:
     return db.query(User).get(user_id)
 
 user = get_cached(f"user:{user_id}", lambda: fetch_user(user_id))
-```"""
-            )
-            api_contracts.append(
-                """### `invalidate_cache(pattern: str) -> int`
+```""")
+            api_contracts.append("""### `invalidate_cache(pattern: str) -> int`
 
 **Purpose**: Remove cache entries matching pattern
 
@@ -589,11 +580,9 @@ user = get_cached(f"user:{user_id}", lambda: fetch_user(user_id))
 ```python
 # Invalidate all user caches
 count = invalidate_cache("user:*")
-```"""
-            )
+```""")
         else:
-            api_contracts.append(
-                f"""### `execute_{user_request.split()[0].lower()}(params: dict) -> Result`
+            api_contracts.append(f"""### `execute_{user_request.split()[0].lower()}(params: dict) -> Result`
 
 **Purpose**: Execute the {user_request} operation
 
@@ -605,8 +594,7 @@ count = invalidate_cache("user:*")
 **Raises**:
 - `ValidationError`: If params are invalid
 - `OperationError`: If execution fails
-"""
-            )
+""")
 
         # Create success criteria
         criteria = []

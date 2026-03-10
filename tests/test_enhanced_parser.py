@@ -97,16 +97,14 @@ class TestDependencyParser:
     def test_parse_pyproject_toml_fallback(self, tmp_path):
         """Test fallback parsing when tomli unavailable."""
         pyproject = tmp_path / "pyproject.toml"
-        pyproject.write_text(
-            """
+        pyproject.write_text("""
 [project]
 name = "my-project"
 dependencies = [
     "fastapi>=0.100.0",
     "pydantic>=2.0",
 ]
-"""
-        )
+""")
         result = DependencyParser._parse_pyproject_fallback(pyproject)
 
         assert result["project_name"] == "my-project"
