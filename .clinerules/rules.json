@@ -3,21 +3,18 @@
   "purpose": "Coding & contribution rules for this workspace",
   "version": "2.0",
   "generated": "auto",
-  "project_type": "django-app",
+  "project_type": "python-cli",
   "rules": {
     "do": [
       "Run `pytest` before committing; add tests for new features",
       "Use type hints on all public function signatures",
       "Use Pydantic models for data validation (not raw dicts)",
       "Use Click decorators for CLI arguments — don't parse sys.argv manually",
-      "Run `python manage.py makemigrations` after model changes",
-      "Use Django ORM — don't write raw SQL without justification",
       "Store API keys in `.env` or environment variables — never hardcode (gemini, groq)",
       "Add retry logic with exponential backoff for external API calls",
       "Validate and type-check API responses before using them",
       "Follow existing project structure and naming conventions",
-      "Keep module imports at file top; use absolute imports within the project",
-      "Verify local tool versions (black, isort, pytest) match CI pipeline versions before troubleshooting"
+      "Keep module imports at file top; use absolute imports within the project"
     ],
     "dont": [
       "Don't use `print()` for logging — use the `logging` module",
@@ -30,21 +27,21 @@
     ]
   },
   "priorities": [],
-  "rules_count": 18,
+  "rules_count": 16,
   "architecture": [
-    "**Project type**: django-app",
+    "**Project type**: python-cli",
     "**Entry points**: main.py",
-    "**Structural patterns**: django-app, pytest-tests",
+    "**Structural patterns**: python-cli, pytest-tests",
     "**Languages**: python"
   ],
   "file_structure": [
     "`main.py`",
-    "django-app",
+    "python-cli",
     "pytest-tests"
   ],
   "testing": [
     "**Framework**: pytest",
-    "**Test files**: 180 (1484 test cases)",
+    "**Test files**: 391 (3308 test cases)",
     "**Test types**: unit, integration",
     "**Fixtures**: shared via `conftest.py`",
     "**Test data**: `tests/fixtures/` directory"
@@ -57,30 +54,15 @@
     "`**/node_modules/**`",
     "`**/*-skills.md`",
     "`**/*-skills.json`",
-    "`**/.clinerules*`",
-    "`**/migrations/**`"
+    "`**/.clinerules*`"
+  ],
+  "workflows": [
+    "Python 3.11 or higher",
+    "Git"
   ],
   "auto-trigger": [
-    "**\"test cleanup\"**",
-    "**\"test refactor\"**",
-    "**\"testing refactor\"**",
-    "`has_ci`",
-    "`has_api` Γזע API endpoints present",
-    "`has_tests` Γזע Test suite available",
-    "`has_docs`"
-  ],
-  "process": [
-    "Review project structure in `project-rules-generator/`",
-    "Check configuration files",
-    "Identify existing patterns",
-    "Run tests if available",
-    "Check for errors",
-    "Verify expected outputs"
-  ],
-  "output": [
-    "Modified/created files in `project-rules-generator/`",
-    "Status report with changes",
-    "Recommendations for next steps"
+    "Working with click integration code",
+    "Editing files that import or configure click"
   ],
   "pre-review_checklist": [
     "✓ Read every line you changed",
@@ -124,28 +106,9 @@
     "Verify data types",
     "Review recent changes"
   ],
-  "tech_stack_notes": [
-    "`python`",
-    "`pytest`"
-  ],
-  "project_context_(from_readme)": [
-    "audit pytest",
-    "generate pytest testing workflow",
-    "pytest testing workflow",
-    "review pytest",
-    "run pytest testing workflow",
-    "test pytest testing workflow",
-    "has_tests",
-    "has_api",
-    "has_ci",
-    "has_docs",
-    "docker",
-    "pydantic"
-  ],
-  "key_constraints_(from_readme)": [
-    "Manual nesting only — no auto-nesting algorithm in MVP",
-    "Single admin user, no real-time collab",
-    "Parts are DXF-derived SVG paths, not raster images",
-    "Canvas must export placement data for `GET /pdf` to consume"
+  "guidelines": [
+    "Follow project patterns for click usage",
+    "Handle click errors with proper retries and fallbacks",
+    "Add tests for click integration code"
   ]
 }

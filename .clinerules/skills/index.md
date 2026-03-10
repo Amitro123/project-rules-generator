@@ -2,14 +2,14 @@
 project: project-rules-generator
 purpose: Agent skills for this project
 type: agent-skills
-detected_type: agent
+detected_type: cli_tool
 confidence: 1.00
 version: 1.0
 ---
 
 ## PROJECT CONTEXT
-- **Type**: Agent
-- **Tech Stack**: python, gemini, claude, groq, click, pydantic
+- **Type**: Cli Tool
+- **Tech Stack**: python, gemini, claude, groq, click, pydantic, gitpython
 - **Domain**: > The First AI That Learns Your Coding Style...
 
 ## CORE SKILLS
@@ -63,41 +63,26 @@ pytest --cov=src --cov-report=term
 
 ```
 
-## AGENT SKILLS
+## CLI TOOL SKILLS
 
-### agent-architecture-analyzer
-Analyze agent architecture and suggest improvements.
-
-> *Source: builtin*
-
-**Tools:** read, search
-
-**Triggers:**
-- analyze agent
-- check architecture
-
-**When to use:**
-- Complex multi-agent workflows
-- Debugging agent loops
-- Planning new agent capabilities
-
-**Output:** Architecture review with diagrams if helpful
-
-### prompt-improver
-Improve system prompts and agent instructions.
+### cli-usability-auditor
+Audit CLI help messages and argument parsing.
 
 > *Source: builtin*
 
-**Tools:** read, exec
+**When to use:**
+- Adding new commands
+- Inconsistent argument styling
+- Missing help text
 
-**Triggers:**
-- improve prompt
-- fix hallucination
+### command-structure-improver
+Suggest better command hierarchy.
+
+> *Source: builtin*
 
 **When to use:**
-- Agent failing to follow instructions
-- Hallucinations
-- Inconsistent formatting
+- Too many top-level commands
+- Confusing command names
 
 ## USAGE
 
