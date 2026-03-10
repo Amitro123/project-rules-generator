@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Protocol, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Protocol, Tuple
 
 from generator.utils.readme_bridge import bridge_missing_context, is_readme_sufficient
 
