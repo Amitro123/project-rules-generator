@@ -10,11 +10,7 @@ from unittest.mock import MagicMock, patch
 if "click" not in sys.modules:
     sys.modules["click"] = MagicMock()
 
-from generator.readme_generator import (
-    generate_readme_interactively,
-    generate_readme_with_llm,
-    is_readme_minimal,
-)
+from generator.readme_generator import generate_readme_interactively, generate_readme_with_llm, is_readme_minimal
 
 
 class TestReadmeGenerator(unittest.TestCase):

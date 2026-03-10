@@ -23,7 +23,6 @@ from generator.skill_creator import CoworkSkillCreator, SkillMetadata
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
 
-
 # ---------------------------------------------------------------------------
 # BUG-1: f-string missing — warning must show actual count, not literal text
 # ---------------------------------------------------------------------------
@@ -220,8 +219,8 @@ def test_cowork_strategy_does_not_force_use_ai(tmp_path):
 def test_quality_report_single_source():
     """DESIGN-1: skill_creator.QualityReport and quality_checker.QualityReport
     must be the SAME class (no duplicate definition)."""
-    from generator.utils.quality_checker import QualityReport as CheckerReport
     from generator.skill_creator import QualityReport as CreatorReport
+    from generator.utils.quality_checker import QualityReport as CheckerReport
 
     assert CreatorReport is CheckerReport, (
         "QualityReport is defined in two places — skill_creator.py has its own copy. "

@@ -2,14 +2,8 @@
 
 import yaml
 
-from generator.outputs.clinerules_generator import (
-    _build_context_config,
-    generate_clinerules,
-)
-from generator.prompts.skill_generation import (
-    _detect_relevant_files,
-    build_skill_prompt,
-)
+from generator.outputs.clinerules_generator import _build_context_config, generate_clinerules
+from generator.prompts.skill_generation import _detect_relevant_files, build_skill_prompt
 from generator.rules_generator import _build_context_strategy, generate_rules
 
 

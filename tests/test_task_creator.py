@@ -1,11 +1,6 @@
 """Tests for task file creator (agent workflow)."""
 
-from generator.planning.task_creator import (
-    TaskCreator,
-    TaskEntry,
-    TaskFileStatus,
-    TaskManifest,
-)
+from generator.planning.task_creator import TaskCreator, TaskEntry, TaskFileStatus, TaskManifest
 from generator.task_decomposer import SubTask
 
 # ---------------------------------------------------------------------------

@@ -20,7 +20,6 @@ from generator.skill_generator import SkillGenerator
 from generator.strategies.readme_strategy import READMEStrategy
 from generator.utils.quality_checker import QualityReport, validate_quality
 
-
 # ---------------------------------------------------------------------------
 # BUG-A: READMEStrategy must use from_readme as content, not treat it as path
 # ---------------------------------------------------------------------------

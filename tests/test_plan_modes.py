@@ -4,16 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from generator.planning import (
-    Phase,
-    PhaseStatus,
-    Plan,
-    PlanParser,
-    PlanStatus,
-    ProjectPlanner,
-    Task,
-    TaskStatus,
-)
+from generator.planning import Phase, PhaseStatus, Plan, PlanParser, PlanStatus, ProjectPlanner, Task, TaskStatus
 
 
 class TestTask:

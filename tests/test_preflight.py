@@ -1,10 +1,6 @@
 """Tests for pre-flight checklist."""
 
-from generator.planning.preflight import (
-    CheckResult,
-    PreflightChecker,
-    PreflightReport,
-)
+from generator.planning.preflight import CheckResult, PreflightChecker, PreflightReport
 
 # ---------------------------------------------------------------------------
 # CheckResult / PreflightReport

@@ -57,11 +57,7 @@ from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
 from generator.skills_manager import SkillsManager
 from generator.storage.skill_paths import SkillPathManager
 from prg_utils.config_schema import validate_config
-from prg_utils.exceptions import (
-    InvalidREADMEError,
-    ProjectRulesGeneratorError,
-    READMENotFoundError,
-)
+from prg_utils.exceptions import InvalidREADMEError, ProjectRulesGeneratorError, READMENotFoundError
 from prg_utils.file_ops import save_markdown
 from prg_utils.git_ops import commit_files, is_git_repo
 from prg_utils.logger import setup_logging
@@ -477,10 +473,7 @@ def analyze(
                 break
 
         # Interactive README Generation
-        from generator.interactive import (
-            create_readme_interactive,
-            show_generated_files,
-        )
+        from generator.interactive import create_readme_interactive, show_generated_files
         from generator.readme_generator import is_readme_minimal
 
         # If no README or minimal, and we want to try generating one
@@ -499,10 +492,7 @@ def analyze(
                     # We need to run generation.
                     # Need context for generation
                     from generator.project_analyzer import ProjectAnalyzer
-                    from generator.readme_generator import (
-                        generate_readme_template,
-                        generate_readme_with_llm,
-                    )
+                    from generator.readme_generator import generate_readme_template, generate_readme_with_llm
 
                     analyzer = ProjectAnalyzer(project_path)
                     context = analyzer.analyze()
@@ -697,9 +687,7 @@ def analyze(
                             )
 
                             try:
-                                from generator.llm_skill_generator import (
-                                    LLMSkillGenerator,
-                                )
+                                from generator.llm_skill_generator import LLMSkillGenerator
 
                                 current_provider = kwargs.get("provider", "groq")
                                 llm_gen = LLMSkillGenerator(provider=current_provider)

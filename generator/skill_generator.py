@@ -88,12 +88,7 @@ class SkillGenerator:
         Raises:
             ValueError: If the skill name is invalid.
         """
-        from generator.strategies import (
-            AIStrategy,
-            CoworkStrategy,
-            READMEStrategy,
-            StubStrategy,
-        )
+        from generator.strategies import AIStrategy, CoworkStrategy, READMEStrategy, StubStrategy
 
         self.discovery.ensure_global_structure()
 
