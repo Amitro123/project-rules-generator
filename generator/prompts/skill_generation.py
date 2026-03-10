@@ -26,6 +26,7 @@ CRITICAL RULES — FOLLOW EXACTLY:
 5. Only include anti-patterns you can prove exist from the context above
 6. Include a "Tools" section listing runnable check/fix commands
 7. If you don't have enough context for a section, write a SHORT general guideline rather than fabricating specifics
+8. If the skill involves CI/CD or troubleshooting, explicitly instruct the user to verify environment parity (e.g., checking tool versions) before attempting to reproduce the issue
 
 NOW GENERATE SKILL FOR: {skill_topic}
 Topic Description: {topic_description}

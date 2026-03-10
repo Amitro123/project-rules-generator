@@ -16,7 +16,8 @@
       "Add retry logic with exponential backoff for external API calls",
       "Validate and type-check API responses before using them",
       "Follow existing project structure and naming conventions",
-      "Keep module imports at file top; use absolute imports within the project"
+      "Keep module imports at file top; use absolute imports within the project",
+      "Verify local tool versions (black, isort, pytest) match CI pipeline versions before troubleshooting"
     ],
     "dont": [
       "Don't use `print()` for logging — use the `logging` module",

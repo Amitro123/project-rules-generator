@@ -1,0 +1,74 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.7, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\Dana\.gemini\antigravity\scratch\project-rules-generator
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.11.0, asyncio-1.2.0, cov-4.1.0, dotenv-0.5.2, typeguard-4.5.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 436 items
+
+tests\test_agent_workflow.py ................                            [  3%]
+tests\test_ai_skill_generation.py ...                                    [  4%]
+tests\test_ai_video_detection.py s.                                      [  4%]
+tests\test_autopilot_flow.py ...                                         [  5%]
+tests\test_builtin_skills_integrity.py ................                  [  9%]
+tests\test_cli.py ........                                               [ 11%]
+tests\test_config_schema.py ....                                         [ 11%]
+tests\test_conflict_resolution.py ..                                     [ 12%]
+tests\test_constitution_generator.py ...........                         [ 14%]
+tests\test_content_analyzer.py ................                          [ 18%]
+tests\test_context_optimization.py ..................                    [ 22%]
+tests\test_dependency_parser.py ..                                       [ 23%]
+tests\test_design_generator.py .................                         [ 27%]
+tests\test_detector.py ...                                               [ 27%]
+tests\test_duplicate_prevention.py ..............                        [ 30%]
+tests\test_encoding_fix.py .F
+
+================================== FAILURES ===================================
+________________ TestEncodingFix.test_groq_client_encoding_fix ________________
+
+self = <tests.test_encoding_fix.TestEncodingFix object at 0x00000286BD135AF0>
+
+    def test_groq_client_encoding_fix(self):
+        """Test that GroqClient cleans encoding artifacts."""
+        # Patch where Groq is imported in groq_client.py
+>       with patch("generator.ai.providers.groq_client.Groq") as MockGroq:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_encoding_fix.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\..\anaconda3\Lib\unittest\mock.py:1463: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <unittest.mock._patch object at 0x00000286BAFD7650>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'generator.ai.providers.groq_client' from 'C:\\Users\\Dana\\.gemini\\antigravity\\scratch\\project-rules-generator\\generator\\ai\\providers\\groq_client.py'> does not have the attribute 'Groq'
+
+..\..\..\..\anaconda3\Lib\unittest\mock.py:1436: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/test_encoding_fix.py::TestEncodingFix::test_groq_client_encoding_fix
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+================== 1 failed, 135 passed, 1 skipped in 9.39s ===================
