@@ -3,15 +3,23 @@
 ## Provider Auto-Detection
 
 PRG resolves the AI provider automatically from environment variables.
-Priority order: **Gemini → Groq**.
+Priority order: **Anthropic → OpenAI → Gemini → Groq (default)**.
 
 ```bash
-export GEMINI_API_KEY=...   # https://aistudio.google.com/app/apikey
-export GROQ_API_KEY=...     # https://console.groq.com/keys
+export ANTHROPIC_API_KEY=sk-ant-...  # https://console.anthropic.com
+export OPENAI_API_KEY=sk-...         # https://platform.openai.com
+export GEMINI_API_KEY=...            # https://aistudio.google.com
+export GROQ_API_KEY=gsk_...          # https://console.groq.com
 ```
 
-If neither key is set, commands fall back to README-only mode and print setup
-instructions.
+API key prefixes are also detected automatically:
+- `sk-ant-...` → Anthropic
+- `sk-...` → OpenAI
+- `gsk_...` → Groq
+
+If no keys are set, commands fall back to README-only mode (no LLM required).
+
+See [llm-router.md](llm-router.md) for full routing configuration.
 
 ---
 
@@ -28,7 +36,7 @@ prints actionable next steps. The recommended starting point for new projects.
 |------|---------|-------------|
 | `PROJECT_PATH` | `.` | Project root directory |
 | `--yes / -y` | false | Skip confirmation prompts |
-| `--provider` | auto | Force `gemini` or `groq` |
+| `--provider` | auto | Force `gemini`, `groq`, `anthropic`, or `openai` |
 
 ---
 
@@ -49,8 +57,9 @@ Full pipeline: README parsing → rules → skills → clinerules.yaml → git c
 | `--constitution` | false | Generate `constitution.md` |
 | `--incremental` | false | Skip unchanged sections |
 | `--output DIR` | `.clinerules` | Output directory |
-| `--provider` | auto | `gemini` or `groq` |
-| `--api-key` | env | Override env var key |
+| `--provider` | auto | `gemini`, `groq`, `anthropic`, or `openai` |
+| `--strategy` | `auto` | Routing strategy: `auto`, `speed`, `quality`, or `provider:<name>` |
+| `--api-key` | env | Override env var key (auto-detects provider from prefix) |
 | `--merge` | false | Keep existing skill files |
 | `--commit / --no-commit` | true | Auto-commit generated files |
 | `--quality-check` | false | Score files 0–100 |
@@ -60,6 +69,22 @@ Full pipeline: README parsing → rules → skills → clinerules.yaml → git c
 | `--create-skill NAME` | — | Create a new learned skill |
 | `--remove-skill NAME` | — | Remove a learned skill |
 | `--verbose / --quiet` | true | Detailed output |
+
+**`--strategy` values:**
+
+| Value | Behaviour |
+|-------|-----------|
+| `auto` | Quality ÷ usage load-balance (default) |
+| `quality` | Highest-quality provider first (anthropic → openai → gemini → groq) |
+| `speed` | Fastest provider first (groq → gemini → openai → anthropic) |
+| `provider:X` | Always use provider X |
+
+```bash
+# Strategy examples
+prg analyze . --create-skill dom --ai --strategy quality
+prg analyze . --create-skill dom --ai --strategy speed
+prg analyze . --create-skill dom --ai --strategy provider:anthropic
+```
 
 ---
 
@@ -143,7 +168,7 @@ AI-powered task decomposition into subtasks.
 | `--from-readme FILE` | — | Generate roadmap from `README.md` |
 | `--status` | false | Show progress on existing plan |
 | `--interactive` | false | Open files in IDE |
-| `--provider` | auto | `gemini` or `groq` |
+| `--provider` | auto | `gemini`, `groq`, `anthropic`, or `openai` |
 
 ---
 
@@ -216,3 +241,41 @@ prg manager [PROJECT_PATH] [OPTIONS]
 
 4-phase orchestration: Setup → Verify → Copilot → Summary. Generates all
 missing artifacts before starting the execution loop.
+
+---
+
+## `prg providers` — AI Provider Management
+
+```bash
+prg providers COMMAND [OPTIONS]
+```
+
+### `prg providers list`
+
+Rich table of all 4 providers: name, status (✅ Ready / ❌ No key), quality score,
+speed score, default model, and env variable.
+
+```bash
+prg providers list
+```
+
+### `prg providers test`
+
+Send a test prompt to verify connectivity and print latency.
+
+```bash
+prg providers test                     # Test all providers with keys
+prg providers test --provider anthropic  # Test a specific provider
+```
+
+### `prg providers benchmark`
+
+Run N standard prompts, measure average latency, and rank by composite
+quality/speed score. Prints a Rich table with the recommended provider.
+
+```bash
+prg providers benchmark                # 3 prompts (default)
+prg providers benchmark --prompts 5   # More prompts for accuracy
+```
+
+See [llm-router.md](llm-router.md) for routing configuration and `~/.prg/ai_strategy.yaml` defaults.
