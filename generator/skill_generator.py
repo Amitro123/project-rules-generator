@@ -105,7 +105,10 @@ class SkillGenerator:
             existing = self.discovery.resolve_skill(safe_name)
             print(f"Skill '{safe_name}' already exists — skipping. (use force=True to overwrite)")
             if existing is not None:
-                return existing.parent if existing.name == "SKILL.md" else existing.parent / safe_name
+                # BUG-1 fix: for SKILL.md → return skill dir (existing.parent);
+                # for flat file (fastapi-endpoints.md) → also return existing.parent
+                # (the learned/ container), NOT parent / safe_name which doesn't exist.
+                return existing.parent
             # Fallback: return the expected directory path
             return self.discovery.global_learned / safe_name
         # ─────────────────────────────────────────────────────────────────────
@@ -149,6 +152,10 @@ class SkillGenerator:
 
         # GAP 3: Progressive disclosure — scaffold Level 3 subdirectories
         self._scaffold_level3(target_dir, safe_name)
+
+        # DESIGN-1 fix: invalidate the cache so list_skills() / skill_exists() see
+        # the newly-created skill immediately instead of stale pre-creation data.
+        self.discovery.invalidate_cache()
 
         return target_dir
 

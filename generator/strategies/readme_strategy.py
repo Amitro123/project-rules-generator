@@ -116,7 +116,13 @@ class READMEStrategy:
             if tech:
                 content += f"\n## Tech Stack\n{', '.join(tech)}\n"
 
-            content += f"\n## Context (from README)\n\n{readme_content}\n"
+            # BUG-3 fix: embed only a short excerpt (≤ 400 chars) so skill files
+            # don't balloon in size and the quality size-gate is not bypassed.
+            MAX_CONTEXT = 400
+            excerpt = readme_content[:MAX_CONTEXT]
+            truncated = len(readme_content) > MAX_CONTEXT
+            context_note = " *(truncated — see README.md for full content)*" if truncated else ""
+            content += f"\n## Context (from README){context_note}\n\n{excerpt}\n"
 
             return content
         except Exception as e:

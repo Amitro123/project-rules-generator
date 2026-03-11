@@ -158,13 +158,15 @@ class SkillDiscovery:
 
         # Try symlink
         try:
-            os.symlink(source, target, target_is_directory=True)
+            os.symlink(source, target, target_is_directory=source.is_dir())
         except (OSError, AttributeError):
-            # Fallback to copy
+            # Fallback to copy (common on Windows without elevated symlink privilege)
             if source.exists():
                 try:
                     if source.is_dir():
                         shutil.copytree(source, target)
+                    else:
+                        shutil.copy2(source, target)
                 except Exception as copy_err:
                     logger.warning("Failed to link or copy %s to %s: %s", source, target, copy_err)
 
@@ -275,6 +277,10 @@ class SkillDiscovery:
             p_path = self._skills_cache["project"]["by_rel"].get(f"{skill_name}.md")
             if p_path:
                 return p_path
+            # BUG-4 fix: also check directory-style in project layer
+            p_dir = self._skills_cache["project"]["by_rel"].get(f"{skill_name}/SKILL.md")
+            if p_dir:
+                return p_dir
 
         # 2. Check Learned
         l_path = self._skills_cache["learned"]["by_rel"].get(f"{skill_name}.md")

@@ -98,8 +98,13 @@ Some description here.
 
 
 def test_create_skill_flat_file_returns_correct_dir(tmp_path):
-    """BUG-3: For flat-file skills (learned/myskill.md), create_skill must return
-    learned/myskill/ — not the parent learned/ directory."""
+    """BUG-3 (issue #17) / BUG-1 (issue #23): For flat-file skills (learned/myskill.md),
+    create_skill() must return an EXISTING path.
+
+    Issue #17 identified the bug (wrong path returned).
+    Issue #23 BUG-1 refined the fix: for a flat .md file, existing.parent IS learned/
+    (not the phantom learned/myskill/ dir). The returned path must exist on disk.
+    """
     # Set up a fake global structure
     global_learned = tmp_path / "learned"
     global_learned.mkdir()
@@ -117,9 +122,15 @@ def test_create_skill_flat_file_returns_correct_dir(tmp_path):
     # Call create_skill without force — should detect skill exists and return correct path
     result_path = generator.create_skill("myskill", force=False)
 
-    assert result_path == global_learned / "myskill", (
-        f"Expected learned/myskill/ but got {result_path}. "
-        f"Flat-file skill parent is learned/ dir, so we need parent / safe_name."
+    # The returned path must exist on disk (BUG-1 fix: was returning non-existent learned/myskill/)
+    assert result_path.exists(), (
+        f"create_skill() returned non-existent path {result_path!r}. "
+        f"For a flat-file skill, it must return an existing container directory."
+    )
+    # For a flat-file skill, existing.parent is the learned/ dir itself
+    assert result_path == global_learned, (
+        f"Expected learned/ container dir ({global_learned}) but got {result_path}. "
+        f"(Issue #23 BUG-1: dropping phantom '/ safe_name' suffix for flat-file skills.)"
     )
 
 

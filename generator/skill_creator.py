@@ -1,4 +1,4 @@
-﻿"""
+"""
 Cowork-Powered Skill Creator
 ===========================
 
@@ -241,27 +241,32 @@ class CoworkSkillCreator:
         target.write_text(content, encoding="utf-8")
 
     def link_from_learned(self, skill_name: str):
-        """Link a learned skill from Global Cache to Project Local Skills."""
-        # Source: ~/.project-rules-generator/learned/<skill_name>.md
-        # Target: <project>/.clinerules/skills/project/<skill_name>.md
+        """Link a learned skill from Global Cache to Project Local Skills.
 
-        source = self.discovery.global_learned / f"{skill_name}.md"
-        if not source.exists():
-            # Directory-style skill: <name>/SKILL.md
-            source_dir = self.discovery.global_learned / skill_name
-            if source_dir.exists() and source_dir.is_dir():
-                source = source_dir / "SKILL.md"
+        Supports both storage formats:
+        - Flat file: global_learned/<name>.md  → project_local_dir/<name>.md
+        - Directory: global_learned/<name>/     → project_local_dir/<name>/
+          (DESIGN-2 fix: link the *whole* directory so Level-3 subdirs are included)
+        """
+        source_flat = self.discovery.global_learned / f"{skill_name}.md"
+        source_dir = self.discovery.global_learned / skill_name
 
         if not self.discovery.project_local_dir:
             print(f"⚠️  Could not link {skill_name}: No project path configured.")
             return
 
-        target = self.discovery.project_local_dir / f"{skill_name}.md"
-
-        if source.exists():
-            self.discovery._link_or_copy(source, target)
+        if source_flat.exists():
+            # Flat-file style: link the .md directly
+            target = self.discovery.project_local_dir / f"{skill_name}.md"
+            self.discovery._link_or_copy(source_flat, target)
+        elif source_dir.exists() and source_dir.is_dir():
+            # DESIGN-2 fix: directory-style skill — link the entire directory
+            # so scripts/, references/, and assets/ subdirs are also available.
+            target = self.discovery.project_local_dir / skill_name
+            self.discovery._link_or_copy(source_dir, target)
         else:
             print(f"⚠️  Could not link {skill_name}: Source not found in global learned.")
+
 
     def setup_symlinks(self):
         """Ensure project symlinks are set up."""
