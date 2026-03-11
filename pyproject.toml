@@ -26,7 +26,8 @@ dependencies = [
     "pydantic>=2.0.0",
     "tqdm>=4.66.0",
     "google-generativeai>=0.3.0",
-    "groq>=0.4.0"
+    "groq>=0.4.0",
+    "python-dotenv>=1.0.0"
 ]
 
 [project.scripts]
@@ -35,7 +36,7 @@ prg = "main:cli"
 
 [tool.setuptools]
 py-modules = ["main", "project_rules_generator"]
-packages = ["generator", "analyzer", "prg_utils", "src"]
+packages = ["generator", "prg_utils", "cli"]
 
 [tool.setuptools.package-data]
 generator = ["skills/**/*"]

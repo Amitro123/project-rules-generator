@@ -1,7 +1,10 @@
+import logging
 import os
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class SkillDiscovery:
@@ -120,7 +123,7 @@ class SkillDiscovery:
                     else:
                         shutil.copy2(item, dest)
             except Exception as e:
-                print(f"[Warning] Failed to sync builtin skills to global cache: {e}")
+                logger.warning("Failed to sync builtin skills to global cache: %s", e)
 
     def setup_project_structure(self):
         """
@@ -163,7 +166,7 @@ class SkillDiscovery:
                     if source.is_dir():
                         shutil.copytree(source, target)
                 except Exception as copy_err:
-                    print(f"[Warning] Failed to link or copy {source} to {target}: {copy_err}")
+                    logger.warning("Failed to link or copy %s to %s: %s", source, target, copy_err)
 
     def list_skills(self) -> Dict[str, Dict[str, Any]]:
         """

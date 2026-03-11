@@ -509,27 +509,83 @@ def extract_auto_triggers(readme: str, skill_name: str) -> List[str]:
 
 
 def extract_process_steps(readme: str) -> List[str]:
-    """Extract installation/quickstart steps from README."""
-    steps: List[str] = []
-    in_quickstart = False
+    """Extract process steps from README.
+
+    Searches the following section headers (in priority order):
+      - Quick Start / Installation / Setup  (original behaviour)
+      - Workflow / Development Workflow / Development Process
+      - How to Contribute / Contributing
+
+    Captures both numbered list items (1. ...) and bullet items (- / * / +).
+    Also captures fenced code blocks that appear within these sections.
+    Returns up to 10 steps.
+    """
+    # Ordered priority: installation-style first, then broader workflow sections
+    SECTION_PATTERNS = [
+        r"quick start|installation|setup",
+        r"development workflow|development process|workflow",
+        r"how to contribute|contributing",
+    ]
 
     lines = readme.split("\n")
-    for i, line in enumerate(lines):
-        if re.search(r"## .*(quick start|installation|setup)", line, re.IGNORECASE):
-            in_quickstart = True
-            continue
-        if in_quickstart:
-            if line.startswith("## ") and not line.startswith("### "):
-                break
-            if re.match(r"^\d+\.", line.strip()):
-                steps.append(line.strip())
-            elif line.strip().startswith("```"):
-                code_block: List[str] = []
-                for j in range(i, len(lines)):
-                    code_block.append(lines[j])
-                    if j > i and lines[j].strip().startswith("```"):
-                        break
-                steps.append("\n".join(code_block))
+
+    def _collect_steps_from_section(pattern: str) -> List[str]:
+        """Return steps found in the first section matching *pattern*."""
+        collected: List[str] = []
+        in_section = False
+
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            # Detect section header (## or ###)
+            if re.search(rf"##{{1,3}}\s+.*(?:{pattern})", line, re.IGNORECASE):
+                in_section = True
+                i += 1
+                continue
+
+            if in_section:
+                # Stop at any same-or-higher-level header (## not ###)
+                if re.match(r"^#{1,2}\s+\S", line) and not line.startswith("###"):
+                    break
+
+                stripped = line.strip()
+
+                # Numbered list item
+                if re.match(r"^\d+[\.)]\s+", stripped):
+                    collected.append(stripped)
+
+                # Bullet list item (-, *, +) at top-level indentation
+                elif re.match(r"^[-*+]\s+", stripped):
+                    collected.append(stripped)
+
+                # Fenced code block
+                elif stripped.startswith("```"):
+                    code_block: List[str] = [line]
+                    i += 1
+                    while i < len(lines):
+                        code_block.append(lines[i])
+                        if i > 0 and lines[i].strip().startswith("```") and len(code_block) > 1:
+                            i += 1
+                            break
+                        i += 1
+                    collected.append("\n".join(code_block))
+                    continue
+
+            i += 1
+
+        return collected
+
+    # Try each pattern in priority order; merge unique steps
+    seen: set = set()
+    steps: List[str] = []
+    for pat in SECTION_PATTERNS:
+        for step in _collect_steps_from_section(pat):
+            key = step[:80]  # deduplicate by first 80 chars
+            if key not in seen:
+                seen.add(key)
+                steps.append(step)
+        if steps:
+            break  # Stop at the first pattern that yields results
 
     return steps[:10]
 
@@ -538,7 +594,8 @@ def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[P
     """Extract anti-patterns from both README text and project structure.
 
     Priority 1: explicit ❌ markers the author wrote in the README.
-    Priority 2: structural checks against the actual project on disk.
+    Priority 2: negative imperative statements in "Coding Standards" / "Best Practices" / "Rules" sections.
+    Priority 3: structural checks against the actual project on disk.
     """
     anti_patterns: List[str] = []
 
@@ -550,6 +607,57 @@ def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[P
             pattern = stripped[1:].strip()
             if len(pattern) > 10:
                 anti_patterns.append(pattern)
+
+    # --- Priority 2: negative imperatives in standards/best-practices sections ---
+    _STANDARDS_SECTION_RE = re.compile(
+        r"(?m)^#{1,3}\s+.*(?:coding standards?|best practices?|rules?|standards?|guidelines?)\s*$",
+        re.IGNORECASE,
+    )
+    _NEGATIVE_KEYWORDS = re.compile(
+        r"\b(?:never|do\s+not|don'?t|avoid|must\s+not|no\s+)\b",
+        re.IGNORECASE,
+    )
+
+    existing_texts = {ap.lower() for ap in anti_patterns}
+
+    lines = readme.split("\n")
+    in_standards = False
+    section_level = 0
+
+    for line in lines:
+        # Detect a standards/best-practices header
+        if _STANDARDS_SECTION_RE.match(line.strip()):
+            in_standards = True
+            # Track the header level (##, ###, etc.) to detect when the section ends
+            header_match = re.match(r"^(#+)", line.strip())
+            if header_match: # Ensure there's a match before accessing group(1)
+                section_level = len(header_match.group(1))
+            else:
+                section_level = 0 # Fallback if header format is unexpected
+            continue
+
+        if in_standards:
+            # Stop when we hit another header of same or higher level
+            header_match = re.match(r"^(#+)\s+\S", line)
+            if header_match:
+                this_level = len(header_match.group(1))
+                if this_level <= section_level:
+                    in_standards = False
+                    continue
+
+            stripped = line.strip()
+            # Only process list items (bullet or numbered)
+            list_match = re.match(r"^(?:[-*+]|\d+[\.)]) (.+)", stripped)
+            if list_match:
+                item_text = list_match.group(1).strip()
+                # Only keep items that contain a negative imperative
+                if _NEGATIVE_KEYWORDS.search(item_text):
+                    # Strip inline markdown formatting for cleaner display
+                    clean = re.sub(r"`([^`]+)`", r"\1", item_text)
+                    clean = re.sub(r"\*\*|__|_|\*", "", clean).strip()
+                    if len(clean) > 10 and clean.lower() not in existing_texts:
+                        anti_patterns.append(clean)
+                        existing_texts.add(clean.lower())
 
     if not project_path:
         return anti_patterns

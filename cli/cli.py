@@ -4,6 +4,20 @@
 import sys
 from pathlib import Path
 
+# Fix Windows console encoding so emoji/Unicode CLI output renders correctly
+if sys.platform == "win32":
+    import ctypes
+
+    try:
+        ctypes.windll.kernel32.SetConsoleOutputCP(65001)  # UTF-8 codepage
+    except Exception:
+        pass
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+    except Exception:
+        pass
+
 import click
 from dotenv import load_dotenv
 
