@@ -4,6 +4,7 @@ Implements an iterative improvement system that automatically regenerates
 low-quality content with AI feedback until achieving target scores.
 """
 
+import concurrent.futures
 import logging
 from pathlib import Path
 from typing import Optional
@@ -199,12 +200,14 @@ def batch_improve_with_feedback(
     """
     results = {}
 
-    for filepath in filepaths:
-        if verbose:
-            logger.info(f"\nImproving {filepath.name}...")
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_filepath = {}
+        for filepath in filepaths:
+            if verbose:
+                logger.info(f"\nImproving {filepath.name}...")
 
-        try:
-            report = improve_with_feedback(
+            future = executor.submit(
+                improve_with_feedback,
                 filepath,
                 analyzer,
                 target_score=target_score,
@@ -212,13 +215,21 @@ def batch_improve_with_feedback(
                 project_path=project_path,
                 verbose=verbose,
             )
-            results[filepath] = report
+            future_to_filepath[future] = filepath
 
-            if verbose:
-                logger.info(f"  Final score: {report.score}/100")
+        for future in concurrent.futures.as_completed(future_to_filepath):
+            filepath = future_to_filepath[future]
+            try:
+                report = future.result()
+                results[filepath] = report
 
-        except Exception as e:
-            logger.error(f"Failed to improve {filepath}: {e}")
-            # Continue with other files
+                if verbose:
+                    logger.info(
+                        f"  Final score for {filepath.name}: {report.score}/100"
+                    )
+
+            except Exception as e:
+                logger.error(f"Failed to improve {filepath}: {e}")
+                # Continue with other files
 
     return results
