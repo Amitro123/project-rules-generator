@@ -1,41 +1,56 @@
 """Generate skills using LLM with project context."""
 
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 from .ai.factory import create_ai_client
 
 
 class LLMSkillGenerator:
-    """Generate actionable skills using LLM analysis."""
+    """Generate actionable skills using LLM analysis.
+
+    Supports two modes:
+    - Direct provider mode (legacy): pass ``provider`` to target a specific client.
+    - Router mode: pass ``strategy`` ("auto", "speed", "quality", "provider:X")
+      to let AIStrategyRouter pick the best available provider with fallback.
+    """
 
     def __init__(
         self,
         api_key: Optional[str] = None,
         model_name: Optional[str] = None,
         provider: str = "groq",
+        strategy: Optional[str] = None,
     ):
         self.provider = provider
+        self.strategy = strategy  # None → direct mode; set → router mode
+        self.model_name = model_name
         self.api_key: Optional[str]
 
-        # 1. Use explicit key if provided
+        if strategy is not None:
+            # Router mode — defer client creation to smart_generate
+            self.client = None
+            self.api_key = api_key
+            return
+
+        # Direct mode — original behaviour
         if api_key:
             self.api_key = api_key
-        # 2. Or select based on provider
         elif self.provider == "groq":
             self.api_key = os.getenv("GROQ_API_KEY")
         elif self.provider == "gemini":
             self.api_key = os.getenv("GEMINI_API_KEY")
+        elif self.provider == "anthropic":
+            self.api_key = os.getenv("ANTHROPIC_API_KEY")
+        elif self.provider == "openai":
+            self.api_key = os.getenv("OPENAI_API_KEY")
         else:
             self.api_key = None
 
         try:
             self.client = create_ai_client(self.provider, api_key=self.api_key)
         except Exception as e:
-            # Fallback or re-raise with clear message
             raise RuntimeError(f"Failed to initialize AI client ({self.provider}): {e}")
-
-        self.model_name = model_name
 
     def generate_skill(self, skill_name: str, context: Dict) -> str:
         """Generate complete skill from project context."""
@@ -43,7 +58,21 @@ class LLMSkillGenerator:
         return self.generate_content(prompt, max_tokens=2000)
 
     def generate_content(self, prompt: str, max_tokens: int = 2000) -> str:
-        """Generate content from prompt using the configured model."""
+        """Generate content from prompt using the configured model or router."""
+        if self.strategy is not None:
+            # Router mode: smart provider selection with fallback
+            from generator.ai.ai_strategy_router import AIStrategyRouter
+
+            router = AIStrategyRouter(strategy=self.strategy)
+            try:
+                content, used_provider = router.smart_generate(
+                    prompt, task_type="skills", max_tokens=max_tokens
+                )
+                self.provider = used_provider  # record which provider was chosen
+                return content
+            except Exception as e:
+                raise RuntimeError(f"Router generation failed: {e}")
+        # Direct mode (original behaviour)
         try:
             return self.client.generate(prompt, max_tokens=max_tokens, model=self.model_name)
         except Exception as e:

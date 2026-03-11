@@ -13,6 +13,7 @@ class StubStrategy:
         project_path: Optional[Path],
         from_readme: Optional[str],
         provider: str,
+        **kwargs: object,
     ) -> str:
         """
         Generate stub template with placeholders.

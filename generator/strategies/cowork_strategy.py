@@ -91,6 +91,7 @@ class CoworkStrategy:
         project_path: Optional[Path],
         from_readme: Optional[str],
         provider: str,
+        **kwargs: object,
     ) -> Optional[str]:
         """Generate a skill using Cowork analysis.
 

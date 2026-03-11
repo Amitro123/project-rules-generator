@@ -5,7 +5,7 @@ from typing import Optional
 
 
 class AIStrategy:
-    """Generate skills using AI (LLM) providers like Groq or Gemini."""
+    """Generate skills using AI (LLM) providers like Groq, Gemini, Anthropic, or OpenAI."""
 
     def generate(
         self,
@@ -13,12 +13,17 @@ class AIStrategy:
         project_path: Optional[Path],
         from_readme: Optional[str],
         provider: str,
+        strategy: Optional[str] = None,
     ) -> Optional[str]:
         """
-        Generate skill content using AI provider.
+        Generate skill content using AI provider or router.
+
+        Args:
+            strategy: Router strategy ("auto", "speed", "quality", "provider:X").
+                      When set, AIStrategyRouter is used instead of a direct provider call.
 
         Returns:
-            Generated skill content or None if AI generation fails
+            Generated skill content or None if AI generation fails.
         """
         if not project_path:
             return None
@@ -31,8 +36,9 @@ class AIStrategy:
             analyzer = ProjectAnalyzer(Path(project_path))
             context = analyzer.analyze()
 
-            print(f"✨ Generating skill with AI ({provider})...")
-            generator = LLMSkillGenerator(provider=provider)
+            provider_label = f"router:{strategy}" if strategy else provider
+            print(f"✨ Generating skill with AI ({provider_label})...")
+            generator = LLMSkillGenerator(provider=provider, strategy=strategy)
             return generator.generate_skill(skill_name, context)
         except ImportError as e:
             print(f"[!] Warning: AI provider not available ({e}). Falling back to next strategy.")

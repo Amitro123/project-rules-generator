@@ -164,9 +164,18 @@ def setup_orchestrator(config):
 @click.option("--ide", help="Register rules with IDE (antigravity, cline, cursor, vscode)")
 @click.option(
     "--provider",
-    type=click.Choice(["gemini", "groq"]),
+    type=click.Choice(["gemini", "groq", "anthropic", "openai"]),
     default=None,
-    help="AI Provider (gemini, groq). Auto-detected from env vars if omitted.",
+    help="AI Provider (gemini, groq, anthropic, openai). Auto-detected from env vars if omitted.",
+)
+@click.option(
+    "--strategy",
+    default="auto",
+    show_default=True,
+    help=(
+        "Router strategy: auto (smart fallback), speed, quality, "
+        "or provider:<name> (e.g. provider:anthropic)"
+    ),
 )
 @click.option("--add-skill", help="Add a skill (alias for create-skill)")
 @click.option(
@@ -254,6 +263,7 @@ def analyze(
     create_rules_flag,
     rules_quality_threshold,
     skills_dir,
+    strategy,
 ):
     """Analyze project and generate rules.md and skills.md from README.md"""
     project_path = Path(project_path).resolve()
@@ -329,6 +339,14 @@ def analyze(
     if provider is None:
         if api_key and api_key.startswith("gsk_"):
             provider = "groq"
+        elif api_key and api_key.startswith("sk-ant-"):
+            provider = "anthropic"
+        elif api_key and api_key.startswith("sk-"):
+            provider = "openai"
+        elif os.environ.get("ANTHROPIC_API_KEY"):
+            provider = "anthropic"
+        elif os.environ.get("OPENAI_API_KEY"):
+            provider = "openai"
         elif os.environ.get("GEMINI_API_KEY") and not os.environ.get("GROQ_API_KEY"):
             provider = "gemini"
         else:
@@ -342,6 +360,10 @@ def analyze(
             os.environ["GEMINI_API_KEY"] = api_key
         elif provider == "groq":
             os.environ["GROQ_API_KEY"] = api_key
+        elif provider == "anthropic":
+            os.environ["ANTHROPIC_API_KEY"] = api_key
+        elif provider == "openai":
+            os.environ["OPENAI_API_KEY"] = api_key
         if verbose:
             click.echo(f"Using API key from --api-key flag for {provider}")
 
@@ -372,6 +394,7 @@ def analyze(
                     use_ai=ai,
                     provider=provider or "groq",
                     force=force,
+                    strategy=strategy if ai else None,
                 )
 
                 click.echo(f"✨ Created new skill '{path.name}' in {path}")

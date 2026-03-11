@@ -14,6 +14,7 @@ class READMEStrategy:
         project_path: Optional[Path],
         from_readme: Optional[str],
         provider: str,
+        **kwargs: object,
     ) -> Optional[str]:
         """
         Parse README and generate skill content.

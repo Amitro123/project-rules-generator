@@ -80,6 +80,7 @@ from cli.create_rules_cmd import create_rules
 from cli.gaps_cmd import gaps, spec_cmd
 from cli.jobs import exec_task, leaderboard, next_task, query_tasks, status
 from cli.manager_cmd import manager
+from cli.providers_cmd import providers_group
 from cli.tasks_cmd import tasks_cmd
 
 cli.add_command(analyze)
@@ -100,6 +101,7 @@ cli.add_command(tasks_cmd)
 cli.add_command(spec_cmd, name="spec")
 cli.add_command(agent_command)
 cli.add_command(leaderboard)
+cli.add_command(providers_group, name="providers")
 
 
 def main():

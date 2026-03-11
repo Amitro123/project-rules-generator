@@ -71,6 +71,7 @@ class SkillGenerator:
         use_ai: bool = False,
         provider: str = "groq",
         force: bool = False,
+        strategy: Optional[str] = None,
     ) -> Path:
         """Create a new learned skill in the GLOBAL cache.
 
@@ -79,8 +80,10 @@ class SkillGenerator:
             from_readme: README content to use for context.
             project_path: Project path for CoworkStrategy.
             use_ai: Whether to use AI provider.
-            provider: AI provider name ('groq' or 'gemini').
+            provider: AI provider name ('groq', 'gemini', 'anthropic', 'openai').
             force: If True, overwrite an existing skill. Default False (skip).
+            strategy: Router strategy ("auto", "speed", "quality", "provider:X").
+                      None → direct provider mode.
 
         Returns:
             Path to the skill directory.
@@ -137,8 +140,8 @@ class SkillGenerator:
         strategies.append(StubStrategy())  # Always available as final fallback
 
         content = None
-        for strategy in strategies:
-            content = strategy.generate(safe_name, project_path, readme_content, provider)
+        for strategy_obj in strategies:
+            content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy)
             if content:
                 break
 
