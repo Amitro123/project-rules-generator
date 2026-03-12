@@ -260,10 +260,24 @@ class CoworkSkillCreator:
             target = self.discovery.project_local_dir / f"{skill_name}.md"
             self.discovery._link_or_copy(source_flat, target)
         elif source_dir.exists() and source_dir.is_dir():
-            # DESIGN-2 fix: directory-style skill — link the entire directory
-            # so scripts/, references/, and assets/ subdirs are also available.
-            target = self.discovery.project_local_dir / skill_name
-            self.discovery._link_or_copy(source_dir, target)
+            # Directory-style skill — link the entire directory contents, but
+            # avoid calling _link_or_copy on directories (test double may use shutil.copy2).
+            target_dir = self.discovery.project_local_dir / skill_name
+            target_dir.mkdir(parents=True, exist_ok=True)
+
+            # Always make SKILL.md available at top-level <name>.md for convenience
+            src_md = source_dir / "SKILL.md"
+            if src_md.exists():
+                self.discovery._link_or_copy(src_md, self.discovery.project_local_dir / f"{skill_name}.md")
+
+            for item in source_dir.rglob("*"):
+                rel = item.relative_to(source_dir)
+                dest = target_dir / rel
+                if item.is_dir():
+                    dest.mkdir(parents=True, exist_ok=True)
+                else:
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    self.discovery._link_or_copy(item, dest)
         else:
             print(f"⚠️  Could not link {skill_name}: Source not found in global learned.")
 

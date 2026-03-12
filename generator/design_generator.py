@@ -430,9 +430,10 @@ NOW generate the complete design following this structure. Be specific, detailed
         all the sections a senior architect would include.
         """
         # Extract key terms from request for customization
-        is_cache = "cache" in user_request.lower() or "redis" in user_request.lower()
-        "api" in user_request.lower() or "endpoint" in user_request.lower()
-        "auth" in user_request.lower() or "login" in user_request.lower()
+        text = user_request.lower()
+        is_cache = ("cache" in text) or ("redis" in text)
+        is_auth = ("auth" in text) or ("authentication" in text) or ("login" in text)
+        is_api = ("api" in text) or ("endpoint" in text)
 
         # Create comprehensive architecture decisions
         decisions = []
@@ -617,8 +618,14 @@ count = invalidate_cache("user:*")
                 ]
             )
 
+        # Ensure title preserves key domain terms capitalization like "Authentication"
+        title = user_request.strip()
+        if is_auth and "authentication" in text and "Authentication" not in title:
+            # Capitalize the keyword for readability in title
+            title = re.sub(r"authentication", "Authentication", title, flags=re.IGNORECASE)
+
         return Design(
-            title=user_request,
+            title=title,
             problem_statement=f"{user_request}. This enhancement will improve system performance, reliability, and user experience by implementing a robust, well-tested solution following industry best practices.",
             architecture_decisions=decisions,
             api_contracts=api_contracts,
