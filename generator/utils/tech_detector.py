@@ -130,6 +130,26 @@ def detect_from_dependencies(project_path: Path) -> Set[str]:
                 "reportlab": "reportlab",
                 "supabase": "supabase",
                 "konva": "konva",
+                # CLI / templating / HTTP — added to match TECH_SKILL_NAMES entries
+                "click": "click",
+                "typer": "typer",
+                "gitpython": "gitpython",
+                "groq": "groq",
+                "google-generativeai": "gemini",
+                "httpx": "httpx",
+                "requests": "requests",
+                "aiohttp": "aiohttp",
+                "uvicorn": "uvicorn",
+                "websockets": "websocket",
+                "jinja2": "jinja2",
+                "pymongo": "mongodb",
+                "psycopg2": "postgresql",
+                "psycopg2-binary": "postgresql",
+                "asyncpg": "postgresql",
+                "motor": "mongodb",
+                "torch": "pytorch",
+                "tensorflow": "tensorflow",
+                "perplexity": "perplexity",
             }
             for pkg, tech in pkg_map.items():
                 if pkg in content:

@@ -71,13 +71,37 @@ def test_priority_resolution(manager):
 
 
 def test_create_skill_global(manager):
-    """Verify create_skill adds to GLOBAL learned cache."""
+    """Verify create_skill adds to GLOBAL learned cache.
+
+    When setup_project_structure() has been called first (so project_learned_link
+    exists on disk), the skill is written there (which is a link/copy of global_learned).
+    BUG-2 fix: project_learned_link must exist on disk, not just be a Path attribute.
+    """
     skill_name = "new-global-skill"
+    manager.ensure_global_structure()
+    manager.setup_project_structure()
     manager.create_skill(skill_name)
 
+    # After setup, project_learned_link exists on disk → skill written there
     expected_path = manager.project_learned_link / skill_name / "SKILL.md"
     assert expected_path.exists()
     assert "Skill: New Global Skill" in expected_path.read_text(encoding="utf-8")
+
+
+def test_create_skill_fallback_to_global_learned_when_no_project_setup(manager):
+    """BUG-2: When project_learned_link is not set up (does not exist on disk),
+    create_skill must write to global_learned, not try to write to a non-existent dir."""
+    skill_name = "fallback-skill"
+    # Deliberately do NOT call setup_project_structure() — link does not exist on disk
+    manager.ensure_global_structure()
+    manager.create_skill(skill_name)
+
+    # Must be in global_learned, not in a non-existent project_learned_link dir
+    expected_path = manager.global_learned / skill_name / "SKILL.md"
+    assert expected_path.exists(), (
+        f"Skill should be in global_learned when project_learned_link does not exist. "
+        f"project_learned_link exists={manager.project_learned_link.exists()}"
+    )
 
 
 def test_list_skills_aggregation(manager):

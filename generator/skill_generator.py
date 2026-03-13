@@ -113,8 +113,9 @@ class SkillGenerator:
             return self.discovery.global_learned / safe_name
         # ─────────────────────────────────────────────────────────────────────
 
-        # Target: prefer Local Learned if project context exists, else Global Learned
-        if self.discovery.project_learned_link:
+        # Target: prefer Local Learned if project context exists AND the dir is on disk
+        # (BUG-2 fix: Path object is always truthy; must also check .exists())
+        if self.discovery.project_learned_link and self.discovery.project_learned_link.exists():
             target_root = self.discovery.project_learned_link
         else:
             target_root = self.discovery.global_learned

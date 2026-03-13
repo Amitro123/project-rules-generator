@@ -30,7 +30,7 @@ The agent should activate this skill when the user requests:
 **Project Context Signals:**
 {% if project_signals %}
 {% for signal in project_signals -%}
-- `{{ signal }}` {% if signal == 'has_docker' %}Γזע Docker environment detected{% elif signal == 'has_tests' %}Γזע Test suite available{% elif signal == 'has_api' %}Γזע API endpoints present{% endif %}
+- `{{ signal }}` {% if signal == 'has_docker' %}— Docker environment detected{% elif signal == 'has_tests' %}— Test suite available{% elif signal == 'has_api' %}— API endpoints present{% endif %}
 {% endfor %}
 {% else %}
 - No specific signals required

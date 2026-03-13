@@ -196,6 +196,7 @@ class TestSkillsManagerDuplicatePrevention:
         """SkillsManager.create_skill with force=True overwrites."""
         manager = SkillsManager(project_path=tmp_path)
         manager.ensure_global_structure()
+        manager.setup_project_structure()  # BUG-2: project_learned_link must exist on disk
 
         (manager.global_learned / "existing-skill.md").write_text("# Old")
 
@@ -222,8 +223,9 @@ def _make_discovery(tmp_path: Path) -> SkillDiscovery:
     discovery.project_builtin_link = discovery.project_skills_root / "builtin"
     discovery._skills_cache = None  # Required by main's caching optimization
 
-    # Create base dirs
+    # Create base dirs — including project_learned_link so BUG-2 fix can use it
     discovery.global_learned.mkdir(parents=True, exist_ok=True)
     discovery.global_builtin.mkdir(parents=True, exist_ok=True)
+    discovery.project_learned_link.mkdir(parents=True, exist_ok=True)
 
     return discovery

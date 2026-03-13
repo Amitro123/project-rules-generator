@@ -625,33 +625,6 @@ class CoworkSkillCreator:
         """
         return _detect_from_deps_util(self.project_path)
 
-    def _detect_from_files(self) -> Set[str]:
-        """Detect tech from actual project files."""
-        detected = set()
-
-        # Check for specific file types
-        # React/Vue: .jsx, .tsx files
-        if any(self.project_path.rglob("*.jsx")) or any(self.project_path.rglob("*.tsx")):
-            detected.add("react")
-            if any(self.project_path.rglob("*.tsx")):
-                detected.add("typescript")
-
-        if any(self.project_path.rglob("*.vue")):
-            detected.add("vue")
-
-        # Python files
-        if any(self.project_path.rglob("*.py")):
-            detected.add("python")
-
-        # Tests
-        if (self.project_path / "tests").exists() or (self.project_path / "test").exists():
-            if detected.intersection({"python", "fastapi", "flask", "django"}):
-                detected.add("pytest")
-            if detected.intersection({"react", "vue", "javascript"}):
-                detected.add("jest")
-
-        return detected
-
     def _detect_from_readme(self, readme_content: str) -> Set[str]:
         """Detect tech from README (least reliable - use only for confirmation)."""
         tech_keywords = {
@@ -794,12 +767,19 @@ class CoworkSkillCreator:
         # Extract purpose from first paragraph mentioning skill topic
         skill_words = skill_name.replace("-", " ").split()
 
+        import re as _re
+
         lines = readme_content.split("\n")
         for line in lines:
-            line_lower = line.lower()
-            if any(word in line_lower for word in skill_words) and len(line) > 20:
-                # Found relevant line
-                return line.strip()[:150]
+            stripped = line.strip()
+            # Skip numbered list items, bullet points, headings, badges, and code blocks
+            if _re.match(r"^\d+[\.\)]", stripped):
+                continue
+            if stripped.startswith(("#", "-", "*", ">", "|", "!", "`", "[")):
+                continue
+            line_lower = stripped.lower()
+            if any(word in line_lower for word in skill_words) and len(stripped) > 20:
+                return stripped[:150]
 
         # Fallback: generic but specific
         tech_part = skill_name.split("-")[0].upper() if "-" in skill_name else ""
@@ -1155,8 +1135,9 @@ class CoworkSkillCreator:
             "tools": metadata.tools,
             "category": metadata.category,
             "priority": metadata.priority,
-            "project_name": self.project_path.name,
-            "project_path": str(self.project_path),
+            # resolve() avoids "" when project_path is Path(".")
+            "project_name": self.project_path.resolve().name or self.project_path.resolve().stem,
+            "project_path": str(self.project_path.resolve()),
             "tech_stack": tech_stack,
             "readme_context": readme_content[:500] if readme_content else None,
             # BUG-C fix: quality_score removed — it is computed by _validate_quality()
@@ -1190,6 +1171,7 @@ class CoworkSkillCreator:
                 f"{rules_md}\n"
             )
 
+        _proj_name = self.project_path.resolve().name or self.project_path.resolve().stem
         content = self._render_frontmatter(metadata)
         content += f"""# Skill: {title}
 
@@ -1212,7 +1194,7 @@ The agent should activate this skill when:
 
 ### 1. Analyze Current State
 
-- Check project structure in `{self.project_path.name}/`
+- Check project structure in `{_proj_name}/`
 - Review relevant configuration files
 - Identify existing patterns
 
@@ -1222,7 +1204,7 @@ The agent should activate this skill when:
 
 ```bash
 # Example workflow
-cd {self.project_path.name}
+cd {_proj_name}
 # Run appropriate commands based on skill context
 ```
 
@@ -1257,7 +1239,7 @@ This skill generates:
 ## Project Context
 
 ```
-Project: {self.project_path.name}
+Project: {_proj_name}
 Signals: {", ".join(metadata.project_signals)}
 ```
 
@@ -1388,19 +1370,13 @@ Signals: {", ".join(metadata.project_signals)}
         if not tech_stack:
             skill_names.append(f"{self.project_path.name}-workflow")
         else:
-            # Map to skill types
+            # Use SkillGenerator.TECH_SKILL_NAMES as the single source of truth (BUG-1 fix)
+            from generator.skill_generator import SkillGenerator
+
             for tech in tech_stack:
-                tech_lower = tech.lower()
-                if tech_lower in ["fastapi", "flask", "django"]:
-                    skill_names.append(f"{tech_lower}-api-workflow")
-                elif tech_lower in ["react", "vue", "nextjs"]:
-                    skill_names.append(f"{tech_lower}-component-builder")
-                elif tech_lower == "pytest":
-                    skill_names.append("pytest-testing-workflow")
-                elif tech_lower == "docker":
-                    skill_names.append("docker-deployment")
-                elif tech_lower == "git":
-                    skill_names.append("git-workflow")
+                name = SkillGenerator.TECH_SKILL_NAMES.get(tech.lower())
+                if name:
+                    skill_names.append(name)
 
             # Use detected skills + generic project workflow
             if not skill_names:

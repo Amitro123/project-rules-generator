@@ -222,8 +222,13 @@ class SkillParser:
             break
 
         # 2. Extract Sections using Regex for robustness
-        # Triggers
-        triggers_match = re.search(r"##\s+Triggers\s*\n(.*?)(?:\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
+        # Triggers — accept both legacy "## Triggers" and the canonical "## Auto-Trigger"
+        # (DESIGN-2 fix: generated skills use "## Auto-Trigger"; the old pattern missed them)
+        triggers_match = re.search(
+            r"##\s+(?:Auto-Trigger|Triggers)\s*\n(.*?)(?:\n##|\Z)",
+            content,
+            re.DOTALL | re.IGNORECASE,
+        )
         if triggers_match:
             raw_triggers = triggers_match.group(1).strip()
             # Parse list items

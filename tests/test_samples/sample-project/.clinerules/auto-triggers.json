@@ -46,5 +46,12 @@
   "click-cli": [
     "working with click integration code",
     "editing files that import or configure click"
+  ],
+  "jinja2-template-workflow": [
+    "jinja2",
+    "template",
+    "workflow",
+    "working in backend code: *.py",
+    "working with *.j2 files"
   ]
 }
