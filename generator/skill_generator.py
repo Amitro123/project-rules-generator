@@ -91,8 +91,6 @@ class SkillGenerator:
         Raises:
             ValueError: If the skill name is invalid.
         """
-        from generator.strategies import AIStrategy, CoworkStrategy, READMEStrategy, StubStrategy
-
         self.discovery.ensure_global_structure()
 
         # Normalize name: lowercase, hyphens only
@@ -125,30 +123,9 @@ class SkillGenerator:
 
         skill_file = target_dir / "SKILL.md"
 
-        # Strategy chain: try each strategy until one succeeds
-        strategies: List[Any] = []
-        if use_ai:
-            strategies.append(AIStrategy())
-
-        # BUG-A fix: from_readme may be a file path (from CLI --from-readme) or
-        # raw content (from generate_from_readme).  Normalise to content here so
-        # every strategy in the chain receives the same contract.
-        readme_content = from_readme
-        if from_readme and Path(from_readme).is_file():
-            readme_content = Path(from_readme).read_text(encoding="utf-8", errors="replace")
-
-        if readme_content:
-            strategies.append(READMEStrategy())
-        if project_path:
-            strategies.append(CoworkStrategy())
-        strategies.append(StubStrategy())  # Always available as final fallback
-
-        content = None
-        for strategy_obj in strategies:
-            content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy)
-            if content:
-                break
-
+        content = self._run_strategy_chain(
+            safe_name, from_readme, project_path, use_ai=use_ai, provider=provider, strategy=strategy
+        )
         skill_file.write_text(content or "", encoding="utf-8")
 
         # GAP 3: Progressive disclosure — scaffold Level 3 subdirectories
@@ -159,6 +136,42 @@ class SkillGenerator:
         self.discovery.invalidate_cache()
 
         return target_dir
+
+    def _run_strategy_chain(
+        self,
+        safe_name: str,
+        from_readme: Optional[str],
+        project_path: Optional[str],
+        use_ai: bool = False,
+        provider: str = "groq",
+        strategy: Optional[str] = None,
+    ) -> Optional[str]:
+        """Run the strategy chain and return generated content without writing to disk.
+
+        BUG-A fix: from_readme may be a file path (from CLI --from-readme) or
+        raw content. Normalise to content so every strategy receives the same contract.
+        """
+        from generator.strategies import AIStrategy, CoworkStrategy, READMEStrategy, StubStrategy
+
+        strategies: List[Any] = []
+        if use_ai:
+            strategies.append(AIStrategy())
+
+        readme_content = from_readme
+        if from_readme and Path(from_readme).is_file():
+            readme_content = Path(from_readme).read_text(encoding="utf-8", errors="replace")
+
+        if readme_content:
+            strategies.append(READMEStrategy())
+        if project_path:
+            strategies.append(CoworkStrategy())
+        strategies.append(StubStrategy())  # Always available as final fallback
+
+        for strategy_obj in strategies:
+            content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy)
+            if content:
+                return content
+        return None
 
     @staticmethod
     def _scaffold_level3(skill_dir: Path, skill_name: str) -> None:
@@ -259,11 +272,18 @@ class SkillGenerator:
         # Classify skills: reuse / adapt / create
         reuse_map = self.check_global_skill_reuse(tech_stack)
 
-        # Map tech to project-specific skill content (for adapt/create cases)
-        skill_templates = self._derive_project_skills(tech_stack, readme_content, project_name)
+        # Deduplicated list of skill names in tech_stack order
+        seen_names: set = set()
+        skill_names = []
+        for tech in tech_stack:
+            skill_name = self.TECH_SKILL_NAMES.get(tech.lower().strip())
+            if skill_name and skill_name not in seen_names:
+                seen_names.add(skill_name)
+                skill_names.append(skill_name)
 
         generated = []
-        for skill_name, skill_content in skill_templates.items():
+        project_path_str = str(project_path) if project_path else None
+        for skill_name in skill_names:
             action = reuse_map.get(skill_name, "create")
             dest = target_dir / f"{skill_name}.md"
 
@@ -282,21 +302,30 @@ class SkillGenerator:
                 print(f"  [warn]  {skill_name}: cached skill not found, falling through to create")
                 action = "create"
 
+            # DESIGN-3 fix: delegate to _run_strategy_chain() so adapt/create cases
+            # go through the full strategy chain (CoworkStrategy, quality validation,
+            # etc.) instead of the old _derive_project_skills() direct call.
+            skill_content = self._run_strategy_chain(
+                skill_name,
+                from_readme=readme_content,
+                project_path=project_path_str,
+            )
+
             if action == "adapt":
                 # Stub exists globally — write project-adapted version to project dir ONLY.
                 # BUG-B fix: Do NOT write project-specific content back to the global
                 # learned cache — that would pollute it with project-name, project-specific
                 # triggers, and README context that don't apply to other projects.
-                dest.write_text(skill_content, encoding="utf-8")
+                dest.write_text(skill_content or "", encoding="utf-8")
                 print(f"  [adapt]  {skill_name} (project override)")
                 generated.append(f"{skill_name} (adapted)")
 
             elif action == "create":
                 # No global skill — write to project dir and save to global learned
-                dest.write_text(skill_content, encoding="utf-8")
+                dest.write_text(skill_content or "", encoding="utf-8")
                 global_dest = self.discovery.global_learned / f"{skill_name}.md"
                 if not global_dest.exists():
-                    global_dest.write_text(skill_content, encoding="utf-8")
+                    global_dest.write_text(skill_content or "", encoding="utf-8")
                     print(f"  [create] {skill_name} (saved to global learned)")
                 else:
                     print(f"  [create] {skill_name} (project copy only)")
@@ -353,7 +382,8 @@ class SkillGenerator:
             content += f"**Project:** {project_name or 'this project'}\n\n"
             content += f"## Purpose\n\n{purpose}\n\n"
             content += f"## Auto-Trigger\n\n{triggers}\n\n"
-            content += f"## Guidelines\n\n{guidelines}\n"
+            content += f"## Process\n\n{guidelines}\n\n"
+            content += "## Output\n\nApplying this skill produces updated files following project patterns.\n"
 
             if context_lines:
                 content += "\n## Project Context (from README)\n\n"

@@ -23,10 +23,9 @@ class StubStrategy:
         """
         additional_context = ""
 
-        if from_readme and Path(from_readme).exists():
-            readme_path = Path(from_readme)
-            readme_content = readme_path.read_text(encoding="utf-8", errors="replace")
-            additional_context = f"\n\n## Context (from {readme_path.name})\n\n{readme_content}\n"
+        # from_readme is already normalised to *content* by skill_generator.py
+        if from_readme:
+            additional_context = f"\n\n## Context (from README)\n\n{from_readme[:400]}\n"
 
         title = skill_name.replace("-", " ").title()
         content = (

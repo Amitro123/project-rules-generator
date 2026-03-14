@@ -66,14 +66,14 @@ prg --version
 
 ## AI Providers
 
-PRG supports **4 AI providers** with automatic smart routing. No key required for README-only mode.
+PRG automatically routes to the best available provider based on your environment variables.
 
-| Provider | Quality | Speed | Key Variable | Key Prefix |
-|----------|---------|-------|--------------|------------|
-| **Anthropic** (Claude 3.5 Sonnet) | ⭐95 | 65 | `ANTHROPIC_API_KEY` | `sk-ant-...` |
-| **OpenAI** (GPT-4o-mini) | ⭐90 | 70 | `OPENAI_API_KEY` | `sk-...` |
-| **Gemini** (2.0 Flash) | ⭐85 | 85 | `GEMINI_API_KEY` | — |
-| **Groq** (Llama 3.1-8b) | ⭐75 | 95 | `GROQ_API_KEY` | `gsk_...` |
+| Provider | Quality | Speed | Key Variable |
+|:---|:---:|:---:|:---|
+| **Anthropic** (Claude 3.5 Sonnet) | ⭐95 | 65 | `ANTHROPIC_API_KEY` |
+| **OpenAI** (GPT-4o-mini) | ⭐90 | 70 | `OPENAI_API_KEY` |
+| **Gemini** (2.0 Flash) | ⭐85 | 85 | `GEMINI_API_KEY` |
+| **Groq** (Llama 3.1-8b) | ⭐75 | 95 | `GROQ_API_KEY` |
 
 **Auto-detection**: PRG reads your env vars and picks the best available provider automatically.
 
@@ -97,60 +97,46 @@ prg providers test
 
 ## Usage
 
-### 1. AI-Powered Custom Skills
-Uses the **best available AI provider** to deeply understand your project and generate custom skills.
+### 1. AI-Powered Analysis & Skills
+Uses the best available AI provider to deeply understand your project or generate specific skills.
 
 ```bash
-# Auto-select best provider
+# Analyze project (auto-selects best provider)
 prg analyze . --ai
 
-# Force a specific provider
+# Create a named skill using AI
+prg analyze . --create-skill "design-token-parser" --ai
+
+# Force a specific provider or control strategy
+prg analyze . --ai --strategy speed
 prg analyze . --ai --provider anthropic
-prg analyze . --ai --provider openai
-prg analyze . --ai --provider groq
-
-# Control selection strategy
-prg analyze . --ai --strategy quality     # highest-quality provider first
-prg analyze . --ai --strategy speed       # fastest provider first
-prg analyze . --ai --strategy provider:anthropic  # always use anthropic
 ```
 
-### 2. Create a Skill
-Generate a named skill from your project context or README.
+*Note: No API key required for basic README-only generation:*
+`prg analyze . --create-skill "ui-tokens" --from-readme README.md`
 
-```bash
-# From README (no API key required)
-prg analyze . --create-skill "dom-manipulation" --from-readme README.md
-
-# With AI (uses smart router)
-prg analyze . --create-skill "dom-manipulation" --ai
-
-# With a specific provider
-prg analyze . --create-skill "dom-manipulation" --ai --provider anthropic
-```
-
-### 3. Incremental Update ⚡
+### 2. Incremental Update ⚡
 Updates only what has changed since the last run. Perfect for CI/CD.
 
 ```bash
 prg analyze . --incremental
 ```
 
-### 4. Constitution Mode 📜
+### 3. Constitution Mode 📜
 Generates a `constitution.md` with your project's core coding principles.
 
 ```bash
 prg analyze . --constitution
 ```
 
-### 5. Autopilot 🤖
+### 4. Autopilot 🤖
 Full autonomous mode: discover, plan, execute — all with git safety.
 
 ```bash
 prg autopilot .
 ```
 
-### 6. Provider Management
+### 5. Provider Management
 ```bash
 prg providers list                 # Rich table of all providers
 prg providers test                 # Live connectivity + latency
@@ -195,30 +181,6 @@ All generated files are consolidated into a single `.clinerules/` directory:
 
 ---
 
-## Recent Changes
-
-### v1.4.1 — Dynamic AI Router
-- **4 providers**: Anthropic (Claude 3.5 Sonnet), OpenAI (GPT-4o-mini), Gemini 2.0 Flash, Groq Llama 3.1
-- **Smart routing**: `--strategy auto/speed/quality/provider:X` with automatic fallback
-- **`prg providers`**: New `list`, `test`, `benchmark` subcommands
-- **Auto-detect**: API key prefix detection (`sk-ant-` → Anthropic, `gsk_` → Groq, `sk-` → OpenAI)
-- **Config**: `~/.prg/ai_strategy.yaml` for per-task provider preferences
-- **28 new tests** — 465 total passing
-
-### v1.2
-- **Bug fixes** (Issue #17): 5 bugs fixed in the Skills Mechanism
-- **Design improvements**: `QualityReport` unified to single source.
-- **New tests**: 10 focused regression tests.
-
-### v1.1
-- **Skills cleanup**: Removed 2 legacy files (`skills_generator.py`, `skill_matcher.py`).
-- **New `utils/`**: `tech_detector.py` + `quality_checker.py`.
-- **Strategy Pattern**: `create_skill()` complexity reduced by 73%.
-
-> See [`CHANGELOG.md`](CHANGELOG.md) for full details.
-
----
-
 ## Contributing
 We welcome contributions!
 1. Fork the repo
@@ -230,3 +192,21 @@ We welcome contributions!
 ---
 
 **Project Rules Generator** — Because generic "analyze code" skills aren't enough anymore.
+
+---
+
+## Recent Changes
+
+### v1.4.1 — Dynamic AI Router
+- **4 providers**: Anthropic, OpenAI, Gemini, Groq.
+- **Smart routing**: Automatic fallback with customizable strategies.
+- **Connectivity**: New `prg providers list/test/benchmark` commands.
+
+### v1.2 (Issue #17)
+- **Fixes**: Resolved 5 bugs in the Skills Mechanism.
+- **Improved**: Unified `QualityReport` as single source.
+
+### v1.1
+- **Refactor**: Reduced `create_skill()` complexity by 73%.
+
+> See [`CHANGELOG.md`](CHANGELOG.md) for full details.

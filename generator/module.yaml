@@ -1,0 +1,10 @@
+name: "Project Rules Generator"
+code: "prg"
+version: "1.0.0"
+description: "Custom module for rules, skills, plans and tasks generation"
+agents:
+  - "content_analyzer_gen"
+  - "design_generator"
+workflows:
+  - "create-skills"
+  - "generate-rules-plan-tasks"

@@ -1,28 +1,18 @@
-# Design: Complete full project implementation. Focus on high-level architecture.
+# Architecture: Project Rules Generator (PRG)
 
 ## Problem Statement
-Complete full project implementation. Focus on high-level architecture.. This enhancement will improve system performance, reliability, and user experience by implementing a robust, well-tested solution following industry best practices.
+PRG automates the creation of context-aware AI agent rules by analyzing local project patterns, structure, and documentation, replacing static templates with dynamic, learned expertise.
 
 ## Architecture Decisions
 
-- **Implementation Approach**: Modular design with dependency injection (vs Monolithic implementation, Microservice)
-  - Pro: Testable components with clear interfaces
-  - Pro: Easy to mock dependencies in tests
-  - Pro: Flexible for future changes
-  - Con: More upfront design work
-  - Con: Slightly more complex initial setup
-- **Error Handling**: Graceful degradation with fallback (vs Fail fast, Retry with exponential backoff)
-  - Pro: System remains available even if component fails
-  - Pro: Better user experience during partial outages
-  - Pro: Easier to debug with clear error paths
-  - Con: May mask underlying issues
-  - Con: Requires careful logging to track degraded states
+- **Implementation Approach**: Modular design with dependency injection. Enables testable components and flexible dependency mocking, albeit with more upfront design effort.
+- **Error Handling**: Graceful degradation with fallbacks. Ensures system availability and better UX during partial outages, requiring robust logging.
 
 ## API Contracts
 
 - ### `execute_complete(params: dict) -> Result`
 
-**Purpose**: Execute the Complete full project implementation. Focus on high-level architecture. operation
+**Purpose**: Execute the full project analysis and rule generation sequence.
 
 **Parameters**:
 - `params`: Operation parameters
@@ -38,7 +28,7 @@ Complete full project implementation. Focus on high-level architecture.. This en
 
 - ```python
 class CompleteConfig(BaseModel):
-    """Configuration for Complete full project implementation. Focus on high-level architecture.."""
+    """Configuration for PRG project analysis and generation."""
     enabled: bool = Field(default=True)
     timeout_seconds: int = Field(default=30, ge=1)
     max_retries: int = Field(default=3, ge=0)
@@ -46,7 +36,7 @@ class CompleteConfig(BaseModel):
 
 ## Success Criteria
 
-- **Functionality**: Complete full project implementation. Focus on high-level architecture. works as specified
+- **Functionality**: Rule generation and skill analysis works as specified.
 - **Quality**: Test coverage > 80%
 - **Performance**: Operation completes in < 1 second
 - **Maintainability**: Code follows project style guide

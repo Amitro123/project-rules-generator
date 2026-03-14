@@ -339,11 +339,17 @@ class SkillDiscovery:
         from generator.utils.trigger_evaluator import TriggerEvaluator
 
         # Collect all SKILL.md and *.md files across all layers
-        # Higher-priority layers win by name deduplication
+        # Higher-priority layers win by name deduplication.
+        # DESIGN-5 fix: skip global_learned when project_learned_link resolves to it
+        # to prevent double-scanning the same directory.
+        _pll = self.project_learned_link
+        _skip_global_learned = bool(
+            _pll and _pll.exists() and _pll.resolve() == self.global_learned.resolve()
+        )
         skill_roots: List[Optional[Path]] = [
             self.project_local_dir,  # highest priority
-            self.project_learned_link if self.project_learned_link else None,
-            self.global_learned,
+            _pll if _pll else None,
+            None if _skip_global_learned else self.global_learned,
             self.global_builtin,
         ]
 
