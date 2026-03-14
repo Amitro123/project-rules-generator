@@ -302,9 +302,8 @@ class SkillGenerator:
                 print(f"  [warn]  {skill_name}: cached skill not found, falling through to create")
                 action = "create"
 
-            # DESIGN-3 fix: delegate to _run_strategy_chain() so adapt/create cases
-            # go through the full strategy chain (CoworkStrategy, quality validation,
-            # etc.) instead of the old _derive_project_skills() direct call.
+            # Delegate to _run_strategy_chain() so adapt/create cases go through the
+            # full strategy chain (CoworkStrategy, quality validation, etc.).
             skill_content = self._run_strategy_chain(
                 skill_name,
                 from_readme=readme_content,
@@ -332,67 +331,6 @@ class SkillGenerator:
                 generated.append(skill_name)
 
         return generated
-
-    def _derive_project_skills(
-        self,
-        tech_stack: List[str],
-        readme_content: str,
-        project_name: str,
-    ) -> Dict[str, str]:
-        """Derive project-specific skill names and content from tech stack."""
-        skills = {}
-        seen_names = set()
-
-        for tech in tech_stack:
-            tech_lower = tech.lower().strip()
-            skill_name = self.TECH_SKILL_NAMES.get(tech_lower)
-            if not skill_name or skill_name in seen_names:
-                continue
-            seen_names.add(skill_name)
-
-            # Extract README context for this specific tech using SkillParser
-            context_lines = SkillParser.extract_tech_context(tech, readme_content)
-            title = skill_name.replace("-", " ").title()
-
-            purpose = SkillParser.summarize_purpose(tech, context_lines, project_name)
-            triggers = SkillParser.build_triggers(tech, context_lines)
-            guidelines = SkillParser.build_guidelines(tech, context_lines)
-
-            # GAP 1: prepend Anthropic-spec-compliant YAML frontmatter
-            fm_triggers = [tech, f"add {tech}", f"implement {tech}", skill_name.replace("-", " ")]
-            trigger_str = ", ".join(f'"{t}"' for t in fm_triggers)
-            fm_desc = f"{purpose.rstrip('.')}. Use when user mentions {trigger_str}."[:1024]
-            fm_tags = list(dict.fromkeys([p for p in skill_name.split("-") if len(p) > 2] + [tech.lower()]))[:5]
-            fm_tags_str = "[" + ", ".join(fm_tags) + "]"
-            content = (
-                f"---\n"
-                f"name: {skill_name}\n"
-                f"description: |\n"
-                f"  {fm_desc}\n"
-                f"license: MIT\n"
-                f'allowed-tools: "Bash Read Write Edit Glob Grep"\n'
-                f"metadata:\n"
-                f"  author: PRG\n"
-                f"  version: 1.0.0\n"
-                f"  category: project\n"
-                f"  tags: {fm_tags_str}\n"
-                f"---\n\n"
-            )
-            content += f"# {title}\n\n"
-            content += f"**Project:** {project_name or 'this project'}\n\n"
-            content += f"## Purpose\n\n{purpose}\n\n"
-            content += f"## Auto-Trigger\n\n{triggers}\n\n"
-            content += f"## Process\n\n{guidelines}\n\n"
-            content += "## Output\n\nApplying this skill produces updated files following project patterns.\n"
-
-            if context_lines:
-                content += "\n## Project Context (from README)\n\n"
-                for line in context_lines:
-                    content += f"> {line}\n"
-
-            skills[skill_name] = content
-
-        return skills
 
     @staticmethod
     def _is_generic_stub(filepath: Path, project_path: Optional[Path] = None) -> bool:

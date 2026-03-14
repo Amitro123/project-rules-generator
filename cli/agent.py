@@ -10,26 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# Shared helpers
-def _detect_provider(provider, api_key):
-    """Auto-detect AI provider from api_key prefix or environment variables."""
-    if provider is not None:
-        return provider
-    if api_key and api_key.startswith("gsk_"):
-        return "groq"
-    if os.environ.get("GEMINI_API_KEY") and not os.environ.get("GROQ_API_KEY"):
-        return "gemini"
-    return "groq"
-
-
-def _set_api_key(provider, api_key):
-    """Set the correct environment variable for the detected provider."""
-    if not api_key:
-        return
-    if provider == "gemini":
-        os.environ["GEMINI_API_KEY"] = api_key
-    elif provider == "groq":
-        os.environ["GROQ_API_KEY"] = api_key
+from cli.utils import detect_provider as _detect_provider
+from cli.utils import set_api_key_env as _set_api_key
 
 
 @click.command(name="design")

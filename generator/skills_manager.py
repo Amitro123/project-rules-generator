@@ -122,6 +122,10 @@ class SkillsManager:
         """Delegate to SkillParser."""
         return SkillParser.summarize_purpose(tech, context_lines, project_name)
 
+    def _build_guidelines(self, tech: str, context_lines: list) -> str:
+        """Delegate to SkillParser."""
+        return SkillParser.build_guidelines(tech, context_lines)
+
     def generate_perfect_index(self):
         """
         Auto-generate .clinerules/skills/index.md from all available skills.

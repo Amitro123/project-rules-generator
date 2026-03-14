@@ -54,6 +54,7 @@ from generator.parsers.enhanced_parser import EnhancedProjectParser
 from generator.prompts.skill_generation import build_skill_prompt
 from generator.rules_generator import generate_rules
 from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
+from cli.utils import detect_provider, set_api_key_env
 from generator.skills_manager import SkillsManager
 from generator.storage.skill_paths import SkillPathManager
 from prg_utils.config_schema import validate_config
@@ -305,9 +306,6 @@ def analyze(
     output_dir = project_path / output
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Initialize Skills Manager with project context
-    skills_manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
-
     # Setup .clinerules/skills structure (symlinks/copies)
     try:
         skills_manager.setup_project_structure()
@@ -335,37 +333,13 @@ def analyze(
     else:
         setup_logging(verbose=False)
 
-    # Auto-detect provider from env vars if not explicitly set
-    if provider is None:
-        if api_key and api_key.startswith("gsk_"):
-            provider = "groq"
-        elif api_key and api_key.startswith("sk-ant-"):
-            provider = "anthropic"
-        elif api_key and api_key.startswith("sk-"):
-            provider = "openai"
-        elif os.environ.get("ANTHROPIC_API_KEY"):
-            provider = "anthropic"
-        elif os.environ.get("OPENAI_API_KEY"):
-            provider = "openai"
-        elif os.environ.get("GEMINI_API_KEY") and not os.environ.get("GROQ_API_KEY"):
-            provider = "gemini"
-        else:
-            provider = "groq"
-        if verbose:
-            click.echo(f"Auto-detected provider: {provider}")
-
-    # Handle API Key
-    if api_key:
-        if provider == "gemini":
-            os.environ["GEMINI_API_KEY"] = api_key
-        elif provider == "groq":
-            os.environ["GROQ_API_KEY"] = api_key
-        elif provider == "anthropic":
-            os.environ["ANTHROPIC_API_KEY"] = api_key
-        elif provider == "openai":
-            os.environ["OPENAI_API_KEY"] = api_key
-        if verbose:
-            click.echo(f"Using API key from --api-key flag for {provider}")
+    # Auto-detect provider and set environment variable
+    provider = detect_provider(provider, api_key)
+    if verbose:
+        click.echo(f"Auto-detected provider: {provider}")
+    set_api_key_env(provider, api_key)
+    if api_key and verbose:
+        click.echo(f"Using API key from --api-key flag for {provider}")
 
     try:
         # Load config
@@ -385,7 +359,7 @@ def analyze(
             skill_name = create_skill or add_skill
             # Place learned skills in the project output directory
             # Now we use global SkillsManager which handles pathing
-            manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
+            manager = skills_manager
             try:
                 path = manager.create_skill(
                     skill_name,
@@ -413,8 +387,7 @@ def analyze(
                 sys.exit(0)
 
         if remove_skill:
-            # Re-initialize to ensure we have the latest structure
-            manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
+            manager = skills_manager
             try:
                 # Basic removal logic - check learned skills
                 import shutil
@@ -442,8 +415,7 @@ def analyze(
                 sys.exit(1)
             sys.exit(0)
         if list_skills:
-            # Re-initialize to ensure we have the latest structure
-            manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
+            manager = skills_manager
             skills = manager.list_skills()
 
             # Group by type for display
@@ -630,8 +602,6 @@ def analyze(
             pbar.update(1)
 
             pbar.set_description("Processing Skills")
-            skills_manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
-
             # Enhanced auto-generate skills using new Phase 1-4 modules
             enhanced_selected_skills = set()
             if auto_generate_skills:
@@ -657,13 +627,6 @@ def analyze(
 
                     # Step 2: Match skills using EnhancedSkillMatcher
                     enhanced_matcher = EnhancedSkillMatcher()
-                    enhanced_selected_skills = enhanced_matcher.match_skills(
-                        detected_tech=detected_tech,
-                        project_context=enhanced_context,
-                    )
-
-                    # Inject provider into kwargs for checking
-                    kwargs = {"provider": provider}
                     enhanced_selected_skills = enhanced_matcher.match_skills(
                         detected_tech=detected_tech,
                         project_context=enhanced_context,
@@ -712,17 +675,19 @@ def analyze(
                             try:
                                 from generator.llm_skill_generator import LLMSkillGenerator
 
-                                current_provider = kwargs.get("provider", "groq")
+                                current_provider = provider
                                 llm_gen = LLMSkillGenerator(provider=current_provider)
                                 skill_content = llm_gen.generate_content(prompt, max_tokens=2000)
 
-                                # Save using SkillPathManager
+                                # Save using SkillPathManager, then invalidate
+                                # SkillDiscovery cache so the new file is visible.
                                 parts = skill_ref.split("/")
                                 category = parts[1] if len(parts) >= 3 else "general"
                                 SkillPathManager.save_learned_skill(
                                     {"name": skill_topic, "content": skill_content},
                                     category,
                                 )
+                                skills_manager.discovery.invalidate_cache()
                                 click.echo(f"   💾 Generated: {skill_ref}")
                             except Exception as e:
                                 err_str = str(e)

@@ -90,3 +90,5 @@ amitro_todo.md
 # BMAD
 _bmad/
 _bmad-output/
+.claude/settings.local.json
+.claude/settings.local.json

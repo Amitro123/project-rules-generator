@@ -53,8 +53,44 @@ class LLMSkillGenerator:
             raise RuntimeError(f"Failed to initialize AI client ({self.provider}): {e}")
 
     def generate_skill(self, skill_name: str, context: Dict) -> str:
-        """Generate complete skill from project context."""
-        prompt = self._build_prompt(skill_name, context)
+        """Generate complete skill from project context.
+
+        DESIGN-2 fix: delegates to the canonical build_skill_prompt() from
+        generator/prompts/skill_generation.py instead of the old _build_prompt()
+        so all production paths produce skills in the same format.
+        """
+        from generator.prompts.skill_generation import build_skill_prompt
+
+        # Adapt simple context dict to EnhancedProjectParser format
+        tech = context.get("tech_stack", {})
+        flat_tech: list = []
+        for vals in tech.values():
+            if isinstance(vals, list):
+                flat_tech.extend(vals)
+            elif isinstance(vals, str):
+                flat_tech.append(vals)
+
+        adapted_context: Dict = {
+            "metadata": {"tech_stack": flat_tech},
+            "readme": {"content": context.get("readme", "")},
+            "structure": context.get("structure", {}),
+            "dependencies": {},
+            "test_patterns": {},
+        }
+
+        key_files = context.get("key_files", {})
+        code_examples = [{"file": fname, "content": content[:400]} for fname, content in key_files.items()]
+
+        structure = context.get("structure", {})
+        detected_patterns = [k for k, v in structure.items() if v]
+
+        prompt = build_skill_prompt(
+            skill_topic=skill_name,
+            project_name="",
+            context=adapted_context,
+            code_examples=code_examples,
+            detected_patterns=detected_patterns,
+        )
         return self.generate_content(prompt, max_tokens=2000)
 
     def generate_content(self, prompt: str, max_tokens: int = 2000) -> str:
@@ -78,10 +114,11 @@ class LLMSkillGenerator:
         except Exception as e:
             raise RuntimeError(f"LLM generation failed: {e}")
 
-    def _build_prompt(self, skill_name: str, context: Dict) -> str:
-        """Build comprehensive prompt for LLM."""
+    # _build_prompt removed — generate_skill() now delegates to the canonical
+    # build_skill_prompt() in generator/prompts/skill_generation.py (DESIGN-2 fix).
 
-        # Extract context
+    def _DEAD_build_prompt(self, skill_name: str, context: Dict) -> str:  # noqa: N802
+        """Kept for reference only — not called. Delete in next cleanup."""
         readme = context.get("readme", "No README found")
         structure = context.get("structure", {})
         tech = context.get("tech_stack", {})
