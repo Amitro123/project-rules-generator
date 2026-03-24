@@ -41,7 +41,7 @@
   ],
   "testing": [
     "**Framework**: pytest",
-    "**Test files**: 391 (3308 test cases)",
+    "**Test files**: 394 (3295 test cases)",
     "**Test types**: unit, integration",
     "**Fixtures**: shared via `conftest.py`",
     "**Test data**: `tests/fixtures/` directory"
@@ -60,9 +60,19 @@
     "Python 3.11 or higher",
     "Git"
   ],
+  "🚫_critical_anti-patterns_(never_do_this)": [
+    "NEVER run destructive commands (rm -rf, drop table, etc.) without explicit user confirmation.",
+    "NEVER generate placeholder comments like 'Implement logic here' - write the full code."
+  ],
   "auto-trigger": [
-    "Working with click integration code",
-    "Editing files that import or configure click"
+    "User mentions: \"jinja2\", \"template\", \"workflow\"",
+    "Working in backend code: *.py",
+    "Working with *.j2 files"
+  ],
+  "output": [
+    "Updated or created files following `jinja2 template workflow` patterns",
+    "Status report with changes made",
+    "Recommendations for next steps"
   ],
   "pre-review_checklist": [
     "✓ Read every line you changed",
