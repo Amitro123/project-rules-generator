@@ -19,6 +19,7 @@ class AIStrategy:
         from_readme: Optional[str],
         provider: str,
         strategy: Optional[str] = None,
+        **kwargs,
     ) -> Optional[str]:
         """
         Generate skill content using AI provider or router.

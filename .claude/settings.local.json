@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:www.comet.com)"
+      "WebFetch(domain:www.comet.com)",
+      "Bash(python -m pytest tests/test_ai_router.py::TestAnthropicClient tests/test_ai_router.py::TestOpenAIClient tests/test_encoding_fix.py::TestEncodingFix::test_gemini_client_encoding_fix tests/test_ai_skill_generation.py::TestAISkillGeneration tests/test_smart_parser.py::test_extract_auto_triggers -v)",
+      "Bash(python -m pytest tests/test_ai_skill_generation.py::TestAISkillGeneration::test_create_skill_with_ai -v -s)",
+      "Bash(python -m pytest -q)"
     ]
   }
 }

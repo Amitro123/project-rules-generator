@@ -12,8 +12,10 @@ try:
 
     GEMINI_AVAILABLE = True
 except ImportError:
-    genai = None  # type: ignore[assignment]
-    types = None  # type: ignore[assignment]
+    import types as _stdlib_types
+
+    genai = _stdlib_types.SimpleNamespace(Client=None)  # type: ignore[assignment]
+    types = _stdlib_types.SimpleNamespace(GenerateContentConfig=lambda **kwargs: None)  # type: ignore[assignment]
     GEMINI_AVAILABLE = False
 
 
@@ -23,7 +25,7 @@ class GeminiClient(AIClient):
     DEFAULT_MODEL = "gemini-2.0-flash"
 
     def __init__(self, api_key: Optional[str] = None):
-        if not GEMINI_AVAILABLE:
+        if getattr(genai, "Client", None) is None:
             raise ImportError("google-genai not installed. Run: pip install google-genai")
 
         super().__init__(api_key or os.getenv("GEMINI_API_KEY"))

@@ -21,7 +21,7 @@ class OpenAIClient(AIClient):
     DEFAULT_MODEL = "gpt-4o-mini"
 
     def __init__(self, api_key: Optional[str] = None):
-        if not OPENAI_AVAILABLE:
+        if _OpenAI is None:
             raise ImportError("openai package not installed. Run: pip install openai")
 
         super().__init__(api_key or os.getenv("OPENAI_API_KEY"))

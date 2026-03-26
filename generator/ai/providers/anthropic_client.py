@@ -21,7 +21,7 @@ class AnthropicClient(AIClient):
     DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
 
     def __init__(self, api_key: Optional[str] = None):
-        if not ANTHROPIC_AVAILABLE:
+        if _anthropic is None:
             raise ImportError("anthropic package not installed. Run: pip install anthropic")
 
         super().__init__(api_key or os.getenv("ANTHROPIC_API_KEY"))
