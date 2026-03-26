@@ -4,6 +4,8 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from generator.storage.skill_paths import SkillPathManager
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,18 +23,13 @@ class SkillDiscovery:
         """
         self.project_path = Path(project_path) if project_path else None
 
-        # 1. Global Cache Paths
-        self.global_root = Path.home() / ".project-rules-generator"
-        self.global_builtin = self.global_root / "builtin"
-        self.global_learned = self.global_root / "learned"
+        # 1. Global Cache Paths — delegate to SkillPathManager (single source of truth)
+        self.global_root = SkillPathManager.GLOBAL_DIR
+        self.global_builtin = SkillPathManager.GLOBAL_BUILTIN
+        self.global_learned = SkillPathManager.GLOBAL_LEARNED
 
-        # 2. Package Source (for syncing builtin)
-        # Note: This assumes this file is in generator/ (sibling to skills_manager)
-        # parent = generator/
-        # parent.parent = project root
-        # But wait, original code was in generator/skills_manager.py: Path(__file__).parent / "skills" / "builtin"
-        # If I put this in generator/skill_discovery.py, same relative path applies.
-        self.package_builtin = Path(__file__).parent / "skills" / "builtin"
+        # 2. Package Source (for syncing builtin) — delegate to SkillPathManager
+        self.package_builtin = SkillPathManager.BUILTIN_SOURCE
 
         # 3. Project Paths (if valid project)
         # Declare as Optional so both if/else branches are consistent

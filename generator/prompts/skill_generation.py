@@ -9,6 +9,9 @@ You are generating a SPECIFIC, ACTIONABLE skill for project "{project_name}".
 CONTEXT:
 {context}
 
+RECONNAISSANCE:
+{recon_context}
+
 DETECTED PATTERNS IN THIS PROJECT:
 {patterns}
 
@@ -45,6 +48,8 @@ OUTPUT FORMAT (markdown):
 
 **Triggers:** [list of short phrases that should activate this skill]
 
+**Negative Triggers:** [list of short phrases that should NEVER activate this skill]
+
 **relevant_files:** [{relevant_files_list}]
 
 **exclude_files:** [{exclude_files_list}]
@@ -73,6 +78,33 @@ lint:  [runnable command]
 1. `[runnable command]` — [what it checks]
 2. `[runnable command]` — [what it verifies]
 """
+
+
+def scan_project_context(project_root: Path) -> str:
+    """Scans the codebase to detect frameworks, structure, and key files."""
+    context = []
+    
+    if not project_root or not project_root.exists():
+        return "No specific project directory available for reconnaissance."
+        
+    # 1. Detect Package Managers
+    if (project_root / "package.json").exists():
+        context.append("Ecosystem: Node.js/NPM")
+    if (project_root / "pyproject.toml").exists() or (project_root / "requirements.txt").exists():
+        context.append("Ecosystem: Python")
+    if (project_root / "Cargo.toml").exists():
+        context.append("Ecosystem: Rust")
+    if (project_root / "go.mod").exists():
+        context.append("Ecosystem: Go")
+        
+    # 2. Detect Key Directories
+    try:
+        top_dirs = [d.name for d in project_root.iterdir() if d.is_dir() and not d.name.startswith('.')]
+        context.append(f"Top-level directories: {', '.join(top_dirs)}")
+    except Exception as e:
+        context.append(f"Could not read top-level directories: {e}")
+    
+    return "\n".join(context)
 
 
 def detect_project_tools(project_path: Optional[Path] = None, tech_stack: Optional[List[str]] = None) -> Dict[str, str]:
@@ -180,6 +212,9 @@ def build_skill_prompt(
     tools = detect_project_tools(project_path, tech_stack)
     tools_str = "\n".join(f"{k}: {v}" for k, v in tools.items()) if tools else "No specific tools detected."
 
+    # Scan project reconnaissance context
+    recon_context = scan_project_context(project_path) if project_path else "No project paths provided for recon."
+
     if not topic_description:
         topic_description = f"Best practices and patterns for {skill_topic.replace('-', ' ')} in this project."
 
@@ -193,6 +228,7 @@ def build_skill_prompt(
     return SKILL_GENERATION_PROMPT.format(
         project_name=project_name,
         context=context_str,
+        recon_context=recon_context,
         patterns=patterns_str,
         code_examples=examples_str,
         tools=tools_str,

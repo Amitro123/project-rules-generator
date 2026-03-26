@@ -168,11 +168,25 @@ class ProjectAnalyzer:
                 except Exception:
                     pass
 
-        # API routes sample (Python)
-        api_files = list(self.project_path.glob("**/api/**/*.py"))
-        if api_files:
+        # API routes sample (Python).
+        # Avoid unbounded ** globs — they walk the entire tree and block on large repos.
+        # Instead, probe specific shallow locations that cover ~95% of real project layouts.
+        api_candidates = [
+            self.project_path / "api",
+            self.project_path / "backend" / "api",
+            self.project_path / "src" / "api",
+            self.project_path / "app" / "api",
+            self.project_path / "app" / "routes",
+        ]
+        api_file = None
+        for api_dir in api_candidates:
+            if api_dir.is_dir():
+                api_file = next(api_dir.glob("*.py"), None)
+                if api_file:
+                    break
+        if api_file:
             try:
-                content = api_files[0].read_text(encoding="utf-8", errors="replace")
+                content = api_file.read_text(encoding="utf-8", errors="replace")
                 files["api_sample"] = content[:800]
             except Exception:
                 pass

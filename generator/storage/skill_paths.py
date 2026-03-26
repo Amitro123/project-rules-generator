@@ -11,14 +11,15 @@ logger = logging.getLogger(__name__)
 class SkillPathManager:
     """Manage builtin and learned skill locations with sync support.
 
-    Path constants mirror ``SkillDiscovery.global_*`` — they must stay in sync.
-    Single source of truth for the base directory is ``GLOBAL_DIR``.
+    Single source of truth for all global skill paths.
+    ``SkillDiscovery`` reads its global paths from these constants — do not
+    duplicate them anywhere else.
     """
 
     # Builtin source (in project repo)
     BUILTIN_SOURCE = Path(__file__).parent.parent / "skills" / "builtin"
 
-    # Global user directory — MUST match SkillDiscovery.global_root
+    # Global user directory — SkillDiscovery.global_root reads FROM here (single source of truth)
     GLOBAL_DIR = Path.home() / ".project-rules-generator"
     GLOBAL_BUILTIN = GLOBAL_DIR / "builtin"
     GLOBAL_LEARNED = GLOBAL_DIR / "learned"

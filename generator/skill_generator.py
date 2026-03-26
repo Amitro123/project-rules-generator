@@ -158,8 +158,15 @@ class SkillGenerator:
             strategies.append(AIStrategy())
 
         readme_content = from_readme
-        if from_readme and Path(from_readme).is_file():
-            readme_content = Path(from_readme).read_text(encoding="utf-8", errors="replace")
+        if from_readme:
+            # Guard against OSError ENAMETOOLONG (errno 36) when from_readme is already
+            # raw content — Path.is_file() fails if the string is longer than 255 chars.
+            try:
+                p = Path(from_readme)
+                if p.is_file():
+                    readme_content = p.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                pass  # from_readme is content, not a path — use as-is
 
         if readme_content:
             strategies.append(READMEStrategy())

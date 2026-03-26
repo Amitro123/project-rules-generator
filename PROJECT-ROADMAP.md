@@ -1,93 +1,85 @@
 # Project Roadmap: Project Rules Generator
 
-- [ ] Subtask 3.2: Fix bugs and improve performance
+> Last synced with codebase: 2026-03-24
 
 ---
 
-## Phase 1: Feature Development
+## Phase 1: Feature Development ✅ Done
 
 **Implement core features to generate smarter, context-aware `.clinerules`**
 
-- [ ] Task 1: Implement Context Awareness
+- [x] Task 1: Implement Context Awareness
+  - [x] 1.1: Read README & Structure (`generator/analyzers/readme_parser.py`, `EnhancedProjectParser`)
+  - [x] 1.2: Integrate Architecture docs — reflected in `docs/architecture.md`
 
-- [ ] Subtask 1.1: Read README & Structure
+- [x] Task 2: Develop Memory System (basic cross-project reuse)
+  - [x] 2.1: `LearnedSkillsSource` — saves/loads skills across projects via `~/.project-rules-generator/learned/`
+  - [x] 2.2: Incremental updates — `IncrementalAnalyzer` + `prg analyze . --incremental`
+  - [ ] **Open**: True feedback/learning loop — skills do not improve based on usage yet
 
-- [ ] Subtask 1.2: Integrate with Architecture docs (`docs/architecture.md`)
+- [x] Task 3: Skill Type Generation
+  - [x] 3.1: Expert skills via `CoworkSkillCreator` (AI-powered, quality-gated at 90+)
+  - [x] 3.2: Basic stub skills for all 40+ techs in `TECH_SKILL_NAMES`
 
-- [ ] Task 2: Develop Memory System
+---
 
-- [ ] Subtask 2.1: Learn across ALL projects
-
-- [ ] Subtask 2.2: Implement incremental updates
-
-- [ ] Task 3: Integrate Skill Type Generation
-
-- [ ] Subtask 3.1: Generate "Optimize FFmpeg for ML" (Expert) skills
-
-- [ ] Subtask 3.2: Implement "Use React" (Basic) skills
-
-## Phase 2: Git Integration and Constitution
+## Phase 2: Git Integration and Constitution ✅ Done
 
 **Integrate with Git and generate constitution documents**
 
-- [ ] Task 1: Implement Auto-commits (Smart .gitignore handling)
+- [x] Task 1: Auto-commits with smart `.gitignore` handling
+  - [x] 1.1: `.gitignore` exclusions via `prg_utils/git_ops.py`
+  - [x] 1.2: Auto-commit on `prg analyze` (default `--commit`)
 
-- [ ] Subtask 1.1: Handle .gitignore exclusions
+- [x] Task 2: Constitution Document
+  - [x] 2.1: `constitution.md` generated via `generate_constitution()` + `prg analyze . --constitution`
+  - [x] 2.2: Architecture docs at `docs/architecture.md`
 
-- [ ] Subtask 1.2: Auto-commit changes
+- [x] Task 3: Smart `.clinerules.yaml` exclusions
+  - [x] 3.1: Context-aware YAML via `generate_clinerules()` in `generator/outputs/`
+  - [x] 3.2: Incremental mode avoids regenerating unchanged sections
 
-- [ ] Task 2: Generate Constitution Document
+---
 
-- [ ] Subtask 2.1: Create `constitution.md` principles
-
-- [ ] Subtask 2.2: Integrate with Architecture docs
-
-- [ ] Task 3: Implement Smart `.clinerules.yaml` exclusions
-
-- [ ] Subtask 3.1: Optimize exclusions for context awareness
-
-- [ ] Subtask 3.2: Implement incremental updates
-
-## Phase 3: Evolution and Testing
+## Phase 3: Evolution and Stability 🔄 Partially Done
 
 **Continuously improve the AI's performance and fix bugs**
 
-- [ ] Task 1: Implement Evolution System
+- [ ] Task 1: Evolution System — **NOT IMPLEMENTED**
+  - [ ] 1.1: "Gets smarter every usage" — no feedback loop or usage scoring exists yet
+  - [ ] 1.2: Memory integration for evolution — `LearnedSkillsSource` stores, but doesn't update based on quality feedback
 
-- [ ] Subtask 1.1: Get smarter every usage
+- [x] Task 2: Context Awareness (enhanced)
+  - [x] 2.1: Full `EnhancedProjectParser` with dependency parsing, test pattern detection
+  - [x] 2.2: Architecture integration via `SkillDiscovery` + 3-layer resolution
 
-- [ ] Subtask 1.2: Integrate with Memory System
+- [x] Task 3: Bug Fixes and Stability (Issues #17, #18, #27)
+  - [x] 3.1: Issue #17 — 5 bugs fixed; Issue #18 — 6 bugs + design fixes; 400+ tests passing
+  - [x] 3.2: Dual path managers unified (DESIGN-1), dead prompt builder removed (DESIGN-2)
 
-- [ ] Task 2: Improve Context Awareness
+---
 
-- [ ] Subtask 2.1: Enhance README & Structure reading
-
-- [ ] Subtask 2.2: Integrate with Architecture docs
-
-- [ ] Task 3: Fix Bugs and Improve Stability
-
-- [ ] Subtask 3.1: Test with various projects and architectures
-
-- [ ] Subtask 3.2: Fix bugs and improve performance
-
-## Phase 4: Documentation and Maintenance
+## Phase 4: Documentation and Maintenance 🔄 Partially Done
 
 **Maintain and document the project for future development**
 
-- [ ] Task 1: Update Architecture Docs
+- [x] Task 1: Architecture Docs
+  - [x] 1.1: `docs/architecture.md` with ASCII diagrams and Strategy Pattern explained
 
-- [ ] Subtask 1.1: Refactor and improve documentation
+- [x] Task 2: README and Documentation
+  - [x] 2.1: Feature descriptions updated through v1.4.1 (AI Router, 4 providers)
 
-- [ ] Subtask 1.2: Integrate with Memory System
+- [ ] Task 3: Ongoing Maintenance
+  - [x] 3.1: `CHANGELOG.md` tracks changes per version
+  - [ ] 3.2: `analyze_cmd.py` still 1100+ lines — further modularisation in progress
 
-- [ ] Task 2: Improve README and Documentation
+---
 
-- [ ] Subtask 2.1: Enhance feature descriptions
+## Open Items (as of 2026-03-24)
 
-- [ ] Subtask 2.2: Integrate with Architecture docs
-
-- [ ] Task 3: Establish Maintenance Routine
-
-- [ ] Subtask 3.1: Schedule regular updates and bug fixes
-
-- [ ] Subtask 3.2: Establish community involvement and feedback
+| Item | Priority | Status |
+|---|---|---|
+| Evolution / feedback loop (skills improve with usage) | High | Not started |
+| `analyze_cmd.py` generation block split into sub-modules | Medium | In progress |
+| Unit tests for `SkillDiscovery`, `SkillPathManager`, `EnhancedSkillMatcher` | Medium | Not started |
+| Autopilot stability — `AutopilotOrchestrator` implemented but not battle-tested | Low | Exists, needs testing |

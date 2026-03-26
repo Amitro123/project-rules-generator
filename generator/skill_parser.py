@@ -205,6 +205,7 @@ class SkillParser:
             "name": filename.replace(".md", ""),
             "description": "",
             "triggers": [],
+            "negative_triggers": [],
             "when_to_use": "",
             "tools": ["read", "exec"],  # Safe default
             "command": "",
@@ -235,6 +236,20 @@ class SkillParser:
             parsed["triggers"] = [
                 line.strip("- *").strip()
                 for line in raw_triggers.split("\n")
+                if line.strip().startswith("-") or line.strip().startswith("*")
+            ]
+
+        # Negative Triggers
+        neg_triggers_match = re.search(
+            r"(?:\*\*|##)\s*(?:Negative Triggers?|Avoid Triggering On):?\*?\s*\n(.*?)(?:\n(?:\*\*|##)|\Z)",
+            content,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if neg_triggers_match:
+            raw_neg_triggers = neg_triggers_match.group(1).strip()
+            parsed["negative_triggers"] = [
+                line.strip("- *").strip()
+                for line in raw_neg_triggers.split("\n")
                 if line.strip().startswith("-") or line.strip().startswith("*")
             ]
 

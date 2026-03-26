@@ -1,7 +1,12 @@
 """AI-based skill generation strategy using LLM providers."""
 
+import concurrent.futures
 from pathlib import Path
 from typing import Optional
+
+# How long (seconds) to allow ProjectAnalyzer.analyze() to run before giving up.
+# Large repos with deep directory trees can stall the strategy chain indefinitely.
+_ANALYSIS_TIMEOUT_SECS = 10
 
 
 class AIStrategy:
@@ -34,7 +39,18 @@ class AIStrategy:
 
             print(f"🤖 Analyzing project context in {project_path}...")
             analyzer = ProjectAnalyzer(Path(project_path))
-            context = analyzer.analyze()
+
+            # Run in a thread so a slow/large repo can't block the strategy chain forever.
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(analyzer.analyze)
+                try:
+                    context = future.result(timeout=_ANALYSIS_TIMEOUT_SECS)
+                except concurrent.futures.TimeoutError:
+                    print(
+                        f"[!] Warning: ProjectAnalyzer timed out after {_ANALYSIS_TIMEOUT_SECS}s "
+                        f"(large repo?). Falling back to next strategy."
+                    )
+                    return None
 
             provider_label = f"router:{strategy}" if strategy else provider
             print(f"✨ Generating skill with AI ({provider_label})...")

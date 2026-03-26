@@ -147,11 +147,21 @@ def validate_quality(
             score -= 10
             warnings.append("Process section has fewer than 2 numbered steps")
 
-    # Check for placeholder text
-    placeholders = ["[describe", "[example", "[your", "[add", "[insert", "TODO", "FIXME", "XXX"]
-    for placeholder in placeholders:
+    # Check for placeholder text.
+    # Bracket-style markers ("[describe", "[your", …) use substring match — they can't
+    # appear legitimately in real skill content.
+    # Sentinel tokens (TODO, FIXME, XXX) use strict word-boundary + uppercase-only match
+    # so that tool names like "TodoWrite" or "fixme-up" don't trigger false positives.
+    bracket_placeholders = ["[describe", "[example", "[your", "[add", "[insert"]
+    for placeholder in bracket_placeholders:
         if placeholder.lower() in content.lower():
             issues.append(f"Contains placeholder: {placeholder}")
+            score -= 10
+
+    sentinel_placeholders = ["TODO", "FIXME", "XXX"]
+    for sentinel in sentinel_placeholders:
+        if re.search(rf"\b{sentinel}\b", content):  # case-sensitive, word boundary
+            issues.append(f"Contains placeholder: {sentinel}")
             score -= 10
 
     # Check for generic path placeholders

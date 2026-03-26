@@ -444,38 +444,84 @@ def _extract_description(content: str, max_length: int = 200) -> str:
 
 
 def extract_purpose(readme: str) -> str:
-    """Extract a single-line purpose from the first paragraph after title."""
+    """Extract a single-line purpose from the first real paragraph after the title.
+
+    Skips noise lines that typically appear between a title and the actual
+    description: badge lines, blockquote taglines, full-bold marketing blurbs,
+    horizontal rules, and lines that are too short to be meaningful.
+    """
     lines = readme.split("\n")
-    for i, line in enumerate(lines):
-        if line.startswith("# ") and i + 1 < len(lines):
-            for j in range(i + 1, min(i + 5, len(lines))):
-                if lines[j].strip() and not lines[j].startswith("#"):
-                    return lines[j].strip().rstrip(".")
+    found_title = False
+    for line in lines:
+        stripped = line.strip()
+
+        if not found_title:
+            if stripped.startswith("# "):
+                found_title = True
+            continue
+
+        # Skip blank lines and sub-headers
+        if not stripped or stripped.startswith("#"):
+            continue
+
+        # Skip badge lines ([![ or plain ![ image links)
+        if stripped.startswith("[![") or stripped.startswith("!["):
+            continue
+
+        # Skip blockquote taglines (> ...)
+        if stripped.startswith(">"):
+            continue
+
+        # Skip full-bold marketing lines (**...**)
+        if re.match(r"^\*\*[^*]+\*\*\.?$", stripped):
+            continue
+
+        # Skip horizontal rules
+        if re.match(r"^[-*_]{3,}$", stripped):
+            continue
+
+        # Skip lines that are too short to be a real description
+        if len(stripped) < 20:
+            continue
+
+        # Strip inline markdown (links, bold, italic) for a clean sentence
+        clean = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", stripped)  # links
+        clean = re.sub(r"\*\*|\*|__|_", "", clean)
+        return clean.rstrip(".")
+
     return "Solve project-specific workflow challenges"
 
 
 def extract_auto_triggers(readme: str, skill_name: str) -> List[str]:
-    """Generate auto-trigger suggestions from README and skill name."""
+    """Generate auto-trigger suggestions from README and skill name.
+
+    Builds triggers that are specific to the skill being created:
+      1. Skill-name keyword trigger (always included).
+      2. Video-file trigger — only when the README explicitly references video
+         glob patterns (*.mp4, *.avi, *.mov).
+      3. Domain-specific file-extension triggers discovered from the README
+         (non-generic extensions only, capped at 2).
+
+    Removed previously hard-coded tech triggers ("FFmpeg operations needed",
+    "Working in frontend code: *.tsx", "Working in backend code: *.py") because
+    those fired based on tech keywords found anywhere in the README prose rather
+    than being meaningful trigger conditions for the skill itself.
+    """
     triggers: List[str] = []
+
+    # 1. Skill-name keyword trigger
     name_words = skill_name.replace("-", " ").split()
     quoted_words = [f'"{w}"' for w in name_words]
     triggers.append(f"User mentions: {', '.join(quoted_words)}")
 
-    tech = extract_tech_stack(readme)
-    if "ffmpeg" in tech:
-        triggers.append("FFmpeg operations needed")
-    if any(t in tech for t in ["react", "typescript", "node"]):
-        triggers.append("Working in frontend code: *.tsx, *.jsx, *.ts")
-    if "python" in tech:
-        triggers.append("Working in backend code: *.py")
-
+    # 2. Video-file trigger — only when the README explicitly lists video globs
     if re.search(r"\*\.(mp4|avi|mov)", readme):
         triggers.append("Working with video files: *.mp4, *.avi, *.mov")
 
-    # Detect domain-specific file extensions from the README (cap at 2 extra triggers).
-    # Two sources:
-    #   1. Explicit glob patterns:  *.j2, *.jinja2
-    #   2. File paths in backtick code spans:  `templates/model.py.j2`  → *.j2
+    # 3. Domain-specific file-extension triggers (cap at 2 extra).
+    # Sources:
+    #   a. Explicit glob patterns in the README:  *.j2, *.jinja2
+    #   b. File paths in backtick code spans:  `templates/model.py.j2`  → *.j2
     _generic = {
         "*.py",
         "*.js",
@@ -533,22 +579,40 @@ def extract_process_steps(readme: str) -> List[str]:
         """Return steps found in the first section matching *pattern*."""
         collected: List[str] = []
         in_section = False
+        skip_subsection = False  # True while inside a Prerequisites/Requirements sub-section
 
         i = 0
         while i < len(lines):
             line = lines[i]
-            # Detect section header (## or ###)
-            if re.search(rf"##{{1,3}}\s+.*(?:{pattern})", line, re.IGNORECASE):
-                in_section = True
-                i += 1
-                continue
 
             if in_section:
-                # Stop at any same-or-higher-level header (## not ###)
+                # ── Stop condition checked FIRST ────────────────────────────────
+                # Any ## (but not ###) header that isn't the section entry exits
+                # the loop.  This must come BEFORE the section-entry check below
+                # so that a header matching BOTH the stop pattern and the entry
+                # pattern (e.g. "## Installation" when already inside
+                # "## Quick Start") terminates collection instead of re-entering.
                 if re.match(r"^#{1,2}\s+\S", line) and not line.startswith("###"):
                     break
 
                 stripped = line.strip()
+
+                # ── Sub-section skipping ────────────────────────────────────────
+                # ### Prerequisites / ### Requirements list dependencies, not
+                # workflow steps.  Skip everything until the next sub-heading.
+                if re.match(r"^###\s+(?:prerequisites?|requirements?)\s*$", stripped, re.IGNORECASE):
+                    skip_subsection = True
+                    i += 1
+                    continue
+
+                if skip_subsection:
+                    # Any new ### (or ##) header ends the skip zone
+                    if re.match(r"^#{2,3}\s+\S", stripped):
+                        skip_subsection = False
+                        # Don't skip this line — let it be processed normally below
+                    else:
+                        i += 1
+                        continue
 
                 # Numbered list item
                 if re.match(r"^\d+[\.)]\s+", stripped):
@@ -570,6 +634,11 @@ def extract_process_steps(readme: str) -> List[str]:
                         i += 1
                     collected.append("\n".join(code_block))
                     continue
+
+            else:
+                # ── Section-entry check (only when NOT already in a section) ───
+                if re.search(rf"##{{1,3}}\s+.*(?:{pattern})", line, re.IGNORECASE):
+                    in_section = True
 
             i += 1
 

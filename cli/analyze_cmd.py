@@ -54,6 +54,7 @@ from generator.parsers.enhanced_parser import EnhancedProjectParser
 from generator.prompts.skill_generation import build_skill_prompt
 from generator.rules_generator import generate_rules
 from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
+from cli.analyze_quality import run_quality_check
 from cli.utils import detect_provider, set_api_key_env
 from generator.skills_manager import SkillsManager
 from generator.storage.skill_paths import SkillPathManager
@@ -88,6 +89,134 @@ def cleanup_awesome_skills():
             shutil.rmtree(awesome_dir)
     except Exception:
         pass
+
+
+def _handle_skill_management(
+    skills_manager,
+    create_skill,
+    add_skill,
+    from_readme,
+    ai,
+    provider,
+    force,
+    strategy,
+    output_dir,
+    create_rules_flag,
+    remove_skill,
+    list_skills,
+    verbose,
+):
+    """Handle create-skill / remove-skill / list-skills early-exit actions.
+
+    Returns True if the caller should sys.exit(0) immediately after, False otherwise.
+    """
+    import shutil
+
+    if create_skill or add_skill:
+        skill_name = create_skill or add_skill
+        try:
+            path = skills_manager.create_skill(
+                skill_name,
+                from_readme=from_readme,
+                project_path=str(skills_manager.project_path),
+                use_ai=ai,
+                provider=provider or "groq",
+                force=force,
+                strategy=strategy if ai else None,
+            )
+            click.echo(f"✨ Created new skill '{path.name}' in {path}")
+            click.echo("🔄 Updating agent cache...")
+            skills_manager.save_triggers_json(output_dir)
+            click.echo("✅ auto-triggers.json refreshed!")
+        except Exception as e:
+            click.echo(f"❌ Failed to create skill: {e}", err=True)
+            sys.exit(1)
+        if not create_rules_flag:
+            sys.exit(0)
+
+    if remove_skill:
+        target = (skills_manager.learned_path / remove_skill).resolve()
+        try:
+            target.relative_to(skills_manager.learned_path.resolve())
+        except ValueError:
+            click.echo(f"❌ Invalid skill path: {remove_skill}", err=True)
+            sys.exit(1)
+        if target.exists():
+            shutil.rmtree(target)
+            click.echo(f"🗑️ Removed skill '{remove_skill}'")
+        else:
+            click.echo(f"❌ Skill '{remove_skill}' not found in learned skills.", err=True)
+            sys.exit(1)
+        sys.exit(0)
+
+    if list_skills:
+        skills = skills_manager.list_skills()
+        display_groups = {"project": [], "learned": [], "builtin": []}
+        for name, data in skills.items():
+            stype = data["type"]
+            if stype in display_groups:
+                display_groups[stype].append(name)
+        total = len(skills)
+        click.echo(f"\nAvailable Skills ({total}):")
+        if display_groups["project"]:
+            click.echo(f"\n📁 Project Overrides ({len(display_groups['project'])}):")
+            for s in sorted(display_groups["project"]):
+                click.echo(f"  - {s} (Local)")
+        if display_groups["learned"]:
+            click.echo(f"\n🧠 Learned Skills (Global & Local) ({len(display_groups['learned'])}):")
+            for s in sorted(display_groups["learned"]):
+                click.echo(f"  - {s}")
+        if display_groups["builtin"]:
+            click.echo(f"\n🛠️  Global Builtin ({len(display_groups['builtin'])}):")
+            for s in sorted(display_groups["builtin"]):
+                click.echo(f"  - {s}")
+        if not total:
+            click.echo("  No skills found.")
+        sys.exit(0)
+
+
+def _run_create_rules(project_path, readme_path, project_name, project_data, enhanced_context, output_dir,
+                      rules_quality_threshold, verbose, generated_files):
+    """Run the --create-rules CoworkRulesCreator block."""
+    try:
+        from generator.rules_creator import CoworkRulesCreator
+
+        if verbose:
+            click.echo("\n🎯 Cowork Rules Creator...")
+
+        if readme_path and readme_path.exists():
+            readme_text = readme_path.read_text(encoding="utf-8", errors="replace")
+        else:
+            readme_text = f"# {project_name}\n\nProject analysis in progress..."
+
+        tech_stack_arg = project_data.get("tech_stack") or None
+        creator = CoworkRulesCreator(project_path)
+        content, metadata, quality = creator.create_rules(
+            readme_text,
+            tech_stack=tech_stack_arg,
+            enhanced_context=enhanced_context,
+        )
+
+        if verbose:
+            click.echo(f"   Tech Stack: {', '.join(metadata.tech_stack) or 'none'}")
+            click.echo(f"   Project Type: {metadata.project_type}")
+            click.echo(f"   Quality Score: {quality.score:.1f}/100")
+
+        if quality.score < rules_quality_threshold:
+            click.echo(
+                f"   ⚠️  Quality score {quality.score:.1f} below threshold {rules_quality_threshold}",
+                err=True,
+            )
+
+        cowork_rules_file = creator.export_to_file(content, metadata, output_dir)
+        generated_files.append(cowork_rules_file)
+        if verbose:
+            click.echo(f"   ✅ Cowork rules.md saved: {cowork_rules_file}")
+    except Exception as e:
+        click.echo(f"   ⚠️  Cowork rules generation failed: {e}", err=True)
+        if verbose:
+            import traceback
+            traceback.print_exc()
 
 
 def setup_orchestrator(config):
@@ -354,100 +483,22 @@ def analyze(
                 config["skill_sources"]["learned"] = {}
             config["skill_sources"]["learned"]["auto_save"] = True
 
-        # Skill Management (CLI Flags)
-        if create_skill or add_skill:
-            skill_name = create_skill or add_skill
-            # Place learned skills in the project output directory
-            # Now we use global SkillsManager which handles pathing
-            manager = skills_manager
-            try:
-                path = manager.create_skill(
-                    skill_name,
-                    from_readme=from_readme,
-                    project_path=str(project_path),
-                    use_ai=ai,
-                    provider=provider or "groq",
-                    force=force,
-                    strategy=strategy if ai else None,
-                )
-
-                click.echo(f"✨ Created new skill '{path.name}' in {path}")
-
-                # Update agent cache immediately
-                click.echo("🔄 Updating agent cache...")
-                manager.save_triggers_json(output_dir)
-                click.echo("✅ auto-triggers.json refreshed!")
-
-            except Exception as e:
-                click.echo(f"❌ Failed to create skill: {e}", err=True)
-                sys.exit(1)
-            # Only exit early if --create-rules is NOT also requested.
-            # This allows: prg analyze --create-skill foo --create-rules to work.
-            if not create_rules_flag:
-                sys.exit(0)
-
-        if remove_skill:
-            manager = skills_manager
-            try:
-                # Basic removal logic - check learned skills
-                import shutil
-
-                target = (manager.learned_path / remove_skill).resolve()
-
-                # Security check: prevent path traversal
-                try:
-                    target.relative_to(manager.learned_path.resolve())
-                except ValueError:
-                    click.echo(f"❌ Invalid skill path: {remove_skill}", err=True)
-                    sys.exit(1)
-
-                if target.exists():
-                    shutil.rmtree(target)
-                    click.echo(f"🗑️ Removed skill '{remove_skill}'")
-                else:
-                    click.echo(
-                        f"❌ Skill '{remove_skill}' not found in learned skills.",
-                        err=True,
-                    )
-                    sys.exit(1)
-            except Exception as e:
-                click.echo(f"❌ Failed to remove skill: {e}", err=True)
-                sys.exit(1)
-            sys.exit(0)
-        if list_skills:
-            manager = skills_manager
-            skills = manager.list_skills()
-
-            # Group by type for display
-            display_groups = {"project": [], "learned": [], "builtin": []}
-
-            for name, data in skills.items():
-                stype = data["type"]
-                if stype in display_groups:
-                    display_groups[stype].append(name)
-
-            total = len(skills)
-            click.echo(f"\\nAvailable Skills ({total}):")
-
-            if display_groups["project"]:
-                click.echo(f"\\n📁 Project Overrides ({len(display_groups['project'])}):")
-                for s in sorted(display_groups["project"]):
-                    click.echo(f"  - {s} (Local)")
-
-            if display_groups["learned"]:
-                click.echo(f"\\n🧠 Learned Skills (Global & Local) ({len(display_groups['learned'])}):")
-                for s in sorted(display_groups["learned"]):
-                    click.echo(f"  - {s}")
-
-            if display_groups["builtin"]:
-                click.echo(f"\\n🛠️  Global Builtin ({len(display_groups['builtin'])}):")
-                for s in sorted(display_groups["builtin"]):
-                    click.echo(f"  - {s}")
-
-            if not total:
-                click.echo("  No skills found.")
-
-            sys.exit(0)
+        # Skill Management (CLI Flags) — early-exit paths
+        _handle_skill_management(
+            skills_manager=skills_manager,
+            create_skill=create_skill,
+            add_skill=add_skill,
+            from_readme=from_readme,
+            ai=ai,
+            provider=provider,
+            force=force,
+            strategy=strategy,
+            output_dir=output_dir,
+            create_rules_flag=create_rules_flag,
+            remove_skill=remove_skill,
+            list_skills=list_skills,
+            verbose=verbose,
+        )
 
         # Load External Packs
         external_packs = []
@@ -1005,154 +1056,29 @@ def analyze(
 
         # Quality Check (Phase 1 - Analyzer Agent)
         if quality_check or eval_opik:
-            from rich.console import Console
-            from rich.table import Table
-
-            from generator.content_analyzer import ContentAnalyzer
-
-            # Configure analyzer
-            if "config" not in locals():
-                config = load_config()
-
-            # Ensure config object is passed
-            from generator.config import AnalyzerConfig
-
-            analyzer_config = AnalyzerConfig(enable_opik=eval_opik)
-
-            # Merge with loaded config if needed (though AnalyzerConfig handles defaults)
-            # For now, just ensuring enable_opik is passed is sufficient for this feature
-
-            analyzer = ContentAnalyzer(provider=provider, api_key=api_key, config=analyzer_config)
-            if eval_opik and analyzer.opik:
-                analyzer.opik.enabled = True  # Force enable if flag provided
-
-            if verbose:
-                click.echo("\\n📊 Quality Analysis & Evaluation...")
-
-            # Find all .clinerules files to analyze
-            files_to_check = []
-            if (output_dir / "rules.md").exists():
-                files_to_check.append(output_dir / "rules.md")
-            if (output_dir / "constitution.md").exists():
-                files_to_check.append(output_dir / "constitution.md")
-            if (output_dir / "skills" / "index.md").exists():
-                files_to_check.append(output_dir / "skills" / "index.md")
-
-            if not files_to_check:
-                click.echo("⚠️  No files found to analyze")
-            else:
-                # Analyze each file
-                reports = []
-                for filepath in files_to_check:
-                    content = filepath.read_text(encoding="utf-8")
-                    report = analyzer.analyze(
-                        str(filepath.relative_to(output_dir)),
-                        content,
-                        project_path=project_path,
-                    )
-                    reports.append((filepath, report))
-
-                # Display results in table
-                console = Console()
-                table = Table(title="\\n📊 Quality Analysis Results")
-                table.add_column("File", style="cyan")
-                table.add_column("Score", justify="right", style="magenta")
-                table.add_column("Status", style="green")
-                table.add_column("Top Issue", style="yellow")
-
-                for filepath, report in reports:
-                    top_issue = report.suggestions[0] if report.suggestions else "None"
-                    if len(top_issue) > 40:
-                        top_issue = top_issue[:37] + "..."
-
-                    table.add_row(filepath.name, f"{report.score}/100", report.status, top_issue)
-
-                console.print(table)
-
-                # Show detailed breakdown if verbose
-                if verbose:
-                    for filepath, report in reports:
-                        click.echo(f"   {filepath.name}: {report.status}")
-                        # Check for breakdown (new QualityReport structure)
-                        if hasattr(report, "breakdown") and report.breakdown:
-                            b = report.breakdown
-                            # Iterate over fields if it's a dataclass or object
-                            fields = [
-                                ("Structure", b.structure),
-                                ("Clarity", b.clarity),
-                                ("Project Grounding", b.project_grounding),
-                                ("Actionability", b.actionability),
-                                ("Consistency", b.consistency),
-                            ]
-                            for name, score in fields:
-                                icon = "✅" if score >= 15 else "⚠️"
-                                click.echo(f"     {icon} {name}: {score}/20")
-
-                        # Fallback for older report structure or if breakdown is missing
-                        elif hasattr(report, "quick_check") and report.quick_check:
-                            for check, passed in report.quick_check.items():
-                                icon = "✅" if passed else "⚠️"
-                                click.echo(f"     {icon} {check.replace('_', ' ').title()}")
-                        if report.suggestions:
-                            click.echo("     Suggestions:")
-                            for s in report.suggestions:
-                                click.echo(f"       - {s}")
-
-                        # Opik confirmation
-                        if eval_opik and analyzer.opik and analyzer.opik.enabled:
-                            click.echo(f"     🚀 Logged to Opik (Trace ID: {report.status})")
-
-                        # Auto-fix logic (simplified for now, relies on old score or new status)
-                        if auto_fix and "Needs Review" in report.status:
-                            click.echo(f"     🔧 Auto-fixing {filepath.name}...")
-                            # ... (auto-fix logic placeholder) ...
-                            click.echo("     (Auto-fix temporarily disabled in v1.2.0 Opik update)")
+            run_quality_check(
+                output_dir=output_dir,
+                project_path=project_path,
+                provider=provider,
+                api_key=api_key,
+                eval_opik=eval_opik,
+                auto_fix=auto_fix,
+                verbose=verbose,
+            )
 
         # Cowork Rules Creator integration (delegation)
         if create_rules_flag:
-            try:
-                from generator.rules_creator import CoworkRulesCreator
-
-                if verbose:
-                    click.echo("\\n🎯 Cowork Rules Creator...")
-
-                readme_text = ""
-                if readme_path and readme_path.exists():
-                    readme_text = readme_path.read_text(encoding="utf-8", errors="replace")
-                else:
-                    readme_text = f"# {project_name}\\n\\nProject analysis in progress..."
-
-                tech_stack_arg = project_data.get("tech_stack") or None
-
-                creator = CoworkRulesCreator(project_path)
-                content, metadata, quality = creator.create_rules(
-                    readme_text,
-                    tech_stack=tech_stack_arg,
-                    enhanced_context=enhanced_context,
-                )
-
-                if verbose:
-                    click.echo(f"   Tech Stack: {', '.join(metadata.tech_stack) or 'none'}")
-                    click.echo(f"   Project Type: {metadata.project_type}")
-                    click.echo(f"   Quality Score: {quality.score:.1f}/100")
-
-                if quality.score < rules_quality_threshold:
-                    click.echo(
-                        f"   ⚠️  Quality score {quality.score:.1f} below threshold {rules_quality_threshold}",
-                        err=True,
-                    )
-
-                cowork_rules_file = creator.export_to_file(content, metadata, output_dir)
-                generated_files.append(cowork_rules_file)
-                if verbose:
-                    click.echo(f"   ✅ Cowork rules.md saved: {cowork_rules_file}")
-
-            except Exception as e:
-                click.echo(f"   ⚠️  Cowork rules generation failed: {e}", err=True)
-                if verbose:
-                    import traceback
-
-                    traceback.print_exc()
+            _run_create_rules(
+                project_path=project_path,
+                readme_path=readme_path,
+                project_name=project_name,
+                project_data=project_data,
+                enhanced_context=enhanced_context,
+                output_dir=output_dir,
+                rules_quality_threshold=rules_quality_threshold,
+                verbose=verbose,
+                generated_files=generated_files,
+            )
 
         click.echo("\\nDone!")
 

@@ -305,3 +305,121 @@ def test_cache_invalidated_after_invalidate_call(tmp_path):
     assert (
         "new-skill" in fresh_skills
     ), f"After invalidate_cache(), new skill must appear in list_skills(). Got: {list(fresh_skills.keys())}"
+
+
+# ---------------------------------------------------------------------------
+# QUALITY-CHECKER FIX: TODO/FIXME/XXX must not fire on tool names like "TodoWrite"
+# ---------------------------------------------------------------------------
+
+
+class TestQualityCheckerSentinelFix:
+    """validate_quality must use word-boundary matching for TODO/FIXME/XXX
+    so that tool names like TodoWrite, fixme-up, etc. don't trigger false positives."""
+
+    BASE_SKILL = """## Purpose
+Test skill for quality checker sentinel fix.
+
+## Auto-Trigger
+- working with tasks
+- managing workflows
+- scheduling jobs
+
+## Process
+1. Use TodoWrite to track progress
+2. Check FIXME_utils module for helpers
+
+## Output
+- Task list updated
+
+## Anti-Patterns
+❌ Skipping TodoWrite plan — always track multi-step work
+"""
+
+    def test_todowrite_does_not_trigger_todo_sentinel(self):
+        """'TodoWrite' contains 'todo' as substring — must NOT fire TODO placeholder check."""
+        from generator.utils.quality_checker import validate_quality
+
+        report = validate_quality(self.BASE_SKILL, metadata_triggers=["tasks", "workflows", "scheduling"],
+                                  metadata_tools=["Bash"])
+        todo_issues = [i for i in report.issues if "TODO" in i]
+        assert todo_issues == [], f"False positive: 'TodoWrite' triggered TODO check — {todo_issues}"
+
+    def test_bare_TODO_is_still_caught(self):
+        """A literal TODO (uppercase, standalone word) must still be flagged."""
+        from generator.utils.quality_checker import validate_quality
+
+        content = self.BASE_SKILL + "\n# TODO: fill this in later\n"
+        report = validate_quality(content, metadata_triggers=["a", "b", "c"], metadata_tools=["Bash"])
+        todo_issues = [i for i in report.issues if "TODO" in i]
+        assert todo_issues, "Bare 'TODO' should be caught as a placeholder"
+
+    def test_fixme_module_name_does_not_trigger(self):
+        """'FIXME_utils' — FIXME followed immediately by underscore — is NOT a bare sentinel."""
+        from generator.utils.quality_checker import validate_quality
+
+        report = validate_quality(self.BASE_SKILL, metadata_triggers=["a", "b", "c"],
+                                  metadata_tools=["Bash"])
+        fixme_issues = [i for i in report.issues if "FIXME" in i]
+        assert fixme_issues == [], f"False positive: 'FIXME_utils' triggered FIXME check — {fixme_issues}"
+
+    def test_bare_FIXME_is_still_caught(self):
+        """A bare FIXME must still be caught."""
+        from generator.utils.quality_checker import validate_quality
+
+        content = self.BASE_SKILL + "\n# FIXME: revisit this approach\n"
+        report = validate_quality(content, metadata_triggers=["a", "b", "c"], metadata_tools=["Bash"])
+        fixme_issues = [i for i in report.issues if "FIXME" in i]
+        assert fixme_issues, "Bare 'FIXME' should be caught as a placeholder"
+
+
+# ---------------------------------------------------------------------------
+# BUG: Path(from_readme).is_file() raises OSError ENAMETOOLONG when
+# from_readme is raw README content (>255 chars), not a file path.
+# ---------------------------------------------------------------------------
+
+
+class TestFromReadmeContentNotPath:
+    """_run_strategy_chain must not crash when from_readme is raw content."""
+
+    LONG_README = "# My Project\n\n" + ("Some content line.\n" * 20)  # >255 chars
+
+    def test_raw_content_does_not_raise(self, tmp_path):
+        """Passing raw README content (not a path) must not raise OSError."""
+        from generator.skill_discovery import SkillDiscovery
+        from generator.skill_generator import SkillGenerator
+
+        discovery = SkillDiscovery(project_path=tmp_path)
+        generator = SkillGenerator(discovery)
+
+        # Should not raise — falls through to StubStrategy if needed
+        try:
+            result = generator._run_strategy_chain(
+                "test-skill",
+                from_readme=self.LONG_README,
+                project_path=None,
+                use_ai=False,
+                provider="groq",
+            )
+        except OSError as e:
+            pytest.fail(f"OSError raised for raw README content: {e}")
+
+    def test_file_path_still_works(self, tmp_path):
+        """Passing an actual file path must still be read correctly."""
+        from generator.skill_discovery import SkillDiscovery
+        from generator.skill_generator import SkillGenerator
+
+        readme = tmp_path / "README.md"
+        readme.write_text("# Test Project\n\nA project for testing.\n", encoding="utf-8")
+
+        discovery = SkillDiscovery(project_path=tmp_path)
+        generator = SkillGenerator(discovery)
+
+        result = generator._run_strategy_chain(
+            "test-skill",
+            from_readme=str(readme),
+            project_path=None,
+            use_ai=False,
+            provider="groq",
+        )
+        assert result is not None, "Should generate content from file path"
+        assert "Test Project" in result or "test skill" in result.lower()

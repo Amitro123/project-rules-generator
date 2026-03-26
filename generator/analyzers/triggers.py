@@ -66,6 +66,14 @@ class SkillTriggerDetector:
         """
         matched_conditions: List[str] = []
 
+        # 0. Check Negative Triggers (Abort immediately if matches)
+        neg_triggers = getattr(skill, "negative_triggers", [])
+        if neg_triggers:
+            tech_stack_lower = self._get_tech_stack_set()
+            for neg in neg_triggers:
+                if neg.lower() in tech_stack_lower:
+                    return []  # Abort condition
+
         # 1. Check structured auto_triggers (List[Dict])
         if skill.auto_triggers:
             for trigger_group in skill.auto_triggers:
