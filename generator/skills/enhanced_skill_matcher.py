@@ -26,6 +26,28 @@ class EnhancedSkillMatcher:
             logger.error(f"Failed to load skill index: {e}")
             return {"version": "1.0", "skills": {}}
 
+    def get_skill_name_for_tech(self, tech: str) -> Optional[str]:
+        """Return the canonical skill name for a detected technology.
+
+        Uses ``SkillGenerator.TECH_SKILL_NAMES`` as the single source of truth
+        (same dict used by CoworkSkillCreator) so the two matching systems
+        always agree on the skill name for a given technology.
+
+        Falls back to None when the tech is not in TECH_SKILL_NAMES (e.g. generic
+        'api-integration' groupings that don't map to a single canonical skill).
+
+        Args:
+            tech: Technology name as detected by the tech_detector, e.g. 'anthropic'
+
+        Returns:
+            Canonical skill name string, or None if not found.
+        """
+        try:
+            from generator.skill_generator import SkillGenerator
+            return SkillGenerator.TECH_SKILL_NAMES.get(tech.lower().strip())
+        except Exception:
+            return None
+
     def match_skills(
         self,
         detected_tech: List[str],

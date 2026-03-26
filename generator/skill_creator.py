@@ -75,9 +75,11 @@ class CoworkSkillCreator:
         "mongodb": ["mongosh", "mongodump"],
         "git": ["git"],
         "github": ["gh"],
-        "openai": ["openai"],
-        "anthropic": ["anthropic"],
-        "langchain": ["langchain"],
+        "openai": ["pytest", "ruff", "mypy"],
+        "anthropic": ["pytest", "ruff", "mypy"],
+        "gemini": ["pytest", "ruff", "mypy"],
+        "groq": ["pytest", "ruff", "mypy"],
+        "langchain": ["pytest", "ruff"],
     }
 
     # Common trigger patterns (Cowork-style synonyms)
@@ -91,6 +93,11 @@ class CoworkSkillCreator:
         "security": ["security", "secure", "audit", "vulnerability", "pentest"],
         "docs": ["documentation", "docs", "readme", "guide", "tutorial"],
         "refactor": ["refactor", "cleanup", "improve code", "reorganize"],
+        # LLM / AI provider synonyms (key = provider name, not model name)
+        "anthropic": ["anthropic", "claude", "llm skill", "ai provider", "cowork skill"],
+        "openai": ["openai", "gpt", "chatgpt", "llm"],
+        "gemini": ["gemini", "google ai", "vertex ai"],
+        "groq": ["groq", "llama", "fast inference"],
     }
 
     # Project signal detection (from file/folder structure)
@@ -599,6 +606,12 @@ class CoworkSkillCreator:
             "vulture",
             "bandit",
             "safety",
+            # LLM / AI SDK names — always available when referenced in requirements
+            "anthropic",
+            "openai",
+            "gemini",
+            "groq",
+            "langchain",
         }
 
         for tool in tools:

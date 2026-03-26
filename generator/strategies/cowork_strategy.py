@@ -165,11 +165,12 @@ class CoworkStrategy:
                 # Proceed with whatever README content we have
 
         # Delegate to the creator
+        use_ai: bool = bool(kwargs.get("use_ai", False))
         try:
             content, _metadata, quality = creator.create_skill(
                 skill_name=skill_name,
                 readme_content=readme_content,
-                use_ai=False,
+                use_ai=use_ai,
                 provider=provider,
             )
             try:

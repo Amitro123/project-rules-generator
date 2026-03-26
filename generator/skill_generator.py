@@ -36,7 +36,7 @@ class SkillGenerator:
         "pytorch": "pytorch-training",
         "tensorflow": "tensorflow-models",
         "openai": "openai-api",
-        "anthropic": "anthropic-api",
+        "anthropic": "claude-cowork-workflow",
         "groq": "groq-api",
         "gemini": "gemini-api",
         "perplexity": "perplexity-api",
@@ -174,8 +174,17 @@ class SkillGenerator:
             strategies.append(CoworkStrategy())
         strategies.append(StubStrategy())  # Always available as final fallback
 
+        # CoworkStrategy is a project-context enrichment layer — it should NOT
+        # re-run AI when AIStrategy is already the primary AI path in this chain.
+        # Only forward use_ai=True to CoworkStrategy when AIStrategy was NOT added
+        # (i.e. use_ai=False, or project-path-only mode with no readme).
+        cowork_use_ai = use_ai and not any(isinstance(s, AIStrategy) for s in strategies)
+
         for strategy_obj in strategies:
-            content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy)
+            if isinstance(strategy_obj, CoworkStrategy):
+                content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=cowork_use_ai)
+            else:
+                content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=use_ai)
             if content:
                 return content
         return None

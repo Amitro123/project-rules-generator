@@ -42,12 +42,5 @@
     "let's implement this",
     "create a plan",
     "starting implementation"
-  ],
-  "new-skill": [
-    "new skill",
-    "`has_ci`",
-    "`has_tests` \u2014 test suite available",
-    "`has_api` \u2014 api endpoints present",
-    "`has_docs`"
   ]
 }

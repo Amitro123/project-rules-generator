@@ -1,7 +1,7 @@
 # PRG — Feature Plan & Design Document
 
 > Based on `docs/features.md` cross-referenced with `PROJECT-ROADMAP.md`, `PRG_WOW_PLAN.md`, and the current codebase state.
-> Generated: 2026-03-25
+> Updated: 2026-03-26
 
 ---
 
@@ -12,13 +12,14 @@
 | Basic Analysis (`prg analyze .`) | ✅ | ✅ Fully working |
 | AI Skills (`--ai --provider`) | ✅ | ✅ Fully working (4 providers) |
 | Incremental Mode (`--incremental`) | ✅ | ✅ Implemented (`IncrementalAnalyzer`) |
-| Task Breakdown (`prg plan`) | ✅ | ⚠️ Exists, not battle-tested |
-| Two-Stage Planning (`prg design` + `prg plan --from-design`) | ✅ | ⚠️ Exists, not battle-tested |
+| Task Breakdown (`prg plan`) | ✅ | ✅ Implemented + tested (`test_task_decomposer.py`, `test_plan_modes.py`) |
+| Two-Stage Planning (`prg design` + `prg plan --from-design`) | ✅ | ✅ Implemented + tested (`test_two_stage_planning.py` — 9 tests passing) |
 | Constitution (`--constitution`) | ✅ | ✅ Fully working |
 | Skill Management (`--add/remove/list-skills`) | ✅ | ✅ Fully working |
 | Smart Skill Orchestration (`prg agent`) | ✅ | ✅ `TriggerEvaluator` + 3-layer resolution |
-| Autopilot (`prg autopilot .`) | ✅ | ⚠️ `AutopilotOrchestrator` exists, untested |
-| Project Manager (`prg manager .`) | ✅ | ⚠️ Exists, untested |
+| Autopilot (`prg autopilot .`) | ✅ | ✅ `AutopilotOrchestrator` implemented + tested (`test_autopilot_flow.py` — 9 tests passing) |
+| Project Manager (`prg manager .`) | ✅ | ⚠️ Exists, not deeply battle-tested |
+| `analyze_cmd.py` modularisation | Internal concern | 🔄 In progress (1100+ lines, split underway) |
 | **Evolution / feedback loop** | Referenced in roadmap | ❌ Not implemented |
 | **`prg skills` sub-commands** | PRG_WOW_PLAN only | ❌ Not implemented |
 | **`prg init` wizard** | PRG_WOW_PLAN only | ❌ Not implemented |
@@ -28,93 +29,45 @@
 
 ## 2. Gap Analysis
 
-### 2.1 Content gaps (features documented but broken/untested)
+### 2.1 Resolved gaps (updated 2026-03-26)
 
-**Autopilot** — `AutopilotOrchestrator` exists in `generator/autopilot/` but has no test coverage and is not wired to a stable `prg autopilot` command. The git-branch-per-task and human-review loop described in `features.md` are not verified end-to-end.
+**Autopilot** — `AutopilotOrchestrator` is fully implemented in `generator/planning/autopilot.py` and covered by `tests/test_autopilot_flow.py` (3 scenarios: discovery, happy-path execution loop, rejection+rollback). All 9 autopilot tests pass.
 
-**Two-Stage Planning** — `prg design` and `prg plan --from-design` exist as CLI commands but the design → plan handoff (reading `DESIGN.md` and generating a dependency-aware `PLAN.md`) is untested against real projects.
+**Two-Stage Planning** — `prg design` + `prg plan --from-design` are wired end-to-end. `TaskDecomposer.from_design()` now reads the DESIGN.md as primary context (not a supplementary hint). Covered by `tests/test_two_stage_planning.py` (6 scenarios). All tests pass.
 
-**Task Breakdown** — `prg plan "task description"` exists but AI decomposition quality is not validated; no tests cover the `PLAN.md` output format.
+**Task Breakdown** — `prg plan "task description"` is covered in `tests/test_task_decomposer.py` and `tests/test_plan_modes.py`. Output format validated (Goal / Files / Dependencies / Estimated time structure).
 
-### 2.2 Missing features (in roadmap, not in codebase)
+### 2.2 Remaining gaps (features in roadmap, not in codebase)
 
-**Evolution loop** — Skills are stored in `~/.project-rules-generator/learned/` but never updated based on usage. No quality-score feedback, no promotion/demotion logic.
+**Evolution loop** — Skills are stored in `~/.project-rules-generator/learned/` but never updated based on usage. No quality-score feedback, no promotion/demotion logic, no `generator/evolution/` module.
 
-**`prg skills` sub-commands** — `TriggerEvaluator` precision scoring is internal only; no `prg skills list/validate/import` commands exist.
+**`prg skills` sub-commands** — `TriggerEvaluator` precision scoring is internal only; no `prg skills list/validate/import` commands exist. No `cli/skills_cmd.py`.
 
-**`prg init` wizard** — No interactive first-run experience. Users must know the exact CLI flags to get value.
+**`prg init` wizard** — No interactive first-run experience. Users must know the exact CLI flags to get value. No `cli/init_cmd.py`.
 
 **Rich CLI output** — `rich` is declared in `requirements.txt` but every command uses plain `print()` / `click.echo()`.
+
+**`analyze_cmd.py` split** — File is 1100+ lines. Modularisation is in progress but not complete.
 
 ---
 
 ## 3. Proposed Work — Prioritised
 
-### Priority 1 — Stabilise existing features (short-term, high confidence)
+### Priority 1 — `analyze_cmd.py` modularisation (in-progress, low risk)
 
-These features are documented and partially built. They just need test coverage and validation.
+**Goal:** Break the 1100-line monolith into focused sub-modules without changing public API.
 
-#### P1-A: Autopilot end-to-end test
-
-**Goal:** Verify the `prg autopilot .` loop against a controlled fixture project.
-
-**Files:** `generator/autopilot/orchestrator.py`, new `tests/test_autopilot_flow.py`
-
-**Design:**
+**Proposed split:**
 ```
-AutopilotOrchestrator
-  ├── analyze()         → reads project context
-  ├── plan()            → writes TASKS.yaml + PLAN.md
-  ├── execute_next()    → picks next pending task, creates git branch
-  ├── verify()          → runs pytest / ruff
-  └── review_prompt()   → returns diff + asks human yes/no
+cli/analyze_cmd.py  (router only — imports + Click decorators)
+cli/analyze/
+  ├── ai_flow.py       # --ai branch: provider routing + skill generation
+  ├── readme_flow.py   # --from-readme branch
+  ├── incremental.py   # --incremental branch
+  └── output.py        # shared output/commit helpers
 ```
 
-**Test approach:** Use a temp git repo fixture with two pre-defined failing tests. Verify the orchestrator creates a branch, makes changes, and prompts for review without crashing.
-
-**Acceptance:** `pytest tests/test_autopilot_flow.py` passes; `prg autopilot .` runs on the sample project without raising an unhandled exception.
-
----
-
-#### P1-B: Two-Stage Planning validation
-
-**Goal:** Verify `prg design "X"` + `prg plan --from-design DESIGN.md` produce coherent, non-empty output.
-
-**Files:** `generator/planning/design_generator.py`, `generator/planning/project_manager.py`, new `tests/test_two_stage_planning.py`
-
-**Design:**
-```
-Stage 1:  prg design "Add auth"
-          └── DesignGenerator.generate(feature_description)
-              ├── Produces DESIGN.md with:
-              │   - Architecture Decisions
-              │   - Data Models
-              │   └── API Contracts
-              └── Saved to project root
-
-Stage 2:  prg plan --from-design DESIGN.md
-          └── ProjectPlanner.plan_from_design(design_path)
-              ├── Reads DESIGN.md
-              ├── Decomposes each API Contract into tasks
-              └── Writes PLAN.md with estimated times + dependencies
-```
-
-**Gap to fix:** `ProjectPlanner` currently does not read `DESIGN.md` as a structured input — it re-runs analysis from scratch. The `--from-design` flag needs to inject the design document as primary context, not as a supplementary hint.
-
----
-
-#### P1-C: Task Breakdown output validation
-
-**Goal:** Ensure `prg plan "task"` always produces a `PLAN.md` with at least 2 tasks in the correct format.
-
-**Files:** `generator/planning/task_breakdown.py`, `tests/test_task_breakdown.py`
-
-**Acceptance criteria (from features.md format):**
-```
-- Each task block has: Goal, Files, Dependencies, Estimated time
-- At least one task has a "Tests" section
-- Tasks are numbered and dependency-ordered
-```
+**Acceptance:** All existing tests pass. `prg analyze .` behaviour unchanged. Each sub-module ≤ 200 lines.
 
 ---
 
@@ -146,11 +99,13 @@ Stage 2:  prg plan --from-design DESIGN.md
 
 **Storage schema** (append to `~/.project-rules-generator/usage.jsonl`):
 ```json
-{"skill": "pytest-testing-workflow", "event": "triggered", "score": 95, "ts": "2026-03-25T10:00:00"}
-{"skill": "pytest-testing-workflow", "event": "dismissed", "score": null, "ts": "2026-03-25T10:01:00"}
+{"skill": "pytest-testing-workflow", "event": "triggered", "score": 95, "ts": "2026-03-26T10:00:00"}
+{"skill": "pytest-testing-workflow", "event": "dismissed", "score": null, "ts": "2026-03-26T10:01:00"}
 ```
 
 **Evolution trigger:** After 10 uses OR quality score drops below 70 on 3 consecutive runs, `EvolutionScheduler` re-generates the skill using `AIStrategy` seeded with the current content and feedback history.
+
+**Resolved design question:** Evolution writes to a `.draft` file first (e.g., `pytest-testing-workflow.draft.md`) and prompts the user on next `prg analyze` — it does NOT silently overwrite. (See section 6.1.)
 
 **Files to create:**
 - `generator/evolution/usage_tracker.py`
@@ -188,7 +143,9 @@ Runs `TriggerEvaluator` and prints precision/recall breakdown for a named skill.
 
 #### 3.3 `prg skills import <url>`
 
-Fetches a raw SKILL.md from a GitHub URL and saves it to `learned/` after running `validate_quality()`. Rejects if score < 90.
+**Resolved design question:** Imported skills go to `pending/` quarantine first. After `prg agent` uses them once successfully (triggered + not dismissed), they are promoted to `learned/`. (See section 6.2.)
+
+Fetches a raw SKILL.md from a GitHub URL and saves it to `pending/` after running `validate_quality()`. Rejects if score < 90.
 
 ---
 
@@ -217,14 +174,14 @@ Wire `rich` to the three main commands:
 
 No new dependencies — `rich` is already in `requirements.txt`.
 
+**Resolved design question:** Autopilot human-in-the-loop UX uses a blocking CLI prompt for v1 (simpler and testable). GitHub PR drafts deferred to a future version. (See section 6.3.)
+
 ---
 
 ## 4. Implementation Order
 
 ```
-P1-A  Autopilot tests           → low-risk, no architecture change
-P1-B  Two-stage planning fix    → fix --from-design input path
-P1-C  Task breakdown validation → add output format tests
+P1    analyze_cmd.py split      → low-risk, internal refactor, no behaviour change
   ↓
 P2    Evolution loop             → new generator/evolution/ module
   ↓
@@ -241,21 +198,21 @@ Each step is independently releasable and adds tests before shipping.
 
 | Phase | New files | Modified files |
 |---|---|---|
-| P1-A | `tests/test_autopilot_e2e.py` | `generator/autopilot/orchestrator.py` (bug fixes) |
-| P1-B | `tests/test_two_stage_planning.py` | `generator/planning/project_manager.py`, `cli/analyze_cmd.py` |
-| P1-C | `tests/test_task_breakdown_format.py` | `generator/planning/task_breakdown.py` |
-| P2 | `generator/evolution/` (4 files) | `generator/skills_manager.py`, `cli/analyze_cmd.py` |
+| P1 | `cli/analyze/ai_flow.py`, `cli/analyze/readme_flow.py`, `cli/analyze/incremental.py`, `cli/analyze/output.py` | `cli/analyze_cmd.py` (gutted to router) |
+| P2 | `generator/evolution/` (4 files), `tests/test_evolution.py` | `generator/skills_manager.py`, `cli/analyze_cmd.py` |
 | P3 | `cli/skills_cmd.py`, `tests/test_skills_cmd.py` | `cli/cli.py` (register group) |
 | P4 | `cli/init_cmd.py` | `cli/analyze_cmd.py`, `cli/create_rules_cmd.py` |
 
 ---
 
-## 6. Open Questions
+## 6. Resolved Design Questions
 
-1. **Evolution re-generation** — should it silently overwrite the skill or write a `skill-v2.md` for human review first? Recommend: write to a `.draft` file + prompt user on next `prg analyze`.
+> Previously open questions — answers locked in here for reference.
 
-2. **`prg skills import` trust model** — should imported skills go straight to `learned/` or to a `pending/` quarantine until `prg agent` uses them once successfully?
+**6.1 Evolution re-generation** — Resolved: write to a `.draft` file (e.g., `pytest-testing-workflow.draft.md`) + prompt user on next `prg analyze`. Never silently overwrite.
 
-3. **Autopilot human-in-the-loop UX** — `features.md` says "Asks for your approval". Should this be a blocking CLI prompt or a PR draft on GitHub? For v1, blocking CLI is simpler and testable.
+**6.2 `prg skills import` trust model** — Resolved: Imported skills go to `pending/` quarantine first. They are promoted to `learned/` only after one successful use by `prg agent` (triggered + not dismissed by the user).
 
-4. **Two-Stage Planning storage** — `DESIGN.md` and `PLAN.md` go in the project root today. For multi-feature work, a `plans/` directory with dated filenames (`plans/2026-03-25-auth.md`) would be cleaner.
+**6.3 Autopilot human-in-the-loop UX** — Resolved: blocking CLI prompt for v1. `features.md` says "Asks for your approval" — implemented as `click.prompt()`. GitHub PR draft deferred to a future version when the user base is larger.
+
+**6.4 Two-Stage Planning storage** — Deferred: `DESIGN.md` and `PLAN.md` stay in the project root for now. Multi-feature `plans/` directory with dated filenames is noted for a future cleanup pass.

@@ -32,9 +32,9 @@ from cli.utils import set_api_key_env as _set_api_key
 @click.option("--api-key", help="API Key (overrides env var)")
 @click.option(
     "--provider",
-    type=click.Choice(["gemini", "groq"]),
+    type=click.Choice(["gemini", "groq", "anthropic", "openai"]),
     default=None,
-    help="AI Provider (gemini, groq). Auto-detected if omitted.",
+    help="AI Provider (gemini, groq, anthropic, openai). Auto-detected if omitted.",
 )
 @click.option("--verbose/--quiet", default=True, help="Verbose output")
 def design(description, project_path, output, api_key, provider, verbose):
@@ -128,9 +128,9 @@ def design(description, project_path, output, api_key, provider, verbose):
 @click.option("--api-key", help="API Key (overrides env var)")
 @click.option(
     "--provider",
-    type=click.Choice(["gemini", "groq"]),
+    type=click.Choice(["gemini", "groq", "anthropic", "openai"]),
     default=None,
-    help="AI Provider (gemini, groq). Auto-detected if omitted.",
+    help="AI Provider (gemini, groq, anthropic, openai). Auto-detected if omitted.",
 )
 @click.option("--interactive", is_flag=True, help="Open files in IDE as tasks are listed")
 @click.option(
@@ -430,9 +430,9 @@ def plan(
 )
 @click.option(
     "--provider",
-    type=click.Choice(["gemini", "groq"]),
+    type=click.Choice(["gemini", "groq", "anthropic", "openai"]),
     default=None,
-    help="AI Provider (gemini, groq). Auto-detected if omitted.",
+    help="AI Provider (gemini, groq, anthropic, openai). Auto-detected if omitted.",
 )
 @click.option("--api-key", help="API Key (overrides env var)")
 @click.option("--tasks", is_flag=True, help="Generate executable tasks from review")
@@ -553,7 +553,7 @@ def review(filepath, project_path, output, provider, api_key, tasks, verbose):
 )
 @click.option(
     "--provider",
-    type=click.Choice(["gemini", "groq"]),
+    type=click.Choice(["gemini", "groq", "anthropic", "openai"]),
     default=None,
     help="AI Provider",
 )
@@ -591,7 +591,7 @@ def start(task_description, project_path, provider, api_key, verbose):
 )
 @click.option(
     "--provider",
-    type=click.Choice(["gemini", "groq"]),
+    type=click.Choice(["gemini", "groq", "anthropic", "openai"]),
     default=None,
     help="AI Provider",
 )
