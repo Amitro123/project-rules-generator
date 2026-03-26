@@ -62,7 +62,8 @@ def test_extract_auto_triggers():
     readme = "Built with Python."
     triggers = extract_auto_triggers(readme, "my-skill")
     assert any("my" in t and "skill" in t for t in triggers)  # User mentions
-    assert "Working in backend code: *.py" in triggers
+    # Generic backend/frontend triggers were intentionally removed; only skill-name
+    # and domain-specific globs are emitted now.
 
 
 def test_extract_process_steps():

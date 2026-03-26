@@ -37,9 +37,29 @@
     "`**/*-skills.json`",
     "`**/.clinerules*`"
   ],
+  "🚫_critical_anti-patterns_(never_do_this)": [
+    "NEVER run destructive commands (rm -rf, drop table, etc.) without explicit user confirmation.",
+    "NEVER generate placeholder comments like 'Implement logic here' - write the full code."
+  ],
   "auto-trigger": [
-    "Working with click integration code",
-    "Editing files that import or configure click"
+    "**\"missing dep skill\"**",
+    "`has_tests` — Test suite available",
+    "`has_api` — API endpoints present",
+    "`has_ci`",
+    "`has_docs`"
+  ],
+  "process": [
+    "Review project structure in `project-rules-generator/`",
+    "Check configuration files",
+    "Identify existing patterns",
+    "Run tests if available",
+    "Check for errors",
+    "Verify expected outputs"
+  ],
+  "output": [
+    "Modified/created files in `project-rules-generator/`",
+    "Status report with changes",
+    "Recommendations for next steps"
   ],
   "pre-review_checklist": [
     "✓ Read every line you changed",
@@ -87,5 +107,21 @@
     "Follow project patterns for click usage",
     "Handle click errors with proper retries and fallbacks",
     "Add tests for click integration code"
+  ],
+  "critical": [
+    "Read existing files before modifying them.",
+    "Run tests after any code change and verify they pass.",
+    "Never generate or reference file paths that don't exist in the project.",
+    "Never skip tests or suppress coverage with `--no-cov` / `--no-cover`."
+  ],
+  "tech_stack_notes": [
+    "`groq`",
+    "`python`",
+    "`click`",
+    "`gemini`",
+    "`pytest`",
+    "`jinja2`",
+    "`gitpython`",
+    "`pydantic`"
   ]
 }

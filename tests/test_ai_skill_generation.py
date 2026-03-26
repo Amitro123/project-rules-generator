@@ -39,8 +39,10 @@ class TestAISkillGeneration(unittest.TestCase):
 
         manager = SkillsManager()
 
-        # Call create_skill with use_ai=True
-        skill_path = manager.create_skill("ai-test-skill", project_path=".", use_ai=True)
+        # force=True ensures the test is deterministic even if a stale skill
+        # exists in the real global learned dir (GLOBAL_LEARNED is evaluated at
+        # module import time, unaffected by the Path.home mock).
+        skill_path = manager.create_skill("ai-test-skill", project_path=".", use_ai=True, force=True)
 
         # Verify interactions
         mock_analyzer_cls.assert_called_once()
