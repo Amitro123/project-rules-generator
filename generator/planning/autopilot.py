@@ -68,7 +68,7 @@ class AutopilotOrchestrator:
         main_branch = None
         try:
             main_branch = git_ops.get_current_branch(self.project_path)
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             if self.verbose:
                 click.echo("⚠️  Not a git repository or git not found. Safety features disabled.")
 

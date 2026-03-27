@@ -279,21 +279,21 @@ def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List
         if dep_path.exists():
             try:
                 dep_content += dep_path.read_text(encoding="utf-8", errors="replace").lower() + "\n"
-            except Exception:
+            except OSError:
                 pass
 
     pyproject = project_path / "pyproject.toml"
     if pyproject.exists():
         try:
             dep_content += pyproject.read_text(encoding="utf-8", errors="replace").lower() + "\n"
-        except Exception:
+        except OSError:
             pass
 
     pkg_json = project_path / "package.json"
     if pkg_json.exists():
         try:
             dep_content += pkg_json.read_text(encoding="utf-8", errors="replace").lower() + "\n"
-        except Exception:
+        except OSError:
             pass
 
     tech_to_dep_patterns = {
@@ -745,7 +745,7 @@ def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[P
                         "Add: `if not shutil.which('ffmpeg'): raise RuntimeError('ffmpeg not found')`"
                     )
                     break
-            except Exception:
+            except OSError:
                 pass
 
     if "python" in tech or "pydantic" in tech:

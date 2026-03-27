@@ -64,7 +64,7 @@ class ProjectAnalyzer:
                     content = readme_path.read_text(encoding="utf-8", errors="replace")
                     # Limit to 4000 chars to avoid token overflow
                     return content[:4000]
-                except Exception:
+                except OSError:
                     pass
         return None
 
@@ -100,7 +100,7 @@ class ProjectAnalyzer:
                     tech["backend"].append("Whisper")
                 if "gemini" in req_content or "google-generativeai" in req_content:
                     tech["backend"].append("Gemini")
-            except Exception:
+            except OSError:
                 pass
 
         # From package.json (JavaScript/TypeScript)
@@ -121,7 +121,7 @@ class ProjectAnalyzer:
                     tech["frontend"].append("TailwindCSS")
                 if "node" in pkg_content:
                     tech["backend"].append("Node.js")
-            except Exception:
+            except OSError:
                 pass
 
         # Infrastructure
@@ -149,7 +149,7 @@ class ProjectAnalyzer:
                 try:
                     content = file_path.read_text(encoding="utf-8", errors="replace")
                     files[filename] = content[:1000]  # Limit
-                except Exception:
+                except OSError:
                     pass
 
         # Config files
@@ -165,7 +165,7 @@ class ProjectAnalyzer:
                 try:
                     content = file_path.read_text(encoding="utf-8", errors="replace")
                     files[filename] = content[:500]
-                except Exception:
+                except OSError:
                     pass
 
         # API routes sample (Python).
@@ -188,7 +188,7 @@ class ProjectAnalyzer:
             try:
                 content = api_file.read_text(encoding="utf-8", errors="replace")
                 files["api_sample"] = content[:800]
-            except Exception:
+            except OSError:
                 pass
 
         # Main entry point
@@ -199,7 +199,7 @@ class ProjectAnalyzer:
                     content = file_path.read_text(encoding="utf-8", errors="replace")
                     files[filename] = content[:800]
                     break  # Only one main file
-                except Exception:
+                except OSError:
                     pass
 
         return files
@@ -229,7 +229,7 @@ class ProjectAnalyzer:
                 if "scripts" in pkg_data:
                     for name, command in pkg_data["scripts"].items():
                         workflows.append({"type": "npm", "name": name, "command": command})
-            except Exception:
+            except (OSError, ValueError):
                 pass
 
         return workflows[:20]  # Limit to 20

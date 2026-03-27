@@ -305,7 +305,7 @@ class StructureAnalyzer:
         for tf in test_files:
             try:
                 content = tf.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            except OSError:
                 continue
             if tf.suffix == ".py":
                 count += len(py_pattern.findall(content))
@@ -430,6 +430,6 @@ class StructureAnalyzer:
         if key not in self._content_cache:
             try:
                 self._content_cache[key] = path.read_text(encoding="utf-8", errors="replace")[:5000]
-            except Exception:
+            except OSError:
                 self._content_cache[key] = ""
         return self._content_cache[key]

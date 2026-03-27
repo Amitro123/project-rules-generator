@@ -87,7 +87,7 @@ def cleanup_awesome_skills():
         awesome_dir = Path.home() / ".project-rules-generator" / "awesome-skills"
         if awesome_dir.exists():
             shutil.rmtree(awesome_dir)
-    except Exception:
+    except OSError:
         pass
 
 

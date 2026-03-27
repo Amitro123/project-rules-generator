@@ -92,7 +92,7 @@ class RequirementsInferrer:
                         )
                     )
             return requirements
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             return []
 
     def _analyze_codebase(self, project_path: Path) -> List[Requirement]:
@@ -116,7 +116,7 @@ class RequirementsInferrer:
                             priority=4,
                         )
                     )
-        except Exception:
+        except OSError:
             pass
 
         return requirements
@@ -173,6 +173,6 @@ SOURCE: [Original source]
                 pri = pri_match.group(1).strip()
                 src = src_match.group(1).strip()
                 refined.append(Requirement(id=id_val, description=desc, source=src, priority=int(pri)))
-            except Exception:
+            except (ValueError, AttributeError):
                 continue
         return refined

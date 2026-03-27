@@ -183,7 +183,7 @@ class CodeExampleExtractor:
 
         try:
             content = file_path.read_text(encoding="utf-8", errors="replace")
-        except Exception:
+        except OSError:
             return examples
 
         relative_path = str(file_path.relative_to(project_path))

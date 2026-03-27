@@ -175,7 +175,7 @@ class SkillsManager:
             if not content and "path" in data:
                 try:
                     content = Path(data["path"]).read_text(encoding="utf-8")
-                except Exception:
+                except OSError:
                     continue
 
             parsed = SkillParser.parse_skill_md(content, name)

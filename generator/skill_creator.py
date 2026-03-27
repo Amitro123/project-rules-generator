@@ -397,7 +397,7 @@ class CoworkSkillCreator:
                         analysis["patterns"].append("Uses pytest markers")
                     if "pytest_configure" in conftest_content:
                         analysis["patterns"].append("Has pytest_configure hook")
-                except Exception:
+                except OSError:
                     pass
 
         elif "fastapi" in skill_lower or "api" in skill_lower:
@@ -583,7 +583,7 @@ class CoworkSkillCreator:
             if req_file.exists():
                 try:
                     all_content += req_file.read_text(encoding="utf-8", errors="ignore")
-                except Exception:
+                except OSError:
                     pass
 
         # Common Python/Node tools that are always available
@@ -1014,7 +1014,7 @@ class CoworkSkillCreator:
                 try:
                     content = path.read_text(encoding="utf-8", errors="ignore")
                     key_files[candidate] = content[:600]
-                except Exception:
+                except OSError:
                     pass
 
         # Project tree: always include (gives LLM structural grounding)
@@ -1037,7 +1037,7 @@ class CoworkSkillCreator:
                 chunk = content[:remaining_budget]
                 key_files[rel] = chunk
                 remaining_budget -= len(chunk)
-            except Exception:
+            except OSError:
                 pass
 
         return key_files

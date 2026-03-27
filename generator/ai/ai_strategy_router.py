@@ -92,7 +92,7 @@ class AIStrategyRouter:
         if STRATEGY_CONFIG_PATH.exists():
             try:
                 return yaml.safe_load(STRATEGY_CONFIG_PATH.read_text(encoding="utf-8")) or {}
-            except Exception:
+            except (yaml.YAMLError, OSError):
                 pass
         # Write default config on first use
         self._write_default_config()
@@ -114,7 +114,7 @@ class AIStrategyRouter:
                 STRATEGY_CONFIG_PATH.write_text(
                     yaml.dump(default, default_flow_style=False), encoding="utf-8"
                 )
-        except Exception:
+        except OSError:
             pass
 
     # ------------------------------------------------------------------

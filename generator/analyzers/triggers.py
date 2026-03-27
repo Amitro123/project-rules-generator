@@ -45,7 +45,7 @@ class SkillTriggerDetector:
                 rel_root = Path(root).relative_to(self.project_path)
                 for file in files:
                     self._cache_file_list.append(str(rel_root / file).replace("\\", "/"))
-        except Exception:
+        except OSError:
             pass
 
     def _get_tech_stack_set(self) -> Set[str]:

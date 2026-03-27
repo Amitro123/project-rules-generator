@@ -149,7 +149,7 @@ class TriggerEvaluator:
         try:
             fm = yaml.safe_load(parts[1])
             return str(fm.get("description", "")) if fm else ""
-        except Exception:
+        except (yaml.YAMLError, OSError):
             return ""
 
     @staticmethod

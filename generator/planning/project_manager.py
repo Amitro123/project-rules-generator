@@ -165,7 +165,7 @@ class ProjectManager:
                 timeout=10,
             )
             git_log = result.stdout.strip() if result.returncode == 0 else ""
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             pass
 
         # --- Build prompt ---

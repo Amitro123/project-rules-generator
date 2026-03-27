@@ -69,7 +69,7 @@ class EnhancedProjectParser:
                             "raw_readme": content[:4000],
                             "readme_path": str(readme_path),
                         }
-                    except Exception:
+                    except OSError:
                         pass
         return {
             "name": self.path.name,
@@ -289,7 +289,7 @@ class EnhancedProjectParser:
             if readme_path_str:
                 try:
                     raw_readme = Path(readme_path_str).read_text(encoding="utf-8", errors="replace")
-                except Exception:
+                except OSError:
                     pass
         if raw_readme:
             from generator.utils.tech_detector import detect_from_readme

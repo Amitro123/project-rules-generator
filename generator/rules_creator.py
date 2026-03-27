@@ -425,7 +425,7 @@ class CoworkRulesCreator:
                     for tech, keywords in file_tech_map.items():
                         if any(kw in content for kw in keywords):
                             detected.add(tech)
-                except Exception:
+                except OSError:
                     pass
 
         # Check for pytest.ini / conftest.py -> pytest
@@ -557,7 +557,7 @@ class CoworkRulesCreator:
             if p.exists():
                 try:
                     snippets.append(f"[{fname}]\n{p.read_text(encoding='utf-8', errors='ignore')[:400]}")
-                except Exception:
+                except OSError:
                     pass
 
         prompt = f"""You are generating coding rules for a software project.
@@ -890,7 +890,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
                         )
                     )
 
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             # Git analysis failed, skip
             pass
 
@@ -1085,7 +1085,7 @@ No explanations, no markdown, just the DO:/DONT: lines."""
                 timeout=2,
             )
             return result.returncode == 0
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             return False
 
     def export_to_file(

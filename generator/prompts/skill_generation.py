@@ -165,7 +165,7 @@ def detect_project_tools(project_path: Optional[Path] = None, tech_stack: Option
                     tools["format"] = "black ."
                 if "mypy" in content:
                     tools["lint"] = "mypy ."
-            except Exception:
+            except OSError:
                 pass
 
         # Detect from requirements
@@ -180,7 +180,7 @@ def detect_project_tools(project_path: Optional[Path] = None, tech_stack: Option
                         tools["lint"] = "mypy ."
                     if "black" in content and "format" not in tools:
                         tools["format"] = "black ."
-                except Exception:
+                except OSError:
                     pass
 
     # Defaults based on tech stack

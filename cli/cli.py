@@ -10,12 +10,12 @@ if sys.platform == "win32":
 
     try:
         ctypes.windll.kernel32.SetConsoleOutputCP(65001)  # UTF-8 codepage
-    except Exception:
+    except (AttributeError, OSError):
         pass
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-    except Exception:
+    except (AttributeError, OSError):
         pass
 
 import click

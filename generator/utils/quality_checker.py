@@ -49,7 +49,7 @@ def is_stub(filepath: Path, project_path: Optional[Path] = None) -> bool:
     """
     try:
         content = filepath.read_text(encoding="utf-8", errors="replace")
-    except Exception:
+    except OSError:
         return False
 
     # 1. Generic stub markers

@@ -147,7 +147,7 @@ class SkillDiscovery:
                         target.unlink()
                     else:
                         return  # Already correct
-                except Exception:
+                except OSError:
                     target.unlink()
             elif target.is_dir():
                 # Directory exists (maybe copy), leave it be
@@ -371,7 +371,8 @@ class SkillDiscovery:
                     triggers = TriggerEvaluator.extract_triggers(content)
                     if triggers and TriggerEvaluator._matches_any(query, triggers):
                         active.append(skill_path)
-                except Exception:
+                except (OSError, ValueError) as exc:
+                    logger.debug("Skipping skill %s: %s", skill_path.name, exc)
                     continue
 
         return active
@@ -434,7 +435,7 @@ class SkillDiscovery:
                         "path": str(path),
                         "content": content,
                     }
-                except Exception:
+                except OSError:
                     continue
 
         return skills_content

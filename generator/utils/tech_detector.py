@@ -155,7 +155,7 @@ def detect_from_dependencies(project_path: Path) -> Set[str]:
                 if pkg in content:
                     detected.add(tech)
             detected.add("python")  # Has requirements.txt = Python project
-        except Exception:
+        except OSError:
             pass
 
     # Python: pyproject.toml
@@ -168,7 +168,7 @@ def detect_from_dependencies(project_path: Path) -> Set[str]:
             if "pytest" in content:
                 detected.add("pytest")
             detected.add("python")
-        except Exception:
+        except OSError:
             pass
 
     # Node: package.json
@@ -194,7 +194,7 @@ def detect_from_dependencies(project_path: Path) -> Set[str]:
                     detected.add(tech)
             if "typescript" not in detected:
                 detected.add("javascript")
-        except Exception:
+        except (OSError, ValueError):
             pass
 
     # Docker

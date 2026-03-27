@@ -312,7 +312,7 @@ class DependencyParser:
                 "url": url,
                 "raw": dep_str.strip(),
             }
-        except Exception:
+        except (ValueError, TypeError):
             # Fallback for simple cases if packaging fails or is missing
             # logger.debug(f"packaging parse failed for {dep_str}: {e}")
             match = re.match(
@@ -342,7 +342,7 @@ class DependencyParser:
         deps: List[Dict[str, str]] = []
         try:
             content = readme_path.read_text(encoding="utf-8", errors="replace")
-        except Exception:
+        except OSError:
             return deps
 
         # Match pip/pip3 install commands (may be inside code blocks)
@@ -411,7 +411,7 @@ class DependencyParser:
         for f in scan_files_list:
             try:
                 combined_content += f.read_text(encoding="utf-8", errors="replace")[:2000]
-            except Exception:
+            except OSError:
                 continue
 
         content_lower = combined_content.lower()

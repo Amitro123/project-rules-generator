@@ -154,7 +154,7 @@ class ProjectPlanner:
         else:
             try:
                 self.client = create_ai_client(provider=provider, api_key=api_key)
-            except Exception:
+            except (ImportError, ValueError, RuntimeError):
                 # Fallback to a stub with a minimal generate() to keep planner functional
                 class _Stub:
                     def generate(self, prompt: str, *args, **kwargs) -> str:  # noqa: D401
@@ -189,7 +189,8 @@ class ProjectPlanner:
                 system_message=ROADMAP_SYSTEM_PROMPT,
             )
             plan = self._parse_roadmap_response(response, readme_content)
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Roadmap generation failed, using template: %s", exc)
             # Fallback to template-based roadmap
             plan = self._generate_template_roadmap(features, readme_content)
 
@@ -217,7 +218,8 @@ class ProjectPlanner:
         try:
             response = self.client.generate(prompt, temperature=0.5, max_tokens=2500)
             plan = self._parse_task_response(response, query)
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Task plan generation failed, using template: %s", exc)
             # Fallback to template-based plan
             plan = self._generate_template_task_plan(query)
 
