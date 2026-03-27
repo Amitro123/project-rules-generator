@@ -68,7 +68,7 @@ class AutopilotOrchestrator:
         main_branch = None
         try:
             main_branch = git_ops.get_current_branch(self.project_path)
-        except Exception:
+        except (subprocess.CalledProcessError, FileNotFoundError, OSError):
             if self.verbose:
                 click.echo("⚠️  Not a git repository or git not found. Safety features disabled.")
 
@@ -90,7 +90,7 @@ class AutopilotOrchestrator:
                 try:
                     git_ops.create_branch(branch_name, self.project_path)
                     click.echo(f"🌿 Branch: {branch_name}")
-                except Exception as e:
+                except subprocess.CalledProcessError as e:
                     click.echo(f"⚠️  Branch creation failed: {e}")
 
             try:

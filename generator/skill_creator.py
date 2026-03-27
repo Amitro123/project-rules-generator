@@ -24,11 +24,12 @@ from generator.utils.tech_detector import detect_from_dependencies as _detect_fr
 from generator.utils.tech_detector import detect_tech_stack as _detect_tech_stack_util
 
 try:
-    from jinja2 import Environment, FileSystemLoader
+    from jinja2 import Environment, FileSystemLoader, TemplateError as _Jinja2TemplateError
 
     HAS_JINJA2 = True
 except ImportError:
     HAS_JINJA2 = False
+    _Jinja2TemplateError = Exception  # type: ignore[assignment,misc]
 
 
 @dataclass
@@ -1096,7 +1097,7 @@ class CoworkSkillCreator:
         if HAS_JINJA2:
             try:
                 return self._generate_with_jinja2(skill_name, readme_content, metadata, custom_context)
-            except Exception as e:
+            except (OSError, _Jinja2TemplateError) as e:
                 print(f"Warning: Jinja2 template failed ({e}), using inline generation")
 
         # Fallback: inline generation

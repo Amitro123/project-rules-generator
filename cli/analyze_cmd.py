@@ -87,7 +87,7 @@ def cleanup_awesome_skills():
         awesome_dir = Path.home() / ".project-rules-generator" / "awesome-skills"
         if awesome_dir.exists():
             shutil.rmtree(awesome_dir)
-    except Exception:
+    except OSError:
         pass
 
 
@@ -212,7 +212,7 @@ def _run_create_rules(project_path, readme_path, project_name, project_data, enh
         generated_files.append(cowork_rules_file)
         if verbose:
             click.echo(f"   ✅ Cowork rules.md saved: {cowork_rules_file}")
-    except Exception as e:
+    except (OSError, ValueError, AttributeError) as e:
         click.echo(f"   ⚠️  Cowork rules generation failed: {e}", err=True)
         if verbose:
             import traceback
@@ -440,7 +440,7 @@ def analyze(
         skills_manager.setup_project_structure()
         if verbose:
             click.echo("✅ Skills structure initialized (Global -> Project)")
-    except Exception as e:
+    except OSError as e:
         if verbose:
             click.echo(f"⚠️  Skills structure setup warning: {e}")
         # Non-fatal, might just be symlink issues, meaningful error printed inside manager
@@ -555,7 +555,7 @@ def analyze(
                     readme_path.write_text(content, encoding="utf-8")
                     click.echo(f"✅ README.md created/updated and saved to {readme_path}\\n")
 
-                except Exception as e:
+                except (OSError, ValueError) as e:
                     click.echo(f"⚠️  README generation failed: {e}")
                     # Fallback to structure analysis if readme gen failed
             else:
@@ -631,7 +631,7 @@ def analyze(
             try:
                 enhanced_parser = EnhancedProjectParser(project_path)
                 enhanced_context = enhanced_parser.extract_full_context()
-            except Exception as e:
+            except (OSError, ValueError, AttributeError) as e:
                 if verbose:
                     click.echo(f"   Enhanced analysis unavailable: {e}")
 
@@ -1044,7 +1044,7 @@ def analyze(
                     click.echo("\\nCommitted to git")
                     if "nothing to commit" in result.lower():
                         click.echo("   (or files already tracked)")
-                except Exception as e:
+                except (RuntimeError, OSError) as e:
                     click.echo(f"\\nWARNING: Git commit failed: {e}")
                     click.echo("   Files were generated, you can commit manually")
 
