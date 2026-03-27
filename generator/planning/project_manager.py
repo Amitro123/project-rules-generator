@@ -95,12 +95,15 @@ class ProjectManager:
             # We can use AgentWorkflow's internal or call specific commands.
             # Using AgentWorkflow.run_setup() covers a lot, but might be too broad.
             # Let's use the CLI logic roughly:
-            from refactor.analyze_cmd import AnalyzeCommand
+            from click.testing import CliRunner
 
-            cmd = AnalyzeCommand(
-                project_path=self.project_path, mode="ai" if self.api_key else "manual", api_key=self.api_key
-            )
-            cmd.execute()
+            from cli.analyze_cmd import analyze
+
+            runner = CliRunner()
+            args = [str(self.project_path), "--no-commit"]
+            if self.api_key:
+                args.append("--ai")
+            runner.invoke(analyze, args, catch_exceptions=False)
 
         # Group 2: Planning (PLAN.md, tasks/)
         if "PLAN.md" in missing or "tasks/TASKS.yaml" in missing:
