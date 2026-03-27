@@ -8,8 +8,18 @@ from generator.skills_manager import SkillsManager
 @pytest.fixture
 def mock_global_home(tmp_path, monkeypatch):
     """Mock the global home directory."""
+    from generator.storage.skill_paths import SkillPathManager
+
     global_home = tmp_path / "global_home"
     monkeypatch.setattr(Path, "home", lambda: global_home)
+
+    # SkillPathManager class attributes are evaluated at import time, so Path.home()
+    # monkeypatching alone won't redirect them. Patch the class attributes explicitly.
+    global_dir = global_home / ".project-rules-generator"
+    monkeypatch.setattr(SkillPathManager, "GLOBAL_DIR", global_dir)
+    monkeypatch.setattr(SkillPathManager, "GLOBAL_BUILTIN", global_dir / "builtin")
+    monkeypatch.setattr(SkillPathManager, "GLOBAL_LEARNED", global_dir / "learned")
+
     return global_home
 
 

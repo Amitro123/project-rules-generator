@@ -25,7 +25,16 @@ class RequirementsInferrer:
     """Infers project requirements from documentation, history, and code."""
 
     def __init__(self, provider: str = "groq", api_key: Optional[str] = None, client=None):
-        self.client = client or create_ai_client(provider=provider, api_key=api_key)
+        self._client = client
+        self._provider = provider
+        self._api_key = api_key
+
+    @property
+    def client(self):
+        """Lazily create the AI client on first use so missing keys don't crash __init__."""
+        if self._client is None:
+            self._client = create_ai_client(provider=self._provider, api_key=self._api_key)
+        return self._client
 
     def infer(self, project_path: Path) -> List[Requirement]:
         """Synthesize requirements from all available sources."""

@@ -4,7 +4,7 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-465%20Passing-green.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-512%20Passing-green.svg)](tests/)
 
 Most rule generators give you static templates. **Project Rules Generator (PRG)** reads your code, understands your architecture, and **learns from your patterns** to create smarter, context-aware `.clinerules` for any AI agent (Claude, Cursor, Windsurf, Gemini).
 
@@ -17,7 +17,6 @@ Most rule generators give you static templates. **Project Rules Generator (PRG)*
 - [AI Providers](#ai-providers)
 - [Usage](#usage)
 - [How It Works](#how-it-works)
-- [Recent Changes](#recent-changes)
 - [Contributing](#contributing)
 
 ---
@@ -35,12 +34,18 @@ Most rule generators give you static templates. **Project Rules Generator (PRG)*
 ---
 
 ## Quick Start
-Get PRG running and generate your basic project rules in your current directory:
+Generate rules for your current project — no API key required:
 
 ```bash
-project-rules-generator .
+prg analyze . --no-commit
 ```
-*This generates `.clinerules/rules.md` with your file structure and basic patterns in ~200ms.*
+*This generates `.clinerules/rules.md` and `.clinerules/skills/index.md` from your project structure and README.*
+
+With an API key, add `--ai` for deeper analysis:
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+prg analyze . --ai
+```
 
 ---
 
@@ -129,14 +134,28 @@ Generates a `constitution.md` with your project's core coding principles.
 prg analyze . --constitution
 ```
 
-### 4. Autopilot 🤖
+### 4. Planning & Task Tracking
+Break a task into subtasks, track progress, and execute step-by-step.
+
+```bash
+# Generate a plan from a description
+prg plan "Add OAuth2 authentication"
+
+# Check progress on the current plan
+prg status
+
+# Execute the next pending task
+prg next
+```
+
+### 5. Autopilot 🤖
 Full autonomous mode: discover, plan, execute — all with git safety.
 
 ```bash
 prg autopilot .
 ```
 
-### 5. Provider Management
+### 6. Provider Management
 ```bash
 prg providers list                 # Rich table of all providers
 prg providers test                 # Live connectivity + latency
@@ -185,28 +204,15 @@ All generated files are consolidated into a single `.clinerules/` directory:
 We welcome contributions!
 1. Fork the repo
 2. Create your feature branch (`git checkout -b feat/amazing-feature`)
-3. Run tests before committing (`pytest`)
-4. Commit your changes (`git commit -m "feat: add amazing feature"`)
-5. Push to the branch and open a PR.
+3. Run the test suite before committing: `pytest`
+4. Ensure formatting passes: `black . && ruff check . && isort .`
+5. Commit using conventional commits: `git commit -m "feat: add amazing feature"`
+6. Push to the branch and open a PR.
+
+See [`CLAUDE.md`](CLAUDE.md) for architecture notes and coding conventions.
 
 ---
 
 **Project Rules Generator** — Because generic "analyze code" skills aren't enough anymore.
 
----
-
-## Recent Changes
-
-### v1.4.1 — Dynamic AI Router
-- **4 providers**: Anthropic, OpenAI, Gemini, Groq.
-- **Smart routing**: Automatic fallback with customizable strategies.
-- **Connectivity**: New `prg providers list/test/benchmark` commands.
-
-### v1.2 (Issue #17)
-- **Fixes**: Resolved 5 bugs in the Skills Mechanism.
-- **Improved**: Unified `QualityReport` as single source.
-
-### v1.1
-- **Refactor**: Reduced `create_skill()` complexity by 73%.
-
-> See [`CHANGELOG.md`](CHANGELOG.md) for full details.
+> Full version history: [`CHANGELOG.md`](CHANGELOG.md)

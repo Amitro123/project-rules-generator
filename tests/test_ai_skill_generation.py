@@ -24,40 +24,37 @@ class TestAISkillGeneration(unittest.TestCase):
         if self.test_dir.exists():
             shutil.rmtree(self.test_dir)
 
-    @patch("generator.project_analyzer.ProjectAnalyzer")
-    @patch("generator.llm_skill_generator.LLMSkillGenerator")
-    def test_create_skill_with_ai(self, mock_llm_cls, mock_analyzer_cls):
-        """Test create_skill calls AI components when use_ai=True."""
-        # Setup mocks
-        mock_analyzer = MagicMock()
-        mock_analyzer.analyze.return_value = {"context": "dummy"}
-        mock_analyzer_cls.return_value = mock_analyzer
+    def test_create_skill_with_ai(self):
+        """Test create_skill invokes AIStrategy when use_ai=True.
 
-        mock_generator = MagicMock()
-        mock_generator.generate_skill.return_value = "# Skill: AI Test\n\n## Purpose\nAI Generated"
-        mock_llm_cls.return_value = mock_generator
+        Patches AIStrategy.generate() directly instead of ProjectAnalyzer +
+        LLMSkillGenerator because ProjectAnalyzer is run in a ThreadPoolExecutor
+        and unittest.mock patches are NOT visible across thread boundaries.
+        """
+        ai_content = "# Skill: AI Test\n\n## Purpose\nAI Generated"
 
-        manager = SkillsManager()
+        with patch(
+            "generator.strategies.ai_strategy.AIStrategy.generate",
+            return_value=ai_content,
+        ) as mock_ai_generate:
+            manager = SkillsManager()
+            skill_path = manager.create_skill(
+                "ai-test-skill", project_path=".", use_ai=True, force=True
+            )
 
-        # force=True ensures the test is deterministic even if a stale skill
-        # exists in the real global learned dir (GLOBAL_LEARNED is evaluated at
-        # module import time, unaffected by the Path.home mock).
-        skill_path = manager.create_skill("ai-test-skill", project_path=".", use_ai=True, force=True)
+            # AIStrategy.generate should have been called once
+            mock_ai_generate.assert_called_once()
 
-        # Verify interactions
-        mock_analyzer_cls.assert_called_once()
-        mock_generator.generate_skill.assert_called_once_with("ai-test-skill", {"context": "dummy"})
-
-        # Verify file content
-        content = (skill_path / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("AI Generated", content)
+            # The AI-produced content must be written to SKILL.md
+            content = (skill_path / "SKILL.md").read_text(encoding="utf-8")
+            self.assertIn("AI Generated", content)
 
     @patch(
         "generator.llm_skill_generator.create_ai_client",
         side_effect=ImportError("No provider"),
     )
     def test_create_skill_ai_missing_dependency(self, mock_create):
-        """Test fallback when AI provider is unavailable."""
+        """Test fallback when AI provider SDK is unavailable."""
         manager = SkillsManager()
 
         # Should gracefully fallback and produce a default template
@@ -67,22 +64,15 @@ class TestAISkillGeneration(unittest.TestCase):
         self.assertIn("# Skill: Missing Dep Skill", content)
         self.assertNotIn("AI Generated", content)
 
-    @patch("generator.project_analyzer.ProjectAnalyzer")
-    @patch("generator.llm_skill_generator.LLMSkillGenerator")
-    def test_create_skill_ai_failure_fallback(self, mock_llm_cls, mock_analyzer_cls):
-        """Test fallback when AI generation raises exception."""
-        mock_analyzer = MagicMock()
-        mock_analyzer_cls.return_value = mock_analyzer
+    def test_create_skill_ai_failure_fallback(self):
+        """Test fallback when AI strategy raises an exception mid-generation."""
+        with patch(
+            "generator.strategies.ai_strategy.AIStrategy.generate",
+            side_effect=RuntimeError("API Error"),
+        ):
+            manager = SkillsManager()
+            skill_path = manager.create_skill("failed-ai-skill", project_path=".", use_ai=True)
 
-        # Simulate LLM failure
-        mock_generator = MagicMock()
-        mock_generator.generate_skill.side_effect = RuntimeError("API Error")
-        mock_llm_cls.return_value = mock_generator
-
-        manager = SkillsManager()
-
-        skill_path = manager.create_skill("failed-ai-skill", project_path=".", use_ai=True)
-
-        # Should populate with default template
-        content = (skill_path / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("# Skill: Failed Ai Skill", content)
+            # Should fall through to README/Cowork/Stub and produce a default template
+            content = (skill_path / "SKILL.md").read_text(encoding="utf-8")
+            self.assertIn("# Skill: Failed Ai Skill", content)

@@ -29,8 +29,13 @@ def tasks_cmd(project_path, infer_spec, provider, api_key, verbose):
     if infer_spec or not spec_path.exists():
         if verbose:
             click.echo("Inferring requirements...")
-        inferrer = RequirementsInferrer(provider=provider, api_key=api_key)
-        requirements = inferrer.infer(project_path)
+        try:
+            inferrer = RequirementsInferrer(provider=provider, api_key=api_key)
+            requirements = inferrer.infer(project_path)
+        except ValueError as e:
+            click.echo(f"⚠️  Cannot infer requirements: {e}")
+            click.echo("Set GROQ_API_KEY or GEMINI_API_KEY, or create a spec.md file.")
+            return
     else:
         # Load from spec.md
         content = spec_path.read_text(encoding="utf-8")
