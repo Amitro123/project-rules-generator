@@ -1,7 +1,10 @@
+import logging
 import re
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_parser import SkillParser
@@ -181,12 +184,19 @@ class SkillGenerator:
         cowork_use_ai = use_ai and not any(isinstance(s, AIStrategy) for s in strategies)
 
         for strategy_obj in strategies:
-            if isinstance(strategy_obj, CoworkStrategy):
-                content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=cowork_use_ai)
-            else:
-                content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=use_ai)
-            if content:
-                return content
+            try:
+                if isinstance(strategy_obj, CoworkStrategy):
+                    content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=cowork_use_ai)
+                else:
+                    content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=use_ai)
+                if content:
+                    return content
+            except Exception as exc:
+                logger.warning(
+                    "Strategy %s failed, trying next: %s",
+                    strategy_obj.__class__.__name__,
+                    exc,
+                )
         return None
 
     @staticmethod

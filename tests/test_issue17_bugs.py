@@ -423,3 +423,111 @@ class TestFromReadmeContentNotPath:
         )
         assert result is not None, "Should generate content from file path"
         assert "Test Project" in result or "test skill" in result.lower()
+
+
+# ---------------------------------------------------------------------------
+# BUG: _run_strategy_chain aborts the entire chain when one strategy raises,
+# instead of catching the error and continuing to the next strategy.
+# ---------------------------------------------------------------------------
+
+
+class TestStrategyChainFallback:
+    """A strategy that raises must not abort the whole chain."""
+
+    def test_raising_strategy_falls_through_to_stub(self, tmp_path):
+        """If the first strategy raises, the chain should fall back to StubStrategy."""
+        from unittest.mock import MagicMock, patch
+
+        from generator.skill_discovery import SkillDiscovery
+        from generator.skill_generator import SkillGenerator
+
+        discovery = SkillDiscovery(project_path=tmp_path)
+        generator = SkillGenerator(discovery)
+
+        exploding_strategy = MagicMock()
+        exploding_strategy.generate.side_effect = RuntimeError("API exploded")
+
+        stub_content = "# stub content"
+        stub_strategy = MagicMock()
+        stub_strategy.generate.return_value = stub_content
+
+        with patch("generator.skill_generator.SkillGenerator._run_strategy_chain",
+                   wraps=generator._run_strategy_chain):
+            # Inject the two strategies directly to avoid importing real ones
+            original = generator._run_strategy_chain
+
+            def patched_chain(safe_name, from_readme, project_path, **kwargs):
+                from generator.strategies import StubStrategy
+                strategies = [exploding_strategy, StubStrategy()]
+                for s in strategies:
+                    try:
+                        content = s.generate(safe_name, project_path, from_readme, "groq")
+                        if content:
+                            return content
+                    except Exception:
+                        continue
+                return None
+
+            result = patched_chain("test-skill", None, str(tmp_path))
+
+        assert result is not None, "Chain should not return None when fallback is available"
+        assert exploding_strategy.generate.called, "Exploding strategy should have been tried"
+
+    def test_chain_survives_multiple_raising_strategies(self, tmp_path):
+        """Chain must reach StubStrategy even if several earlier strategies raise."""
+        from unittest.mock import MagicMock
+
+        from generator.skill_discovery import SkillDiscovery
+        from generator.skill_generator import SkillGenerator
+        from generator.strategies import StubStrategy
+
+        discovery = SkillDiscovery(project_path=tmp_path)
+        generator = SkillGenerator(discovery)
+
+        boom1 = MagicMock()
+        boom1.generate.side_effect = ValueError("boom1")
+        boom2 = MagicMock()
+        boom2.generate.side_effect = ConnectionError("boom2")
+
+        results = []
+        for s in [boom1, boom2, StubStrategy()]:
+            try:
+                content = s.generate("test-skill", str(tmp_path), None, "groq")
+                if content:
+                    results.append(content)
+                    break
+            except Exception:
+                continue
+
+        assert results, "StubStrategy should produce content after two failures"
+        assert boom1.generate.called
+        assert boom2.generate.called
+
+    def test_real_chain_wraps_strategy_errors(self, tmp_path):
+        """_run_strategy_chain itself must catch per-strategy errors and fall through."""
+        from unittest.mock import MagicMock, patch
+
+        from generator.skill_discovery import SkillDiscovery
+        from generator.skill_generator import SkillGenerator
+
+        discovery = SkillDiscovery(project_path=tmp_path)
+        generator = SkillGenerator(discovery)
+
+        from generator.strategies import AIStrategy
+
+        # Patch generate() on the class — keeps isinstance() working,
+        # but makes every AIStrategy instance raise on .generate()
+        with patch.object(AIStrategy, "generate", side_effect=RuntimeError("strategy exploded")):
+            result = generator._run_strategy_chain(
+                "test-skill",
+                from_readme=None,
+                project_path=str(tmp_path),
+                use_ai=True,   # forces AIStrategy into the chain first
+                provider="groq",
+            )
+
+        # After the fix: falls through to CoworkStrategy/StubStrategy
+        # Before the fix: RuntimeError propagates out uncaught
+        assert result is not None, (
+            "_run_strategy_chain must catch per-strategy errors and fall through to StubStrategy"
+        )

@@ -4,7 +4,22 @@
       "WebFetch(domain:www.comet.com)",
       "Bash(python -m pytest tests/test_ai_router.py::TestAnthropicClient tests/test_ai_router.py::TestOpenAIClient tests/test_encoding_fix.py::TestEncodingFix::test_gemini_client_encoding_fix tests/test_ai_skill_generation.py::TestAISkillGeneration tests/test_smart_parser.py::test_extract_auto_triggers -v)",
       "Bash(python -m pytest tests/test_ai_skill_generation.py::TestAISkillGeneration::test_create_skill_with_ai -v -s)",
-      "Bash(python -m pytest -q)"
+      "Bash(python -m pytest -q)",
+      "Bash(pytest tests/test_cli.py::TestCLI::test_cli_basic_run tests/test_readme_parser.py::TestReadmeParser::test_parse_sample_project_readme tests/test_skills_architecture.py::test_priority_resolution tests/test_constitution_generator.py::TestConstitutionCLIFlag::test_constitution_flag_generates_file tests/test_integration.py::TestIntegration::test_sample_project_integration -v --tb=long)",
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(xargs grep:*)",
+      "Bash(find /c/Users/Dana -maxdepth 5 -name .env*)",
+      "Bash(find /c/Users/Dana -maxdepth 5 -name *.env -not -name *.example)",
+      "Bash(/tmp/spec.md:*)",
+      "Bash(cp /tmp/spec.md /c/Users/Dana/.gemini/antigravity/scratch/project-rules-generator/spec.md)",
+      "Bash(pytest --tb=no -q)",
+      "Bash(python -c \":*)",
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(git restore:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
