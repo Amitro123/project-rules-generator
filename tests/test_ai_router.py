@@ -225,6 +225,7 @@ class TestRouterSmartGenerate:
             "ANTHROPIC_API_KEY": "",
             "OPENAI_API_KEY": "",
             "GEMINI_API_KEY": "",
+            "GOOGLE_API_KEY": "",
             "GROQ_API_KEY": "gsk_test",
         }):
             with patch("generator.ai.ai_strategy_router.create_ai_client") as mock_factory:

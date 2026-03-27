@@ -40,43 +40,73 @@ RELEVANT FILES (load these for context):
 EXCLUDE FILES (never load these):
 {exclude_files}
 
-OUTPUT FORMAT (markdown):
-### {{skill_name}}
-[One-line description grounded in this project's actual tech stack]
+OUTPUT FORMAT — use EXACTLY this markdown structure (no deviations):
+---
+name: {{skill_name}}
+description: |
+  [One-line description grounded in this project's actual tech stack]
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  tags: [relevant, tags, here]
+---
 
-**Context:** [Why this skill matters for THIS project — reference only known tech]
+# Skill: {{Skill Name Title Case}}
 
-**Triggers:** [list of short phrases that should activate this skill]
+## Purpose
 
-**Negative Triggers:** [list of short phrases that should NEVER activate this skill]
+[2-3 sentences: why this skill exists and what problem it solves for THIS project]
 
-**relevant_files:** [{relevant_files_list}]
+## Auto-Trigger
 
-**exclude_files:** [{exclude_files_list}]
+Activate when the user mentions:
+- **"[trigger phrase 1]"**
+- **"[trigger phrase 2]"**
+- **"[trigger phrase 3]"**
 
-**When to use:**
-- [Specific scenario 1]
-- [Specific scenario 2]
+Do NOT activate for: [comma-separated negative triggers]
 
-**Check for:**
-1. [Common issue related to this skill topic]
-2. [Missing pattern to look for]
+## CRITICAL
 
-**Good pattern:**
-```
-[Best-practice code pattern. ONLY reference actual project files if they were provided in CODE EXAMPLES above. Otherwise show a generic pattern WITHOUT any File: path.]
-```
+- [Non-negotiable rule 1]
+- [Non-negotiable rule 2]
 
-**Tools:**
+## Process
+
+### 1. [First step name]
+
+[What to do and why]
+
+### 2. [Second step name]
+
+[What to do and why]
+
 ```bash
-check: [runnable command]
-test:  [runnable command]
-lint:  [runnable command]
+[runnable command]
 ```
 
-**Action items:**
-1. `[runnable command]` — [what it checks]
-2. `[runnable command]` — [what it verifies]
+### 3. Validate
+
+```bash
+[runnable check/test command]
+```
+
+## Output
+
+- [What this skill produces]
+- [Files created or modified]
+
+## Anti-Patterns
+
+❌ **Don't** [bad pattern]
+✅ **Do** [good pattern]
+
+## Examples
+
+```python
+[Best-practice code. ONLY reference actual files from CODE EXAMPLES above.
+Otherwise write a generic pattern without fake File: paths.]
+```
 """
 
 

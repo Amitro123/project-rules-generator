@@ -91,7 +91,7 @@ class LLMSkillGenerator:
             code_examples=code_examples,
             detected_patterns=detected_patterns,
         )
-        return self.generate_content(prompt, max_tokens=2000)
+        return self.generate_content(prompt, max_tokens=4000)
 
     def generate_content(self, prompt: str, max_tokens: int = 2000) -> str:
         """Generate content from prompt using the configured model or router."""

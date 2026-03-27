@@ -51,7 +51,7 @@ SPEED_SCORES: Dict[str, int] = {
 PROVIDER_ENV_KEYS: Dict[str, str] = {
     "anthropic": "ANTHROPIC_API_KEY",
     "groq": "GROQ_API_KEY",
-    "gemini": "GEMINI_API_KEY",
+    "gemini": "GEMINI_API_KEY",  # also accepts GOOGLE_API_KEY (checked in generate())
     "openai": "OPENAI_API_KEY",
 }
 
@@ -59,7 +59,7 @@ PROVIDER_ENV_KEYS: Dict[str, str] = {
 PROVIDER_DEFAULT_MODELS: Dict[str, str] = {
     "anthropic": "claude-3-5-sonnet-20241022",
     "openai": "gpt-4o-mini",
-    "gemini": "gemini-2.0-flash",
+    "gemini": "gemini-2.5-flash",
     "groq": "llama-3.1-8b-instant",
 }
 
@@ -181,7 +181,11 @@ class AIStrategyRouter:
 
         for provider in ranked:
             env_key = PROVIDER_ENV_KEYS.get(provider, f"{provider.upper()}_API_KEY")
-            if not os.getenv(env_key):
+            # Gemini accepts either GEMINI_API_KEY or GOOGLE_API_KEY
+            has_key = bool(os.getenv(env_key)) or (
+                provider == "gemini" and bool(os.getenv("GOOGLE_API_KEY"))
+            )
+            if not has_key:
                 errors.append(f"{provider}: no API key ({env_key} not set)")
                 continue
 

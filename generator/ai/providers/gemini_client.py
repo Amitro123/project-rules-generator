@@ -22,13 +22,13 @@ except ImportError:
 class GeminiClient(AIClient):
     """Google Gemini API client."""
 
-    DEFAULT_MODEL = "gemini-2.0-flash"
+    DEFAULT_MODEL = "gemini-2.5-flash"
 
     def __init__(self, api_key: Optional[str] = None):
         if getattr(genai, "Client", None) is None:
             raise ImportError("google-genai not installed. Run: pip install google-genai")
 
-        super().__init__(api_key or os.getenv("GEMINI_API_KEY"))
+        super().__init__(api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found.")
 
