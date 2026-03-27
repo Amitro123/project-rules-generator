@@ -41,7 +41,7 @@
   ],
   "testing": [
     "**Framework**: pytest",
-    "**Test files**: 394 (3295 test cases)",
+    "**Test files**: 55 (516 test cases)",
     "**Test types**: unit, integration",
     "**Fixtures**: shared via `conftest.py`",
     "**Test data**: `tests/fixtures/` directory"
@@ -65,14 +65,26 @@
     "NEVER generate placeholder comments like 'Implement logic here' - write the full code."
   ],
   "auto-trigger": [
-    "User mentions: \"jinja2\", \"template\", \"workflow\"",
-    "Working in backend code: *.py",
-    "Working with *.j2 files"
+    "\"create a cowork skill\"",
+    "\"generate skill with claude\"",
+    "\"run prg with anthropic\"",
+    "\"skill creation flow\"",
+    "\"cowork skill pipeline\"",
+    "\"prg analyze --ai --provider anthropic\"",
+    "has_tests (tests/ directory with 56 test files)",
+    "has_docs (docs/ directory with 14 docs)",
+    "has_api (generator/skills_manager.py as primary entry point)"
   ],
-  "output": [
-    "Updated or created files following `jinja2 template workflow` patterns",
-    "Status report with changes made",
-    "Recommendations for next steps"
+  "process": [
+    "Missing sections are appended",
+    "Placeholder text is replaced with generic but non-stub content"
+  ],
+  "anti-patterns": [
+    "❌ Using abstract trigger phrases like \"use claude\" or \"ai stuff\"",
+    "❌ Hardcoding `ANTHROPIC_API_KEY` in the skill content",
+    "❌ Referencing file paths not confirmed to exist",
+    "❌ Generating a skill without running `pytest` afterward",
+    "❌ Setting `use_ai=False` then wondering why the output is generic"
   ],
   "pre-review_checklist": [
     "✓ Read every line you changed",
@@ -120,5 +132,35 @@
     "Follow project patterns for click usage",
     "Handle click errors with proper retries and fallbacks",
     "Add tests for click integration code"
+  ],
+  "critical": [
+    "Read existing files before modifying them.",
+    "Run tests after any code change and verify they pass: `pytest`",
+    "Never generate or reference file paths that don't exist in the project.",
+    "Never skip tests or suppress coverage with `--no-cov` / `--no-cover`."
+  ],
+  "tech_stack_notes": [
+    "`groq`",
+    "`python`",
+    "`click`",
+    "`gemini`",
+    "`pytest`",
+    "`jinja2`",
+    "`gitpython`",
+    "`pydantic`"
+  ],
+  "project_context": [
+    "\"create a cowork skill\"",
+    "\"generate skill with claude\"",
+    "\"run prg with anthropic\"",
+    "\"skill creation flow\"",
+    "\"cowork skill pipeline\"",
+    "\"general claude api usage\"",
+    "\"claude theory\"",
+    "\"production deployment\"",
+    "When user asks to create a new skill using Claude/Anthropic as provider",
+    "When debugging why a generated skill has low quality score",
+    "When wiring a new AI provider into CoworkSkillCreator",
+    "When reviewing trigger precision via `TriggerEvaluator`"
   ]
 }
