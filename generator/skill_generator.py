@@ -181,12 +181,16 @@ class SkillGenerator:
         cowork_use_ai = use_ai and not any(isinstance(s, AIStrategy) for s in strategies)
 
         for strategy_obj in strategies:
-            if isinstance(strategy_obj, CoworkStrategy):
-                content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=cowork_use_ai)
-            else:
-                content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=use_ai)
-            if content:
-                return content
+            try:
+                if isinstance(strategy_obj, CoworkStrategy):
+                    content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=cowork_use_ai)
+                else:
+                    content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=use_ai)
+                if content:
+                    return content
+            except Exception as e:
+                print(f"  [warn] {type(strategy_obj).__name__} failed, trying next strategy: {e}")
+                continue
         return None
 
     @staticmethod

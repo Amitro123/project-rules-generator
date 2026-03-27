@@ -92,15 +92,13 @@ class ProjectManager:
         # Group 1: Analysis (rules, skills)
         if any(x in missing for x in [".clinerules/rules.md", ".clinerules/skills/index.md"]):
             click.echo("   ⚙️  Running analysis (rules + skills)...")
-            # We can use AgentWorkflow's internal or call specific commands.
-            # Using AgentWorkflow.run_setup() covers a lot, but might be too broad.
-            # Let's use the CLI logic roughly:
-            from refactor.analyze_cmd import AnalyzeCommand
+            import subprocess
+            import sys
 
-            cmd = AnalyzeCommand(
-                project_path=self.project_path, mode="ai" if self.api_key else "manual", api_key=self.api_key
-            )
-            cmd.execute()
+            cmd_args = [sys.executable, "-m", "main", "analyze", str(self.project_path)]
+            if self.api_key:
+                cmd_args.append("--ai")
+            subprocess.run(cmd_args, check=False)
 
         # Group 2: Planning (PLAN.md, tasks/)
         if "PLAN.md" in missing or "tasks/TASKS.yaml" in missing:
