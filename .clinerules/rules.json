@@ -41,7 +41,7 @@
   ],
   "testing": [
     "**Framework**: pytest",
-    "**Test files**: 55 (516 test cases)",
+    "**Test files**: 54 (504 test cases)",
     "**Test types**: unit, integration",
     "**Fixtures**: shared via `conftest.py`",
     "**Test data**: `tests/fixtures/` directory"

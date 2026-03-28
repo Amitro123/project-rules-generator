@@ -57,7 +57,7 @@ This project uses: python, gemini, claude, groq, click, pydantic, gitpython
 ## TESTING
 
 - **Framework**: pytest
-- **Test files**: 55 (516 test cases)
+- **Test files**: 54 (504 test cases)
 - **Test types**: unit, integration
 - **Fixtures**: shared via `conftest.py`
 - **Test data**: `tests/fixtures/` directory
@@ -124,12 +124,18 @@ prg --version
 ---
 
 ### Usage
-Get PRG running and generate your basic project rules in your current directory:
+Generate rules for your current project — no API key required:
 
 ```bash
-project-rules-generator .
+prg analyze . --no-commit
 ```
-*This generates `.clinerules/rules.md` with your file structure and basic patterns in ~200ms.*
+*This generates `.clinerules/rules.md` and `.clinerules/skills/index.md` from your project structure and README.*
+
+With an API key, add `--ai` for deeper analysis:
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+prg analyze . --ai
+```
 
 ---
 
