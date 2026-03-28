@@ -131,9 +131,6 @@ class SkillGenerator:
         )
         skill_file.write_text(content or "", encoding="utf-8")
 
-        # GAP 3: Progressive disclosure — scaffold Level 3 subdirectories
-        self._scaffold_level3(target_dir, safe_name)
-
         # DESIGN-1 fix: invalidate the cache so list_skills() / skill_exists() see
         # the newly-created skill immediately instead of stale pre-creation data.
         self.discovery.invalidate_cache()
@@ -198,49 +195,6 @@ class SkillGenerator:
                     exc,
                 )
         return None
-
-    @staticmethod
-    def _scaffold_level3(skill_dir: Path, skill_name: str) -> None:
-        """Create Level 3 progressive-disclosure subdirectories (GAP 3).
-
-        Anthropic spec levels:
-          Level 1 — YAML frontmatter (always in system prompt)
-          Level 2 — SKILL.md body (loaded when skill is relevant)
-          Level 3 — scripts/, references/, assets/ (on-demand navigation)
-        """
-        subdirs = {
-            "scripts": (
-                f"# {skill_name} — Scripts\n\n"
-                "Place executable helper scripts here.\n"
-                "Claude will read these on demand when it needs to run validations\n"
-                "or generate code for this skill.\n\n"
-                "Examples:\n"
-                "- `validate.py` — verify the skill's output is correct\n"
-                "- `generate.py` — code-generation helper\n"
-            ),
-            "references": (
-                f"# {skill_name} — References\n\n"
-                "Place on-demand reference documentation here.\n"
-                "Claude will read these when it needs deeper context beyond SKILL.md.\n\n"
-                "Examples:\n"
-                "- `patterns.md` — detailed pattern catalogue\n"
-                "- `api-reference.md` — API surface summary\n"
-            ),
-            "assets": (
-                f"# {skill_name} — Assets\n\n"
-                "Place reusable template files here.\n"
-                "Claude will reference these when generating boilerplate for this skill.\n\n"
-                "Examples:\n"
-                "- `template.py.j2` — Jinja2 code template\n"
-                "- `config.yaml.j2` — configuration template\n"
-            ),
-        }
-        for dirname, readme_content in subdirs.items():
-            subdir = skill_dir / dirname
-            subdir.mkdir(exist_ok=True)
-            readme = subdir / "README.md"
-            if not readme.exists():
-                readme.write_text(readme_content, encoding="utf-8")
 
     def check_global_skill_reuse(self, tech_stack: List[str]) -> Dict[str, str]:
         """Check which skills already exist in global learned for a given tech stack.
