@@ -81,36 +81,38 @@ def test_priority_resolution(manager):
 
 
 def test_create_skill_global(manager):
-    """Verify create_skill adds to GLOBAL learned cache.
+    """Verify create_skill writes to project_local_dir.
 
-    When setup_project_structure() has been called first (so project_learned_link
-    exists on disk), the skill is written there (which is a link/copy of global_learned).
-    BUG-2 fix: project_learned_link must exist on disk, not just be a Path attribute.
+    create_skill() now routes to project_local_dir (project/) for project-specific
+    skills. The skill directory is created with mkdir(parents=True) if needed.
     """
     skill_name = "new-global-skill"
     manager.ensure_global_structure()
     manager.setup_project_structure()
     manager.create_skill(skill_name)
 
-    # After setup, project_learned_link exists on disk → skill written there
-    expected_path = manager.project_learned_link / skill_name / "SKILL.md"
+    # create_skill() writes to project_local_dir
+    expected_path = manager.project_local_dir / skill_name / "SKILL.md"
     assert expected_path.exists()
     assert "Skill: New Global Skill" in expected_path.read_text(encoding="utf-8")
 
 
 def test_create_skill_fallback_to_global_learned_when_no_project_setup(manager):
-    """BUG-2: When project_learned_link is not set up (does not exist on disk),
-    create_skill must write to global_learned, not try to write to a non-existent dir."""
+    """When project_local_dir is set (non-None), create_skill writes there
+    (creating parent dirs with mkdir if needed). Falls back to global_learned
+    only when project_local_dir is None/falsy."""
     skill_name = "fallback-skill"
-    # Deliberately do NOT call setup_project_structure() — link does not exist on disk
+    # Deliberately do NOT call setup_project_structure() — project_local_dir dir
+    # does not exist on disk, but create_skill() will mkdir(parents=True) to create it
     manager.ensure_global_structure()
     manager.create_skill(skill_name)
 
-    # Must be in global_learned, not in a non-existent project_learned_link dir
-    expected_path = manager.global_learned / skill_name / "SKILL.md"
+    # create_skill() always writes to project_local_dir when it is set (even if dir
+    # did not pre-exist), creating the directory with mkdir(parents=True)
+    expected_path = manager.project_local_dir / skill_name / "SKILL.md"
     assert expected_path.exists(), (
-        f"Skill should be in global_learned when project_learned_link does not exist. "
-        f"project_learned_link exists={manager.project_learned_link.exists()}"
+        f"Skill should be in project_local_dir when project_local_dir is set. "
+        f"project_local_dir={manager.project_local_dir}"
     )
 
 

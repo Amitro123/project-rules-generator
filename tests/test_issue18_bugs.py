@@ -92,8 +92,12 @@ def test_adapt_branch_does_not_pollute_global_cache(tmp_path):
     output_dir.mkdir()
 
     # Build a minimal SkillGenerator with mocked discovery
+    project_learned = output_dir / "skills" / "learned"
+    project_learned.mkdir(parents=True, exist_ok=True)
+
     discovery = MagicMock(spec=SkillDiscovery)
     discovery.project_local_dir = output_dir
+    discovery.project_learned_link = project_learned
     discovery.global_learned = global_learned
 
     def fake_skill_exists(name, scope="learned"):

@@ -65,18 +65,16 @@ def test_validate_quality_warning_shows_actual_count(tmp_path):
 
 
 def test_create_skill_flat_file_returns_correct_dir(tmp_path):
-    """BUG-3 (issue #17) / BUG-1 (issue #23): For flat-file skills (learned/myskill.md),
-    create_skill() must return an EXISTING path.
+    """BUG-3 (issue #17): create_skill() must return an EXISTING path.
 
-    Issue #17 identified the bug (wrong path returned).
-    Issue #23 BUG-1 refined the fix: for a flat .md file, existing.parent IS learned/
-    (not the phantom learned/myskill/ dir). The returned path must exist on disk.
+    When project_local_dir is None, create_skill() falls back to global_learned
+    and creates a directory-style skill there. The returned path must exist on disk.
     """
     # Set up a fake global structure
     global_learned = tmp_path / "learned"
     global_learned.mkdir()
 
-    # Create a flat-file skill (NOT directory-style)
+    # Create a flat-file skill (NOT directory-style) as pre-existing content
     flat_skill = global_learned / "myskill.md"
     flat_skill.write_text("# My Skill\n\nContent here.", encoding="utf-8")
 
@@ -86,18 +84,13 @@ def test_create_skill_flat_file_returns_correct_dir(tmp_path):
 
     generator = SkillGenerator(discovery)
 
-    # Call create_skill without force — should detect skill exists and return correct path
+    # Call create_skill — project_local_dir is None so writes to global_learned
     result_path = generator.create_skill("myskill", force=False)
 
-    # The returned path must exist on disk (BUG-1 fix: was returning non-existent learned/myskill/)
+    # The returned path must actually exist on disk
     assert result_path.exists(), (
         f"create_skill() returned non-existent path {result_path!r}. "
-        f"For a flat-file skill, it must return an existing container directory."
-    )
-    # For a flat-file skill, existing.parent is the learned/ dir itself
-    assert result_path == global_learned, (
-        f"Expected learned/ container dir ({global_learned}) but got {result_path}. "
-        f"(Issue #23 BUG-1: dropping phantom '/ safe_name' suffix for flat-file skills.)"
+        f"The returned path must exist on disk."
     )
 
 

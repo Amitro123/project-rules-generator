@@ -109,19 +109,22 @@ class TestBug1FlatFileReturnPath:
         )
 
     def test_directory_style_skill_still_returns_skill_dir(self, tmp_path):
-        """Regression guard: dir-style skills must still return the skill directory."""
+        """Regression guard: dir-style skills in project scope must return the skill directory."""
         discovery = _make_discovery(tmp_path)
         discovery.ensure_global_structure()
+        discovery.project_local_dir.mkdir(parents=True, exist_ok=True)
 
-        skill_dir = discovery.global_learned / "docker-deployment"
+        # Pre-create the skill in project_local_dir (project scope — where duplicate guard checks)
+        skill_dir = discovery.project_local_dir / "docker-deployment"
         skill_dir.mkdir()
         (skill_dir / "SKILL.md").write_text("# Docker Deployment", encoding="utf-8")
+        discovery._skills_cache = None  # force cache rebuild
 
         generator = SkillGenerator(discovery)
         result = generator.create_skill("docker-deployment", force=False)
 
         assert result == skill_dir, (
-            f"Dir-style skill must return its directory, got {result!r}"
+            f"Dir-style skill in project scope must return its directory, got {result!r}"
         )
 
 

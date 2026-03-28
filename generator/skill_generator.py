@@ -102,22 +102,18 @@ class SkillGenerator:
             raise ValueError("Invalid skill name provided.")
 
         # ── Duplicate guard ──────────────────────────────────────────────────
-        if self.discovery.skill_exists(safe_name, scope="learned") and not force:
+        if self.discovery.skill_exists(safe_name, scope="project") and not force:
             existing = self.discovery.resolve_skill(safe_name)
             print(f"Skill '{safe_name}' already exists — skipping. (use force=True to overwrite)")
             if existing is not None:
-                # BUG-1 fix: for SKILL.md → return skill dir (existing.parent);
-                # for flat file (fastapi-endpoints.md) → also return existing.parent
-                # (the learned/ container), NOT parent / safe_name which doesn't exist.
                 return existing.parent
-            # Fallback: return the expected directory path
-            return self.discovery.global_learned / safe_name
+            return self.discovery.project_local_dir / safe_name
         # ─────────────────────────────────────────────────────────────────────
 
-        # Target: prefer Local Learned if project context exists AND the dir is on disk
-        # (BUG-2 fix: Path object is always truthy; must also check .exists())
-        if self.discovery.project_learned_link and self.discovery.project_learned_link.exists():
-            target_root = self.discovery.project_learned_link
+        # --create-skill generates with project context → always write to project/
+        # (README flow writes to learned/ for tech-pattern skills that can be reused)
+        if self.discovery.project_local_dir:
+            target_root = self.discovery.project_local_dir
         else:
             target_root = self.discovery.global_learned
 
@@ -242,10 +238,11 @@ class SkillGenerator:
         - 'adapt': global skill is a stub → regenerate with project context
         - 'create': no global skill → create new one in global learned + reference it
         """
-        if self.discovery.project_local_dir:
-            target_dir = self.discovery.project_local_dir
+        # README flow generates tech-pattern skills reusable across projects → learned/
+        if self.discovery.project_learned_link and self.discovery.project_learned_link.exists():
+            target_dir = self.discovery.project_learned_link
         else:
-            target_dir = output_dir / "skills" / "project"
+            target_dir = output_dir / "skills" / "learned"
 
         target_dir.mkdir(parents=True, exist_ok=True)
 

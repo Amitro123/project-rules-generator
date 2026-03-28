@@ -74,12 +74,12 @@ class TestCreateSkillDuplicatePrevention:
     """Tests for the force=False duplicate guard in create_skill."""
 
     def test_skip_if_already_exists(self, tmp_path, capsys):
-        """create_skill skips creation when skill already exists (force=False)."""
+        """create_skill skips creation when skill already exists in project scope (force=False)."""
         discovery = _make_discovery(tmp_path)
         discovery.ensure_global_structure()
 
-        # Pre-create the skill as a flat file
-        (discovery.global_learned / "test-skill.md").write_text("# Existing")
+        # Pre-create the skill as a flat file in project_local_dir (project scope)
+        (discovery.project_local_dir / "test-skill.md").write_text("# Existing")
 
         generator = SkillGenerator(discovery)
         result = generator.create_skill("test-skill", force=False)
@@ -89,7 +89,7 @@ class TestCreateSkillDuplicatePrevention:
         assert "skipping" in captured.out
 
         # Content should NOT have been overwritten
-        content = (discovery.global_learned / "test-skill.md").read_text()
+        content = (discovery.project_local_dir / "test-skill.md").read_text()
         assert content == "# Existing"
 
     def test_force_overwrites_existing(self, tmp_path):
@@ -97,14 +97,14 @@ class TestCreateSkillDuplicatePrevention:
         discovery = _make_discovery(tmp_path)
         discovery.ensure_global_structure()
 
-        # Pre-create the skill
-        (discovery.global_learned / "test-skill.md").write_text("# Old Content")
+        # Pre-create the skill in project_local_dir (project scope)
+        (discovery.project_local_dir / "test-skill.md").write_text("# Old Content")
 
         generator = SkillGenerator(discovery)
         generator.create_skill("test-skill", force=True)
 
-        # The generator prefers project local path if available
-        skill_file = discovery.project_learned_link / "test-skill" / "SKILL.md"
+        # The generator writes to project_local_dir when available
+        skill_file = discovery.project_local_dir / "test-skill" / "SKILL.md"
         assert skill_file.exists()
 
     def test_new_skill_created_normally(self, tmp_path):
@@ -115,15 +115,15 @@ class TestCreateSkillDuplicatePrevention:
         generator = SkillGenerator(discovery)
         result = generator.create_skill("brand-new-skill")
 
-        assert (discovery.project_learned_link / "brand-new-skill" / "SKILL.md").exists()
+        assert (discovery.project_local_dir / "brand-new-skill" / "SKILL.md").exists()
 
     def test_name_normalization_prevents_duplicates(self, tmp_path, capsys):
         """Names like 'My Skill' and 'my-skill' resolve to the same normalized name."""
         discovery = _make_discovery(tmp_path)
         discovery.ensure_global_structure()
 
-        # Create with normalized name
-        (discovery.global_learned / "my-skill.md").write_text("# My Skill")
+        # Create with normalized name in project_local_dir (project scope)
+        (discovery.project_local_dir / "my-skill.md").write_text("# My Skill")
 
         generator = SkillGenerator(discovery)
         # Try to create with spaces — should normalize to 'my-skill' and skip
@@ -180,12 +180,13 @@ class TestSkillsManagerDuplicatePrevention:
     """Tests for duplicate prevention through the SkillsManager facade."""
 
     def test_create_skill_skips_existing(self, tmp_path, capsys):
-        """SkillsManager.create_skill skips if skill already exists."""
+        """SkillsManager.create_skill skips if skill already exists in project scope."""
         manager = SkillsManager(project_path=tmp_path)
         manager.ensure_global_structure()
+        manager.setup_project_structure()  # ensure project_local_dir exists on disk
 
-        # Pre-create
-        (manager.global_learned / "existing-skill.md").write_text("# Existing")
+        # Pre-create in project_local_dir (project scope — where duplicate guard checks)
+        (manager.project_local_dir / "existing-skill.md").write_text("# Existing")
 
         manager.create_skill("existing-skill", force=False)
 
@@ -196,14 +197,14 @@ class TestSkillsManagerDuplicatePrevention:
         """SkillsManager.create_skill with force=True overwrites."""
         manager = SkillsManager(project_path=tmp_path)
         manager.ensure_global_structure()
-        manager.setup_project_structure()  # BUG-2: project_learned_link must exist on disk
+        manager.setup_project_structure()  # BUG-2: project_local_dir must exist on disk
 
         (manager.global_learned / "existing-skill.md").write_text("# Old")
 
         manager.create_skill("existing-skill", force=True)
 
-        # New directory format created in PROJECT scope
-        assert (manager.project_learned_link / "existing-skill" / "SKILL.md").exists()
+        # New directory format created in project_local_dir
+        assert (manager.project_local_dir / "existing-skill" / "SKILL.md").exists()
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -223,9 +224,9 @@ def _make_discovery(tmp_path: Path) -> SkillDiscovery:
     discovery.project_builtin_link = discovery.project_skills_root / "builtin"
     discovery._skills_cache = None  # Required by main's caching optimization
 
-    # Create base dirs — including project_learned_link so BUG-2 fix can use it
+    # Create base dirs — including project_local_dir so create_skill() can use it
     discovery.global_learned.mkdir(parents=True, exist_ok=True)
     discovery.global_builtin.mkdir(parents=True, exist_ok=True)
-    discovery.project_learned_link.mkdir(parents=True, exist_ok=True)
+    discovery.project_local_dir.mkdir(parents=True, exist_ok=True)
 
     return discovery
