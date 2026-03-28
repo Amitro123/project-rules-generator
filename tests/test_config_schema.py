@@ -7,6 +7,22 @@ from generator.pack_manager import load_external_packs
 from prg_utils.config_schema import RootConfig, validate_config
 
 
+def test_llm_config_accepts_all_providers():
+    """LLMConfig must accept all four advertised providers (Issue #30: openai was missing)."""
+    from prg_utils.config_schema import LLMConfig
+
+    for provider in ("anthropic", "gemini", "groq", "openai"):
+        cfg = LLMConfig(provider=provider)
+        assert cfg.provider == provider, f"LLMConfig rejected provider={provider!r}"
+
+
+def test_validate_config_openai_provider():
+    """validate_config must not raise when provider='openai' (Issue #30 regression guard)."""
+    config = {"llm": {"provider": "openai", "enabled": True}}
+    validated = validate_config(config)
+    assert validated.llm.provider == "openai"
+
+
 def test_validate_config_valid():
     config = {
         "llm": {"enabled": True},

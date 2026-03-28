@@ -61,6 +61,11 @@ exclude = [
 select = ["E", "F", "I"]
 ignore = ["F401", "E501"]
 
+[tool.ruff.lint.per-file-ignores]
+# cli.py defers sub-command imports until after @cli group is defined to
+# avoid circular imports; E402 is intentional here.
+"cli/cli.py" = ["E402"]
+
 [tool.black]
 line_length = 120
 target-version = ['py38']

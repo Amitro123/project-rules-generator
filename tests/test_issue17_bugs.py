@@ -19,6 +19,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import pytest
+
 from generator.skill_creator import CoworkSkillCreator, SkillMetadata
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
@@ -148,6 +150,42 @@ def test_generate_from_readme_reuse_null_resolve_falls_through(tmp_path):
     # The skill must NOT be silently lost — it should fall through to create
     assert len(generated) > 0, "Skill was silently lost when resolve_skill returned None (BUG-4)"
     assert any("fastapi" in name for name in generated), f"Expected fastapi skill in generated, got: {generated}"
+
+
+def test_generate_from_readme_reuse_same_file_no_error(tmp_path):
+    """Issue #31: reuse branch must not raise SameFileError when resolved == dest.
+
+    This happens when the project's learned dir IS the global learned dir (e.g. symlinked)
+    so shutil.copy2(resolved, dest) would copy a file onto itself.
+    """
+    global_learned = tmp_path / "learned"
+    global_learned.mkdir()
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    target_dir = output_dir / "skills" / "project"
+    target_dir.mkdir(parents=True)
+
+    # Skill file that is the same as what the reuse branch would copy to
+    skill_file = target_dir / "fastapi-endpoints.md"
+    skill_file.write_text("# FastAPI Endpoints\nContent.\n", encoding="utf-8")
+
+    discovery = SkillDiscovery(skills_dir=tmp_path)
+    discovery.global_learned = global_learned
+    discovery.project_local_dir = None
+
+    generator = SkillGenerator(discovery)
+
+    # Simulate reuse: resolve_skill returns the same path as dest
+    with patch.object(generator, "check_global_skill_reuse", return_value={"fastapi-endpoints": "reuse"}):
+        with patch.object(discovery, "resolve_skill", return_value=skill_file):
+            try:
+                generator.generate_from_readme(
+                    readme_content="# FastAPI Project\n- Uses fastapi",
+                    tech_stack=["fastapi"],
+                    output_dir=output_dir,
+                )
+            except Exception as exc:
+                pytest.fail(f"SameFileError or other crash in reuse path: {exc}")
 
 
 # ---------------------------------------------------------------------------

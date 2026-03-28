@@ -33,6 +33,9 @@ except ImportError:
 
 from pydantic import ValidationError
 
+from cli._version import __version__
+from cli.analyze_quality import run_quality_check
+from cli.utils import detect_provider, set_api_key_env
 from generator.analyzers.readme_parser import parse_readme
 from generator.constitution_generator import generate_constitution
 from generator.extractors.code_extractor import CodeExampleExtractor
@@ -45,9 +48,6 @@ from generator.parsers.enhanced_parser import EnhancedProjectParser
 from generator.prompts.skill_generation import build_skill_prompt
 from generator.rules_generator import generate_rules
 from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
-from cli._version import __version__
-from cli.analyze_quality import run_quality_check
-from cli.utils import detect_provider, set_api_key_env
 from generator.skills_manager import SkillsManager
 from generator.storage.skill_paths import SkillPathManager
 from prg_utils.config_schema import validate_config
@@ -493,9 +493,8 @@ def analyze(
         )
 
         # Load External Packs
-        external_packs = []
         if include_pack or (config.get("packs") and config["packs"].get("enabled")):
-            external_packs = load_external_packs(
+            load_external_packs(
                 include_packs=include_pack,
                 config_packs=config.get("packs"),
                 external_packs_dir=external_packs_dir,

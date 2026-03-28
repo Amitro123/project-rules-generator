@@ -2,15 +2,15 @@ import logging
 import re
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
-
-logger = logging.getLogger(__name__)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from generator.base_generator import ArtifactGenerator
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_parser import SkillParser
 from generator.tech_registry import TECH_SKILL_NAMES as _TECH_SKILL_NAMES
 from generator.utils.quality_checker import is_stub as _check_is_stub
+
+logger = logging.getLogger(__name__)
 
 
 class SkillGenerator(ArtifactGenerator):
@@ -269,7 +269,8 @@ class SkillGenerator(ArtifactGenerator):
                 # Rich global skill exists — copy it to project dir as-is
                 resolved = self.discovery.resolve_skill(skill_name)
                 if resolved and resolved.exists():
-                    shutil.copy2(resolved, dest)
+                    if resolved.resolve() != dest.resolve():
+                        shutil.copy2(resolved, dest)
                     print(f"  [reuse]  {skill_name} (from global learned)")
                     generated.append(f"{skill_name} (reused)")
                     continue

@@ -111,8 +111,8 @@ def detect_from_dependencies(project_path: Path) -> Set[str]:
     package_json = project_path / "package.json"
     if package_json.exists():
         try:
-            content = json.loads(package_json.read_text(encoding="utf-8"))
-            deps = {**content.get("dependencies", {}), **content.get("devDependencies", {})}
+            pkg_data = json.loads(package_json.read_text(encoding="utf-8"))
+            deps = {**pkg_data.get("dependencies", {}), **pkg_data.get("devDependencies", {})}
             node_map = {
                 "react": "react",
                 "vue": "vue",

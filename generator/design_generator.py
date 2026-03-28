@@ -437,7 +437,6 @@ NOW generate the complete design following this structure. Be specific, detailed
         text = user_request.lower()
         is_cache = ("cache" in text) or ("redis" in text)
         is_auth = ("auth" in text) or ("authentication" in text) or ("login" in text)
-        is_api = ("api" in text) or ("endpoint" in text)
 
         # Create comprehensive architecture decisions
         decisions = []
