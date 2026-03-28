@@ -101,8 +101,35 @@ cli.add_command(providers_group, name="providers")
 cli.add_command(skills_group, name="skills")
 
 
+def _sanitize_env_from_dotenv() -> None:
+    """Re-parse .env to handle non-standard syntax that python-dotenv silently skips.
+
+    python-dotenv requires KEY=value. Files with KEY:'value' or KEY: value
+    (colon delimiter, optional quotes) are silently ignored, leaving API keys
+    unset. This function handles those lines so the user gets a working key
+    instead of a silent fallback to a lower-priority env var.
+    """
+    import os
+    import re
+
+    env_path = Path(".env")
+    if not env_path.exists():
+        return
+
+    line_re = re.compile(r"""^\s*([\w]+)\s*[:=]\s*['"]?(.*?)['"]?\s*$""")
+    for raw in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if raw.startswith("#") or not raw.strip():
+            continue
+        m = line_re.match(raw)
+        if m:
+            key, value = m.group(1), m.group(2)
+            if key not in os.environ and value:
+                os.environ[key] = value
+
+
 def main():
-    load_dotenv()  # load .env once, at entry point, not at import time
+    load_dotenv()          # standard KEY=value lines
+    _sanitize_env_from_dotenv()  # catch KEY:'value' / KEY: value syntax
     cli()
 
 

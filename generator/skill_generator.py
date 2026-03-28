@@ -163,6 +163,9 @@ class SkillGenerator(ArtifactGenerator):
         # (i.e. use_ai=False, or project-path-only mode with no readme).
         cowork_use_ai = use_ai and not any(isinstance(s, AIStrategy) for s in strategies)
 
+        ai_requested = use_ai and any(isinstance(s, AIStrategy) for s in strategies)
+        ai_succeeded = False
+
         for strategy_obj in strategies:
             try:
                 if isinstance(strategy_obj, CoworkStrategy):
@@ -170,6 +173,17 @@ class SkillGenerator(ArtifactGenerator):
                 else:
                     content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=use_ai)
                 if content:
+                    if isinstance(strategy_obj, AIStrategy):
+                        ai_succeeded = True
+                    if ai_requested and not ai_succeeded and isinstance(strategy_obj, StubStrategy):
+                        import click
+                        click.secho(
+                            "\n⚠️  AI generation was requested (--ai) but failed. "
+                            "A placeholder stub was created instead — fill in the SKILL.md manually "
+                            "or re-run once the provider issue is resolved.\n",
+                            fg="yellow",
+                            err=True,
+                        )
                     return content
             except Exception as exc:
                 logger.warning(
