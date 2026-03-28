@@ -14,9 +14,9 @@ from generator.planning.autopilot import AutopilotOrchestrator
 @click.option("--execute-only", is_flag=True, help="Assume tasks exist and start execution loop")
 @click.option(
     "--provider",
-    type=click.Choice(["gemini", "groq"]),
+    type=click.Choice(["gemini", "groq", "anthropic", "openai"]),
     default=None,
-    help="AI Provider (gemini, groq). Auto-detected if omitted.",
+    help="AI Provider (gemini, groq, anthropic, openai). Auto-detected if omitted.",
 )
 @click.option("--api-key", help="API Key (overrides env var)")
 @click.option("--verbose/--quiet", default=True, help="Verbose output")

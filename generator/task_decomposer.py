@@ -24,9 +24,16 @@ class SubTask(BaseModel):
 class TaskDecomposer:
     """Break a high-level task into subtasks using an AI model."""
 
-    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        self.model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = "gemini"):
+        self.provider = provider
+        # Resolve API key: explicit > env var for chosen provider > Gemini fallbacks
+        if api_key:
+            self.api_key = api_key
+        elif provider == "gemini":
+            self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        else:
+            self.api_key = os.getenv(f"{provider.upper()}_API_KEY")
+        self.model_name = model_name
 
     def decompose(
         self,
@@ -348,23 +355,14 @@ Generate exactly 5-8 subtasks now:
 """
 
     def _call_llm(self, prompt: str) -> str:
-        """Call the AI model. Falls back to empty string if unavailable."""
+        """Call the AI model via the shared factory. Falls back to empty string if unavailable."""
         if not self.api_key:
             return ""
         try:
-            from google import genai
-            from google.genai import types
+            from generator.ai.factory import create_ai_client
 
-            client = genai.Client(api_key=self.api_key)
-            response = client.models.generate_content(
-                model=self.model_name or "gemini-2.0-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.4,
-                    max_output_tokens=3000,
-                ),
-            )
-            return response.text or ""
+            client = create_ai_client(self.provider, api_key=self.api_key)
+            return client.generate(prompt, max_tokens=3000) or ""
         except Exception:
             return ""
 

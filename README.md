@@ -154,10 +154,11 @@ prg next
 ```
 
 ### 5. Autopilot 🤖
-Full autonomous mode: discover, plan, execute — all with git safety.
+Full autonomous mode: discover, plan, execute — all with git safety. Supports all 4 providers.
 
 ```bash
 prg autopilot .
+prg autopilot . --provider anthropic
 ```
 
 ### 6. Provider Management

@@ -207,7 +207,8 @@ Merge. Each task runs in its own git branch.
 |------|-------------|
 | `--discovery-only` | Stop after rule generation and task creation |
 | `--execute-only` | Skip discovery, run execution loop only |
-| `--provider` | AI provider |
+| `--provider` | `gemini`, `groq`, `anthropic`, or `openai`. Auto-detected if omitted. |
+| `--api-key` | Override env var key |
 
 ---
 
@@ -241,6 +242,12 @@ prg manager [PROJECT_PATH] [OPTIONS]
 
 4-phase orchestration: Setup → Verify → Copilot → Summary. Generates all
 missing artifacts before starting the execution loop.
+
+| Flag | Description |
+|------|-------------|
+| `--provider` | `gemini`, `groq`, `anthropic`, or `openai`. Auto-detected if omitted. |
+| `--api-key` | Override env var key |
+| `--verbose/--quiet` | Verbose output (default: verbose) |
 
 ---
 

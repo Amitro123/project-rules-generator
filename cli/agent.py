@@ -61,13 +61,7 @@ def design(description, project_path, output, api_key, provider, verbose):
 
     from generator.design_generator import DesignGenerator
 
-    # Note: DesignGenerator might need explicit api_key passed in v2, but checking existing usage
-    generator = DesignGenerator(
-        api_key=os.getenv("GEMINI_API_KEY")
-    )  # Preserving existing logic which seems to prefer GEMINI env var?
-    # Wait, existing code: generator = DesignGenerator(api_key=os.getenv('GEMINI_API_KEY'))
-    # But if provider is groq? DesignGenerator might only support Gemini or uses generic client.
-    # I'll stick to copy-paste.
+    generator = DesignGenerator(provider=provider)
 
     if verbose:
         click.echo("Generating design...")
@@ -305,7 +299,7 @@ def plan(
 
     from generator.task_decomposer import TaskDecomposer
 
-    decomposer = TaskDecomposer(api_key=os.getenv("GEMINI_API_KEY"))
+    decomposer = TaskDecomposer(provider=provider, api_key=api_key)
     if verbose:
         click.echo("Decomposing task...")
 
