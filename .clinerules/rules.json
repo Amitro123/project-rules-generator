@@ -65,26 +65,24 @@
     "NEVER generate placeholder comments like 'Implement logic here' - write the full code."
   ],
   "auto-trigger": [
-    "\"create a cowork skill\"",
-    "\"generate skill with claude\"",
-    "\"run prg with anthropic\"",
-    "\"skill creation flow\"",
-    "\"cowork skill pipeline\"",
-    "\"prg analyze --ai --provider anthropic\"",
-    "has_tests (tests/ directory with 56 test files)",
-    "has_docs (docs/ directory with 14 docs)",
-    "has_api (generator/skills_manager.py as primary entry point)"
+    "**\"type checking\"**",
+    "`has_docs`",
+    "`has_tests` — Test suite available",
+    "`has_api` — API endpoints present",
+    "`has_ci`"
   ],
   "process": [
-    "Missing sections are appended",
-    "Placeholder text is replaced with generic but non-stub content"
+    "Review project structure in `project-rules-generator/`",
+    "Check configuration files",
+    "Identify existing patterns",
+    "Run tests if available",
+    "Check for errors",
+    "Verify expected outputs"
   ],
-  "anti-patterns": [
-    "❌ Using abstract trigger phrases like \"use claude\" or \"ai stuff\"",
-    "❌ Hardcoding `ANTHROPIC_API_KEY` in the skill content",
-    "❌ Referencing file paths not confirmed to exist",
-    "❌ Generating a skill without running `pytest` afterward",
-    "❌ Setting `use_ai=False` then wondering why the output is generic"
+  "output": [
+    "Modified/created files in `project-rules-generator/`",
+    "Status report with changes",
+    "Recommendations for next steps"
   ],
   "pre-review_checklist": [
     "✓ Read every line you changed",
@@ -135,32 +133,18 @@
   ],
   "critical": [
     "Read existing files before modifying them.",
-    "Run tests after any code change and verify they pass: `pytest`",
+    "Run tests after any code change and verify they pass.",
     "Never generate or reference file paths that don't exist in the project.",
     "Never skip tests or suppress coverage with `--no-cov` / `--no-cover`."
   ],
   "tech_stack_notes": [
     "`groq`",
-    "`python`",
-    "`click`",
     "`gemini`",
-    "`pytest`",
+    "`pydantic`",
     "`jinja2`",
+    "`python`",
+    "`pytest`",
     "`gitpython`",
-    "`pydantic`"
-  ],
-  "project_context": [
-    "\"create a cowork skill\"",
-    "\"generate skill with claude\"",
-    "\"run prg with anthropic\"",
-    "\"skill creation flow\"",
-    "\"cowork skill pipeline\"",
-    "\"general claude api usage\"",
-    "\"claude theory\"",
-    "\"production deployment\"",
-    "When user asks to create a new skill using Claude/Anthropic as provider",
-    "When debugging why a generated skill has low quality score",
-    "When wiring a new AI provider into CoworkSkillCreator",
-    "When reviewing trigger precision via `TriggerEvaluator`"
+    "`click`"
   ]
 }
