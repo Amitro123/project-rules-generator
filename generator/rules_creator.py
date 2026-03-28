@@ -326,116 +326,21 @@ class CoworkRulesCreator:
         )
 
     def _detect_tech_stack(self, readme_content: str, enhanced_context: Optional[Dict]) -> List[str]:
-        """Auto-detect tech stack from README, project files, and context."""
-        tech_keywords = {
-            # Web frameworks
-            "fastapi",
-            "flask",
-            "django",
-            "express",
-            # Frontend
-            "react",
-            "vue",
-            "angular",
-            # Testing
-            "pytest",
-            "jest",
-            "vitest",
-            # DevOps
-            "docker",
-            "kubernetes",
-            # Async
-            "asyncio",
-            "celery",
-            # Databases
-            "sqlalchemy",
-            "prisma",
-            "mongoose",
-            # Languages
-            "typescript",
-            "python",
-            "node",
-            "go",
-            "rust",
-            # Databases
-            "postgresql",
-            "mongodb",
-            "redis",
-            # AI/LLM
-            "openai",
-            "anthropic",
-            "langchain",
-            "groq",
-            "gemini",
-            # CLI / validation / templates
-            "click",
-            "typer",
-            "argparse",
-            "pydantic",
-            "jinja2",
-        }
+        """Auto-detect tech stack from README, project files, and optional enhanced context.
 
-        detected: Set[str] = set()
+        Delegates file/README detection to generator.utils.tech_detector.detect_tech_stack().
+        enhanced_context (from EnhancedProjectParser) is merged in as additional signal.
+        """
+        from generator.utils.tech_detector import detect_tech_stack as _detect_tech_stack_util
 
-        # Scan project files first (authoritative)
-        self._detect_from_files(detected)
-        file_detected = set(detected)  # snapshot of what files confirmed
+        detected: Set[str] = set(_detect_tech_stack_util(self.project_path, readme_content))
 
-        # From README — only add if confirmed by files OR it's a core language keyword
-        # This prevents false positives from docs/examples mentioning other tech stacks
-        core_language_keywords = {"python", "typescript", "node", "go", "rust"}
-        readme_lower = readme_content.lower()
-        for tech in tech_keywords:
-            if tech in readme_lower:
-                if tech in file_detected or tech in core_language_keywords:
-                    detected.add(tech)
-
-        # From enhanced context (always trusted)
+        # Enhanced context is always trusted (from EnhancedProjectParser)
         if enhanced_context:
             context_tech = enhanced_context.get("project_data", {}).get("tech_stack", [])
             detected.update(t.lower() for t in context_tech)
 
         return list(sorted(detected))
-
-    def _detect_from_files(self, detected: Set[str]) -> None:
-        """Scan project files to detect tech stack signals."""
-        # Check requirements.txt / pyproject.toml / setup.py
-        req_files = [
-            self.project_path / "requirements.txt",
-            self.project_path / "requirements-dev.txt",
-            self.project_path / "pyproject.toml",
-            self.project_path / "setup.py",
-            self.project_path / "setup.cfg",
-        ]
-        file_tech_map = {
-            "pytest": ["pytest"],
-            "click": ["click"],
-            "pydantic": ["pydantic"],
-            "jinja2": ["jinja2", "jinja"],
-            "fastapi": ["fastapi"],
-            "groq": ["groq"],
-            "gemini": ["google-generativeai", "google-genai", "gemini"],
-            "sqlalchemy": ["sqlalchemy"],
-            "docker": ["docker"],
-        }
-        for req_file in req_files:
-            if req_file.exists():
-                try:
-                    content = req_file.read_text(encoding="utf-8", errors="ignore").lower()
-                    for tech, keywords in file_tech_map.items():
-                        if any(kw in content for kw in keywords):
-                            detected.add(tech)
-                except OSError:
-                    pass
-
-        # Check for pytest.ini / conftest.py -> pytest
-        if any((self.project_path / f).exists() for f in ["pytest.ini", "conftest.py", "pyproject.toml"]):
-            if (self.project_path / "tests").exists() or (self.project_path / "test").exists():
-                detected.add("pytest")
-
-        # Check for Jinja2 templates directory
-        if (self.project_path / "templates").exists():
-            detected.add("jinja2")
 
     def _detect_project_type(self, tech_stack: List[str], enhanced_context: Optional[Dict]) -> str:
         """Detect project type (python-cli, fastapi-api, react-app, etc.)."""

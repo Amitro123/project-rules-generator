@@ -45,6 +45,7 @@ from generator.parsers.enhanced_parser import EnhancedProjectParser
 from generator.prompts.skill_generation import build_skill_prompt
 from generator.rules_generator import generate_rules
 from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
+from cli._version import __version__
 from cli.analyze_quality import run_quality_check
 from cli.utils import detect_provider, set_api_key_env
 from generator.skills_manager import SkillsManager
@@ -250,7 +251,7 @@ def setup_orchestrator(config):
 @click.option(
     "--ai",
     is_flag=True,
-    help="Use AI to generate skill content (requires GEMINI_API_KEY)",
+    help="Use AI to generate skill content (requires an API key — any supported provider)",
 )
 @click.option(
     "--output",
@@ -448,7 +449,7 @@ def analyze(
 
     if verbose:
         setup_logging(verbose=True)
-        click.echo("Project Rules Generator v0.1.0")
+        click.echo(f"Project Rules Generator v{__version__}")
         click.echo(f"Target: {project_path}")
     else:
         setup_logging(verbose=False)
@@ -502,12 +503,9 @@ def analyze(
             )
 
         # Find README
-        readme_candidates = ["README.md", "README.rst", "README.txt", "README"]
-        readme_path = None
-        for candidate in readme_candidates:
-            if (project_path / candidate).exists():
-                readme_path = project_path / candidate
-                break
+        from generator.utils.readme_bridge import find_readme
+
+        readme_path = find_readme(project_path)
 
         # Interactive README Generation
         from generator.interactive import create_readme_interactive, show_generated_files

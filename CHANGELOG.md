@@ -4,6 +4,118 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v1.4] — 2026-03-28
+
+### ✨ New Commands
+
+#### `prg init` — First-Run Wizard
+**File:** `cli/init_cmd.py`
+
+New entry-point command that was documented in README and `docs/cli.md` but missing from the codebase. Detects tech stack, checks API key availability, generates initial `rules.md` via the existing pipeline, sets up the skills directory structure, and prints provider-aware next steps.
+
+```bash
+prg init .            # auto-detect provider
+prg init . --yes      # skip confirmation
+prg init . --provider groq
+```
+
+#### `prg skills list/validate/show` — Skill Inspection Sub-Commands
+**File:** `cli/skills_cmd.py`
+
+Three sub-commands under `prg skills` that were documented in `docs/cli.md` and `docs/skills.md` but missing from the codebase.
+
+- `prg skills list [PATH] [--all]` — tabular view of all skills with layer, trigger count, tools, and frontmatter status
+- `prg skills validate <NAME_OR_PATH> [PATH]` — runs `validate_quality()`, prints score/issues/warnings, exits 1 on failure
+- `prg skills show <NAME_OR_PATH> [PATH]` — pretty-prints frontmatter as structured table and body as-is; accepts skill name (resolved via SkillsManager) or file path
+
+---
+
+### 🔧 Fixes & Improvements
+
+#### Version: single source of truth
+**File:** `cli/_version.py` (new)
+
+Removed 6 hard-coded `"0.1.0"` strings across `cli/cli.py`, `cli/agent.py`, `cli/analyze_cmd.py`. Version is now read from `importlib.metadata` (source: `pyproject.toml`) at runtime. Fallback to `"0.1.0"` if package is not installed.
+
+#### Python version inconsistency fixed
+README badge and Prerequisites section corrected from `3.11+` to `3.8+`, matching `pyproject.toml` (`requires-python = ">=3.8"`).
+
+#### CLI help text: `--ai` flag no longer says "requires GEMINI_API_KEY"
+Updated to "requires an API key — any supported provider".
+
+#### `detect_provider()` now recognises `GOOGLE_API_KEY` as Gemini alias
+**File:** `cli/utils.py`
+
+Auto-detection checked `GEMINI_API_KEY` only. Now also checks `GOOGLE_API_KEY` so users with the Google SDK env var get Gemini selected automatically.
+
+#### Skill routing fixed
+**Files:** `generator/skill_generator.py`
+
+- `create_skill()` (invoked by `--create-skill`) now writes to `skills/project/` (project-specific, highest priority)
+- `generate_from_readme()` (invoked by README auto-flow) now writes to `skills/learned/` (reusable, medium priority)
+
+Previously the two paths were swapped, causing project-specific skills to land in the global learned cache and README-derived skills to be treated as project-local overrides.
+
+#### Quality checker is now self-sufficient
+**File:** `generator/utils/quality_checker.py`
+
+`validate_quality()` now auto-parses YAML frontmatter and `## Auto-Trigger` sections when `metadata_triggers` / `metadata_tools` are not passed explicitly. Previously all callers had to extract and pass these manually; missing them caused a guaranteed −20 point penalty. All 22 project skills now score 90–100.
+
+#### Strategy chain improvements
+- **READMEStrategy**: Added relevance check — returns `None` when skill name words don't appear in the extracted project purpose, preventing README content from being echoed into unrelated skill names
+- **CoworkStrategy**: Returns `None` immediately when `use_ai=False` (previously ran Jinja2 extraction, producing garbage without an LLM)
+- **StubStrategy**: Now emits complete YAML frontmatter scaffold instead of a near-empty placeholder
+
+#### Provider wiring: `design`, `plan`, `autopilot`, `manager`
+**Files:** `cli/agent.py`, `cli/autopilot_cmd.py`, `cli/manager_cmd.py`, `generator/task_decomposer.py`
+
+The `--provider` flag was accepted but silently ignored in these four commands. Fixed:
+- `TaskDecomposer` refactored from Gemini-only (google.genai SDK) to shared `create_ai_client` factory; accepts `provider` param
+- `design` command passes `provider=provider` to `DesignGenerator`
+- `plan` command passes `provider=provider, api_key=api_key` to `TaskDecomposer`
+- `autopilot` and `manager` `--provider` choices expanded from `["gemini", "groq"]` to all four providers
+
+#### `GOOGLE_API_KEY` alias: full coverage
+Fixed across `ai_strategy_router.py`, `providers_cmd.py`, `design_generator.py`, `task_decomposer.py`, `cli/utils.py` — Gemini is detected/used with either `GEMINI_API_KEY` or `GOOGLE_API_KEY`.
+
+#### Import-time side effects removed
+**Files:** `cli/cli.py`, `cli/analyze_cmd.py`, `cli/agent.py`
+
+`load_dotenv()` was executing 3× at import time across these modules. `sys.path.insert()` was also running at import time (unnecessary with `pip install -e .`). Both moved into `main()` / removed.
+
+---
+
+#### H1 — `_detect_tech_stack` deduplicated
+**File:** `generator/rules_creator.py`
+
+Removed the 70-line local `_detect_tech_stack` and `_detect_from_files` methods. `rules_creator.py` now delegates to `generator.utils.tech_detector.detect_tech_stack()` — the same function `skill_creator.py` already used. The `enhanced_context` merge is preserved as an optional post-step.
+
+#### M6 — Builtin sync consolidated into `SkillPathManager`
+**Files:** `generator/skill_discovery.py`, `generator/storage/skill_paths.py`
+
+`SkillDiscovery.ensure_global_structure()` was reimplementing the builtin sync inline (unconditional `shutil.copytree`). Replaced with a single delegation to `SkillPathManager.ensure_setup()`, which uses mtime comparison to avoid unnecessary copies. Also fixed a pre-existing `parents=True` omission in `SkillPathManager.ensure_setup()` that caused test failures on fresh directories.
+
+#### M7 — `find_readme()` centralised
+**File:** `generator/utils/readme_bridge.py` (new public function)
+
+Four different inline README discovery loops existed across the codebase with slightly different filename lists. Added `find_readme(project_path: Path) -> Optional[Path]` to `readme_bridge.py` with a single canonical candidate order. Updated 6 callers:
+- `generator/incremental_analyzer.py`
+- `generator/parsers/enhanced_parser.py` (2 locations)
+- `generator/project_analyzer.py`
+- `generator/rules_generator.py`
+- `cli/analyze_cmd.py`
+- `cli/init_cmd.py`
+
+---
+
+### 🧪 Tests
+
+- 30 new tests in `tests/test_provider_wiring.py` (TaskDecomposer, DesignGenerator, autopilot/manager provider choices)
+- 15 new tests in `tests/test_init_and_skills_cmd.py` (init command, skills list/validate/show)
+- **Total: 530 passing, 11 skipped**
+
+---
+
 ## [v1.3] — 2026-03-06
 
 ### 🐛 Bug Fixes (Issue #18 — Post-v1.2 Skills Code Review)

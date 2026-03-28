@@ -102,11 +102,11 @@ class IncrementalAnalyzer:
 
     def _hash_readme(self) -> str:
         h = hashlib.sha256()
-        for name in ("README.md", "README.rst", "README.txt", "README"):
-            p = self.project_path / name
-            if p.exists():
-                h.update(p.read_bytes())
-                break
+        from generator.utils.readme_bridge import find_readme
+
+        p = find_readme(self.project_path)
+        if p:
+            h.update(p.read_bytes())
         return h.hexdigest()
 
     def _hash_source(self) -> str:

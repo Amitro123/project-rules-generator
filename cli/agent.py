@@ -7,6 +7,7 @@ from pathlib import Path
 import click
 
 
+from cli._version import __version__
 from cli.utils import detect_provider as _detect_provider
 from cli.utils import set_api_key_env as _set_api_key
 
@@ -41,7 +42,7 @@ def design(description, project_path, output, api_key, provider, verbose):
     _set_api_key(provider, api_key)
 
     if verbose:
-        click.echo("Project Rules Generator v0.1.0 — Design Generator")
+        click.echo(f"Project Rules Generator v{__version__} — Design Generator")
         click.echo(f"Request: {description}")
         click.echo(f"Project: {project_path}")
 
@@ -199,7 +200,7 @@ def plan(
         from generator.planning import ProjectPlanner
 
         if verbose:
-            click.echo("Project Rules Generator v0.1.0 — Roadmap Generator")
+            click.echo(f"Project Rules Generator v{__version__} — Roadmap Generator")
             click.echo(f"From README: {from_readme}")
             click.echo(f"Project: {project_path}")
 
@@ -276,7 +277,7 @@ def plan(
     _set_api_key(provider, api_key)
 
     if verbose:
-        click.echo("Project Rules Generator v0.1.0 — Task Planner")
+        click.echo(f"Project Rules Generator v{__version__} — Task Planner")
         if from_design:
             click.echo(f"From design: {from_design}")
         else:
@@ -437,7 +438,7 @@ def review(filepath, project_path, output, provider, api_key, tasks, verbose):
     _set_api_key(provider, api_key)
 
     if verbose:
-        click.echo("Project Rules Generator v0.1.0 — Self-Review")
+        click.echo(f"Project Rules Generator v{__version__} — Self-Review")
         click.echo(f"Reviewing: {filepath}")
         click.echo(f"Provider: {provider}")
 

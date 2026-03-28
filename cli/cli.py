@@ -20,6 +20,8 @@ if sys.platform == "win32":
 import click  # noqa: E402
 from dotenv import load_dotenv  # noqa: E402
 
+from cli._version import __version__  # noqa: E402
+
 # Import commands from modules
 # note: imports are delayed to avoid circular dependency issues during setup if any
 # but specific command imports are usually fine.
@@ -47,7 +49,7 @@ class DefaultGroup(click.Group):
     help="Project Rules Generator - Generate rules.md and skills.md from README.md",
     epilog="Use 'analyze --help' to see options for the default analyze command.",
 )
-@click.version_option(version="0.1.0")
+@click.version_option(version=__version__)
 def cli():
     """Project Rules Generator - Generate rules.md and skills.md from README.md
 
@@ -69,12 +71,15 @@ from cli.analyze_cmd import analyze
 from cli.autopilot_cmd import autopilot
 from cli.create_rules_cmd import create_rules
 from cli.gaps_cmd import gaps, spec_cmd
+from cli.init_cmd import init
 from cli.jobs import exec_task, leaderboard, next_task, query_tasks, status
 from cli.manager_cmd import manager
 from cli.providers_cmd import providers_group
+from cli.skills_cmd import skills_group
 from cli.tasks_cmd import tasks_cmd
 
 cli.add_command(analyze)
+cli.add_command(init)
 cli.add_command(create_rules)
 cli.add_command(design)
 cli.add_command(plan)
@@ -93,6 +98,7 @@ cli.add_command(spec_cmd, name="spec")
 cli.add_command(agent_command)
 cli.add_command(leaderboard)
 cli.add_command(providers_group, name="providers")
+cli.add_command(skills_group, name="skills")
 
 
 def main():

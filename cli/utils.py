@@ -9,7 +9,7 @@ def detect_provider(provider: str | None, api_key: str | None) -> str:
     Priority:
     1. Explicit --provider flag (returned as-is).
     2. api_key prefix  (gsk_ → groq, sk-ant- → anthropic, sk- → openai).
-    3. Environment variables (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY).
+    3. Environment variables (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, GOOGLE_API_KEY).
     4. Default: groq.
     """
     if provider is not None:
@@ -25,7 +25,8 @@ def detect_provider(provider: str | None, api_key: str | None) -> str:
         return "anthropic"
     if os.environ.get("OPENAI_API_KEY"):
         return "openai"
-    if os.environ.get("GEMINI_API_KEY") and not os.environ.get("GROQ_API_KEY"):
+    _gemini_available = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if _gemini_available and not os.environ.get("GROQ_API_KEY"):
         return "gemini"
     return "groq"
 

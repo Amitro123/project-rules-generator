@@ -4,17 +4,19 @@ Project Rules Generator offers a suite of tools to analyze your codebase and gen
 
 ## Feature Breakdown
 
-| Feature | Description | Speed | AI Required |
-| :--- | :--- | :--- | :--- |
-| **Basic Analysis** | Scans code structure & README for rules | Fast | No |
-| **AI Skills** | Uses LLM to generate custom skills | Slow | Yes |
-| **Incremental** | Updates only changed sections | Very Fast | No |
-| **Task Breakdown** | Breaks large tasks into smaller steps | Medium | Yes |
-| **Autopilot** 🆕 | End-to-end discovery & execution loop | Slow | Yes |
-| **Project Manager** 🆕 | Livecycle orchestration (Setup->Verify->Exec->Report) | Slow | Yes |
-| **Two-Stage Planning** | Design -> Plan workflow for complex features | Slow | Yes |
-| **Constitution** | Generates high-level principles | Fast | No |
-| **Skill Management** | Managing your learned skills library | Instant | No |
+| Feature | Description | Speed | AI Required | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Basic Analysis** | Scans code structure & README for rules | Fast | No | ✅ |
+| **AI Skills** | Uses LLM to generate custom skills | Slow | Yes | ✅ |
+| **Incremental** | Updates only changed sections | Very Fast | No | ✅ |
+| **Task Breakdown** | Breaks large tasks into smaller steps | Medium | Yes | ✅ |
+| **Autopilot** | End-to-end discovery & execution loop | Slow | Yes | ✅ |
+| **Project Manager** | Lifecycle orchestration (Setup→Verify→Exec→Report) | Slow | Yes | ✅ |
+| **Two-Stage Planning** | Design → Plan workflow for complex features | Slow | Yes | ✅ |
+| **Constitution** | Generates high-level principles | Fast | No | ✅ |
+| **Skill Management** (`--create-skill`, `--list-skills`) | Managing your learned/project skills library | Instant | No | ✅ |
+| **`prg init`** | First-run wizard — detect stack, generate rules, print next steps | Fast | No | ✅ |
+| **`prg skills list/validate/show`** | Sub-commands for skill inspection and validation | Instant | No | ✅ |
 
 ---
 

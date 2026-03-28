@@ -6,6 +6,7 @@ Shared helpers used by both the skill and rules generation pipelines
 when the project README is missing or too sparse to rely on.
 
 Public API:
+    find_readme(project_path) -> Optional[Path]
     is_readme_sufficient(readme_content, min_words=80) -> bool
     build_project_tree(project_path, max_depth=3, max_items=60) -> str
     bridge_missing_context(project_path, name, interactive=None) -> str
@@ -18,6 +19,22 @@ from pathlib import Path
 from typing import List, Optional
 
 README_MIN_WORDS = 80  # Below this → README is too sparse
+
+# Canonical ordered list of README filenames to check (most common first)
+_README_CANDIDATES = ("README.md", "readme.md", "README.rst", "README.txt", "README")
+
+
+def find_readme(project_path: Path) -> Optional[Path]:
+    """Return the first README file found in project_path, or None.
+
+    Checks filenames in a consistent priority order so all callers agree on
+    which file is the README when multiple variants exist.
+    """
+    for name in _README_CANDIDATES:
+        p = project_path / name
+        if p.exists() and p.is_file():
+            return p
+    return None
 
 _TREE_EXCLUDE = {
     ".git",

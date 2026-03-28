@@ -56,16 +56,15 @@ class ProjectAnalyzer:
 
     def _get_readme(self) -> Optional[str]:
         """Get README content (truncated)."""
-        readme_files = ["README.md", "README.rst", "README.txt", "README"]
-        for filename in readme_files:
-            readme_path = self.project_path / filename
-            if readme_path.exists():
-                try:
-                    content = readme_path.read_text(encoding="utf-8", errors="replace")
-                    # Limit to 4000 chars to avoid token overflow
-                    return content[:4000]
-                except OSError:
-                    pass
+        from generator.utils.readme_bridge import find_readme
+
+        readme_path = find_readme(self.project_path)
+        if readme_path:
+            try:
+                content = readme_path.read_text(encoding="utf-8", errors="replace")
+                return content[:4000]
+            except OSError:
+                pass
         return None
 
     def _detect_tech_stack(self) -> Dict[str, List[str]]:

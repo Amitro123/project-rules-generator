@@ -27,9 +27,9 @@ class SkillPathManager:
     @classmethod
     def ensure_setup(cls):
         """Create directories and sync builtin skills."""
-        cls.GLOBAL_DIR.mkdir(exist_ok=True)
-        cls.GLOBAL_BUILTIN.mkdir(exist_ok=True)
-        cls.GLOBAL_LEARNED.mkdir(exist_ok=True)
+        cls.GLOBAL_DIR.mkdir(parents=True, exist_ok=True)
+        cls.GLOBAL_BUILTIN.mkdir(parents=True, exist_ok=True)
+        cls.GLOBAL_LEARNED.mkdir(parents=True, exist_ok=True)
 
         cls.sync_builtin_skills()
 

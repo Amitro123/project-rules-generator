@@ -207,12 +207,11 @@ class RulesGenerator:
         return rules_to_json(rules_md)
 
     def _read_readme(self) -> str:
-        """Read README.md from project path."""
-        for name in ("README.md", "readme.md", "README.rst"):
-            p = self.project_path / name
-            if p.exists():
-                return p.read_text(encoding="utf-8", errors="ignore")
-        return ""
+        """Read README from project path."""
+        from generator.utils.readme_bridge import find_readme
+
+        p = find_readme(self.project_path)
+        return p.read_text(encoding="utf-8", errors="ignore") if p else ""
 
 
 # ═════════════════════════════════════════════════════════════════════════════

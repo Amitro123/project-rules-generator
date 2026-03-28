@@ -2,7 +2,7 @@
 
 > **The First AI That Learns Your Coding Style**
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-500%20Passing-green.svg)](tests/)
 
@@ -57,7 +57,7 @@ prg analyze . --ai
 ## Installation
 
 ### Prerequisites
-- Python 3.11 or higher
+- Python 3.8 or higher
 - Git
 
 ### From Source (Current)

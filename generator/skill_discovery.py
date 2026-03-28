@@ -103,24 +103,12 @@ class SkillDiscovery:
             del self._layer_skills_cache
 
     def ensure_global_structure(self):
-        """Ensure global cache directories exist and are synced."""
-        self.global_root.mkdir(parents=True, exist_ok=True)
-        self.global_learned.mkdir(parents=True, exist_ok=True)
-        self.global_builtin.mkdir(parents=True, exist_ok=True)
+        """Ensure global cache directories exist and builtin skills are synced.
 
-        # Sync package builtin skills to global cache
-        if self.package_builtin.exists():
-            try:
-                for item in self.package_builtin.iterdir():
-                    dest = self.global_builtin / item.name
-                    if item.is_dir():
-                        if dest.exists():
-                            shutil.rmtree(dest)
-                        shutil.copytree(item, dest)
-                    else:
-                        shutil.copy2(item, dest)
-            except Exception as e:
-                logger.warning("Failed to sync builtin skills to global cache: %s", e)
+        Delegates to SkillPathManager.ensure_setup() — single source of truth for
+        directory creation and builtin skill sync.
+        """
+        SkillPathManager.ensure_setup()
 
     def setup_project_structure(self):
         """

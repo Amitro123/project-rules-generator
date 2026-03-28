@@ -1,7 +1,29 @@
 # Architecture Improvements Report
 
 Generated: 2026-03-28
+Last updated: 2026-03-28
 Analyzed by: architecture-improvements skill + opus agent (57 tool calls, 109K tokens)
+
+---
+
+## Completed (as of 2026-03-28)
+
+| Item | What was done |
+|---|---|
+| Import-time side effects | `load_dotenv()` and `sys.path.insert` removed from module scope; moved into `main()` |
+| Provider wiring (design/plan/autopilot/manager) | `--provider` now flows through all 4 commands; `TaskDecomposer` uses shared `create_ai_client` factory |
+| GOOGLE_API_KEY alias | All provider detection points now check `GOOGLE_API_KEY` as Gemini alias |
+| Version single source of truth | `cli/_version.py` via `importlib.metadata`; removed 6 hard-coded strings |
+| Skill routing corrected | `--create-skill` → `project/`; README flow → `learned/` (was reversed) |
+| Quality checker self-sufficient | `validate_quality()` auto-parses YAML frontmatter — callers no longer need to pass metadata |
+| Strategy chain: CoworkStrategy | Returns `None` immediately when `use_ai=False` (previously extracted garbage without LLM) |
+| Strategy chain: READMEStrategy | Relevance check prevents echoing README for unrelated skill names |
+| Strategy chain: StubStrategy | Emits complete YAML frontmatter scaffold instead of minimal placeholder |
+| H1: `_detect_tech_stack` deduplicated | `rules_creator.py` local 70-line copy removed; delegates to `utils/tech_detector.detect_tech_stack()` (which `skill_creator.py` already used) |
+| M6: Builtin sync consolidated | `SkillDiscovery.ensure_global_structure()` was reimplementing sync inline; now delegates to `SkillPathManager.ensure_setup()`; also fixed pre-existing `parents=True` omission in path manager |
+| M7: `find_readme()` centralised | `generator/utils/readme_bridge.py` now exposes `find_readme(project_path)` — one canonical discovery order; 6 inline loops across `generator/` and `cli/` replaced |
+| `prg init` command | New `cli/init_cmd.py` — first-run wizard with stack detection, rules generation, skills setup, and next-steps output |
+| `prg skills list/validate/show` | New `cli/skills_cmd.py` — skill inspection sub-commands missing from codebase despite being documented |
 
 ---
 

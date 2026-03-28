@@ -48,10 +48,10 @@ class EnhancedProjectParser:
 
     def _parse_readme(self) -> Dict[str, Any]:
         """Parse README if it exists."""
-        readme_files = ["README.md", "README.rst", "README.txt", "README"]
-        for filename in readme_files:
-            readme_path = self.path / filename
-            if readme_path.exists():
+        from generator.utils.readme_bridge import find_readme
+
+        readme_path = find_readme(self.path)
+        if readme_path:
                 try:
                     from generator.analyzers.readme_parser import parse_readme
 
@@ -136,15 +136,14 @@ class EnhancedProjectParser:
 
         # Fallback: extract from README pip install commands when no deps found
         if not result["python"]:
-            readme_files = ["README.md", "README.rst", "README.txt", "README"]
-            for filename in readme_files:
-                readme_path = self.path / filename
-                if readme_path.exists():
-                    readme_deps = self._dep_parser.parse_readme_pip_install(readme_path)
-                    if readme_deps:
-                        result["python"] = readme_deps
-                        logger.info(f"Extracted {len(readme_deps)} deps from {filename} pip install commands")
-                    break
+            from generator.utils.readme_bridge import find_readme
+
+            readme_path = find_readme(self.path)
+            if readme_path:
+                readme_deps = self._dep_parser.parse_readme_pip_install(readme_path)
+                if readme_deps:
+                    result["python"] = readme_deps
+                    logger.info(f"Extracted {len(readme_deps)} deps from {readme_path.name} pip install commands")
 
         # System dependencies
         result["system"] = self._dep_parser.detect_system_dependencies(self.path)

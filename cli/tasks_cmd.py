@@ -34,7 +34,7 @@ def tasks_cmd(project_path, infer_spec, provider, api_key, verbose):
             requirements = inferrer.infer(project_path)
         except ValueError as e:
             click.echo(f"⚠️  Cannot infer requirements: {e}")
-            click.echo("Set GROQ_API_KEY or GEMINI_API_KEY, or create a spec.md file.")
+            click.echo("Set an API key (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, or GROQ_API_KEY), or create a spec.md file.")
             return
     else:
         # Load from spec.md
