@@ -1,37 +1,37 @@
 ---
-name: error-handling
+name: logging-best-practices
 description: |
-  ERROR handling for this project. Use when user mentions "error handling". Do NOT activate for "general error questions", "error theory".
+  LOGGING practices for this project. Use when user mentions "logging best practices". Do NOT activate for "general logging questions", "logging theory".
 license: MIT
 allowed-tools: "Bash Read Write Edit Glob Grep"
 metadata:
   author: PRG
   version: 1.0.0
   category: project
-  tags: [error, handling, python, pydantic, groq, pytest]
+  tags: [logging, best, practices, click, gemini, groq]
 ---
 
-# Skill: Error Handling
+# Skill: Logging Best Practices
 
 ## Purpose
 
-ERROR handling for this project
+LOGGING practices for this project
 
-This skill provides step-by-step guidance for error handling.
+This skill provides step-by-step guidance for logging best practices.
 
 ## Auto-Trigger
 
 The agent should activate this skill when the user requests:
 
-- **"error handling"**
+- **"logging best practices"**
 
 
 **Project Context Signals:**
 
-- `has_api` — API endpoints present
-- `has_ci` 
-- `has_tests` — Test suite available
 - `has_docs` 
+- `has_api` — API endpoints present
+- `has_tests` — Test suite available
+- `has_ci` 
 
 
 
@@ -101,14 +101,14 @@ This skill generates:
 
 
 **Detected Technologies:**
-- `python`
-- `pydantic`
-- `groq`
-- `pytest`
-- `gemini`
-- `gitpython`
-- `jinja2`
 - `click`
+- `gemini`
+- `groq`
+- `pydantic`
+- `gitpython`
+- `pytest`
+- `jinja2`
+- `python`
 
 
 
@@ -139,8 +139,8 @@ pytest
 ```
 Project: project-rules-generator
 Path: C:\Users\Dana\.gemini\antigravity\scratch\project-rules-generator
-Signals: has_api, has_ci, has_tests, has_docs
-Tech Stack: python, pydantic, groq, pytest, gemini, gitpython, jinja2, click
+Signals: has_docs, has_api, has_tests, has_ci
+Tech Stack: click, gemini, groq, pydantic, gitpython, pytest, jinja2, python
 ```
 
 

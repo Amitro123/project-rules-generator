@@ -81,6 +81,36 @@ def is_stub_content(content: str) -> bool:
     return any(marker in content for marker in STUB_MARKERS)
 
 
+def _parse_frontmatter(content: str):
+    """Extract YAML frontmatter dict and markdown body from skill content.
+
+    Returns (meta_dict, body_str). If no frontmatter, meta_dict is {}.
+    """
+    if not content.startswith("---"):
+        return {}, content
+    end = content.find("\n---", 3)
+    if end == -1:
+        return {}, content
+    yaml_block = content[3:end].strip()
+    body = content[end + 4:]
+    try:
+        import yaml
+
+        meta = yaml.safe_load(yaml_block) or {}
+    except Exception:
+        meta = {}
+    return meta if isinstance(meta, dict) else {}, body
+
+
+def _extract_body_triggers(content: str) -> List[str]:
+    """Extract trigger phrases from the ## Auto-Trigger markdown section."""
+    if "## Auto-Trigger" not in content:
+        return []
+    section = re.split(r"\n## ", content.split("## Auto-Trigger", 1)[1])[0]
+    # Match bold phrases: **"phrase"** or **phrase**
+    return re.findall(r'\*\*["\']?([^"\'*\n]+)["\']?\*\*', section)
+
+
 def validate_quality(
     content: str,
     metadata_triggers: Optional[List[str]] = None,
@@ -93,8 +123,8 @@ def validate_quality(
 
     Args:
         content: The skill markdown content
-        metadata_triggers: List of auto-trigger phrases
-        metadata_tools: List of tools
+        metadata_triggers: List of auto-trigger phrases (auto-parsed if omitted)
+        metadata_tools: List of tools (auto-parsed if omitted)
 
     Returns:
         QualityReport with score, issues, warnings, suggestions
@@ -103,6 +133,30 @@ def validate_quality(
     issues = []
     warnings = []
     suggestions = []
+
+    # Auto-parse frontmatter when callers don't provide metadata
+    if metadata_triggers is None or metadata_tools is None:
+        meta, _ = _parse_frontmatter(content)
+        if metadata_triggers is None:
+            # Prefer explicit YAML triggers list; fall back to body parsing
+            yaml_triggers = meta.get("triggers") or meta.get("auto_triggers") or []
+            if isinstance(yaml_triggers, list):
+                # Flatten list-of-dicts (auto_triggers: [{keywords: [...]}]) or plain list
+                flat: List[str] = []
+                for item in yaml_triggers:
+                    if isinstance(item, dict):
+                        flat.extend(item.get("keywords") or [])
+                    elif isinstance(item, str):
+                        flat.append(item)
+                yaml_triggers = flat
+            body_triggers = _extract_body_triggers(content) if not yaml_triggers else []
+            metadata_triggers = yaml_triggers or body_triggers
+        if metadata_tools is None:
+            raw_tools = meta.get("tools") or meta.get("allowed-tools") or []
+            if isinstance(raw_tools, str):
+                # "Bash Read Write Edit Glob Grep" → list
+                raw_tools = raw_tools.split()
+            metadata_tools = raw_tools if isinstance(raw_tools, list) else []
 
     # Check required sections
     required_sections = ["## Purpose", "## Auto-Trigger", "## Process", "## Output"]
