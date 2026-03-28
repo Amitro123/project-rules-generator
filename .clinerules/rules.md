@@ -1,80 +1,1653 @@
 ---
 project: project-rules-generator
 purpose: Coding & contribution rules for this workspace
-version: 1.0
+version: 2.0
 generated: auto
+project_type: python-cli
 ---
 
 ## CONTEXT
 
-> The First AI That Learns Your Coding Style
+![Python 3.8+](https://python.org)
 
-This project uses: python, gemini, claude, groq, click, pydantic, gitpython
+This project uses: python, claude, gemini, groq, click, pydantic, gitpython
+
+## ARCHITECTURE
+
+- **Project type**: python-cli
+- **Entry points**: main.py
+- **Structural patterns**: python-cli, pytest-tests
+- **Languages**: python
+
+## FILE STRUCTURE
+
+**Entry points:**
+- `main.py`
+
+**Detected patterns:**
+- python-cli
+- pytest-tests
+
+## DEPENDENCIES
+
+**Python** (13 packages): ﻿click>=8.0.0, pyyaml, pydantic, tqdm, google-generativeai, groq, python-dotenv, gitpython, rich, opik, pathspec, jinja2, click
 
 ## DO (must follow)
 
-- Use python, gemini, claude, groq, click, pydantic, gitpython as the primary tech stack
-- Add type hints and docstrings to all public functions
-- Write tests for new features and bug fixes
+- Run `pytest` before committing; add tests for new features
+- Use type hints on all public function signatures
+- Use Pydantic models for data validation (not raw dicts)
+- Use Click decorators for CLI arguments — don't parse sys.argv manually
+- Store API keys in `.env` or environment variables — never hardcode (gemini, groq)
+- Add retry logic with exponential backoff for external API calls
+- Validate and type-check API responses before using them
 - Follow existing project structure and naming conventions
-- Document breaking changes in CHANGELOG.md or release notes
-- Run linters/formatters before committing (black, ruff, eslint, etc.)
-- Keep functions focused and under 50 lines when possible
-- Review your own code before requesting review from others
+- Keep module imports at file top; use absolute imports within the project
 
 ## DON'T
 
-- Don't commit secrets, API keys, or credentials to version control
-- Don't use global variables without explicit justification
-- Don't bypass linting rules without documenting why
-- Don't modify core infrastructure without team discussion
-- Don't leave commented-out code without explaining why
+- Don't use `print()` for logging — use the `logging` module
+- Don't catch bare `Exception` — catch specific exceptions
+- Don't use `sys.exit()` in library code — raise exceptions, let Click handle exit
+- Don't log or print full API responses in production (may contain PII)
+- Don't ignore rate-limit headers from API providers
+- Don't commit secrets, API keys, or `.env` files
 - Don't add dependencies without checking license compatibility
+
+## TESTING
+
+- **Framework**: pytest
+- **Test files**: 56 (551 test cases)
+- **Test types**: unit, integration
+- **Fixtures**: shared via `conftest.py`
+- **Test data**: `tests/fixtures/` directory
+
+```bash
+# Run all tests
+pytest
+# Run with coverage
+pytest --cov
+# Run specific test file
+pytest tests/test_specific.py -v
+```
 
 ## PRIORITIES
 
-1. [Features](#features)
-2. [Quick Start](#quick-start)
-3. [Installation](#installation)
+1. Use async/await for ALL I/O — never block the event loop
+2. Pydantic models for every request/response body, no raw dicts
+3. Use Depends() for injection — never pass dependencies manually
+
+## CONTEXT STRATEGY
+
+### File Loading by Task Type
+
+| Task | Load first | Then load |
+|------|-----------|-----------|
+| Bug fix | relevant module source | corresponding `test_*.py` file |
+| New feature | `main.py` | related modules |
+| Refactor | module + its dependents | test suite |
+| Writing tests | `conftest.py` + test directory | source module under test |
+
+### Module Groupings
+
+- **main**: `main.py` and its imports
+
+### Exclude from Context
+
+- `**/*.pyc`
+- `**/__pycache__/**`
+- `**/.venv/**`
+- `**/node_modules/**`
+- `**/*-skills.md`
+- `**/*-skills.json`
+- `**/.clinerules*`
 
 ## WORKFLOWS
 
-### New Feature
+### Setup
 ```bash
-git checkout -b feat/descriptive-name
-# Write code + tests
-# Run test suite
-git add .
-git commit -m "feat: descriptive message"
-git push origin feat/descriptive-name
-# Open PR, request review, merge to main
+git clone https://github.com/Amitro123/project-rules-generator
+cd project-rules-generator
+pip install -e .
+prg --version
 ```
 
-### Bug Fix
+**Requirements:** Python 3.8+, Git
+
+---
+
+### Usage
+**No API key needed** — PRG works offline from your README and file structure:
+
 ```bash
-git checkout -b fix/issue-description
-# Fix the bug + add regression test
-# Verify fix works
-git add .
-git commit -m "fix: resolve issue with X"
-git push origin fix/issue-description
-# Open PR referencing the issue
+pip install -e .
+prg init .
 ```
 
-### Documentation
+**With a free API key** — deeper analysis, LLM-generated skills:
+
 ```bash
-# Docs can be edited on main for small changes
-git checkout main
-git pull
-git commit -am "docs: update README with new feature"
-git push origin main
+export GROQ_API_KEY=gsk_...   # free at console.groq.com
+prg analyze . --ai
+```
+
+**Full autopilot** — design, plan, code, commit, repeat:
+
+```bash
+prg autopilot . --provider anthropic
 ```
 
 ---
-_Generated by project-rules-generator_
+
+### Development
+```bash
+git checkout -b feat/descriptive-name
+# Write code + tests, then run:
+pytest
+git add .
+git commit -m "feat: descriptive message"
+```
+
+---
+_Generated by project-rules-generator (enhanced analysis)_
 
 ## 🚫 Critical Anti-Patterns (NEVER DO THIS)
 
 - NEVER run destructive commands (rm -rf, drop table, etc.) without explicit user confirmation.
 - NEVER generate placeholder comments like 'Implement logic here' - write the full code.
 
+\n\n# 🧠 Agent Skills\n\n## Active Skill Triggers\n- **brainstorming**: i want to add..., let's build..., i'm thinking about..., any code is written, requirements are unclear\n- **writing-skills**: create a skill for..., we should formalize..., repetitive pattern identified, project has unique workflow in readme\n- **requesting-code-review**: task/feature complete, ready for review, can you review?, creating pr/merge request\n- **subagent-driven-development**: plan.md exists and user approves execution, execute the plan, let's go, start implementation\n- **systematic-debugging**: bug, error, not working, failing test, ci/cd failure, exception in logs\n- **test-driven-development**: new feature implementation, bug fix, refactoring\n- **writing-plans**: design approval (design.md exists), let's implement this, create a plan, starting implementation\n- **click-cli**: working with click integration code, editing files that import or configure click\n- **failed-ai-skill**: failed ai skill, failed, skill\n- **jinja2-template-workflow**: jinja2, template, workflow, working in backend code: *.py, working with *.j2 files\n- **missing-dep-skill**: missing dep skill, missing, dep\n- **claude-cowork-workflow**: create a cowork skill, generate skill with claude, run prg with anthropic, skill creation flow, cowork skill pipeline, prg analyze --ai --provider anthropic, has_tests (tests/ directory with 56 test files), has_docs (docs/ directory with 14 docs), has_api (generator/skills_manager.py as primary entry point)\n- **debugger**: debug python, pdb, breakpoint\n- **pytest-debugger**: debug pytest, breakpoint in test, step through tests\n- **readme-improvement**: improve readme, update readme, fix readme, readme needs work, readme is outdated\n- **readme-improver**: improve readme, readme checklist, document project\n- **type-checking**: type checking, `has_docs`, `has_tests` — test suite available, `has_api` — api endpoints present, `has_ci`\n\n## Skill Definitions\n\n### Skill: brainstorming\n# Skill: Brainstorming & Design Refinement
+
+## Purpose
+Refine vague ideas into concrete, implementable designs through Socratic questioning.
+
+## Auto-Trigger
+- User says: "I want to add...", "Let's build...", "I'm thinking about..."
+- Before any code is written
+- When requirements are unclear
+
+## Process
+
+### Stage 1: Clarify the Goal
+Ask:
+1. What problem are you trying to solve?
+2. Who is the user/consumer of this feature?
+3. What does success look like?
+
+### Stage 2: Explore Alternatives
+Present 2-3 approaches with trade-offs:
+- Simplest solution
+- Most robust solution
+- Hybrid approach
+
+### Stage 3: Define Scope
+Break down into:
+- Must have (MVP)
+- Nice to have
+- Out of scope (for now)
+
+### Stage 4: Present Design
+Show design in digestible chunks (max 10 lines per section):
+- Data models
+- API contracts
+- Key algorithms
+- Edge cases
+
+### Stage 5: Get Sign-Off
+Wait for explicit approval before proceeding.
+
+## Output
+Create `DESIGN.md` with:
+- Problem statement
+- Chosen approach
+- Implementation outline
+- Success criteria
+
+## Anti-Patterns
+❌ Jumping to implementation without design
+❌ Overwhelming user with too much info at once
+❌ Not exploring alternatives
+❌ Missing edge cases
+\n\n### Skill: writing-skills\n# Meta-Skill: Writing New Skills
+
+## Purpose
+Create new skills from project documentation and learned patterns.
+
+## Auto-Trigger
+- User says: "Create a skill for...", "We should formalize..."
+- Repetitive pattern identified
+- Project has unique workflow in README
+
+## Process
+
+### 1. Identify the Pattern
+- Does this happen repeatedly?
+- Is it documented?
+- Would automation help?
+
+### 2. Extract from Documentation
+Look for:
+- "Always do X before Y"
+- "Never do A without B"
+- Step-by-step guides
+- Best practices sections
+
+### 3. Create SKILL.md Structure
+
+```markdown
+# Skill: [Name]
+
+## Purpose
+[One sentence: what problem does this solve]
+
+## Auto-Trigger
+[When should agent activate this skill]
+
+## Process
+[Step-by-step instructions]
+
+## Output
+[What artifact/state results]
+
+## Anti-Patterns
+❌ [What NOT to do]
+```
+
+### 4. Test the Skill
+- Create example scenario
+- Follow the skill
+- Verify output matches expectations
+- Refine based on issues
+
+### 5. Save to Directory
+- `learned/` for project-specific
+- `builtin/` for general-purpose (after validation)
+
+## Anti-Patterns
+❌ Creating skill without testing
+❌ Vague trigger conditions
+❌ Missing anti-patterns section
+\n\n### Skill: requesting-code-review\n# Skill: Requesting Code Review
+
+## Purpose
+Ensure code quality through pre-review checklist before asking for human review.
+
+## Auto-Trigger
+- Task/feature complete
+- User says: "Ready for review", "Can you review?"
+- Before creating PR/merge request
+
+## Pre-Review Checklist
+
+### 1. Self-Review
+```bash
+git diff main...HEAD
+```
+- ✓ Read every line you changed
+- ✓ Remove debug statements
+- ✓ Check for commented-out code
+- ✓ Verify no secrets/credentials
+
+### 2. Tests
+- ✓ All tests pass locally
+- ✓ New tests for new features
+- ✓ Edge cases covered
+- ✓ No skipped/ignored tests without reason
+
+### 3. Code Quality
+- ✓ Follows project style guide
+- ✓ Functions < 50 lines
+- ✓ No TODO/FIXME without ticket reference
+- ✓ Docstrings for public APIs
+
+### 4. Documentation
+- ✓ README updated if needed
+- ✓ API docs updated
+- ✓ CHANGELOG.md entry added
+- ✓ Comments explain "why", not "what"
+
+### 5. Dependencies
+- ✓ No unnecessary dependencies added
+- ✓ If new deps: justify in PR description
+- ✓ Lock file updated
+
+### 6. Performance
+- ✓ No obvious performance issues
+- ✓ Database queries optimized
+- ✓ No N+1 queries
+
+### 7. Security
+- ✓ No SQL injection vectors
+- ✓ User input sanitized
+- ✓ Authentication/authorization checked
+- ✓ No sensitive data in logs
+
+## Review Report Format
+```markdown
+## Code Review Self-Assessment
+
+### Changes Summary
+[Brief description]
+
+### Checklist
+- [✓] All tests pass
+- [✓] No debug code
+- [✓] Documentation updated
+
+### Risks/Notes
+[Any concerns or TODOs]
+
+### Files Changed
+- [file] (+lines, -lines)
+
+Ready for review: **YES** ✓
+```
+
+## Anti-Patterns
+❌ Requesting review without running tests
+❌ Not reviewing your own code first
+❌ Missing context in PR description
+\n\n### Skill: subagent-driven-development\n# Skill: Subagent-Driven Development
+
+## Purpose
+Execute implementation plan by dispatching fresh subagents per task, with two-stage review.
+
+## Auto-Trigger
+- PLAN.md exists and user approves execution
+- User says: "Execute the plan", "Let's go", "Start implementation"
+
+## Process
+
+### For Each Task in PLAN.md:
+
+#### 1. Dispatch Subagent
+Create fresh context with:
+- Task description only
+- Relevant files
+- Testing requirements
+- NO knowledge of other tasks
+
+#### 2. Subagent Executes
+- Implements the task
+- Writes/runs tests
+- Returns code + test results
+
+#### 3. Two-Stage Review
+
+**Stage 1: Spec Compliance**
+✓ Does it match task requirements?
+✓ Are all files modified as specified?
+✓ Do tests pass?
+❌ If no → reject, provide feedback, retry
+
+**Stage 2: Code Quality**
+✓ Follows project conventions?
+✓ Handles edge cases?
+✓ No obvious bugs?
+✓ Code is readable?
+❌ If no → request improvements
+
+#### 4. Commit
+```bash
+git add [files]
+git commit -m "Task N: [brief description]"
+```
+
+### 5. Report Progress
+✅ Task 1: Setup database schema (3min)
+✅ Task 2: Create API endpoint (4min)
+🔄 Task 3: In progress...
+
+### Stopping Conditions
+- All tasks complete
+- Critical issue found (escalate to user)
+- Subagent fails 3 times (escalate)
+
+## Anti-Patterns
+❌ Giving subagent entire codebase context
+❌ Skipping Stage 1 review
+❌ Continuing after failed tests
+❌ Not committing after each task
+\n\n### Skill: systematic-debugging\n# Skill: Systematic Debugging
+
+## Purpose
+Find root cause of bugs through 5-phase structured process.
+
+## Auto-Trigger
+- User reports: "bug", "error", "not working", "failing test"
+- CI/CD failure
+- Exception in logs
+
+## 5-Phase Process
+
+### Phase 1: Reproduce
+1. Get exact steps to reproduce
+2. Identify expected vs actual behavior
+3. Create minimal failing test
+4. Verify reproduction consistently
+**Output**: Failing test that isolates the bug
+
+### Phase 2: Locate
+Use techniques to find *where* it breaks:
+- **Binary Search**: Comment out half the code
+- **Trace Backwards**: From error to source
+- **Instrumentation**: Log state before/after suspected lines
+**Output**: Exact line causing bug
+
+### Phase 3: Analyze
+Understand *why* it breaks:
+- Check assumptions
+- Verify data types
+- Review recent changes
+**Output**: Root cause explanation
+
+### Phase 4: Fix
+1. **Immediate Fix**: Correct the logic
+2. **Defense in Depth**: Add input validation/guards
+3. **Monitoring**: Add logging if needed
+**Output**: Committed fix
+
+### Phase 5: Verify
+1. Failing test now passes
+2. All other tests still pass (regression check)
+3. Manual verification
+**Output**: Verified green build
+
+## Anti-Patterns
+❌ Guessing without reproducing
+❌ Fixing symptoms without finding root cause
+❌ precise line not identified in stack trace
+❌ Declaring "fixed" without verification
+\n\n### Skill: test-driven-development\n# Skill: Test-Driven Development
+
+## Purpose
+Enforce RED-GREEN-REFACTOR cycle for all new code.
+
+## Auto-Trigger
+- New feature implementation
+- Bug fix
+- Refactoring
+
+## RED-GREEN-REFACTOR Cycle
+
+### 🔴 RED: Write Failing Test
+1. Write test for desired behavior
+2. Run test → verify it FAILS
+3. Commit: `git commit -m "RED: test for [feature]"`
+
+### 🟢 GREEN: Make It Pass
+1. Write minimal code to pass test
+2. Run test → verify it PASSES
+3. All other tests still pass
+4. Commit: `git commit -m "GREEN: implement [feature]"`
+
+### 🔵 REFACTOR: Clean Up
+1. Improve code quality (no behavior change)
+2. Run all tests → verify they PASS
+3. Commit: `git commit -m "REFACTOR: clean up [feature]"`
+
+## Rules
+✅ ALWAYS write test first
+✅ Run test and see it fail before writing code
+✅ Write minimal code to pass
+✅ Commit after each phase
+❌ NEVER write code before test
+❌ NEVER skip the RED phase
+❌ NEVER refactor without passing tests
+
+## Anti-Patterns
+❌ Writing code then adding tests
+❌ Not verifying test fails first
+❌ Writing too much code at once
+❌ Skipping refactor phase
+\n\n### Skill: writing-plans\n# Skill: Writing Implementation Plans
+
+## Purpose
+Break approved designs into bite-sized, executable tasks (2-5 minutes each).
+
+## Auto-Trigger
+- After design approval (DESIGN.md exists)
+- User says: "Let's implement this", "Create a plan"
+- Before starting implementation
+
+## Process
+
+### Task Structure
+Each task must include:
+1. **Goal**: One-sentence objective
+2. **Files**: Exact paths to modify/create
+3. **Changes**: Specific code snippets or logic
+4. **Tests**: How to verify it works
+5. **Dependencies**: Which tasks must complete first
+
+### Task Size Guidelines
+✅ 2-5 minutes per task
+✅ Single responsibility
+✅ Independently testable
+❌ "Refactor the entire module" (too big)
+❌ "Add a comment" (too small)
+
+### Plan Format
+Task 1: [Title]
+Dependencies: [Task IDs or "None"]
+Files: [exact paths]
+Changes:
+
+[specific change 1]
+
+[specific change 2]
+Tests: [how to verify]
+Estimated time: [X min]
+
+## Output
+Create `PLAN.md` in project root with all tasks.
+
+## Anti-Patterns
+❌ Vague task descriptions
+❌ Tasks without test criteria
+❌ Missing file paths
+❌ Tasks that take > 10 minutes
+❌ Unclear dependencies
+\n\n### Skill: click-cli\n# Click Cli
+
+**Project:** test-project
+
+## Purpose
+
+Integration patterns for click in test-project.
+
+## Auto-Trigger
+
+- Working with click integration code
+- Editing files that import or configure click
+
+## Guidelines
+
+- Follow project patterns for click usage
+- Handle click errors with proper retries and fallbacks
+- Add tests for click integration code
+
+## Project Context (from README)
+
+> - click
+\n\n### Skill: failed-ai-skill\n---
+name: failed-ai-skill
+description: |
+  [One sentence: what this skill does and when to activate it.]
+  Use when user mentions "failed ai skill", "failed", "skill".
+allowed-tools: "Bash Read Write Edit Glob Grep"
+triggers:
+  - "failed ai skill"
+  - "failed"
+  - "skill"
+metadata:
+  tags: [failed, skill]
+---
+
+# Skill: Failed Ai Skill
+
+## Purpose
+
+[One sentence: what problem does this solve and for whom.]
+
+## Auto-Trigger
+
+Activate when user requests:
+- **"failed ai skill"**
+- **"failed"**
+- **"skill"**
+
+Do NOT activate for: [list false-positive phrases]
+
+## Process
+
+### 1. [First step]
+
+```bash
+# command
+```
+
+### 2. [Second step]
+
+[description]
+
+### 3. Validate
+
+Verify the output is correct and tests still pass.
+
+## Output
+
+[What artifact or state results from applying this skill.]
+
+## Anti-Patterns
+
+❌ [What NOT to do]
+✅ [What to do instead]
+\n\n### Skill: jinja2-template-workflow\n---
+name: jinja2-template-workflow
+description: |
+  > Build dynamic code and configuration files from structured templates. Use when user mentions "jinja2", "template", "jinja2 template workflow", "add jinja2". Do NOT activate for "general jinja2 template workflow questions", "jinja2 template workflow theory".
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  author: PRG
+  version: 1.0.0
+  category: project
+  tags: [jinja2, template, workflow, python]
+---
+
+# Skill: Jinja2 Template Workflow
+
+## Purpose
+> Build dynamic code and configuration files from structured templates
+
+## Auto-Trigger
+- User mentions: "jinja2", "template", "workflow"
+- Working in backend code: *.py
+- Working with *.j2 files
+
+## Process
+
+### 1. Clone the repository:
+
+### 2. Run
+
+   ```bash
+   git clone https://github.com/example/jinja2-codegen.git
+   cd jinja2-codegen
+   ```
+
+### 3. Install dependencies:
+
+### 4. Run
+
+   ```bash
+   pip install -e .
+   ```
+
+### 5. Verify:
+
+### 6. Run
+
+   ```bash
+   python -m jinja2_codegen --version
+   ```
+
+### 7. Create a template file (`templates/model.py.j2`):
+
+### 8. Run
+
+   ```jinja2
+   class {{ class_name }}(BaseModel):
+       {% for field in fields %}
+       {{ field.name }}: {{ field.type }}
+       {% endfor %}
+   ```
+
+### 9. Render from CLI:
+
+### 10. Run
+
+   ```bash
+   codegen render templates/model.py.j2 --var class_name=User --var fields='[...]'
+   ```
+
+## Output
+
+Applying this skill produces:
+
+- Updated or created files following `jinja2 template workflow` patterns
+- Status report with changes made
+- Recommendations for next steps
+
+## Anti-Patterns
+❌ Never use `Undefined` (default) — always use `StrictUndefined` so missing
+❌ Don't put business logic in templates — keep templates declarative.
+❌ Don't use `render_template_string` on untrusted input — always load from
+
+## Tech Stack
+python, click, pydantic
+
+## Context (from README) *(truncated — see README.md for full content)*
+
+
+# Jinja2 Template Engine — Code Generator
+
+> Build dynamic code and configuration files from structured templates.
+
+A Python tool that uses **Jinja2** to render typed templates into source code,
+configuration files, and documentation. Works with Click for CLI and Pydantic
+for schema validation.
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/example/jinja2-co
+\n\n### Skill: missing-dep-skill\n---
+name: missing-dep-skill
+description: |
+  [One sentence: what this skill does and when to activate it.]
+  Use when user mentions "missing dep skill", "missing", "dep".
+allowed-tools: "Bash Read Write Edit Glob Grep"
+triggers:
+  - "missing dep skill"
+  - "missing"
+  - "dep"
+metadata:
+  tags: [missing, dep, skill]
+---
+
+# Skill: Missing Dep Skill
+
+## Purpose
+
+[One sentence: what problem does this solve and for whom.]
+
+## Auto-Trigger
+
+Activate when user requests:
+- **"missing dep skill"**
+- **"missing"**
+- **"dep"**
+
+Do NOT activate for: [list false-positive phrases]
+
+## Process
+
+### 1. [First step]
+
+```bash
+# command
+```
+
+### 2. [Second step]
+
+[description]
+
+### 3. Validate
+
+Verify the output is correct and tests still pass.
+
+## Output
+
+[What artifact or state results from applying this skill.]
+
+## Anti-Patterns
+
+❌ [What NOT to do]
+✅ [What to do instead]
+\n\n### Skill: claude-cowork-workflow\n### claude-cowork-workflow
+Expert workflow for collaborating with Claude AI agents using the PRG skill
+system — covering skill creation, trigger design, quality gates, and
+multi-step autonomous execution.
+
+**Context:** PRG generates `.clinerules/` for AI agents. This skill guides
+Claude through creating and validating cowork skills in _this_ project
+(`project-rules-generator`) using `CoworkSkillCreator`, `SkillsManager`,
+and the 3-layer skill resolution chain (`builtin → learned → project`).
+
+**Triggers:**
+- "create a cowork skill"
+- "generate skill with claude"
+- "run prg with anthropic"
+- "skill creation flow"
+- "cowork skill pipeline"
+
+**Negative Triggers:**
+- "general claude api usage"
+- "claude theory"
+- "production deployment"
+
+**relevant_files:** ["generator/skill_creator.py", "generator/llm_skill_generator.py",
+"generator/utils/quality_checker.py", "generator/prompts/skill_generation.py"]
+
+**exclude_files:** ["**/__pycache__/**", "**/.venv/**"]
+
+**When to use:**
+- When user asks to create a new skill using Claude/Anthropic as provider
+- When debugging why a generated skill has low quality score
+- When wiring a new AI provider into CoworkSkillCreator
+- When reviewing trigger precision via `TriggerEvaluator`
+
+## Purpose
+
+Expert workflow for collaborating with Claude AI agents using the PRG skill
+system in `project-rules-generator`.
+
+This skill provides step-by-step guidance for claude cowork workflow.
+
+## Auto-Trigger
+
+The agent should activate this skill when:
+
+- "create a cowork skill"
+- "generate skill with claude"
+- "run prg with anthropic"
+- "skill creation flow"
+- "cowork skill pipeline"
+- "prg analyze --ai --provider anthropic"
+
+**Project Signals:**
+- has_tests (tests/ directory with 56 test files)
+- has_docs (docs/ directory with 14 docs)
+- has_api (generator/skills_manager.py as primary entry point)
+
+## CRITICAL
+
+> These rules are non-negotiable. Claude must follow them on every activation.
+
+- Read existing files before modifying them.
+- Run tests after any code change and verify they pass: `pytest`
+- Never generate or reference file paths that don't exist in the project.
+- Never skip tests or suppress coverage with `--no-cov` / `--no-cover`.
+
+## Process
+
+### 1. Analyze Project Context
+
+Before generating any skill, load key context files:
+
+```bash
+# Read current skill creator
+cat generator/skill_creator.py | head -120
+
+# Check how LLM is wired
+cat generator/llm_skill_generator.py
+
+# Review quality gate thresholds (pass = score >= 70)
+cat generator/utils/quality_checker.py
+```
+
+### 2. Determine Skill Name
+
+Use functional kebab-case names from the TECH_SKILL_NAMES registry:
+
+```python
+# In generator/skill_generator.py — TECH_SKILL_NAMES maps tech → skill name
+# Example: "anthropic" → "claude-cowork-workflow"
+# Rule: NEVER use abstract names like "tech-patterns"
+```
+
+### 3. Run Skill Creation
+
+```bash
+# With real Anthropic API key
+prg analyze . --create-skill claude-cowork-workflow --ai --provider anthropic
+
+# Or via Python directly (for debugging):
+python -c "
+from pathlib import Path
+from generator.skill_creator import CoworkSkillCreator
+creator = CoworkSkillCreator(Path('.'))
+readme = Path('README.md').read_text()
+content, meta, quality = creator.create_skill(
+    'claude-cowork-workflow', readme,
+    tech_stack=['anthropic'], use_ai=True, provider='anthropic'
+)
+print(f'Score: {quality.score}/100  Passed: {quality.passed}')
+print(f'Issues: {quality.issues}')
+"
+```
+
+### 4. Validate Quality Score
+
+The quality gate requires **score ≥ 70/100**. The checker awards/deducts:
+
+| Check | Points |
+|---|---|
+| Has `## Purpose` | +15 (missing = -15) |
+| Has `## Auto-Trigger` | +15 (missing = -15) |
+| Has `## Process` | +15 (missing = -15) |
+| Has `## Output` | +15 (missing = -15) |
+| ≥ 3 auto-triggers | +5 (< 3 = -10) |
+| Has tools specified | +10 (empty = -10) |
+| Content ≥ 500 chars | +5 (< 200 = -20) |
+| ≥ 2 numbered steps in Process | +10 (< 2 = -10) |
+| Has code examples (```) | +10 (missing = -10) |
+| Has `## Anti-Patterns` | +5 (missing = -5) |
+| No stub/placeholder text | +10 (stubs = -30) |
+
+```python
+from generator.utils.quality_checker import validate_quality
+report = validate_quality(content, metadata_triggers=meta.auto_triggers, metadata_tools=meta.tools)
+print(report)
+```
+
+### 5. Auto-Fix if Needed
+
+If score < 70, `CoworkSkillCreator._auto_fix_quality_issues()` patches:
+- Missing sections are appended
+- Placeholder text is replaced with generic but non-stub content
+
+### 6. Save & Link
+
+```bash
+# Saved to global learned library
+~/.project-rules-generator/learned/claude-cowork-workflow.md
+
+# Linked to project
+.clinerules/skills/project/claude-cowork-workflow.md
+
+# Triggers index refreshed
+.clinerules/auto-triggers.json
+```
+
+## Output
+
+Expected output after successful run:
+
+```
+✨ Creating: claude-cowork-workflow
+🤖 Generating with AI (anthropic)...
+📊 Quality: 95.0/100
+💾 Saved to: ~/.project-rules-generator/learned/claude-cowork-workflow.md
+🔗 Linked to: .clinerules/skills/project/claude-cowork-workflow.md
+⚡ Triggers: 6 | Tools: 5
+```
+
+## Anti-Patterns
+
+- ❌ Using abstract trigger phrases like "use claude" or "ai stuff"
+- ❌ Hardcoding `ANTHROPIC_API_KEY` in the skill content
+- ❌ Referencing file paths not confirmed to exist
+- ❌ Generating a skill without running `pytest` afterward
+- ❌ Setting `use_ai=False` then wondering why the output is generic
+
+**Tools:**
+```bash
+check: ruff check .
+test:  pytest
+lint:  mypy .
+format: black .
+```
+\n\n### Skill: debugger\n---
+name: python-debugger-best-practices
+description: |
+  Developers struggle with inefficient bug resolution and lack of systematic debugging; this skill provides a structured approach using Python's built-in debugger to quickly identify and fix issues.
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  tags: [python, debugger, pdb, troubleshooting, best-practices]
+---
+
+# Skill: Python Debugger Best Practices
+
+## Purpose
+
+Without a structured approach to debugging, developers often resort to `print()` statements, leading to slow, inconsistent bug resolution and introducing temporary, messy code. This skill guides you through effective debugging techniques using Python's standard debugger (`pdb`), enabling faster issue identification, interactive problem-solving, and cleaner code.
+
+## Auto-Trigger
+
+Activate when the user mentions:
+- **"debug python"**
+- **"pdb"**
+- **"breakpoint"**
+
+Do NOT activate for: debugging javascript, debugging go, debugging CI
+
+## CRITICAL
+
+- Always remove `import pdb; pdb.set_trace()` or `breakpoint()` calls from your code before committing to avoid unintended behavior or security risks in production.
+- Prioritize interactive debugging with `pdb` over excessive `print()` statements for complex issues, as it provides a full view of the program's state.
+
+## Process
+
+### 1. Verify Environment Parity
+
+WHY: Inconsistent Python environments can lead to irreproducible bugs or unexpected debugger behavior, wasting valuable debugging time trying to diagnose environmental differences.
+
+```bash
+python --version
+```
+
+### 2. Insert Breakpoint Marker
+
+WHY: Inserting a breakpoint marker directly into your code allows the debugger to pause execution at a precise moment, enabling focused inspection of variables and program flow without modifying runtime behavior.
+
+```bash
+echo "Edit the relevant Python file (e.g., main.py) and insert 'import pdb; pdb.set_trace()' at the desired line. For Python 3.7 and above, you can use the simpler 'breakpoint()' function instead. For example:"
+cat <<EOF
+# main.py (example)
+def some_problematic_function(data):
+    processed_data = []
+    for item in data:
+        # Imagine a bug where 'item' is not what's expected
+        import pdb; pdb.set_trace() # Execution will pause here
+        processed_data.append(item * 2)
+    return processed_data
+EOF
+```
+
+### 3. Run with Debugger
+
+WHY: Running your script with the `pdb` module allows you to interactively step through code, inspect variables, and understand the program's state at runtime, which is crucial for identifying the root cause of issues.
+
+```bash
+# If your main script is `main.py`:
+python -m pdb main.py
+
+# If you need to debug a specific test (assuming a test runner like pytest is installed, though not explicitly in dependencies):
+# pytest --pdb your_test_file.py
+```
+
+### 4. Navigate and Inspect
+
+WHY: Using debugger commands to step through code and examine variables helps pinpoint the exact cause of an issue by observing the program's state changes, allowing you to trace execution flow and variable values interactively.
+
+```bash
+echo "Once in the pdb debugger (indicated by '(Pdb)'), use the following common commands:"
+echo "  - n (next): Execute the current line and stop at the next line within the current function."
+echo "  - s (step): Step *into* a function call on the current line, allowing inspection of its internal logic."
+echo "  - c (continue): Continue execution until the next breakpoint is hit or the program finishes."
+echo "  - p <variable_name> (print): Display the value of a specified variable."
+echo "  - l (list): Show the current code context around the breakpoint."
+echo "  - w (where): Display a stack traceback, showing the current position in the call stack."
+echo "  - q (quit): Exit the debugger and terminate the program."
+```
+
+### 5. Validate (Remove Debugging Code)
+
+WHY: Leaving temporary debugging code like `pdb.set_trace()` or `breakpoint()` in committed code can introduce security vulnerabilities, performance overhead, or unexpected behavior in production, making cleanup a critical final step.
+
+```bash
+echo "After successfully debugging and fixing the issue, ensure all 'import pdb; pdb.set_trace()' or 'breakpoint()' calls are removed from your code before committing changes."
+echo "You can use grep to quickly find them:"
+grep -r "pdb.set_trace()" .
+grep -r "breakpoint()" .
+```
+
+## Output
+
+- Interactive debugging session in your terminal.
+- Clear understanding of program flow and variable states at specific execution points.
+- Identification and resolution of bugs.
+
+## Anti-Patterns
+
+❌ **Don\n\n### Skill: pytest-debugger\n---
+name: pytest-debugger
+description: |
+  Developers struggling with debugging pytest tests can quickly pinpoint and resolve issues by setting breakpoints and inspecting variables directly within their test execution flow.
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  tags: [testing, debugging, python, pytest]
+---
+
+# Skill: Pytest Debugger
+
+## Purpose
+
+Without interactive debugging, developers often resort to excessive print statements or guesswork to understand why their pytest tests are failing, leading to longer debugging cycles and frustration. This skill provides a structured approach to enable interactive debugging of pytest tests, accelerating the identification and resolution of test failures.
+
+## Auto-Trigger
+
+Activate when the user mentions:
+- **"debug pytest"**
+- **"breakpoint in test"**
+- **"step through tests"**
+
+Do NOT activate for: "debug application", "debug CI", "debug script"
+
+## CRITICAL
+
+- Ensure you have `pytest` installed in your environment.
+- Verify that your test files are discoverable by `pytest` (typically in a `tests/` directory).
+
+## Process
+
+### 1. Set Breakpoints
+
+[WHY this step matters — Without explicit breakpoints, the debugger has no specific line to pause execution, rendering it unable to inspect the test's state at a critical juncture.]
+
+```bash
+# Open your test file and add 'breakpoint()' or 'import pdb; pdb.set_trace()'
+# at the line where you want execution to pause.
+# Example:
+# def test_example():
+#     x = 1
+#     breakpoint()  # Execution will pause here
+#     assert x == 1
+```
+
+### 2. Run Pytest with Debugger
+
+[WHY this step matters — Running pytest without specific flags will execute tests normally, bypassing any breakpoints you've set. This command ensures the debugger is activated.]
+
+```bash
+# Use pytest's --pdb flag to automatically invoke the debugger on test failures,
+# or run with Python's -m pdb to manually control execution and breakpoints.
+pytest --pdb
+# or for more granular control with manually set breakpoints:
+python -m pdb <your_test_file.py>
+```
+
+### 3. Validate
+
+[WHY validation matters here specifically — Simply running the debugger doesn't guarantee it's attached or pausing as expected. This step confirms the debugger is active and ready for interaction.]
+
+```bash
+# After running pytest with --pdb or python -m pdb, you should see a debugger prompt (e.g., '(Pdb)')
+# indicating that execution has paused. If you don't see this, re-check your setup and breakpoints.
+echo "Debugger prompt should be visible in your terminal."
+```
+
+## Output
+
+- An interactive debugging session within your terminal.
+- Ability to step through test execution line by line.
+- Inspection of variable values at any breakpoint.
+- Modified test files with added `breakpoint()` calls (which should be removed after debugging).
+
+## Anti-Patterns
+
+❌ **Don't** leave `breakpoint()` or `pdb.set_trace()` calls in your code after debugging is complete, as they will halt normal test execution and CI/CD pipelines.
+✅ **Do** remove all debugging statements from your code once you have resolved the issue.
+
+## Examples
+
+```python
+# Example of setting a breakpoint in a test file
+# tests/test_example.py
+
+import pytest
+
+def test_addition():
+    a = 5
+    b = 10
+    result = a + b
+    breakpoint()  # Execution pauses here
+    assert result == 15
+
+def test_subtraction():
+    x = 20
+    y = 5
+    difference = x - y
+    assert difference == 15
+```\n\n### Skill: readme-improvement\n---
+name: readme-improvement
+description: |
+  Audits and rewrites README.md for the Project Rules Generator project.
+  Fixes stale data, adds missing features from docs/, corrects skill routing
+  descriptions (project/ vs learned/), and ensures every command is runnable.
+  Activate when user says "improve readme", "update readme", "readme needs work".
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+triggers:
+  - "improve readme"
+  - "update readme"
+  - "fix readme"
+  - "readme needs work"
+  - "readme is outdated"
+metadata:
+  tags: [readme, documentation, python, cli, prg]
+---
+
+# Skill: README Improvement (PRG Project)
+
+## Purpose
+
+Audit and rewrite `README.md` for accuracy, completeness, and scanability,
+using `docs/` as the authoritative reference for features, commands, and
+architecture. Keep edits surgical — fix what is wrong, add what is missing,
+remove what is stale.
+
+## Auto-Trigger
+
+Activate when user requests:
+- **"improve readme"**
+- **"update readme"**
+- **"fix readme"**
+- **"readme needs work"**
+- **"readme is outdated"**
+
+Do NOT activate for: "improve code quality", "update dependencies", "fix tests"
+
+## CRITICAL
+
+- Always read current `README.md` AND the relevant `docs/` files before editing
+- Run `pytest --tb=no -q 2>&1 | tail -2` to get the real test count for the badge
+- Run `prg --version` to confirm the version string
+- Verify every CLI example with `prg <cmd> --help` before documenting it
+- The skill routing section MUST reflect the current design:
+  - `--create-skill` writes to `skills/project/` (project-specific, AI-generated with project context)
+  - README auto-flow (`--from-readme`) writes to `skills/learned/` (reusable tech-pattern skills)
+
+## Process
+
+### 1. Audit current README against docs/
+
+```bash
+# Get real test count for badge
+pytest --tb=no -q 2>&1 | tail -2
+
+# Get current version
+prg --version
+
+# List all top-level commands to verify Usage section
+prg --help
+```
+
+Cross-check each README section against its docs/ source:
+
+| README section | Authoritative source |
+|---------------|---------------------|
+| Features list | `docs/features.md` |
+| Quick Start | `docs/quick-start.md` |
+| CLI commands | `docs/cli.md` |
+| Skills explanation | `docs/skills.md` |
+| Architecture diagram | `docs/architecture.md` |
+| Workflows | `docs/workflows.md` |
+
+Audit checklist:
+- [ ] Badge test count matches real pytest output
+- [ ] Quick Start uses `prg init .` (first-run wizard) not just `prg analyze .`
+- [ ] Features list covers all 9 features from `docs/features.md`
+- [ ] Skill routing section reflects `project/` vs `learned/` correctly
+- [ ] All `prg` command examples are syntactically correct
+- [ ] No stale "Recent Changes" inline — belongs in `CHANGELOG.md`
+- [ ] AI provider table uses current model names from `docs/cli.md`
+
+### 2. Fix stale data
+
+```bash
+pytest --tb=no -q 2>&1 | tail -1
+prg --version
+```
+
+Update badge test count and provider model names.
+
+### 3. Add missing content from docs/
+
+Features commonly missing from README but documented in docs/:
+- `prg init .` first-run wizard (`docs/quick-start.md`)
+- `prg design "..."` two-stage design before plan (`docs/features.md`)
+- Skill routing: `--create-skill` to `project/`, README flow to `learned/`
+- The three skill layers: `project/` > `learned/` > `builtin/`
+
+### 4. Restructure for scanability
+
+Ideal section order for a CLI tool README:
+1. Title + badges
+2. One-line pitch
+3. Quick Start (under 60 seconds to first output)
+4. Installation
+5. AI Providers table
+6. Usage (grouped by use case, not by flag)
+7. How It Works (skill routing, output structure)
+8. Contributing
+
+### 5. Apply edits and verify
+
+Use the `Edit` tool for surgical replacements. After editing, confirm:
+```bash
+# Check no broken fences or formatting artifacts
+grep -n "^\`\`\`" README.md | head -20
+# Confirm skill routing section is correct
+grep -n "project/\|learned/" README.md
+```
+
+## Output
+
+- Updated `README.md` with correct badge count, accurate skill routing,
+  all features from `docs/features.md`, and every CLI example verified
+- Brief change summary listing what was fixed and why
+
+## Anti-Patterns
+
+❌ Updating badge numbers from memory
+✅ Run `pytest --tb=no -q` and read the actual output
+
+❌ Inventing command flags that do not exist
+✅ Verify each flag with `prg <cmd> --help` before writing it
+
+❌ Describing `--create-skill` as writing to `learned/`
+✅ `--create-skill` writes to `skills/project/`; README flow writes to `skills/learned/`
+
+❌ Rewriting the whole README when only a few things are stale
+✅ Surgical edits — smallest diff that fixes the real problems
+
+❌ Keeping inline version history in README
+✅ Link to `CHANGELOG.md` and remove duplicate history
+
+## Examples
+
+```bash
+# Audit step
+pytest --tb=no -q 2>&1 | tail -2
+prg --version
+prg --help
+
+# Verify a specific command exists
+prg analyze --help | grep "\-\-create-skill"
+prg analyze --help | grep "\-\-from-readme"
+
+# Check current skill routing section in README
+grep -n "project/" README.md
+grep -n "learned/" README.md
+```
+\n\n### Skill: readme-improver\n---
+name: readme-improver
+description: |
+  For developers struggling with incomplete or inconsistent README files, this skill provides automated checks and best-practice guidance to ensure project documentation is clear and comprehensive.
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  tags: [readme, documentation, ci, best-practices]
+---
+
+# Skill: Readme Improver
+
+## Purpose
+
+Without clear and consistent README files, developers often struggle to understand project setup, usage, and contribution guidelines, leading to wasted time and onboarding friction. This skill enforces best practices for README content and structure, ensuring crucial information is readily available and easy to find.
+
+## Auto-Trigger
+
+Activate when the user mentions:
+- "improve readme"
+- "readme checklist"
+- "document project"
+
+Do NOT activate for: "readme generator"
+
+## CRITICAL
+
+- A README file must exist at the root of the project.
+- The README should be written in Markdown.
+
+## Process
+
+### 1. Check for README Existence
+
+[WHY this step matters — Skipping this means the core documentation file is missing, making any further improvements impossible.]
+
+```bash
+if [ ! -f "README.md" ]; then
+  echo "Error: README.md not found at the project root."
+  exit 1
+fi
+```
+
+### 2. Basic README Content Check
+
+[WHY this step matters — A missing project title or description makes it immediately difficult for a new user to grasp the project's purpose.]
+
+```bash
+if ! grep -qE "^#\s+" README.md; then
+  echo "Warning: README.md does not appear to have a main heading (e.g., '# Project Title')."
+fi
+if ! grep -qE "^#\s+.*\n\n[^#].*" README.md; then
+  echo "Warning: README.md does not appear to have a description following the main heading."
+fi
+```
+
+### 3. Check for Installation Instructions
+
+[WHY this step matters — Without clear installation steps, users cannot easily set up the project, hindering adoption and testing.]
+
+```bash
+if ! grep -qE "## Installation" README.md; then
+  echo "Warning: README.md does not contain an '## Installation' section."
+fi
+```
+
+### 4. Check for Usage Instructions
+
+[WHY this step matters — Users need to know how to run and interact with the project; missing usage instructions lead to confusion and underutilization.]
+
+```bash
+if ! grep -qE "## Usage" README.md; then
+  echo "Warning: README.md does not contain a '## Usage' section."
+fi
+```
+
+### 5. Check for Contribution Guidelines
+
+[WHY this step matters — Clearly defined contribution guidelines encourage community involvement and streamline the process for new contributors.]
+
+```bash
+if ! grep -qE "## Contributing" README.md; then
+  echo "Warning: README.md does not contain a '## Contributing' section."
+fi
+```
+
+### 6. Check for License Information
+
+[WHY this step matters — Users and contributors need to understand the project's licensing terms to ensure compliance and proper usage.]
+
+```bash
+if ! grep -qE "## License" README.md; then
+  echo "Warning: README.md does not contain a '## License' section."
+fi
+```
+
+### 7. Validate Markdown Syntax (Basic)
+
+[WHY this step matters — Invalid Markdown can render incorrectly, making the README difficult to read and understand.]
+
+```bash
+# This is a basic check; a full Markdown linter would be more robust.
+# We're checking for common syntax errors like unclosed tags or incorrect list formatting.
+# For this general skill, we'll assume a basic check is sufficient.
+# If a more advanced tool were available (e.g., markdownlint-cli), we'd use that.
+echo "Performing basic Markdown syntax validation (manual review recommended for complex issues)."
+```
+
+## Output
+
+- Warnings printed to the console if sections or best practices are missing.
+- The `README.md` file remains unchanged unless manual edits are made based on the warnings.
+
+## Anti-Patterns
+
+❌ **Don't** rely solely on code comments for project documentation. Code comments are for explaining *how* the code works, not *what* the project is, *how to use it*, or *how to contribute*.
+✅ **Do** maintain a comprehensive `README.md` file at the project root that covers the project's purpose, installation, usage, contribution, and licensing.
+
+## Examples
+
+```markdown
+# My Awesome Project
+
+This is a brief description of what My Awesome Project does. It's designed to solve [problem X] using [technology Y].
+
+## Installation
+
+To install My Awesome Project, follow these steps:
+
+1. Clone the repository.
+2. Navigate to the project directory.
+3. Run `pip install -r requirements.txt`.
+
+## Usage
+
+To use the project, execute the following command:
+
+```bash
+python main.py --input data.csv --output results.json
+```
+
+## Contributing
+
+We welcome contributions! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+```\n\n### Skill: type-checking\n---
+name: type-checking
+description: |
+  TYPE checking for this project. Use when user mentions "type checking". Do NOT activate for "general type questions", "type theory".
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  author: PRG
+  version: 1.0.0
+  category: project
+  tags: [type, checking, groq, gemini, pydantic, jinja2]
+---
+
+# Skill: Type Checking
+
+## Purpose
+
+TYPE checking for this project
+
+This skill provides step-by-step guidance for type checking.
+
+## Auto-Trigger
+
+The agent should activate this skill when the user requests:
+
+- **"type checking"**
+
+
+**Project Context Signals:**
+
+- `has_docs` 
+- `has_tests` — Test suite available
+- `has_api` — API endpoints present
+- `has_ci` 
+
+
+
+
+## CRITICAL
+
+> These rules are non-negotiable. Claude must follow them on every activation.
+
+- Read existing files before modifying them.
+- Run tests after any code change and verify they pass.
+- Never generate or reference file paths that don't exist in the project.
+- Never skip tests or suppress coverage with `--no-cov` / `--no-cover`.
+
+
+## Process
+
+### 1. Analyze Current State
+
+- Review project structure in `project-rules-generator/`
+- Check configuration files
+- Identify existing patterns
+
+### 2. Execute Core Actions
+
+**Required Tools:** `coverage`, `mypy`, `pytest`, `ruff`
+
+```bash
+# Navigate to project
+cd project-rules-generator
+
+# Execute skill-specific commands
+# (customize based on detected tech stack)
+```
+
+### 3. Validate & Verify
+
+- Run tests if available
+- Check for errors
+- Verify expected outputs
+
+
+
+## Output
+
+This skill generates:
+
+
+- Modified/created files in `project-rules-generator/`
+- Status report with changes
+- Recommendations for next steps
+
+
+## Anti-Patterns
+
+
+❌ **Don't** use generic commands without project context
+✅ **Do** reference actual files from `project-rules-generator/`
+
+❌ **Don't** skip validation steps
+✅ **Do** always verify changes with tests
+
+❌ **Don't** make assumptions about project structure
+✅ **Do** check for files/directories before operating on them
+
+
+## Tech Stack Notes
+
+
+**Detected Technologies:**
+- `groq`
+- `gemini`
+- `pydantic`
+- `jinja2`
+- `python`
+- `pytest`
+- `gitpython`
+- `click`
+
+
+
+**Compatible Tools:** `coverage`, `mypy`, `pytest`, `ruff`
+
+
+
+## Examples
+
+
+```bash
+# Basic usage workflow
+cd project-rules-generator
+
+# 1. Check status
+git status
+
+# 2. Run skill-specific command
+# (customize based on actual project needs)
+
+# 3. Verify results
+pytest
+```
+
+
+## Project Context
+
+```
+Project: project-rules-generator
+Path: C:\Users\Dana\.gemini\antigravity\scratch\project-rules-generator
+Signals: has_docs, has_tests, has_api, has_ci
+Tech Stack: groq, gemini, pydantic, jinja2, python, pytest, gitpython, click
+```
+
+
+### README Context
+
+[Project structure]
+project-rules-generator/
+├── _bmad/
+│   ├── _config/
+│   │   ├── agents/
+│   │   ├── custom/
+│   │   ├── agent-manifest.csv
+│   │   ├── bmad-help.csv
+│   │   ├── files-manifest.csv
+│   │   ├── manifest.yaml
+│   │   ├── task-manifest.csv
+│   │   ├── tool-manifest.csv
+│   │   └── workflow-manifest.csv
+│   ├── core/
+│   │   ├── agents/
+│   │   ├── tasks/
+│   │   ├── workflows/
+│   │   ├── config.yaml
+│   │   └── module-help.csv
+│   └── prg/
+│       ├── ai/
+│       ├── analyzers/...
+
+
+---
+
+*Generated by Cowork-Powered PRG Skill Creator v2.0*
+*Triggers: 1 | Tools: 4*\n

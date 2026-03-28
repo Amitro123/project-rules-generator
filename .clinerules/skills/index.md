@@ -9,8 +9,8 @@ version: 1.0
 
 ## PROJECT CONTEXT
 - **Type**: Agent
-- **Tech Stack**: python, gemini, claude, groq, click, pydantic, gitpython
-- **Domain**: > The First AI That Learns Your Coding Style...
+- **Tech Stack**: python, claude, gemini, groq, click, pydantic, gitpython
+- **Domain**: ![Python 3.8+](https://python.org)...
 
 ## CORE SKILLS
 

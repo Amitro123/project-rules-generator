@@ -41,7 +41,7 @@
   ],
   "testing": [
     "**Framework**: pytest",
-    "**Test files**: 54 (505 test cases)",
+    "**Test files**: 56 (551 test cases)",
     "**Test types**: unit, integration",
     "**Fixtures**: shared via `conftest.py`",
     "**Test data**: `tests/fixtures/` directory"
@@ -55,10 +55,6 @@
     "`**/*-skills.md`",
     "`**/*-skills.json`",
     "`**/.clinerules*`"
-  ],
-  "workflows": [
-    "Python 3.11 or higher",
-    "Git"
   ],
   "🚫_critical_anti-patterns_(never_do_this)": [
     "NEVER run destructive commands (rm -rf, drop table, etc.) without explicit user confirmation.",
@@ -135,11 +131,6 @@
     "\"failed ai skill\"",
     "\"failed\"",
     "\"skill\""
-  ],
-  "installation": [
-    "\"missing dep skill\"",
-    "\"missing\"",
-    "\"dep\""
   ],
   "critical": [
     "Read existing files before modifying them.",
