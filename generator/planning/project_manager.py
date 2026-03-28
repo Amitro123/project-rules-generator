@@ -1,15 +1,16 @@
 """Project Manager — Handles the full project lifecycle from setup to completion."""
 
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-import click
 
 from generator.planning.autopilot import AutopilotOrchestrator
 from generator.planning.preflight import PreflightChecker
 from generator.planning.task_creator import TaskManifest
 from generator.planning.workflow import AgentWorkflow
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectManager:
@@ -48,7 +49,7 @@ class ProjectManager:
 
     def run_lifecycle(self):
         """Execute the full 4-phase lifecycle."""
-        click.echo("👨‍💼 PRODUCT MANAGER AGENT: Initializing...")
+        logger.info("👨‍💼 PRODUCT MANAGER AGENT: Initializing...")
 
         self.phase1_setup()
         self.phase2_verify()
@@ -59,7 +60,7 @@ class ProjectManager:
 
     def phase1_setup(self):
         """PHASE 1: Setup Checklist & Doc Generation."""
-        click.echo("\n📋 PHASE 1: SEMI-AUTO SETUP")
+        logger.info("\n📋 PHASE 1: SEMI-AUTO SETUP")
 
         # 1. Generate PROJECT-MANAGER.md
         self._update_manager_checklist()
@@ -67,12 +68,12 @@ class ProjectManager:
         # 2. Check for missing docs and attempt generation
         missing = self._get_missing_docs()
         if missing:
-            click.echo(f"   ⚠️  Missing {len(missing)} documents. Attempting generation...")
+            logger.info(f"   ⚠️  Missing {len(missing)} documents. Attempting generation...")
             self._generate_missing_docs(missing)
             # Re-check
             self._update_manager_checklist()
         else:
-            click.echo("   ✅ All required documents present.")
+            logger.info("   ✅ All required documents present.")
 
     def _get_missing_docs(self) -> List[str]:
         return [doc for doc in self.REQUIRED_DOCS if not self._doc_exists(doc)]
@@ -91,7 +92,7 @@ class ProjectManager:
 
         # Group 1: Analysis (rules, skills)
         if any(x in missing for x in [".clinerules/rules.md", ".clinerules/skills/index.md"]):
-            click.echo("   ⚙️  Running analysis (rules + skills)...")
+            logger.info("   ⚙️  Running analysis (rules + skills)...")
             # We can use AgentWorkflow's internal or call specific commands.
             # Using AgentWorkflow.run_setup() covers a lot, but might be too broad.
             # Let's use the CLI logic roughly:
@@ -107,12 +108,12 @@ class ProjectManager:
 
         # Group 2: Planning (PLAN.md, tasks/)
         if "PLAN.md" in missing or "tasks/TASKS.yaml" in missing:
-            click.echo("   ⚙️  Running planning...")
+            logger.info("   ⚙️  Running planning...")
             self.workflow.run_setup()  # Generates plan and tasks if missing
 
         # Group 3: Architecture
         if "ARCHITECTURE.md" in missing:
-            click.echo("   ⚙️  Generating ARCHITECTURE.md...")
+            logger.info("   ⚙️  Generating ARCHITECTURE.md...")
             from generator.design_generator import DesignGenerator
 
             gen = DesignGenerator(api_key=self.api_key, provider=self.provider)
@@ -124,12 +125,12 @@ class ProjectManager:
 
         # Group 4: Spec (Requirements)
         if "spec.md" in missing:
-            click.echo("   ⚙️  Generating spec.md...")
+            logger.info("   ⚙️  Generating spec.md...")
             self._generate_spec_md()
 
         # Group 5: Tests (Scaffolding)
         if "tests/" in missing or "pytest.ini" in missing:
-            click.echo("   ⚙️  Scaffolding tests...")
+            logger.info("   ⚙️  Scaffolding tests...")
             (self.project_path / "tests").mkdir(exist_ok=True)
             if "pytest.ini" in missing:
                 (self.project_path / "pytest.ini").write_text("[pytest]\ntestpaths = tests\n", encoding="utf-8")
@@ -227,7 +228,7 @@ Rules:
         spec_content = spec_content.encode("utf-8", errors="replace").decode("utf-8")
 
         (self.project_path / "spec.md").write_text(spec_content, encoding="utf-8")
-        click.echo(f"   ✅ Generated spec.md ({len(spec_content.splitlines())} lines)")
+        logger.info(f"   ✅ Generated spec.md ({len(spec_content.splitlines())} lines)")
 
     def _update_manager_checklist(self):
         """Create or update PROJECT-MANAGER.md."""
@@ -250,7 +251,7 @@ Rules:
         lines.append(f"**Status:** {ready_count}/{len(self.REQUIRED_DOCS)} documents ready.")
 
         (self.project_path / "PROJECT-MANAGER.md").write_text("\n".join(lines), encoding="utf-8")
-        click.echo(f"   📄 Updated PROJECT-MANAGER.md ({ready_count}/{len(self.REQUIRED_DOCS)} ready)")
+        logger.info(f"   📄 Updated PROJECT-MANAGER.md ({ready_count}/{len(self.REQUIRED_DOCS)} ready)")
 
     def _get_context(self) -> Optional[Dict]:
         # Helper to get some context for AI generation
@@ -260,14 +261,14 @@ Rules:
 
     def phase2_verify(self):
         """PHASE 2: Readiness Verification."""
-        click.echo("\n🛡️  PHASE 2: READINESS VERIFICATION")
+        logger.info("\n🛡️  PHASE 2: READINESS VERIFICATION")
         checker = PreflightChecker(self.project_path, task_description="Project Manager Check")
         report = checker.run_checks()
 
-        click.echo(report.format_report())
+        logger.info(report.format_report())
 
         if not report.all_passed:
-            click.echo("❌ Verification failed. Please fix issues before proceeding.")
+            logger.info("❌ Verification failed. Please fix issues before proceeding.")
             # In interactive mode we might pause here, but for now we stop.
             # Or asking user via input?
             pass
@@ -276,7 +277,7 @@ Rules:
 
     def phase3_copilot(self):
         """PHASE 3: Copilot Execution."""
-        click.echo("\n✈️  PHASE 3: COPILOT EXECUTION")
+        logger.info("\n✈️  PHASE 3: COPILOT EXECUTION")
 
         # Delegate to AutopilotOrchestrator, but maybe wrapper it to enforce reports?
         # For now, let's just run the execute loop.
@@ -290,13 +291,13 @@ Rules:
             manifest = TaskManifest.from_yaml(manifest_path)
             orchestrator.execution_loop(manifest)
         else:
-            click.echo("❌ No TASKS.yaml found. Skipping execution.")
+            logger.info("❌ No TASKS.yaml found. Skipping execution.")
 
     # -- Phase 4: Summary -------------------------------------------------
 
     def phase4_summary(self):
         """PHASE 4: Final Summary."""
-        click.echo("\n🎉 PHASE 4: FINAL SUMMARY")
+        logger.info("\n🎉 PHASE 4: FINAL SUMMARY")
 
         # Basic stats
         manifest_path = self.project_path / "tasks" / "TASKS.yaml"
@@ -325,4 +326,4 @@ Rules:
         ]
 
         (self.project_path / "PROJECT-COMPLETION.md").write_text("\n".join(report), encoding="utf-8")
-        click.echo(f"   📄 Generated PROJECT-COMPLETION.md\n   {stats}")
+        logger.info(f"   📄 Generated PROJECT-COMPLETION.md\n   {stats}")

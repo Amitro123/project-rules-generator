@@ -1,14 +1,15 @@
 """Agent workflow orchestrator — ties plan, tasks, preflight, and execution together."""
 
+import logging
 import os
 from pathlib import Path
 from typing import Dict, Optional
 
-import click
-
 from .preflight import PreflightChecker, PreflightReport
 from .task_creator import TaskCreator, TaskManifest
 from .task_executor import TaskExecutor
+
+logger = logging.getLogger(__name__)
 
 
 class AgentWorkflow:
@@ -53,7 +54,7 @@ class AgentWorkflow:
             report = self._preflight()
 
         if self.verbose:
-            click.echo(report.format_report())
+            logger.info(report.format_report())
 
         return manifest
 
@@ -63,11 +64,11 @@ class AgentWorkflow:
         if self.verbose:
             executor = TaskExecutor(manifest)
             summary = executor.get_progress_summary()
-            click.echo(f"\nReady: {summary['total']} tasks, ~{summary['est_remaining_minutes']} min estimated")
+            logger.info(f"\nReady: {summary['total']} tasks, ~{summary['est_remaining_minutes']} min estimated")
             nxt = executor.get_next_task()
             if nxt:
-                click.echo(f"Next task: #{nxt.id} {nxt.title}")
-                click.echo(f"  Run: prg exec tasks/{nxt.file}")
+                logger.info(f"Next task: #{nxt.id} {nxt.title}")
+                logger.info(f"  Run: prg exec tasks/{nxt.file}")
         return manifest
 
     # -- Internal steps ---------------------------------------------------
@@ -103,11 +104,11 @@ class AgentWorkflow:
 
         if plan_path and plan_path.exists():
             if self.verbose:
-                click.echo(f"Using existing plan: {plan_path.name}")
+                logger.info(f"Using existing plan: {plan_path.name}")
             return plan_path
 
         if self.verbose:
-            click.echo("Generating plan...")
+            logger.info("Generating plan...")
 
         return self._generate_plan()
 
@@ -132,7 +133,7 @@ class AgentWorkflow:
         plan_path.write_text(plan_md, encoding="utf-8")
 
         if self.verbose:
-            click.echo(f"Plan generated: {len(subtasks)} subtasks -> {plan_path.name}")
+            logger.info(f"Plan generated: {len(subtasks)} subtasks -> {plan_path.name}")
 
         return plan_path
 
@@ -143,7 +144,7 @@ class AgentWorkflow:
         # Idempotent: reuse existing manifest
         if tasks_yaml.exists():
             if self.verbose:
-                click.echo(f"Using existing task manifest: {tasks_yaml}")
+                logger.info(f"Using existing task manifest: {tasks_yaml}")
             return TaskManifest.from_yaml(tasks_yaml)
 
         # Parse subtasks from the plan
@@ -158,7 +159,7 @@ class AgentWorkflow:
         )
 
         if self.verbose:
-            click.echo(f"Created {len(manifest.tasks)} task files in tasks/")
+            logger.info(f"Created {len(manifest.tasks)} task files in tasks/")
 
         return manifest
 
@@ -177,12 +178,12 @@ class AgentWorkflow:
     def _fix_analyze(self) -> None:
         """Run the analyze pipeline to generate rules + skills."""
         if self.verbose:
-            click.echo("Auto-fixing: running analyze...")
+            logger.info("Auto-fixing: running analyze...")
 
         readme_path = self.project_path / "README.md"
         if not readme_path.exists():
             if self.verbose:
-                click.echo("  Skipped: no README.md found for analyze.")
+                logger.info("  Skipped: no README.md found for analyze.")
             return
 
         try:
@@ -203,15 +204,15 @@ class AgentWorkflow:
             rules_path.write_text(json.dumps(rules, indent=2), encoding="utf-8")
 
             if self.verbose:
-                click.echo("  Generated rules.json")
+                logger.info("  Generated rules.json")
         except Exception as exc:
             if self.verbose:
-                click.echo(f"  Analyze auto-fix failed: {exc}")
+                logger.info(f"  Analyze auto-fix failed: {exc}")
 
     def _fix_design(self) -> None:
         """Generate a DESIGN.md for the task."""
         if self.verbose:
-            click.echo("Auto-fixing: generating design...")
+            logger.info("Auto-fixing: generating design...")
 
         try:
             from generator.design_generator import DesignGenerator
@@ -232,10 +233,10 @@ class AgentWorkflow:
             design_path.write_text(design_obj.to_markdown(), encoding="utf-8")
 
             if self.verbose:
-                click.echo(f"  Generated DESIGN.md: {design_obj.title}")
+                logger.info(f"  Generated DESIGN.md: {design_obj.title}")
         except Exception as exc:
             if self.verbose:
-                click.echo(f"  Design auto-fix failed: {exc}")
+                logger.info(f"  Design auto-fix failed: {exc}")
 
     # -- Shared helpers ---------------------------------------------------
 

@@ -18,7 +18,7 @@ def manager(mock_project_path):
 
 def test_phase1_setup(manager):
     """Verify Phase 1 setup generates missing docs."""
-    with patch("generator.planning.project_manager.click.echo") as mock_echo, patch(
+    with patch(
         "generator.planning.project_manager.ProjectManager._generate_missing_docs"
     ) as mock_gen, patch("generator.planning.project_manager.ProjectManager._update_manager_checklist") as mock_update:
 
@@ -32,9 +32,7 @@ def test_phase1_setup(manager):
 
 def test_phase2_verify(manager):
     """Verify Phase 2 runs preflight check."""
-    with patch("generator.planning.project_manager.PreflightChecker") as MockChecker, patch(
-        "generator.planning.project_manager.click.echo"
-    ):
+    with patch("generator.planning.project_manager.PreflightChecker") as MockChecker:
 
         mock_instance = MockChecker.return_value
         mock_instance.run_checks.return_value.all_passed = True
@@ -49,7 +47,7 @@ def test_phase3_copilot(manager):
     """Verify Phase 3 delegates to AutopilotOrchestrator."""
     with patch("generator.planning.project_manager.AutopilotOrchestrator") as MockOrch, patch(
         "generator.planning.project_manager.TaskManifest"
-    ) as MockManifest, patch("generator.planning.project_manager.click.echo"):
+    ) as MockManifest:
 
         # Create dummy TASKS.yaml so logic proceeds
         (manager.project_path / "tasks").mkdir()
@@ -67,11 +65,10 @@ def test_phase3_copilot(manager):
 
 def test_phase4_summary(manager):
     """Verify Phase 4 generates completion report."""
-    with patch("generator.planning.project_manager.click.echo"):
-        manager.phase4_summary()
+    manager.phase4_summary()
 
-        report_path = manager.project_path / "PROJECT-COMPLETION.md"
-        assert report_path.exists()
-        content = report_path.read_text(encoding="utf-8")
-        assert "# Project Completion Report" in content
-        assert "Generated Artifacts" in content
+    report_path = manager.project_path / "PROJECT-COMPLETION.md"
+    assert report_path.exists()
+    content = report_path.read_text(encoding="utf-8")
+    assert "# Project Completion Report" in content
+    assert "Generated Artifacts" in content
