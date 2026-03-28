@@ -110,6 +110,8 @@ class LLMSkillGenerator:
                 raise RuntimeError(f"Router generation failed: {e}")
         # Direct mode (original behaviour)
         try:
+            if self.client is None:
+                return ""
             return self.client.generate(prompt, max_tokens=max_tokens, model=self.model_name)
         except Exception as e:
             raise RuntimeError(f"LLM generation failed: {e}")

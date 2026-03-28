@@ -81,38 +81,46 @@ def test_priority_resolution(manager):
 
 
 def test_create_skill_global(manager):
-    """Verify create_skill writes to project_local_dir.
+    """Verify create_skill writes to global_learned by default (scope='learned').
 
-    create_skill() now routes to project_local_dir (project/) for project-specific
-    skills. The skill directory is created with mkdir(parents=True) if needed.
+    create_skill() routes to global_learned for reusable skills by default.
+    Use scope='project' to write to project_local_dir instead.
     """
     skill_name = "new-global-skill"
     manager.ensure_global_structure()
     manager.setup_project_structure()
     manager.create_skill(skill_name)
 
-    # create_skill() writes to project_local_dir
-    expected_path = manager.project_local_dir / skill_name / "SKILL.md"
+    # create_skill() writes to global_learned by default
+    expected_path = manager.global_learned / skill_name / "SKILL.md"
     assert expected_path.exists()
     assert "Skill: New Global Skill" in expected_path.read_text(encoding="utf-8")
 
 
+def test_create_skill_project_scope(manager):
+    """Verify create_skill with scope='project' writes to project_local_dir."""
+    skill_name = "project-skill"
+    manager.ensure_global_structure()
+    manager.setup_project_structure()
+    manager.create_skill(skill_name, scope="project")
+
+    expected_path = manager.project_local_dir / skill_name / "SKILL.md"
+    assert expected_path.exists(), (
+        f"Skill should be in project_local_dir when scope='project'. "
+        f"project_local_dir={manager.project_local_dir}"
+    )
+
+
 def test_create_skill_fallback_to_global_learned_when_no_project_setup(manager):
-    """When project_local_dir is set (non-None), create_skill writes there
-    (creating parent dirs with mkdir if needed). Falls back to global_learned
-    only when project_local_dir is None/falsy."""
+    """create_skill defaults to global_learned regardless of project setup state."""
     skill_name = "fallback-skill"
-    # Deliberately do NOT call setup_project_structure() — project_local_dir dir
-    # does not exist on disk, but create_skill() will mkdir(parents=True) to create it
     manager.ensure_global_structure()
     manager.create_skill(skill_name)
 
-    # create_skill() always writes to project_local_dir when it is set (even if dir
-    # did not pre-exist), creating the directory with mkdir(parents=True)
-    expected_path = manager.project_local_dir / skill_name / "SKILL.md"
+    expected_path = manager.global_learned / skill_name / "SKILL.md"
     assert expected_path.exists(), (
-        f"Skill should be in project_local_dir when project_local_dir is set. "
-        f"project_local_dir={manager.project_local_dir}"
+        f"Skill should be in global_learned by default. "
+        f"global_learned={manager.global_learned}"
     )
 
 

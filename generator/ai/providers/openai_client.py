@@ -11,7 +11,7 @@ try:
 
     OPENAI_AVAILABLE = True
 except ImportError:
-    _OpenAI = None  # type: ignore[assignment]
+    _OpenAI = None  # type: ignore[assignment, misc]
     OPENAI_AVAILABLE = False
 
 
@@ -46,7 +46,7 @@ class OpenAIClient(AIClient):
             messages.append({"role": "user", "content": prompt})
 
             resp = self.client.chat.completions.create(
-                model=model or os.getenv("OPENAI_MODEL", self.DEFAULT_MODEL),
+                model=model or os.getenv("OPENAI_MODEL", self.DEFAULT_MODEL),  # type: ignore[arg-type]
                 messages=messages,  # type: ignore[arg-type]
                 max_tokens=max_tokens,
                 temperature=temperature,

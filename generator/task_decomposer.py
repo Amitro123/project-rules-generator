@@ -32,6 +32,7 @@ class TaskDecomposer(ArtifactGenerator):
 
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = "gemini"):
         self.provider = provider
+        self.api_key: Optional[str]
         # Resolve API key: explicit > env var for chosen provider > Gemini fallbacks
         if api_key:
             self.api_key = api_key

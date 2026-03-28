@@ -66,7 +66,8 @@ Full pipeline: README parsing → rules → skills → clinerules.yaml → git c
 | `--auto-fix` | false | Improve files below threshold (needs `--quality-check`) |
 | `--create-rules` | false | Also run Cowork rules creator |
 | `--list-skills` | false | List all skills then exit |
-| `--create-skill NAME` | — | Create a new learned skill |
+| `--create-skill NAME` | — | Create a new skill (destination set by `--scope`) |
+| `--scope` | `learned` | Skill destination: `learned` (global reusable, default), `builtin` (universal patterns), `project` (this project only) |
 | `--remove-skill NAME` | — | Remove a learned skill |
 | `--verbose / --quiet` | true | Detailed output |
 
@@ -84,6 +85,11 @@ Full pipeline: README parsing → rules → skills → clinerules.yaml → git c
 prg analyze . --create-skill dom --ai --strategy quality
 prg analyze . --create-skill dom --ai --strategy speed
 prg analyze . --create-skill dom --ai --strategy provider:anthropic
+
+# Scope examples
+prg analyze . --create-skill mypy-type-errors --scope builtin   # universal pattern
+prg analyze . --create-skill auth-flow --ai                     # reusable, default learned
+prg analyze . --create-skill deploy-checklist --scope project   # this project only
 ```
 
 ---

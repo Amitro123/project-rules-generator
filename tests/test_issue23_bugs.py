@@ -114,14 +114,14 @@ class TestBug1FlatFileReturnPath:
         discovery.ensure_global_structure()
         discovery.project_local_dir.mkdir(parents=True, exist_ok=True)
 
-        # Pre-create the skill in project_local_dir (project scope — where duplicate guard checks)
+        # Pre-create the skill in project_local_dir (project scope)
         skill_dir = discovery.project_local_dir / "docker-deployment"
         skill_dir.mkdir()
         (skill_dir / "SKILL.md").write_text("# Docker Deployment", encoding="utf-8")
         discovery._skills_cache = None  # force cache rebuild
 
         generator = SkillGenerator(discovery)
-        result = generator.create_skill("docker-deployment", force=False)
+        result = generator.create_skill("docker-deployment", force=False, scope="project")
 
         assert result == skill_dir, (
             f"Dir-style skill in project scope must return its directory, got {result!r}"

@@ -83,7 +83,7 @@ class CoworkStrategy:
         # Lazy import to avoid circular imports at module import time
         from generator.skill_creator import CoworkSkillCreator  # type: ignore
 
-        return CoworkSkillCreator(project_path)
+        return CoworkSkillCreator(project_path)  # type: ignore[return-value]
 
     def generate(
         self,

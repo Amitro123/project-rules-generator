@@ -69,7 +69,7 @@ def test_create_skill(temp_skills_dir, mock_manager):
         assert result.exit_code == 0
         assert "Created new skill 'new-skill'" in result.output
 
-        skill_path = temp_skills_dir / ".clinerules" / "skills" / "project" / "new-skill" / "SKILL.md"
+        skill_path = temp_skills_dir / "learned" / "new-skill" / "SKILL.md"
         assert skill_path.exists()
         assert "# Skill: New Skill" in skill_path.read_text(encoding="utf-8")
 
@@ -83,7 +83,7 @@ def test_create_skill_sanitization(temp_skills_dir, mock_manager):
         # We now expect the sanitized name in the output
         assert "Created new skill 'bad-name'" in result.output
 
-        skill_path = temp_skills_dir / ".clinerules" / "skills" / "project" / "bad-name" / "SKILL.md"
+        skill_path = temp_skills_dir / "learned" / "bad-name" / "SKILL.md"
         assert skill_path.exists()
 
 
@@ -110,7 +110,7 @@ Description of test project.
         result = runner.invoke(main, ["--create-skill", "test-project", "--from-readme", str(readme)])
         assert result.exit_code == 0
 
-        skill_path = temp_skills_dir / ".clinerules" / "skills" / "project" / "test-project" / "SKILL.md"
+        skill_path = temp_skills_dir / "learned" / "test-project" / "SKILL.md"
         assert skill_path.exists()
         content = skill_path.read_text(encoding="utf-8")
 

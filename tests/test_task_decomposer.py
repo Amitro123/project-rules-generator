@@ -45,8 +45,9 @@ class TestTaskDecomposer:
 
     def test_decompose_fallback_no_api_key(self):
         """Without API key, should return a single fallback subtask."""
-        decomposer = TaskDecomposer(api_key=None)
-        tasks = decomposer.decompose("Add authentication to the API")
+        with patch.object(TaskDecomposer, "_call_llm", return_value=""):
+            decomposer = TaskDecomposer(api_key=None)
+            tasks = decomposer.decompose("Add authentication to the API")
 
         assert len(tasks) >= 1
         assert tasks[0].id == 1

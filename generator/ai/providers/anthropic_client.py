@@ -41,13 +41,13 @@ class AnthropicClient(AIClient):
         """Generate content using Anthropic Claude."""
         try:
             msg = self.client.messages.create(
-                model=model or os.getenv("ANTHROPIC_MODEL", self.DEFAULT_MODEL),
+                model=model or os.getenv("ANTHROPIC_MODEL", self.DEFAULT_MODEL),  # type: ignore[arg-type]
                 max_tokens=max_tokens,
                 system=system_message or "You are an expert AI skill generator for developer tools.",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
             )
-            raw = msg.content[0].text if msg.content else ""
+            raw = next((b.text for b in msg.content if hasattr(b, "text")), "") if msg.content else ""
             return normalize_mojibake(raw)
         except Exception as e:
             raise RuntimeError(f"Anthropic generation failed: {e}")

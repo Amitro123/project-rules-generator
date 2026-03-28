@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.2.2] — 2026-03-28
+
+### ✨ Features
+
+#### `--scope` flag for `--create-skill` — explicit skill placement control
+
+**Files:** `generator/skill_generator.py`, `generator/skills_manager.py`, `cli/analyze_cmd.py`
+
+Added `--scope [learned|builtin|project]` option to `prg analyze --create-skill`.
+Routing logic corrected to match intent:
+
+| Command | Old behaviour | New behaviour |
+|---------|--------------|---------------|
+| `prg analyze . --create-skill X` | wrote to `project/` | writes to `learned/` (global, reusable) |
+| `prg analyze .` (README flow) | wrote to `learned/` | writes to `project/` (project-specific) |
+| `prg analyze . --create-skill X --scope builtin` | n/a | writes to `builtin/` (universal patterns) |
+| `prg analyze . --create-skill X --scope project` | n/a | writes to `project/` explicitly |
+
+**Why:** `--create-skill` is explicit human intent to capture reusable knowledge → `learned/`.
+The README auto-flow produces project-context-aware content → `project/`.
+
+---
+
 ## [v0.2.1] — 2026-03-28
 
 ### 🐛 Bug Fixes & Test Coverage

@@ -59,17 +59,19 @@ class SkillsManager:
         provider: str = "groq",
         force: bool = False,
         strategy: Optional[str] = None,
+        scope: str = "learned",
     ) -> Path:
-        """Create a new learned skill in the GLOBAL cache.
+        """Create a new skill in the requested scope.
 
         Args:
             force: If True, overwrite an existing skill. Default False (skip).
             strategy: Router strategy passed to AIStrategyRouter when use_ai=True.
                       One of "auto", "speed", "quality", or "provider:<name>".
                       None means direct provider mode (backward compat).
+            scope: 'learned' (default), 'builtin', or 'project'.
         """
         result = self.generator.create_skill(
-            name, from_readme, project_path, use_ai, provider, force=force, strategy=strategy
+            name, from_readme, project_path, use_ai, provider, force=force, strategy=strategy, scope=scope
         )
         # DESIGN-4: Invalidate cache so list_skills() / resolve_skill() see the new skill.
         self.discovery.invalidate_cache()

@@ -62,8 +62,9 @@ class SkillGenerator(ArtifactGenerator):
         provider: str = "groq",
         force: bool = False,
         strategy: Optional[str] = None,
+        scope: str = "learned",
     ) -> Path:
-        """Create a new learned skill in the GLOBAL cache.
+        """Create a new skill in the requested scope.
 
         Args:
             name: Skill name (will be normalized to lowercase-hyphenated).
@@ -74,6 +75,10 @@ class SkillGenerator(ArtifactGenerator):
             force: If True, overwrite an existing skill. Default False (skip).
             strategy: Router strategy ("auto", "speed", "quality", "provider:X").
                       None → direct provider mode.
+            scope: Where to write the skill:
+                   'learned'  (default) → global learned cache, reusable across projects.
+                   'builtin'            → global builtin cache, universal patterns.
+                   'project'            → project-local, this project only.
 
         Returns:
             Path to the skill directory.
@@ -88,21 +93,23 @@ class SkillGenerator(ArtifactGenerator):
         if not safe_name:
             raise ValueError("Invalid skill name provided.")
 
+        # ── Resolve target root from scope ───────────────────────────────────
+        if scope == "builtin":
+            target_root = self.discovery.global_builtin
+        elif scope == "project":
+            target_root = self.discovery.project_local_dir or self.discovery.global_learned
+        else:  # "learned" (default)
+            target_root = self.discovery.global_learned
+
         # ── Duplicate guard ──────────────────────────────────────────────────
-        if self.discovery.skill_exists(safe_name, scope="project") and not force:
+        _check_scope = scope if (scope != "project" or self.discovery.project_local_dir) else "learned"
+        if self.discovery.skill_exists(safe_name, scope=_check_scope) and not force:
             existing = self.discovery.resolve_skill(safe_name)
             print(f"Skill '{safe_name}' already exists — skipping. (use force=True to overwrite)")
             if existing is not None:
                 return existing.parent
-            return self.discovery.project_local_dir / safe_name
+            return target_root / safe_name
         # ─────────────────────────────────────────────────────────────────────
-
-        # --create-skill generates with project context → always write to project/
-        # (README flow writes to learned/ for tech-pattern skills that can be reused)
-        if self.discovery.project_local_dir:
-            target_root = self.discovery.project_local_dir
-        else:
-            target_root = self.discovery.global_learned
 
         target_dir = target_root / safe_name
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -169,7 +176,7 @@ class SkillGenerator(ArtifactGenerator):
         for strategy_obj in strategies:
             try:
                 if isinstance(strategy_obj, CoworkStrategy):
-                    content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=cowork_use_ai)
+                    content = strategy_obj.generate(safe_name, Path(project_path) if project_path else None, readme_content, provider, strategy=strategy, use_ai=cowork_use_ai)
                 else:
                     content = strategy_obj.generate(safe_name, project_path, readme_content, provider, strategy=strategy, use_ai=use_ai)
                 if content:
@@ -239,11 +246,11 @@ class SkillGenerator(ArtifactGenerator):
         - 'adapt': global skill is a stub → regenerate with project context
         - 'create': no global skill → create new one in global learned + reference it
         """
-        # README flow generates tech-pattern skills reusable across projects → learned/
-        if self.discovery.project_learned_link and self.discovery.project_learned_link.exists():
-            target_dir = self.discovery.project_learned_link
+        # README flow generates project-context skills → project/
+        if self.discovery.project_local_dir:
+            target_dir = self.discovery.project_local_dir
         else:
-            target_dir = output_dir / "skills" / "learned"
+            target_dir = output_dir / "skills" / "project"
 
         target_dir.mkdir(parents=True, exist_ok=True)
 

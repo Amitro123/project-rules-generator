@@ -97,6 +97,7 @@ def _handle_skill_management(
     remove_skill,
     list_skills,
     verbose,
+    scope,
 ):
     """Handle create-skill / remove-skill / list-skills early-exit actions.
 
@@ -115,6 +116,7 @@ def _handle_skill_management(
                 provider=provider or "groq",
                 force=force,
                 strategy=strategy if ai else None,
+                scope=scope,
             )
             click.echo(f"✨ Created new skill '{path.name}' in {path}")
             click.echo("🔄 Updating agent cache...")
@@ -242,7 +244,14 @@ def setup_orchestrator(config):
     help="Directory containing external packs",
 )
 @click.option("--list-skills", is_flag=True, help="List all available skills from all sources")
-@click.option("--create-skill", help="Create a new learned skill with the given name")
+@click.option("--create-skill", help="Create a new skill with the given name")
+@click.option(
+    "--scope",
+    type=click.Choice(["learned", "builtin", "project"], case_sensitive=False),
+    default="learned",
+    show_default=True,
+    help="Where to write the skill: learned (default, global reusable), builtin (universal patterns), project (this project only)",
+)
 @click.option(
     "--from-readme",
     type=click.Path(exists=True, dir_okay=False),
@@ -386,6 +395,7 @@ def analyze(
     rules_quality_threshold,
     skills_dir,
     strategy,
+    scope,
 ):
     """Analyze project and generate rules.md and skills.md from README.md"""
     project_path = Path(project_path).resolve()
@@ -490,6 +500,7 @@ def analyze(
             remove_skill=remove_skill,
             list_skills=list_skills,
             verbose=verbose,
+            scope=scope,
         )
 
         # Load External Packs
