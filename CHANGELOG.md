@@ -4,6 +4,116 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.2.0] — 2026-03-28
+
+### Strategic Depth Pipeline (v1.5 architecture)
+
+All PRG artifact generators now enforce a shared "pain-first, why-before-how" contract.
+Every generated skill, rule set, and plan must identify the reader's broken state before
+prescribing action, and explain WHY before HOW for each step.
+
+#### `ArtifactGenerator` base class — `generator/base_generator.py` (NEW)
+
+Abstract base class inherited by all three generators. Contributes:
+
+- `_PAIN_FIRST_PREAMBLE` — LLM prompt fragment: pain → prescription order
+- `_WHY_RULE_FORMAT` — LLM prompt fragment: `DO: X | WHY: Y` single-line format
+- `_SKIP_CONSEQUENCE_FORMAT` — LLM prompt fragment: per-task `SkipConsequence:` line
+- `format_rule_with_why(rule, why)` — static helper producing `"X — Y."` annotation
+- `validate_depth(content)` — runs strategic-depth quality gate on any artifact
+- `_build_prompt()` — abstract, forces every subclass to embed the preamble
+
+#### `CoworkRulesCreator` refactored — `generator/rules_creator.py`
+
+- Now inherits `ArtifactGenerator`
+- `_build_prompt()` extracted; embeds `_PAIN_FIRST_PREAMBLE` + `_WHY_RULE_FORMAT`
+- Rule parser updated: splits `DO: X | WHY: Y` and calls `format_rule_with_why()`
+- Removed inline 160-line `TECH_RULES` dict → imports from `tech_registry.py`
+
+#### `TaskDecomposer` refactored — `generator/task_decomposer.py`
+
+- Now inherits `ArtifactGenerator`
+- `SubTask` Pydantic model gains `skip_consequence: str = ""` field
+- `_build_prompt()` embeds `_PAIN_FIRST_PREAMBLE` + `_SKIP_CONSEQUENCE_FORMAT`
+- `_parse_response()` extracts `SkipConsequence:` from LLM output
+- `generate_plan_md()` renders `**Skip consequence:** ...` when field is set
+
+#### `SkillGenerator` refactored — `generator/skill_generator.py`
+
+- Now inherits `ArtifactGenerator`
+- `_build_prompt()` delegates to `skill_generation.build_skill_prompt()` (rules 9-11 already embedded)
+- Removed inline 47-line `TECH_SKILL_NAMES` dict → imports from `tech_registry.py`
+
+#### Strategic depth quality gate — `generator/utils/quality_checker.py`
+
+New `_check_strategic_depth(content)` function penalises shallow artifacts:
+
+- `-15` if `## Purpose` opens with `"This skill / This generates / Automatically..."`
+- `-10` if `## Purpose` contains no pain indicators (`"without"`, `"prevents"`, `"every time you"`, ...)
+- `-5` if Process steps have no prose reasoning before commands
+
+Calibrated so existing high-quality skills (score ≥ 90) remain unaffected.
+
+#### Skill generation prompts — `generator/prompts/skill_generation.py`
+
+Added CRITICAL rules 9-11:
+- Rule 9: Purpose MUST open with reader's pain — never `"This skill"`
+- Rule 10: Every Process step needs one WHY sentence before the command
+- Rule 11: Frontmatter `description` must name who has what pain and how it's resolved
+
+#### `tech_registry.py` — consolidated tech metadata (v1.4 carry-over completed)
+
+All four caller files updated to import from `tech_registry.py`:
+- `skill_generator.py` — `TECH_SKILL_NAMES`
+- `skill_creator.py` — `TECH_TOOLS`
+- `rules_creator.py` — `TECH_RULES`
+- `tech_detector.py` — `PKG_MAP`, `TECH_README_KEYWORDS`
+
+No more duplicate tech dictionaries anywhere in the codebase.
+
+#### README rewritten — `README.md`
+
+Pain-first structure: opens with the developer's broken state ("Every AI agent starts knowing nothing about your project"), not feature descriptions. Added `## License` section.
+
+#### Docs updated — `docs/architecture.md`
+
+- Core components table updated (new `base_generator.py` row, v1.5 statuses)
+- Strategic Depth Hierarchy ASCII diagram added
+- `quality_checker.py` section updated with `_check_strategic_depth()` details
+- Strategic Depth Contract table added (pain-first / WHY-before-HOW / skip-consequence)
+- Directory Structure updated (`base_generator.py`, `tech_registry.py`, `readme_bridge.py`)
+
+#### Builtin skill removed
+
+`.clinerules/skills/builtin/readme-improver.md` — deleted. Content was shallow and feature-first; replaced by live AI generation via `prg analyze . --create-skill readme-improver --ai`.
+
+---
+
+### What to tackle next session
+
+- **Gemini quota**: `GOOGLE_API_KEY` hits the free-tier 20 req/day limit for `gemini-2.5-flash`.
+  Workaround confirmed: `export GEMINI_MODEL=gemini-2.5-flash-lite` uses separate quota.
+  Real fix: enable billing for the Generative Language API in the Google Cloud project
+  associated with `GOOGLE_API_KEY`, or set `GEMINI_API_KEY` to a paid-tier key.
+
+- **Quality gate for stubs**: When all providers fail, `StubStrategy` generates placeholder
+  content (brackets like `[One sentence: ...]`) that scores 90 — the checker doesn't penalise
+  unfilled placeholders. Consider adding a stub-detection pass that flags bracket placeholders
+  as a warning.
+
+- **Auto-trigger count warning**: Skills generated by CoworkStrategy/AI often have 3 triggers
+  in `## Auto-Trigger` prose but the parser counts 0 (reads only frontmatter `triggers:` list).
+  Parser and generator need to stay in sync.
+
+- **Version display**: `prg analyze` prints `Project Rules Generator v0.2.0` on every run —
+  consider making this a `--verbose` flag output only.
+
+- **`SubTask.skip_consequence` test coverage**: The new field has no dedicated tests yet.
+  Add tests for `_parse_response()` extracting the `SkipConsequence:` field and
+  `generate_plan_md()` rendering `**Skip consequence:**`.
+
+---
+
 ## [v1.4] — 2026-03-28
 
 ### ✨ New Commands

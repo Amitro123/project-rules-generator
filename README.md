@@ -1,224 +1,231 @@
-# Project Rules Generator 🚀
-
-> **The First AI That Learns Your Coding Style**
+# Project Rules Generator
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-500%20Passing-green.svg)](tests/)
-
-Most rule generators give you static templates. **Project Rules Generator (PRG)** reads your code, understands your architecture, and **learns from your patterns** to create smarter, context-aware `.clinerules` for any AI agent (Claude, Cursor, Windsurf, Gemini).
+[![Tests](https://img.shields.io/badge/Tests-530%20Passing-brightgreen.svg)](tests/)
 
 ---
 
-## Table of Contents
-- [Features](#features)
-- [Quick Start](#quick-start)
-- [Installation](#installation)
-- [AI Providers](#ai-providers)
-- [Usage](#usage)
-- [How It Works](#how-it-works)
-- [Contributing](#contributing)
+## The Problem
+
+Every AI agent you use — Claude, Cursor, Windsurf, Copilot — starts every conversation knowing **nothing** about your project.
+
+You explain your stack. Again. You correct the same bad patterns. Again. You watch it generate code that ignores your architecture. Again.
+
+The AI isn't dumb. It's **context-blind.**
 
 ---
 
-## Features
+## The Solution
 
-| Feature | Description | AI Required |
-|:--------|:------------|:-----------:|
-| **Basic Analysis** | Scans code structure & README, generates `rules.md` | No |
-| **AI Skills** | LLM-generated workflow skills tailored to your project | Yes |
-| **Incremental** | Re-generates only changed sections — 3–5x faster | No |
-| **Constitution** | Generates `constitution.md` coding principles | No |
-| **Planning** | `prg plan` breaks a task into subtasks with `PLAN.md` | Yes |
-| **Two-Stage Design** | `prg design` → `prg plan` for complex features | Yes |
-| **Autopilot** | End-to-end discovery → plan → execute loop | Yes |
-| **Project Manager** | Full lifecycle orchestration (Setup → Verify → Exec → Report) | Yes |
-| **Smart Router** | Auto-selects best available provider; falls back gracefully | — |
+**Project Rules Generator (PRG)** builds a persistent intelligence layer for your project — rules, skills, and patterns — that every AI agent reads automatically.
+
+Run it once. Every future AI session starts with full context: your stack, your conventions, your architecture, your do's and don'ts.
+
+```bash
+cd your-project
+prg init .
+```
+
+That's it. Your `.clinerules/` is now the memory your AI agents never had.
+
+---
+
+## What Gets Generated
+
+```text
+.clinerules/
+├── rules.md              ← Your coding conventions (tech-specific, auto-detected)
+├── constitution.md       ← Non-negotiable principles ("never do X in this project")
+├── clinerules.yaml       ← Skill index for agents that support it
+└── skills/
+    ├── project/          ← AI-generated workflows tailored to YOUR project
+    ├── learned/          ← Reusable patterns, shared across projects
+    └── builtin/          ← Battle-tested best practices, bundled
+```
+
+**Example `rules.md` output for a FastAPI project:**
+
+```markdown
+## FastAPI Rules (High Priority)
+- Use async/await for ALL I/O — never block the event loop
+- Pydantic models for every request/response body, no raw dicts
+- Use Depends() for injection — never pass dependencies manually
+
+## Testing Rules
+- pytest fixtures for all setup; parametrize for edge cases
+- Mock at boundaries only (APIs, DB) — never internal logic
+```
+
+No templates. No hand-holding. Generated from *your actual project.*
 
 ---
 
 ## Quick Start
-The fastest way to get started — no API key required:
+
+**No API key needed** — PRG works offline from your README and file structure:
 
 ```bash
-cd /path/to/your-project
+pip install -e .
 prg init .
 ```
-*Detects your stack, generates `.clinerules/rules.md` from your README and file structure, and prints next steps.*
 
-With an API key, add `--ai` for deeper analysis:
+**With a free API key** — deeper analysis, LLM-generated skills:
+
 ```bash
-export GROQ_API_KEY=gsk_...   # free — get one at console.groq.com
+export GROQ_API_KEY=gsk_...   # free at console.groq.com
 prg analyze . --ai
+```
+
+**Full autopilot** — design, plan, code, commit, repeat:
+
+```bash
+prg autopilot . --provider anthropic
 ```
 
 ---
 
-## Installation
+## The 3-Layer Skill System
 
-### Prerequisites
-- Python 3.8 or higher
-- Git
+Skills are ranked by specificity. More specific always wins:
 
-### From Source (Current)
-```bash
-git clone https://github.com/Amitro123/project-rules-generator
-cd project-rules-generator
-pip install -e .
-```
+| Layer | Location | What It Contains | Priority |
+|:------|:---------|:----------------|:--------:|
+| **Project** | `.clinerules/skills/project/` | AI-generated for *this* codebase | Highest |
+| **Learned** | `.clinerules/skills/learned/` | Reusable tech patterns, shared globally | Medium |
+| **Builtin** | `~/.project-rules-generator/builtin/` | Battle-tested defaults | Lowest |
 
-Verify the installation:
-```bash
-prg --version
-```
+A project-level `fastapi-endpoints` skill overrides the global one. Your patterns win.
 
 ---
 
 ## AI Providers
 
-PRG automatically routes to the best available provider based on your environment variables.
+PRG auto-detects the best available provider from your environment. Set one key, or set several — it routes intelligently.
 
-| Provider | Model | Quality | Speed | Key Variable |
-|:---|:---|:---:|:---:|:---|
-| **Anthropic** | Claude Sonnet 4.6 | ⭐95 | 65 | `ANTHROPIC_API_KEY` |
-| **OpenAI** | GPT-4o-mini | ⭐90 | 70 | `OPENAI_API_KEY` |
-| **Gemini** | Gemini 2.0 Flash | ⭐85 | 85 | `GEMINI_API_KEY` |
-| **Groq** | Llama 3.1 8b | ⭐75 | 95 | `GROQ_API_KEY` |
+| Provider | Model | Best For | Key |
+|:---------|:------|:---------|:----|
+| **Anthropic** | Claude Sonnet 4.6 | Highest quality rules & skills | `ANTHROPIC_API_KEY` |
+| **OpenAI** | GPT-4o-mini | Solid all-rounder | `OPENAI_API_KEY` |
+| **Gemini** | Gemini 2.0 Flash | Fast + high quality | `GEMINI_API_KEY` |
+| **Groq** | Llama 3.1 8b | Free tier, fastest | `GROQ_API_KEY` |
 
-**Auto-detection**: PRG reads your env vars and picks the best available provider automatically.
-
-```bash
-# Set one or more keys — PRG handles the rest
-export ANTHROPIC_API_KEY=sk-ant-...
-export GROQ_API_KEY=gsk_...
-```
+No provider? PRG still works — README + file structure analysis is free and surprisingly smart.
 
 ```bash
-# Check which providers are ready
-prg providers list
-
-# Run a live connectivity test
-prg providers test
+prg providers list       # See what's configured
+prg providers test       # Live latency check
+prg providers benchmark  # Side-by-side quality ranking
 ```
-
-> See [docs/llm-router.md](docs/llm-router.md) for full routing configuration.
 
 ---
 
-## Usage
+## All Commands
 
-### 1. AI-Powered Analysis & Skills
-Uses the best available AI provider to deeply understand your project or generate specific skills.
+### Analyze & Generate
 
 ```bash
-# Analyze project (auto-selects best provider)
+prg init .                                    # First-run wizard: detect stack, generate rules
+prg analyze .                                 # Regenerate from README + file structure
+prg analyze . --ai                            # AI-powered deep analysis
+prg analyze . --ai --provider anthropic       # Force a specific provider
+prg analyze . --incremental                   # Update only what changed (3–5x faster)
+prg analyze . --constitution                  # Also generate constitution.md
+prg analyze . --create-skill "auth-flow" --ai # Generate a named skill for this project
+```
+
+### Plan & Design
+
+```bash
+prg design "Add OAuth2 login"     # Stage 1: architecture document
+prg plan   "Add OAuth2 login"     # Stage 2: implementation plan (PLAN.md + tasks/)
+prg next                          # Execute the next pending task
+```
+
+### Skills
+
+```bash
+prg skills list                   # All skills (project + learned + builtin)
+prg skills list --all             # Include builtin skills
+prg skills show fastapi-endpoints # View a skill's content
+prg skills validate my-skill      # Quality score (must be ≥ 90)
+```
+
+### Autopilot
+
+```bash
+prg autopilot .                        # Full loop: discover → plan → code → commit
+prg autopilot . --provider anthropic   # Specify provider
+prg manager .                          # 4-phase lifecycle: setup → verify → execute → report
+```
+
+---
+
+## How Analysis Works
+
+```
 prg analyze . --ai
-
-# Create a named skill using AI
-prg analyze . --create-skill "design-token-parser" --ai
-
-# Force a specific provider or control strategy
-prg analyze . --ai --strategy speed
-prg analyze . --ai --provider anthropic
+        │
+        ▼
+  Read README + file structure
+        │
+        ▼
+  Detect tech stack (45+ technologies)
+  fastapi · react · pytest · sqlalchemy · docker · ...
+        │
+        ▼
+  AIStrategyRouter
+  ┌─────────────────────────────────────────┐
+  │  Has API key?  →  CoworkStrategy (LLM)  │
+  │  Has README?   →  READMEStrategy        │
+  │  Fallback      →  StubStrategy          │
+  └─────────────────────────────────────────┘
+        │
+        ▼
+  Quality gate (score ≥ 90) → auto-retry if needed
+        │
+        ▼
+  .clinerules/rules.md + skills/
 ```
 
-*Note: No API key required for basic README-only generation:*
-`prg analyze . --create-skill "ui-tokens" --from-readme README.md`
-
-### 2. Incremental Update ⚡
-Updates only what has changed since the last run. Perfect for CI/CD.
-
-```bash
-prg analyze . --incremental
-```
-
-### 3. Constitution Mode 📜
-Generates a `constitution.md` with your project's core coding principles.
-
-```bash
-prg analyze . --constitution
-```
-
-### 4. Planning & Task Tracking
-Break a task into subtasks, track progress, and execute step-by-step.
-
-```bash
-# Optional: generate an architectural design first (Stage 1)
-prg design "Add OAuth2 authentication"
-
-# Generate an implementation plan (Stage 2, or standalone)
-prg plan "Add OAuth2 authentication"
-
-# Execute the next pending task
-prg next
-```
-
-### 5. Autopilot 🤖
-Full autonomous mode: discover, plan, execute — all with git safety. Supports all 4 providers.
-
-```bash
-prg autopilot .
-prg autopilot . --provider anthropic
-```
-
-### 6. Provider Management
-```bash
-prg providers list                 # Rich table of all providers
-prg providers test                 # Live connectivity + latency
-prg providers test --provider groq # Test a specific provider
-prg providers benchmark            # Rank by quality/speed composite
-```
+Rules are **scored** before they're written. Generic filler never makes it through.
 
 ---
 
-## How It Works
+## Installation
 
-PRG operates on a 3-layer architecture for skill resolution (highest → lowest priority):
-1. **Project** (`.clinerules/skills/project/`): Skills created with `--create-skill` — AI-generated with your project's context, project-specific.
-2. **Learned** (`.clinerules/skills/learned/`): Reusable tech-pattern skills from the README auto-flow, shared across projects.
-3. **Builtin** (`~/.project-rules-generator/builtin/`): Default best practices bundled with PRG.
-
-```mermaid
-graph TB
-    A[prg analyze . --ai] --> B[AIStrategyRouter]
-    B --> C{Best provider?}
-    C -->|ANTHROPIC_API_KEY set| D[Claude Sonnet 4.6]
-    C -->|GROQ_API_KEY set| E[Llama 3.1-8b]
-    C -->|no keys| F[README-only mode]
-    D --> G[.clinerules/rules.md + skills/]
-    E --> G
-    F --> G
+```bash
+git clone https://github.com/Amitro123/project-rules-generator
+cd project-rules-generator
+pip install -e .
+prg --version
 ```
 
-### Output Structure
-All generated files are consolidated into a single `.clinerules/` directory:
-```text
-.clinerules/
-├── rules.md              # Main rules (from any mode)
-├── constitution.md       # Code principles (when --constitution)
-├── clinerules.yaml       # Lightweight YAML skill references
-├── auto-triggers.json    # Skill activation trigger phrases
-└── skills/
-    ├── project/          # --create-skill output, project-specific (Highest Priority)
-    ├── learned/          # README-flow tech-pattern skills, reusable (Medium Priority)
-    └── builtin/          # Bundled best-practice skills (Lowest Priority)
-```
+**Requirements:** Python 3.8+, Git
 
 ---
 
 ## Contributing
-We welcome contributions!
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feat/amazing-feature`)
-3. Run the test suite before committing: `pytest`
-4. Ensure formatting passes: `black . && ruff check . && isort .`
-5. Commit using conventional commits: `git commit -m "feat: add amazing feature"`
-6. Push to the branch and open a PR.
 
-See [`CLAUDE.md`](CLAUDE.md) for architecture notes and coding conventions.
+```bash
+# Run tests
+pytest
+
+# Format (required before commit)
+black . && ruff check . && isort .
+```
+
+1. Fork → feature branch → `pytest` → `black .` → PR
+2. Follow conventional commits: `feat:`, `fix:`, `refactor:`
+
+See [`CLAUDE.md`](CLAUDE.md) for architecture notes and [`docs/architecture.md`](docs/architecture.md) for full diagrams.
 
 ---
 
-**Project Rules Generator** — Because generic "analyze code" skills aren't enough anymore.
+## License
 
-> Full version history: [`CHANGELOG.md`](CHANGELOG.md)
+MIT — see [`LICENSE`](LICENSE).
+
+---
+
+> Full version history: [`CHANGELOG.md`](CHANGELOG.md) · Architecture: [`docs/architecture.md`](docs/architecture.md)

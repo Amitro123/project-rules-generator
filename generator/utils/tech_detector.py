@@ -10,6 +10,8 @@ import json
 from pathlib import Path
 from typing import List, Set
 
+from generator.tech_registry import PKG_MAP, TECH_README_KEYWORDS
+
 # Alias map for tech name variations
 TECH_ALIASES = {
     "fastapi": {"fastapi", "fast api"},
@@ -64,36 +66,7 @@ def detect_from_readme(readme_content: str) -> Set[str]:
     detected = set()
     content_lower = readme_content.lower()
 
-    tech_keywords = {
-        "fastapi": ["fastapi", "fast api"],
-        "flask": ["flask"],
-        "django": ["django"],
-        "react": ["react", "reactjs", "react.js"],
-        "vue": ["vue", "vuejs", "vue.js"],
-        "express": ["express", "expressjs"],
-        "pytest": ["pytest"],
-        "docker": ["docker", "dockerfile", "docker-compose"],
-        "python": ["python"],
-        "typescript": ["typescript"],
-        "javascript": ["javascript", "node.js", "nodejs"],
-        "sqlalchemy": ["sqlalchemy"],
-        "pydantic": ["pydantic"],
-        "celery": ["celery"],
-        "redis": ["redis"],
-        "openai": ["openai", "gpt-4", "gpt-3"],
-        "langchain": ["langchain"],
-        # 2D/3D canvas and DXF editing
-        "konva": ["konva", "konvajs", "konva.js"],
-        "canvas": ["canvas", "svg canvas", "html canvas"],
-        "dxf": ["dxf", "ezdxf", "dxf editor", "dxf upload", "dxf viewer"],
-        "threejs": ["three.js", "threejs", "three js", "webgl", "3d extrusion"],
-        "babylon": ["babylon", "babylonjs", "babylon.js"],
-        "supabase": ["supabase"],
-        "reportlab": ["reportlab"],
-        "pdf": ["pdf", "pdf generation", "pdf export"],
-    }
-
-    for tech, keywords in tech_keywords.items():
+    for tech, keywords in TECH_README_KEYWORDS.items():
         if any(kw in content_lower for kw in keywords):
             detected.add(tech)
 
@@ -114,44 +87,7 @@ def detect_from_dependencies(project_path: Path) -> Set[str]:
     if requirements_file.exists():
         try:
             content = requirements_file.read_text(encoding="utf-8", errors="ignore").lower()
-            pkg_map = {
-                "fastapi": "fastapi",
-                "flask": "flask",
-                "django": "django",
-                "pytest": "pytest",
-                "sqlalchemy": "sqlalchemy",
-                "pydantic": "pydantic",
-                "celery": "celery",
-                "redis": "redis",
-                "openai": "openai",
-                "anthropic": "anthropic",
-                "langchain": "langchain",
-                "ezdxf": "dxf",
-                "reportlab": "reportlab",
-                "supabase": "supabase",
-                "konva": "konva",
-                # CLI / templating / HTTP — added to match TECH_SKILL_NAMES entries
-                "click": "click",
-                "typer": "typer",
-                "gitpython": "gitpython",
-                "groq": "groq",
-                "google-generativeai": "gemini",
-                "httpx": "httpx",
-                "requests": "requests",
-                "aiohttp": "aiohttp",
-                "uvicorn": "uvicorn",
-                "websockets": "websocket",
-                "jinja2": "jinja2",
-                "pymongo": "mongodb",
-                "psycopg2": "postgresql",
-                "psycopg2-binary": "postgresql",
-                "asyncpg": "postgresql",
-                "motor": "mongodb",
-                "torch": "pytorch",
-                "tensorflow": "tensorflow",
-                "perplexity": "perplexity",
-            }
-            for pkg, tech in pkg_map.items():
+            for pkg, tech in PKG_MAP.items():
                 if pkg in content:
                     detected.add(tech)
             detected.add("python")  # Has requirements.txt = Python project

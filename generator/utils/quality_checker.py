@@ -9,7 +9,7 @@ Consolidated quality checking logic from:
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 # Markers that indicate a skill is a generic stub (not project-specific)
 STUB_MARKERS = [
@@ -109,6 +109,99 @@ def _extract_body_triggers(content: str) -> List[str]:
     section = re.split(r"\n## ", content.split("## Auto-Trigger", 1)[1])[0]
     # Match bold phrases: **"phrase"** or **phrase**
     return re.findall(r'\*\*["\']?([^"\'*\n]+)["\']?\*\*', section)
+
+
+# Patterns that signal a Purpose section is describing the skill's features
+# instead of the reader's pain.  Any match → shallow purpose penalty.
+_SHALLOW_PURPOSE_STARTS = re.compile(
+    r"^(this skill|this command|this generates|this provides|this tool|automatically)",
+    re.IGNORECASE,
+)
+
+# Words that signal the Purpose identifies a pain point or broken state.
+# At least one must appear somewhere in the Purpose section.
+_PAIN_INDICATORS = [
+    "without",
+    "instead of",
+    "every time you",
+    "the problem",
+    "common mistake",
+    "developers often",
+    "when you don't",
+    "stops you",
+    "prevents",
+    "avoids",
+    "before you",
+    "if you don't",
+    "wrong way",
+    "inconsistent",
+    "broken",
+    "forgotten",
+    "missed",
+    "skip",
+    "missing",
+    "difficult to",
+    "hard to",
+    "easy to forget",
+]
+
+
+def _check_strategic_depth(content: str) -> Tuple[List[str], List[str], List[str], float]:
+    """Check for strategic depth: pain identification and why-before-how reasoning.
+
+    Returns (issues, warnings, suggestions, penalty).
+    """
+    issues: List[str] = []
+    warnings: List[str] = []
+    suggestions: List[str] = []
+    penalty = 0.0
+
+    if "## Purpose" not in content:
+        return issues, warnings, suggestions, penalty  # already caught by required-sections check
+
+    purpose_section = re.split(r"\n## ", content.split("## Purpose", 1)[1])[0].strip()
+    first_sentence = purpose_section.split(".")[0].strip()
+
+    # Check: does Purpose open with a feature description rather than reader's pain?
+    if _SHALLOW_PURPOSE_STARTS.match(first_sentence):
+        issues.append(
+            "Purpose opens with a feature description, not the reader's pain. "
+            "Start with what the developer suffers WITHOUT this skill "
+            "(e.g. 'Without X...', 'Every time you...', 'The common mistake is...')."
+        )
+        penalty += 15.0
+
+    # Check: does Purpose contain any pain-indicator language?
+    purpose_lower = purpose_section.lower()
+    if not any(indicator in purpose_lower for indicator in _PAIN_INDICATORS):
+        warnings.append(
+            "Purpose lacks pain-oriented language. "
+            "Name the specific mistake or gap the reader has WITHOUT this skill."
+        )
+        penalty += 10.0
+
+    # Check: do Process steps include a 'why' sentence before commands?
+    if "## Process" in content:
+        process_section = re.split(r"\n## ", content.split("## Process", 1)[1])[0]
+        step_blocks = re.split(r"(?:^|\n)#{2,3}\s+\d+\.", process_section)
+        steps_with_reasoning = 0
+        for block in step_blocks[1:]:  # skip leading empty segment
+            prose_before_code = block.split("```")[0].strip()
+            prose_lines = [
+                ln for ln in prose_before_code.splitlines()
+                if ln.strip() and not ln.strip().startswith(("-", "*", "#", "|"))
+            ]
+            if prose_lines:
+                steps_with_reasoning += 1
+        total_steps = len(step_blocks) - 1
+        if total_steps > 0 and steps_with_reasoning == 0:
+            suggestions.append(
+                "Process steps jump straight to commands with no reasoning. "
+                "Add one 'why' sentence per step explaining what failure it prevents."
+            )
+            penalty += 5.0
+
+    return issues, warnings, suggestions, penalty
 
 
 def validate_quality(
@@ -232,6 +325,13 @@ def validate_quality(
     if "## Anti-Patterns" not in content:
         suggestions.append("Add anti-patterns section")
         score -= 5
+
+    # Strategic depth: pain-first purpose + why-before-how reasoning
+    depth_issues, depth_warnings, depth_suggestions, depth_penalty = _check_strategic_depth(content)
+    issues.extend(depth_issues)
+    warnings.extend(depth_warnings)
+    suggestions.extend(depth_suggestions)
+    score -= depth_penalty
 
     score = max(0.0, score)
     passed = score >= 70.0

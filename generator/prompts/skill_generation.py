@@ -30,6 +30,9 @@ CRITICAL RULES — FOLLOW EXACTLY:
 6. Include a "Tools" section listing runnable check/fix commands
 7. If you don't have enough context for a section, write a SHORT general guideline rather than fabricating specifics
 8. If the skill involves CI/CD or troubleshooting, explicitly instruct the user to verify environment parity (e.g., checking tool versions) before attempting to reproduce the issue
+9. ## Purpose MUST open with the reader's pain — what they are doing WRONG or suffering WITHOUT this skill. Do NOT start with "This skill". Start with the developer's broken state ("Without X...", "Every time you...", "The common mistake is...").
+10. For each ## Process step: write one WHY sentence (the reasoning) BEFORE the command. The reader must understand the consequence of skipping this step before they run anything.
+11. The frontmatter description: one precise sentence naming who has what pain and how this skill resolves it — NOT "This skill does X".
 
 NOW GENERATE SKILL FOR: {skill_topic}
 Topic Description: {topic_description}
@@ -44,7 +47,7 @@ OUTPUT FORMAT — use EXACTLY this markdown structure (no deviations):
 ---
 name: {{skill_name}}
 description: |
-  [One-line description grounded in this project's actual tech stack]
+  [One sentence: who experiences what pain, and how this skill fixes it. NOT "This skill generates X".]
 license: MIT
 allowed-tools: "Bash Read Write Edit Glob Grep"
 metadata:
@@ -55,7 +58,9 @@ metadata:
 
 ## Purpose
 
-[2-3 sentences: why this skill exists and what problem it solves for THIS project]
+[Pain first: what is the developer doing wrong or suffering RIGHT NOW without this skill?
+Name the specific mistake, inconsistency, or gap. Then explain how this skill prevents it.
+NEVER start with "This skill". Start with the developer's broken state.]
 
 ## Auto-Trigger
 
@@ -75,17 +80,21 @@ Do NOT activate for: [comma-separated negative triggers]
 
 ### 1. [First step name]
 
-[What to do and why]
+[WHY this step matters — one sentence of reasoning explaining what goes wrong if you skip it]
+
+[What to do]
 
 ### 2. [Second step name]
 
-[What to do and why]
+[WHY this step matters — what failure mode it prevents]
 
 ```bash
 [runnable command]
 ```
 
 ### 3. Validate
+
+[WHY validation matters here specifically — what silent failure this catches]
 
 ```bash
 [runnable check/test command]
@@ -98,7 +107,7 @@ Do NOT activate for: [comma-separated negative triggers]
 
 ## Anti-Patterns
 
-❌ **Don't** [bad pattern]
+❌ **Don't** [bad pattern — explain WHY it's bad, not just that it is]
 ✅ **Do** [good pattern]
 
 ## Examples

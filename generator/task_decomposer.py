@@ -6,6 +6,8 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from generator.base_generator import ArtifactGenerator
+
 
 class SubTask(BaseModel):
     """A single decomposed subtask."""
@@ -13,6 +15,10 @@ class SubTask(BaseModel):
     id: int = Field(description="Sequential subtask ID")
     title: str = Field(description="Short imperative title")
     goal: str = Field(description="What this subtask achieves")
+    skip_consequence: str = Field(
+        default="",
+        description="What is blocked or broken if this task is skipped",
+    )
     files: List[str] = Field(default_factory=list, description="Files to create or modify")
     changes: List[str] = Field(default_factory=list, description="Specific changes to make")
     tests: List[str] = Field(default_factory=list, description="Tests to write or verify")
@@ -21,7 +27,7 @@ class SubTask(BaseModel):
     type: str = Field(default="py", description="Task file extension (e.g. py, md)")
 
 
-class TaskDecomposer:
+class TaskDecomposer(ArtifactGenerator):
     """Break a high-level task into subtasks using an AI model."""
 
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = "gemini"):
@@ -266,6 +272,10 @@ Generate the subtasks now:
                 f"## {task.id}. {task.title}",
                 "",
                 f"**Goal:** {task.goal}",
+            ]
+            if task.skip_consequence:
+                lines.append(f"**Skip consequence:** {task.skip_consequence}")
+            lines += [
                 f"**Depends on:** {dep_str}",
                 f"**Estimated:** ~{task.estimated_minutes} min",
                 "",
@@ -294,12 +304,18 @@ Generate the subtasks now:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _build_prompt(
+    def _build_prompt(  # type: ignore[override]
         self,
         user_task: str,
-        project_context: Optional[Dict],
-        project_path: Optional[Path],
+        project_context: Optional[Dict] = None,
+        project_path: Optional[Path] = None,
     ) -> str:
+        """Build the task-decomposition prompt.
+
+        Embeds _PAIN_FIRST_PREAMBLE and _SKIP_CONSEQUENCE_FORMAT so every
+        generated subtask carries a SkipConsequence explaining what breaks
+        if that task is omitted.
+        """
         ctx_block = ""
         if project_context:
             meta = project_context.get("metadata", {})
@@ -313,46 +329,42 @@ Generate the subtasks now:
             if structure.get("entry_points"):
                 ctx_block += f"- Entry points: {', '.join(structure['entry_points'])}\n"
 
-        return f"""# Task Decomposition
-
-Break down the following task into small, actionable subtasks.
-
-MANDATORY: Generate EXACTLY 5-8 subtasks, each 2-5 minutes.
-
-## Task
-{user_task}
-{ctx_block}
-## Requirements
-
-1. Each subtask MUST specify concrete file paths (e.g. `src/api.py`, not "the API file")
-2. Each subtask MUST include code change descriptions with +/- line indicators
-3. Each subtask MUST include test commands (e.g. `pytest tests/test_api.py -k test_create`)
-4. Subtasks must be ordered by dependency (foundations first, features next, tests last)
-5. NO subtask should take longer than 5 minutes
-
-## Output Format
-
-Return a numbered list of 5-8 subtasks. For each subtask provide:
-- Title (short, imperative)
-- Goal (one sentence)
-- Files to create/modify (SPECIFIC paths)
-- Changes (with code snippets showing what to add/modify)
-- Tests (specific pytest/test commands to verify)
-- Dependencies (which subtask IDs must finish first)
-- Estimated minutes (2-5)
-
-Format each subtask as:
-
-### <number>. <title>
-Goal: <goal>
-Files: <comma-separated file paths>
-Changes: <bullet list with code snippets>
-Tests: <bullet list with test commands>
-Dependencies: <comma-separated subtask numbers or "none">
-Estimated: <minutes>
-
-Generate exactly 5-8 subtasks now:
-"""
+        return (
+            f"# Task Decomposition\n\n"
+            f"{self._PAIN_FIRST_PREAMBLE}\n"
+            f"{self._SKIP_CONSEQUENCE_FORMAT}\n"
+            f"Break down the following task into small, actionable subtasks.\n\n"
+            f"MANDATORY: Generate EXACTLY 5-8 subtasks, each 2-5 minutes.\n\n"
+            f"## Task\n{user_task}\n"
+            f"{ctx_block}\n"
+            f"## Requirements\n\n"
+            f"1. Each subtask MUST specify concrete file paths (e.g. `src/api.py`, not \"the API file\")\n"
+            f"2. Each subtask MUST include code change descriptions with +/- line indicators\n"
+            f"3. Each subtask MUST include test commands (e.g. `pytest tests/test_api.py -k test_create`)\n"
+            f"4. Subtasks must be ordered by dependency (foundations first, features next, tests last)\n"
+            f"5. NO subtask should take longer than 5 minutes\n"
+            f"6. Every subtask MUST include a SkipConsequence line\n\n"
+            f"## Output Format\n\n"
+            f"Return a numbered list of 5-8 subtasks. For each subtask provide:\n"
+            f"- Title (short, imperative)\n"
+            f"- Goal (one sentence)\n"
+            f"- SkipConsequence (what breaks or is blocked if this task is skipped)\n"
+            f"- Files to create/modify (SPECIFIC paths)\n"
+            f"- Changes (with code snippets showing what to add/modify)\n"
+            f"- Tests (specific pytest/test commands to verify)\n"
+            f"- Dependencies (which subtask IDs must finish first)\n"
+            f"- Estimated minutes (2-5)\n\n"
+            f"Format each subtask as:\n\n"
+            f"### <number>. <title>\n"
+            f"Goal: <goal>\n"
+            f"SkipConsequence: <what breaks if skipped>\n"
+            f"Files: <comma-separated file paths>\n"
+            f"Changes: <bullet list with code snippets>\n"
+            f"Tests: <bullet list with test commands>\n"
+            f"Dependencies: <comma-separated subtask numbers or \"none\">\n"
+            f"Estimated: <minutes>\n\n"
+            f"Generate exactly 5-8 subtasks now:\n"
+        )
 
     def _call_llm(self, prompt: str) -> str:
         """Call the AI model via the shared factory. Falls back to empty string if unavailable."""
@@ -395,6 +407,7 @@ Generate exactly 5-8 subtasks now:
 
                 title = content.split("\n", 1)[0].strip()
                 goal = self._extract_field(content, "Goal")
+                skip_consequence = self._extract_field(content, "SkipConsequence")
                 files = [f.strip().strip("`") for f in self._extract_field(content, "Files").split(",") if f.strip()]
                 changes = self._extract_list(content, "Changes")
                 tests = self._extract_list(content, "Tests")
@@ -412,6 +425,7 @@ Generate exactly 5-8 subtasks now:
                         id=task_id,
                         title=title,
                         goal=goal or title,
+                        skip_consequence=skip_consequence,
                         files=files,
                         changes=changes,
                         tests=tests,

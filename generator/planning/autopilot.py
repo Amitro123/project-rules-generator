@@ -1,5 +1,6 @@
 """Autopilot orchestrator — manages the end-to-end discovery and execution loop."""
 
+import logging
 import re
 import subprocess
 from pathlib import Path
@@ -13,6 +14,8 @@ from generator.planning.task_executor import TaskExecutor
 from generator.planning.workflow import AgentWorkflow
 from generator.task_decomposer import SubTask
 from prg_utils import git_ops
+
+logger = logging.getLogger(__name__)
 
 
 class AutopilotOrchestrator:
@@ -35,7 +38,7 @@ class AutopilotOrchestrator:
     def discovery(self, task_description: str = "Complete project") -> TaskManifest:
         """PHASE 1: Discovery (rules + skills + plan + tasks)."""
         if self.verbose:
-            click.echo(f"🔍 Discovery Phase: {task_description}")
+            logger.info(f"🔍 Discovery Phase: {task_description}")
 
         workflow = AgentWorkflow(
             project_path=self.project_path,
@@ -60,7 +63,7 @@ class AutopilotOrchestrator:
             5. User: approve → merge | retry → redo | skip → next | stop → exit
         """
         if self.verbose:
-            click.echo("🚀 Starting Supervised Execution Loop...")
+            logger.info("🚀 Starting Supervised Execution Loop...")
 
         executor = TaskExecutor(manifest)
         agent = TaskImplementationAgent(provider=self.provider, api_key=self.api_key)
@@ -70,7 +73,7 @@ class AutopilotOrchestrator:
             main_branch = git_ops.get_current_branch(self.project_path)
         except (OSError, subprocess.SubprocessError):
             if self.verbose:
-                click.echo("⚠️  Not a git repository or git not found. Safety features disabled.")
+                logger.warning("⚠️  Not a git repository or git not found. Safety features disabled.")
 
         completed = 0
         skipped = 0
@@ -81,23 +84,23 @@ class AutopilotOrchestrator:
                 self._print_summary(completed, skipped)
                 break
 
-            click.echo(f"\n{'=' * 60}")
-            click.echo(f"🎯  Task #{nxt.id}: {nxt.title}")
-            click.echo(f"{'=' * 60}")
+            logger.info(f"\n{'=' * 60}")
+            logger.info(f"🎯  Task #{nxt.id}: {nxt.title}")
+            logger.info(f"{'=' * 60}")
 
             branch_name = f"autopilot/task-{nxt.id}"
             if main_branch:
                 try:
                     git_ops.create_branch(branch_name, self.project_path)
-                    click.echo(f"🌿 Branch: {branch_name}")
+                    logger.info(f"🌿 Branch: {branch_name}")
                 except Exception as e:
-                    click.echo(f"⚠️  Branch creation failed: {e}")
+                    logger.warning(f"⚠️  Branch creation failed: {e}")
 
             try:
                 executor.execute_single(nxt.id)
                 subtask = self._load_subtask_details(nxt)
 
-                click.echo("🤖 Agent implementing changes...")
+                logger.info("🤖 Agent implementing changes...")
                 changes = agent.implement(
                     subtask,
                     project_context=self.workflow._get_project_context() if self.workflow else None,
@@ -107,7 +110,7 @@ class AutopilotOrchestrator:
                     full_path = self.project_path / fpath
                     full_path.parent.mkdir(parents=True, exist_ok=True)
                     full_path.write_text(content, encoding="utf-8")
-                    click.echo(f"   ✅ {fpath}")
+                    logger.info(f"   ✅ {fpath}")
 
                 # Run tests after every implementation
                 tests_passed, test_output = self._run_tests(subtask)
@@ -123,18 +126,18 @@ class AutopilotOrchestrator:
                         git_ops.checkout(main_branch, self.project_path)
                         git_ops.merge_branch(branch_name, self.project_path)
                         git_ops.delete_branch(branch_name, force=True, repo_path=self.project_path)
-                        click.echo(f"✅ Task #{nxt.id} merged.")
+                        logger.info(f"✅ Task #{nxt.id} merged.")
                     completed += 1
 
                 elif action == "skip":
-                    click.echo(f"⏭️  Skipping task #{nxt.id}.")
+                    logger.info(f"⏭️  Skipping task #{nxt.id}.")
                     if main_branch:
                         git_ops.checkout(main_branch, self.project_path)
                         git_ops.delete_branch(branch_name, force=True, repo_path=self.project_path)
                     skipped += 1
 
                 else:  # stop
-                    click.echo("🛑 Autopilot stopped by user.")
+                    logger.info("🛑 Autopilot stopped by user.")
                     if main_branch:
                         git_ops.checkout(main_branch, self.project_path)
                         git_ops.delete_branch(branch_name, force=True, repo_path=self.project_path)
@@ -143,7 +146,7 @@ class AutopilotOrchestrator:
                     break
 
             except Exception as e:
-                click.echo(f"❌ Task #{nxt.id} failed: {e}")
+                logger.error(f"❌ Task #{nxt.id} failed: {e}")
                 if main_branch:
                     git_ops.checkout(main_branch, self.project_path)
                     git_ops.rollback_to_head(self.project_path)
@@ -162,7 +165,7 @@ class AutopilotOrchestrator:
         if not runner:
             return True, "No test runner detected — skipping."
 
-        click.echo(f"\n🧪 Running tests: {' '.join([runner] + args)}")
+        logger.info(f"\n🧪 Running tests: {' '.join([runner] + args)}")
         try:
             result = subprocess.run(
                 [runner] + args,
@@ -205,26 +208,26 @@ class AutopilotOrchestrator:
         """Print a concise test result block."""
         icon = "✅" if passed else "❌"
         label = "Tests passed" if passed else "Tests FAILED"
-        click.echo(f"\n{icon} {label}")
+        logger.info(f"\n{icon} {label}")
         # Show last 15 lines — enough to see failures without flooding terminal
         lines = output.splitlines()
         if lines:
-            click.echo("\n".join(lines[-15:]))
+            logger.info("\n".join(lines[-15:]))
 
     def _ask_user(self, title: str, goal: str, tests_passed: bool) -> str:
         """Interactive prompt after implementation + test run.
 
         Returns: 'approve' | 'skip' | 'stop'
         """
-        click.echo(f"\n📋 Task: {title}")
-        click.echo(f"   Goal: {goal}")
+        logger.info(f"\n📋 Task: {title}")
+        logger.info(f"   Goal: {goal}")
         if not tests_passed:
-            click.echo("   ⚠️  Tests failed — review changes before approving.")
+            logger.warning("   ⚠️  Tests failed — review changes before approving.")
 
-        click.echo("\nWhat would you like to do?")
-        click.echo("  [a] Approve & merge")
-        click.echo("  [s] Skip this task")
-        click.echo("  [q] Stop autopilot")
+        logger.info("\nWhat would you like to do?")
+        logger.info("  [a] Approve & merge")
+        logger.info("  [s] Skip this task")
+        logger.info("  [q] Stop autopilot")
 
         while True:
             choice = click.prompt("Choice", default="a").strip().lower()
@@ -234,15 +237,15 @@ class AutopilotOrchestrator:
                 return "skip"
             if choice in ("q", "quit", "stop", "n", "no"):
                 return "stop"
-            click.echo("Please enter a, s, or q.")
+            logger.info("Please enter a, s, or q.")
 
     def _print_summary(self, completed: int, skipped: int) -> None:
         """Print end-of-run summary."""
-        click.echo(f"\n{'=' * 60}")
-        click.echo("🎉 Autopilot run complete")
-        click.echo(f"   ✅ Completed : {completed}")
-        click.echo(f"   ⏭️  Skipped   : {skipped}")
-        click.echo(f"{'=' * 60}")
+        logger.info(f"\n{'=' * 60}")
+        logger.info("🎉 Autopilot run complete")
+        logger.info(f"   ✅ Completed : {completed}")
+        logger.info(f"   ⏭️  Skipped   : {skipped}")
+        logger.info(f"{'=' * 60}")
 
     def _load_subtask_details(self, entry) -> SubTask:
         """Load full SubTask details from the task file."""

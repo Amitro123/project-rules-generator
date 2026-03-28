@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import yaml
 
 from generator.skill_discovery import SkillDiscovery
+from generator.tech_registry import TECH_TOOLS as _TECH_TOOLS
 from generator.utils.quality_checker import QualityReport
 from generator.utils.tech_detector import detect_from_dependencies as _detect_from_deps_util
 from generator.utils.tech_detector import detect_tech_stack as _detect_tech_stack_util
@@ -57,30 +58,8 @@ class CoworkSkillCreator:
     - Hallucination detection
     """
 
-    # Technology → Required Tools mapping (Cowork intelligence)
-    TECH_TOOLS = {
-        "fastapi": ["uvicorn", "pydantic", "pytest", "httpx"],
-        "flask": ["flask", "pytest", "requests"],
-        "django": ["django", "pytest", "django-admin"],
-        "react": ["npm", "webpack", "jest", "eslint"],
-        "vue": ["npm", "vue-cli", "jest"],
-        "pytest": ["pytest", "coverage", "pytest-cov"],
-        "qa": ["pytest", "coverage", "ruff", "vulture"],
-        "docker": ["docker", "docker-compose"],
-        "kubernetes": ["kubectl", "helm"],
-        "sqlalchemy": ["alembic", "pytest"],
-        "celery": ["redis-cli", "celery"],
-        "redis": ["redis-cli"],
-        "postgresql": ["psql", "pg_dump"],
-        "mongodb": ["mongosh", "mongodump"],
-        "git": ["git"],
-        "github": ["gh"],
-        "openai": ["pytest", "ruff", "mypy"],
-        "anthropic": ["pytest", "ruff", "mypy"],
-        "gemini": ["pytest", "ruff", "mypy"],
-        "groq": ["pytest", "ruff", "mypy"],
-        "langchain": ["pytest", "ruff"],
-    }
+    # Technology → Required Tools mapping (single source of truth: tech_registry.py)
+    TECH_TOOLS = _TECH_TOOLS
 
     # Common trigger patterns (Cowork-style synonyms)
     TRIGGER_SYNONYMS = {
@@ -595,10 +574,11 @@ class CoworkSkillCreator:
             if any(word in line_lower for word in skill_words) and len(stripped) > 20:
                 return stripped[:150]
 
-        # Fallback: generic but specific
-        tech_part = skill_name.split("-")[0].upper() if "-" in skill_name else ""
-        action_part = skill_name.split("-")[-1] if "-" in skill_name else "workflow"
-        return f"{tech_part} {action_part} for this project"
+        # Fallback: pain-oriented default (avoids "This skill provides...")
+        parts = skill_name.split("-")
+        tech = parts[0].upper() if parts else skill_name.upper()
+        action = " ".join(parts[1:]).replace("-", " ") if len(parts) > 1 else "workflow"
+        return f"Inconsistent {action} patterns accumulate when {tech} projects lack a shared approach. Apply this skill to enforce the correct {action} workflow every time."
 
     def _generate_negative_triggers(self, skill_name: str, tech_stack: List[str]) -> List[str]:
         """Generate negative triggers to prevent over-activation (GAP 5)."""
@@ -943,7 +923,7 @@ class CoworkSkillCreator:
             "tags": tags,  # GAP 8
             "critical_rules": critical_rules,  # GAP-5 CRITICAL section
             "purpose": metadata.description,
-            "purpose_extended": f"This skill provides step-by-step guidance for {skill_name.replace('-', ' ')}.",
+            "purpose_extended": "",  # description already carries the pain-first statement
             "auto_triggers": metadata.auto_triggers,
             "project_signals": metadata.project_signals,
             "tools": metadata.tools,
@@ -992,8 +972,6 @@ class CoworkSkillCreator:
 ## Purpose
 
 {metadata.description}
-
-This skill provides step-by-step guidance for {skill_name.replace("-", " ")}.
 
 ## Auto-Trigger
 

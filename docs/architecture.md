@@ -1,23 +1,59 @@
-# PRG Skills Architecture
+# PRG Architecture
 
 ## Overview
 
-The skills system in PRG is organized into clear, single-responsibility components.
-This document describes the architecture after the v1.1 cleanup.
+PRG generators share a common strategic-depth contract via `ArtifactGenerator`.
+Every generated artifact — rules, plans, skills — must identify the reader's pain
+before prescribing action, and explain WHY before HOW for each step or rule.
 
 ## Core Components
 
 | File | Role | Status |
 |------|------|--------|
+| `generator/base_generator.py` | **Base** - `ArtifactGenerator` ABC, strategic-depth contract | ✅ NEW (v1.5) |
+| `generator/rules_creator.py` | **Rules** - `CoworkRulesCreator(ArtifactGenerator)` | ✅ Refactored (v1.5) |
+| `generator/task_decomposer.py` | **Plans** - `TaskDecomposer(ArtifactGenerator)` | ✅ Refactored (v1.5) |
 | `generator/skills_manager.py` | **Facade** - Single entry point for all skill operations | ✅ Active |
-| `generator/skill_generator.py` | **Orchestrator** - Strategy Pattern for skill creation | ✅ Active (Refactored v1.1) |
+| `generator/skill_generator.py` | **Skills** - `SkillGenerator(ArtifactGenerator)`, Strategy Pattern | ✅ Refactored (v1.5) |
 | `generator/skill_creator.py` | **Cowork Intelligence** - High-quality skill generation | ✅ Active |
 | `generator/skill_parser.py` | **Parser** - Extracts data from skill files | ✅ Active |
 | `generator/skill_templates.py` | **Templates** - Loads YAML skill templates | ✅ Active |
+| `generator/tech_registry.py` | **Tech Registry** - Single source for all tech metadata | ✅ NEW (v1.4) |
 | `generator/utils/tech_detector.py` | **Tech Detection** - Consolidated tech stack detection | ✅ NEW (v1.1) |
-| `generator/utils/quality_checker.py` | **Quality** - Consolidated quality validation | ✅ NEW (v1.1) |
+| `generator/utils/quality_checker.py` | **Quality** - Strategic-depth + format validation | ✅ Refactored (v1.5) |
 
 ## Architecture Diagram
+
+### Strategic Depth Hierarchy (v1.5)
+
+```
+ArtifactGenerator (ABC)                    generator/base_generator.py
+─────────────────────────────────────────────────────────────────────
+_PAIN_FIRST_PREAMBLE    : str   "describe what BREAKS without this rule/step..."
+_WHY_RULE_FORMAT        : str   "DO: <rule> | WHY: <one sentence consequence>"
+_SKIP_CONSEQUENCE_FORMAT: str   "SkipConsequence: <what breaks if task omitted>"
+─────────────────────────────────────────────────────────────────────
++ format_rule_with_why(rule, why) → str     [static]  "X — Y."
++ validate_depth(content) → QualityReport              calls quality gate
+# _build_prompt(*args, **kwargs) → str       [abstract] enforces the contract
+         △                    △                    △
+         │                    │                    │
+CoworkRulesCreator      TaskDecomposer        SkillGenerator
+──────────────────      ──────────────        ──────────────
+_build_prompt()         _build_prompt()       _build_prompt()
+  preamble +              preamble +            delegates to
+  _WHY_RULE_FORMAT         _SKIP_              skill_generation.
+_generate_rules_          CONSEQUENCE_        build_skill_prompt()
+  via_llm()               FORMAT               (rules 9-11 embedded)
+  parses WHY from       _parse_response()
+  "DO: X | WHY: Y"       extracts
+  via format_rule_        skip_consequence
+  _with_why()           generate_plan_md()
+                          renders
+                          **Skip consequence:**
+```
+
+### Skills Pipeline (v1.1+)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -33,7 +69,7 @@ This document describes the architecture after the v1.1 cleanup.
         ▼                  ▼                  ▼
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
 │SkillDiscovery│  │SkillGenerator│  │ SkillParser  │
-│              │  │              │  │              │
+│              │  │(ArtifactGen) │  │              │
 │• list_skills │  │• create_skill│  │• parse_skill │
 │• resolve     │  │  (Strategy)  │  │• extract     │
 └──────────────┘  └───────┬──────┘  └──────────────┘
@@ -45,8 +81,8 @@ This document describes the architecture after the v1.1 cleanup.
 ┌──────────────┐                  ┌──────────────────┐
 │  Strategies  │                  │CoworkSkillCreator│
 │              │                  │                  │
-│• AIStrategy  │                  │• Smart triggers  │
-│• READMEStrat │◄─────────────────│• Tool selection  │
+│• AIStrategy  │                  │• Pain-first goals│
+│• READMEStrat │◄─────────────────│• WHY per step    │
 │• CoworkStrat │  (uses)          │• Quality gates   │
 │• StubStrat   │                  │• Jinja2 template │
 └──────────────┘                  └──────────────────┘
@@ -58,8 +94,8 @@ This document describes the architecture after the v1.1 cleanup.
               │  generator/utils │
               │                  │
               │• tech_detector   │
-              │• quality_checker │
-              │• encoding        │
+              │• quality_checker │◄── _check_strategic_depth()
+              │• readme_bridge   │    pain-first + why checks
               └──────────────────┘
 ```
 
@@ -85,8 +121,39 @@ Consolidated tech detection from `skill_creator.py` and `skill_parser.py`:
 ### `quality_checker.py`
 Consolidated quality checking from `skill_generator.py` and `skill_creator.py`:
 - `is_stub(filepath, project_path)` - Check if skill is a generic stub
-- `validate_quality(content, triggers, tools)` - Full quality report
+- `validate_quality(content, triggers, tools)` - Full quality report with strategic depth
+- `_check_strategic_depth(content)` - NEW (v1.5): penalises shallow artifacts
+  - `-15` if Purpose opens with "This skill / This generates / Automatically"
+  - `-10` if Purpose contains no pain indicators ("without", "prevents", "instead of"…)
+  - `-5` if Process steps have no reasoning before commands
 - `QualityReport` - Dataclass with score, issues, warnings, suggestions
+
+## Strategic Depth Contract (v1.5)
+
+Every PRG artifact must satisfy three requirements enforced by `ArtifactGenerator`:
+
+| Requirement | Applies to | How enforced |
+|---|---|---|
+| **Pain-first Purpose** | Skills, Rules | `_check_strategic_depth()` in quality gate |
+| **WHY before HOW** | Rules | `_WHY_RULE_FORMAT` in `_build_prompt()` + `format_rule_with_why()` |
+| **Skip consequence** | Plan tasks | `_SKIP_CONSEQUENCE_FORMAT` in `_build_prompt()` + `SubTask.skip_consequence` |
+
+### Why this matters
+
+A rule without WHY is ignored. A plan task without skip-consequence is treated as optional.
+A skill Purpose that opens with "This skill generates X" fails to answer the reader's
+first question: *"Is this my problem?"*
+
+**Before (shallow):**
+```
+DO: Use async/await for I/O operations
+```
+
+**After (strategic depth):**
+```
+DO: Use async/await for I/O operations | WHY: blocking the event loop stalls all concurrent requests
+```
+Stored as: `"Use async/await for I/O operations — blocking the event loop stalls all concurrent requests."`
 
 ## Files Removed (v1.1)
 
@@ -176,12 +243,16 @@ CoworkSkillCreator.create_skill()
 
 ```
 generator/
+├── base_generator.py       # ArtifactGenerator ABC — strategic-depth contract (v1.5)
+├── rules_creator.py        # CoworkRulesCreator(ArtifactGenerator)
+├── task_decomposer.py      # TaskDecomposer(ArtifactGenerator)
 ├── skills_manager.py       # Facade (entry point)
-├── skill_generator.py      # Orchestrator (Strategy Pattern)
+├── skill_generator.py      # SkillGenerator(ArtifactGenerator) + Strategy Pattern
 ├── skill_creator.py        # Cowork intelligence
 ├── skill_parser.py         # Parser
 ├── skill_templates.py      # Template loader
 ├── skill_discovery.py      # File discovery
+├── tech_registry.py        # Single source of truth for all tech metadata (v1.4)
 ├── strategies/             # Strategy implementations
 │   ├── __init__.py
 │   ├── base.py
@@ -192,7 +263,8 @@ generator/
 └── utils/                  # Shared utilities
     ├── __init__.py
     ├── tech_detector.py    # Tech stack detection
-    ├── quality_checker.py  # Quality validation
+    ├── quality_checker.py  # Quality validation + _check_strategic_depth()
+    ├── readme_bridge.py    # README sufficiency + project tree
     ├── encoding.py         # Encoding utilities
     └── cli.py              # CLI utilities
 ```

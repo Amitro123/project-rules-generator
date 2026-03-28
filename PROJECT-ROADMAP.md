@@ -93,13 +93,13 @@
 | H1: Delete `_detect_tech_stack` copies; delegate to `tech_detector` | ✅ Done | — |
 | M6: Consolidate builtin sync into `SkillPathManager` | ✅ Done | — |
 | M7: Add `find_readme()` to `readme_bridge.py` | ✅ Done | — |
-| M2: Replace `click.echo`/`print()` with `logging` in generator layer | ⏳ Not started | `planning/`, `readme_generator.py` — 4 files, ~80 occurrences |
+| M2: Replace `click.echo`/`print()` with `logging` in generator layer | ✅ Done | `workflow.py`, `project_manager.py` decoupled; `readme_generator.py` and `autopilot.py` kept (genuine interactive UI) |
 
 ### P3 — Architecture Major Work (plan separately)
 
 | Item | Est. Effort | Risk |
 |---|---|---|
-| H2: `tech_registry.py` — consolidate 7 tech dictionaries | 1 day | Medium |
+| H2: `tech_registry.py` — consolidate 7 tech dictionaries | ✅ Done | — |
 | H3: `skill_creator.py` God Object — split into triggers/signals/metadata modules | 2–3 days | High |
 | H4: `analyze_cmd.py` God Object — extract `AnalyzePipeline` | 2–3 days | High |
 | CLI-to-library coupling — `ProjectManager` uses `CliRunner` internally | 2 days | High |

@@ -2,66 +2,53 @@ import logging
 import re
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 logger = logging.getLogger(__name__)
 
+from generator.base_generator import ArtifactGenerator
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_parser import SkillParser
+from generator.tech_registry import TECH_SKILL_NAMES as _TECH_SKILL_NAMES
 from generator.utils.quality_checker import is_stub as _check_is_stub
 
 
-class SkillGenerator:
-    """Manages creation and generation of skills."""
+class SkillGenerator(ArtifactGenerator):
+    """Manages creation and generation of skills.
 
-    # Tech name → preferred skill filename
-    TECH_SKILL_NAMES = {
-        "fastapi": "fastapi-endpoints",
-        "flask": "flask-routes",
-        "django": "django-views",
-        "express": "express-routes",
-        "react": "react-components",
-        "vue": "vue-components",
-        "pytest": "pytest-testing",
-        "jest": "jest-testing",
-        "docker": "docker-deployment",
-        "sqlalchemy": "sqlalchemy-models",
-        "celery": "celery-tasks",
-        "pydantic": "pydantic-validation",
-        "click": "click-cli",
-        "typer": "typer-cli",
-        "websocket": "websocket-handler",
-        "websockets": "websocket-handler",
-        "graphql": "graphql-schema",
-        "redis": "redis-caching",
-        "mongodb": "mongodb-queries",
-        "postgresql": "postgresql-queries",
-        "pytorch": "pytorch-training",
-        "tensorflow": "tensorflow-models",
-        "openai": "openai-api",
-        "anthropic": "claude-cowork-workflow",
-        "groq": "groq-api",
-        "gemini": "gemini-api",
-        "perplexity": "perplexity-api",
-        "langchain": "langchain-chains",
-        "httpx": "httpx-client",
-        "requests": "requests-client",
-        "chrome": "chrome-extension",
-        "chrome-extension": "chrome-extension",
-        "gitpython": "gitpython-ops",
-        "mcp": "mcp-protocol",
-        "uvicorn": "uvicorn-server",
-        "aiohttp": "aiohttp-client",
-        # 2D/3D canvas & DXF editing
-        "dxf": "dxf-processing",
-        "konva": "konva-nesting-canvas",
-        "canvas": "konva-nesting-canvas",
-        "threejs": "threejs-scene",
-        "babylon": "babylon-scene",
-        "supabase": "supabase-auth-storage",
-        "reportlab": "reportlab-pdf",
-        "pdf": "reportlab-pdf",
-    }
+    Inherits strategic-depth contract from ArtifactGenerator.
+    Prompt construction is delegated to skill_generation.build_skill_prompt,
+    which already embeds the pain-first + why-before-how rules (rules 9-11).
+    """
+
+    # Tech name → preferred skill filename (single source of truth: tech_registry.py)
+    TECH_SKILL_NAMES = _TECH_SKILL_NAMES
+
+    def _build_prompt(  # type: ignore[override]
+        self,
+        skill_name: str,
+        project_name: str = "",
+        context: Optional[Dict] = None,
+        code_examples: Optional[List] = None,
+        detected_patterns: Optional[List] = None,
+        project_path: Optional[Path] = None,
+        **_kwargs: object,
+    ) -> str:
+        """Delegate to skill_generation.build_skill_prompt.
+
+        That function already embeds _PAIN_FIRST_PREAMBLE via CRITICAL rules
+        9-11 added in the strategic-depth refactor.
+        """
+        from generator.prompts.skill_generation import build_skill_prompt
+
+        return build_skill_prompt(
+            skill_topic=skill_name,
+            project_name=project_name,
+            context=context or {},
+            code_examples=code_examples or [],
+            detected_patterns=detected_patterns or [],
+            project_path=project_path,
+        )
 
     def __init__(self, discovery: SkillDiscovery):
         self.discovery = discovery

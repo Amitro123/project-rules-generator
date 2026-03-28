@@ -20,6 +20,9 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import yaml
 
+from generator.base_generator import ArtifactGenerator
+from generator.tech_registry import TECH_RULES as _TECH_RULES
+
 
 @dataclass
 class Rule:
@@ -70,9 +73,12 @@ def append_mandatory_anti_patterns(generated_rules: str, framework: str = "") ->
     return generated_rules + anti_patterns_section + "\n"
 
 
-class CoworkRulesCreator:
+class CoworkRulesCreator(ArtifactGenerator):
     """
     Generates Cowork-quality rules for PRG projects.
+
+    Inherits from ArtifactGenerator to enforce strategic depth:
+    every rule carries a WHY clause explaining what breaks without it.
 
     This creator combines:
     - Tech-specific rules (FastAPI -> REST patterns)
@@ -81,166 +87,8 @@ class CoworkRulesCreator:
     - Quality validation with conflict detection
     """
 
-    # Technology-Specific Rules mapping (Cowork intelligence)
-    TECH_RULES = {
-        "fastapi": {
-            "high": [
-                "Use async/await for I/O operations (database, external APIs)",
-                "Define Pydantic models for all request/response bodies",
-                "Use Depends() for dependency injection (don't pass dependencies manually)",
-                "Add response_model to all endpoints for validation",
-            ],
-            "medium": [
-                "Use APIRouter for modular route organization",
-                "Add OpenAPI tags and descriptions to endpoints",
-                "Implement proper exception handlers with HTTPException",
-                "Use BackgroundTasks for non-blocking operations",
-            ],
-            "low": [
-                "Add request/response examples in docstrings",
-                "Use status codes from fastapi.status module",
-            ],
-        },
-        "react": {
-            "high": [
-                "Use functional components with hooks (not class components)",
-                "Keep components pure - avoid side effects in render",
-                "Use useCallback/useMemo for expensive computations",
-                "Avoid prop drilling - use Context or state management",
-            ],
-            "medium": [
-                "Split large components into smaller, reusable ones",
-                "Use custom hooks to extract reusable logic",
-                "Implement error boundaries for graceful failures",
-                "Use React.lazy() for code splitting",
-            ],
-            "low": [
-                "Add PropTypes or TypeScript for type safety",
-                "Use React DevTools for debugging",
-            ],
-        },
-        "pytest": {
-            "high": [
-                "Use fixtures for test setup/teardown (don't repeat setup)",
-                "Parametrize tests with @pytest.mark.parametrize",
-                "Mock external dependencies (APIs, databases)",
-            ],
-            "medium": [
-                "Organize tests in tests/ mirroring source structure",
-                "Use conftest.py for shared fixtures",
-                "Add docstrings explaining what each test validates",
-            ],
-            "low": [
-                "Use pytest.raises() for exception testing",
-                "Add markers (@pytest.mark.slow) for test categories",
-            ],
-        },
-        "docker": {
-            "high": [
-                "Use multi-stage builds to minimize image size",
-                "Don't run containers as root (use USER directive)",
-                "Pin specific versions in base images (not :latest)",
-            ],
-            "medium": [
-                "Use .dockerignore to exclude unnecessary files",
-                "Set health checks with HEALTHCHECK directive",
-                "Use docker-compose for multi-container setups",
-            ],
-        },
-        "asyncio": {
-            "high": [
-                "Always use async/await (not callbacks or futures)",
-                "Don't mix blocking and async code in same function",
-                "Use asyncio.gather() for concurrent operations",
-            ],
-            "medium": [
-                "Implement proper exception handling in async tasks",
-                "Use asyncio.create_task() for fire-and-forget operations",
-                "Add timeouts to async operations (asyncio.wait_for)",
-            ],
-        },
-        "sqlalchemy": {
-            "high": [
-                "Use async SQLAlchemy for async frameworks",
-                "Always use sessions properly (with context manager)",
-                "Define relationships with lazy='selectin' to avoid N+1",
-            ],
-            "medium": [
-                "Use Alembic for database migrations",
-                "Add indexes on frequently queried columns",
-                "Implement soft deletes for critical data",
-            ],
-        },
-        "click": {
-            "high": [
-                "Keep @click.command() functions thin — delegate business logic to core modules",
-                "Use click.testing.CliRunner for all CLI integration tests",
-                "Always set exit codes explicitly: sys.exit(0) success, sys.exit(1) failure",
-                "Use click.echo() for output, never print() directly in command functions",
-            ],
-            "medium": [
-                "Group related commands with @click.group() and register in a dedicated CLI module",
-                "Add --verbose / -v flag to every command for debug output",
-                "Use click.Path(exists=True) for path arguments to validate early",
-                "Add help strings to every @click.option() and @click.argument()",
-            ],
-            "low": [
-                "Use click.confirm() for destructive operations",
-                "Add epilog= to commands showing usage examples",
-            ],
-        },
-        "pydantic": {
-            "high": [
-                "Define Pydantic models for all structured data (not raw dicts)",
-                "Use Field() with description= for self-documenting models",
-                "Validate at the boundary — parse input into models as early as possible",
-            ],
-            "medium": [
-                "Use model_validator for cross-field validation logic",
-                "Prefer model.model_dump() over dict() (Pydantic v2)",
-                "Use Optional[X] = None for truly optional fields, not X = None",
-            ],
-            "low": [
-                "Add json_schema_extra for OpenAPI documentation hints",
-            ],
-        },
-        "jinja2": {
-            "high": [
-                "Store all templates in templates/ with .jinja2 extension",
-                "Never build markdown/HTML by string concatenation — use templates",
-                "Use Environment(autoescape=False) for markdown templates (not HTML)",
-            ],
-            "medium": [
-                "Pass only the data the template needs — avoid passing full objects",
-                "Use {%- and -%} to control whitespace in generated output",
-                "Test template rendering in unit tests with known fixture data",
-            ],
-        },
-        "groq": {
-            "high": [
-                "Always use the GroqClient wrapper — never call the Groq API directly",
-                "Set GROQ_API_KEY via environment variable, never hardcode",
-                "Handle groq.RateLimitError with exponential backoff retry",
-            ],
-            "medium": [
-                "Use llama-3.1-8b-instant for fast tasks, llama-3.3-70b for quality",
-                "Log token usage per request for cost monitoring",
-                "Implement provider fallback: Groq -> Gemini on failure",
-            ],
-        },
-        "gemini": {
-            "high": [
-                "Always use the GeminiClient wrapper — never call the Gemini API directly",
-                "Set GEMINI_API_KEY via environment variable, never hardcode",
-                "Handle google.api_core.exceptions.ResourceExhausted with retry",
-            ],
-            "medium": [
-                "Use gemini-2.0-flash for speed, gemini-1.5-pro for complex reasoning",
-                "Implement provider fallback: Gemini -> Groq on quota exhaustion",
-                "Log model name and token count for every API call",
-            ],
-        },
-    }
+    # Technology-Specific Rules mapping (single source of truth: tech_registry.py)
+    TECH_RULES = _TECH_RULES
 
     # Anti-patterns to detect from git history
     GIT_ANTIPATTERNS = {
@@ -433,6 +281,39 @@ class CoworkRulesCreator:
 
         return signals
 
+    def _build_prompt(self, metadata: "RulesMetadata", readme_content: str = "") -> str:  # type: ignore[override]
+        """Build the LLM prompt for rules generation.
+
+        Embeds _PAIN_FIRST_PREAMBLE and _WHY_RULE_FORMAT so every generated
+        rule carries a WHY clause explaining what breaks without it.
+        """
+        from generator.utils.readme_bridge import build_project_tree
+
+        tree = build_project_tree(self.project_path)
+
+        snippets: list[str] = []
+        for fname in ["main.py", "app.py", "pyproject.toml", "requirements.txt",
+                      "package.json", "Cargo.toml", "go.mod"]:
+            p = self.project_path / fname
+            if p.exists():
+                try:
+                    snippets.append(f"[{fname}]\n{p.read_text(encoding='utf-8', errors='ignore')[:400]}")
+                except OSError:
+                    pass
+
+        return (
+            f"{self._PAIN_FIRST_PREAMBLE}\n"
+            f"{self._WHY_RULE_FORMAT}\n"
+            f"Project: {metadata.project_name}\n"
+            f"Tech stack detected: {', '.join(metadata.tech_stack) or 'unknown'}\n"
+            f"Project tree:\n{tree}\n\n"
+            f"Key files:\n{chr(10).join(snippets) or 'No key files found.'}\n\n"
+            f"README excerpt:\n{readme_content[:600] or 'No README.'}\n\n"
+            f"Generate 6-10 specific, actionable coding rules for this project.\n"
+            f"Rules must be specific to this tech stack and project structure.\n"
+            f"No extra markdown — only DO:/DONT: lines with | WHY: clauses."
+        )
+
     def _generate_rules_via_llm(
         self,
         metadata: RulesMetadata,
@@ -443,50 +324,7 @@ class CoworkRulesCreator:
         Called as fallback when no tech in metadata.tech_stack exists in TECH_RULES.
         Parses the LLM response into Rule objects. Falls back to generic rules on failure.
         """
-        from generator.utils.readme_bridge import build_project_tree
-
-        tree = build_project_tree(self.project_path)
-
-        # Load a few key files for grounding (lightweight version)
-        snippets: list[str] = []
-        for fname in [
-            "main.py",
-            "app.py",
-            "pyproject.toml",
-            "requirements.txt",
-            "package.json",
-            "Cargo.toml",
-            "go.mod",
-        ]:
-            p = self.project_path / fname
-            if p.exists():
-                try:
-                    snippets.append(f"[{fname}]\n{p.read_text(encoding='utf-8', errors='ignore')[:400]}")
-                except OSError:
-                    pass
-
-        prompt = f"""You are generating coding rules for a software project.
-
-Project: {metadata.project_name}
-Tech stack detected: {", ".join(metadata.tech_stack) or "unknown"}
-Project tree:
-{tree}
-
-Key files:
-{chr(10).join(snippets) or "No key files found."}
-
-README excerpt:
-{readme_content[:600] or "No README."}
-
-Generate 6-10 specific, actionable coding rules for this project.
-Format strictly as:
-DO: <rule>
-DO: <rule>
-DONT: <rule>
-DONT: <rule>
-
-Rules must be specific to this tech stack and project structure.
-No explanations, no markdown, just the DO:/DONT: lines."""
+        prompt = self._build_prompt(metadata, readme_content)
 
         try:
             from generator.llm_skill_generator import LLMSkillGenerator
@@ -498,19 +336,32 @@ No explanations, no markdown, just the DO:/DONT: lines."""
             for line in response.splitlines():
                 line = line.strip()
                 if line.upper().startswith("DO:"):
+                    raw = line[3:].strip()
+                    if "|" in raw:
+                        rule_part, why_part = raw.split("|", 1)
+                        why_part = re.sub(r"(?i)^why:\s*", "", why_part.strip())
+                        content = self.format_rule_with_why(rule_part.strip(), why_part)
+                    else:
+                        content = raw
                     rules_by_category["Coding Standards"].append(
                         Rule(
-                            content=line[3:].strip(),
+                            content=content,
                             priority="High",
                             category="Coding Standards",
                             source="llm_fallback",
                         )
                     )
                 elif line.upper().startswith("DONT:") or line.upper().startswith("DON'T:"):
-                    content = line.split(":", 1)[-1].strip()
+                    raw = line.split(":", 1)[-1].strip()
+                    if "|" in raw:
+                        rule_part, why_part = raw.split("|", 1)
+                        why_part = re.sub(r"(?i)^why:\s*", "", why_part.strip())
+                        content = self.format_rule_with_why(f"Don't {rule_part.strip()}", why_part)
+                    else:
+                        content = f"Don't {raw}"
                     rules_by_category["Coding Standards"].append(
                         Rule(
-                            content=f"Don't {content}",
+                            content=content,
                             priority="High",
                             category="Coding Standards",
                             source="llm_fallback",
