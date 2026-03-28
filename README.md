@@ -4,7 +4,7 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-512%20Passing-green.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-500%20Passing-green.svg)](tests/)
 
 Most rule generators give you static templates. **Project Rules Generator (PRG)** reads your code, understands your architecture, and **learns from your patterns** to create smarter, context-aware `.clinerules` for any AI agent (Claude, Cursor, Windsurf, Gemini).
 
@@ -22,28 +22,33 @@ Most rule generators give you static templates. **Project Rules Generator (PRG)*
 ---
 
 ## Features
-- **Context Awareness**: Reads your README & structure instead of using generic templates.
-- **Memory**: Learns across ALL projects, not just one.
-- **Expert Skills**: Generates advanced rules like "Optimize FFmpeg for ML" instead of just "Use React".
-- **Smart Router**: Auto-selects the best available AI provider with graceful fallback.
-- **Git Integration**: Auto-commits changes with smart `.gitignore` handling.
-- **Constitution**: Automatically generates project `constitution.md` principles.
-- **Incremental**: Fast! Updates only changed files or skills.
-- **Context Optimization**: Smart `.clinerules.yaml` exclusions.
+
+| Feature | Description | AI Required |
+|:--------|:------------|:-----------:|
+| **Basic Analysis** | Scans code structure & README, generates `rules.md` | No |
+| **AI Skills** | LLM-generated workflow skills tailored to your project | Yes |
+| **Incremental** | Re-generates only changed sections — 3–5x faster | No |
+| **Constitution** | Generates `constitution.md` coding principles | No |
+| **Planning** | `prg plan` breaks a task into subtasks with `PLAN.md` | Yes |
+| **Two-Stage Design** | `prg design` → `prg plan` for complex features | Yes |
+| **Autopilot** | End-to-end discovery → plan → execute loop | Yes |
+| **Project Manager** | Full lifecycle orchestration (Setup → Verify → Exec → Report) | Yes |
+| **Smart Router** | Auto-selects best available provider; falls back gracefully | — |
 
 ---
 
 ## Quick Start
-Generate rules for your current project — no API key required:
+The fastest way to get started — no API key required:
 
 ```bash
-prg analyze . --no-commit
+cd /path/to/your-project
+prg init .
 ```
-*This generates `.clinerules/rules.md` and `.clinerules/skills/index.md` from your project structure and README.*
+*Detects your stack, generates `.clinerules/rules.md` from your README and file structure, and prints next steps.*
 
 With an API key, add `--ai` for deeper analysis:
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export GROQ_API_KEY=gsk_...   # free — get one at console.groq.com
 prg analyze . --ai
 ```
 
@@ -73,12 +78,12 @@ prg --version
 
 PRG automatically routes to the best available provider based on your environment variables.
 
-| Provider | Quality | Speed | Key Variable |
-|:---|:---:|:---:|:---|
-| **Anthropic** (Claude 3.5 Sonnet) | ⭐95 | 65 | `ANTHROPIC_API_KEY` |
-| **OpenAI** (GPT-4o-mini) | ⭐90 | 70 | `OPENAI_API_KEY` |
-| **Gemini** (2.0 Flash) | ⭐85 | 85 | `GEMINI_API_KEY` |
-| **Groq** (Llama 3.1-8b) | ⭐75 | 95 | `GROQ_API_KEY` |
+| Provider | Model | Quality | Speed | Key Variable |
+|:---|:---|:---:|:---:|:---|
+| **Anthropic** | Claude Sonnet 4.6 | ⭐95 | 65 | `ANTHROPIC_API_KEY` |
+| **OpenAI** | GPT-4o-mini | ⭐90 | 70 | `OPENAI_API_KEY` |
+| **Gemini** | Gemini 2.0 Flash | ⭐85 | 85 | `GEMINI_API_KEY` |
+| **Groq** | Llama 3.1 8b | ⭐75 | 95 | `GROQ_API_KEY` |
 
 **Auto-detection**: PRG reads your env vars and picks the best available provider automatically.
 
@@ -138,11 +143,11 @@ prg analyze . --constitution
 Break a task into subtasks, track progress, and execute step-by-step.
 
 ```bash
-# Generate a plan from a description
-prg plan "Add OAuth2 authentication"
+# Optional: generate an architectural design first (Stage 1)
+prg design "Add OAuth2 authentication"
 
-# Check progress on the current plan
-prg status
+# Generate an implementation plan (Stage 2, or standalone)
+prg plan "Add OAuth2 authentication"
 
 # Execute the next pending task
 prg next
@@ -167,16 +172,16 @@ prg providers benchmark            # Rank by quality/speed composite
 
 ## How It Works
 
-PRG operates on a 3-layer architecture for skill resolution:
-1. **Project** (`.clinerules/skills/project/`): High priority overrides.
-2. **Global Learned** (`~/.project-rules-generator/learned/`): Your personal library.
-3. **Builtin** (`~/.project-rules-generator/builtin/`): Default best practices.
+PRG operates on a 3-layer architecture for skill resolution (highest → lowest priority):
+1. **Project** (`.clinerules/skills/project/`): Skills created with `--create-skill` — AI-generated with your project's context, project-specific.
+2. **Learned** (`.clinerules/skills/learned/`): Reusable tech-pattern skills from the README auto-flow, shared across projects.
+3. **Builtin** (`~/.project-rules-generator/builtin/`): Default best practices bundled with PRG.
 
 ```mermaid
 graph TB
     A[prg analyze . --ai] --> B[AIStrategyRouter]
     B --> C{Best provider?}
-    C -->|ANTHROPIC_API_KEY set| D[Claude 3.5 Sonnet]
+    C -->|ANTHROPIC_API_KEY set| D[Claude Sonnet 4.6]
     C -->|GROQ_API_KEY set| E[Llama 3.1-8b]
     C -->|no keys| F[README-only mode]
     D --> G[.clinerules/rules.md + skills/]
@@ -193,9 +198,9 @@ All generated files are consolidated into a single `.clinerules/` directory:
 ├── clinerules.yaml       # Lightweight YAML skill references
 ├── auto-triggers.json    # Skill activation trigger phrases
 └── skills/
-    ├── project/          # Project-specific overrides (Highest Priority)
-    ├── learned/          # Global learned skills (Medium Priority)
-    └── builtin/          # Core PRG skills (Lowest Priority)
+    ├── project/          # --create-skill output, project-specific (Highest Priority)
+    ├── learned/          # README-flow tech-pattern skills, reusable (Medium Priority)
+    └── builtin/          # Bundled best-practice skills (Lowest Priority)
 ```
 
 ---
