@@ -102,7 +102,10 @@ def providers_test(provider: str | None) -> None:
     any_tested = False
     for p in to_test:
         env_key = PROVIDER_ENV_KEYS.get(p, f"{p.upper()}_API_KEY")
-        if not os.getenv(env_key):
+        has_key = bool(os.getenv(env_key)) or (
+            p == "gemini" and bool(os.getenv("GOOGLE_API_KEY"))
+        )
+        if not has_key:
             click.echo(f"⚠️  {p:<12} — no API key ({env_key} not set)")
             continue
 

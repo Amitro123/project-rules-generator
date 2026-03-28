@@ -155,20 +155,24 @@ class DesignGenerator:
             provider: AI provider ('gemini' or 'groq'), defaults to 'groq'
         """
         # Auto-detect provider if not explicitly set
+        _gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         if provider is None or provider == "groq":
             # Default to Groq to avoid API key errors
             if os.getenv("GROQ_API_KEY"):
                 self.provider = "groq"
                 self.api_key = api_key or os.getenv("GROQ_API_KEY")
-            elif os.getenv("GEMINI_API_KEY"):
+            elif _gemini_key:
                 self.provider = "gemini"
-                self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+                self.api_key = api_key or _gemini_key
             else:
                 self.provider = "groq"
                 self.api_key = api_key
         else:
             self.provider = provider
-            self.api_key = api_key or os.getenv(f"{provider.upper()}_API_KEY")
+            if provider == "gemini":
+                self.api_key = api_key or _gemini_key
+            else:
+                self.api_key = api_key or os.getenv(f"{provider.upper()}_API_KEY")
 
         # Only initialize AI client if an API key is available; otherwise fallback deterministically
         self.client: Optional[Any] = None

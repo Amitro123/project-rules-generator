@@ -153,11 +153,19 @@ class AIStrategyRouter:
             return sorted(preferred, key=lambda p: -_auto_score(p))
 
     def _available_providers(self, candidates: List[str]) -> List[str]:
-        """Filter to providers that have an API key set."""
-        return [
-            p for p in candidates
-            if os.getenv(PROVIDER_ENV_KEYS.get(p, f"{p.upper()}_API_KEY"))
-        ]
+        """Filter to providers that have an API key set.
+
+        Gemini accepts either GEMINI_API_KEY or GOOGLE_API_KEY.
+        """
+        available = []
+        for p in candidates:
+            env_key = PROVIDER_ENV_KEYS.get(p, f"{p.upper()}_API_KEY")
+            has_key = bool(os.getenv(env_key)) or (
+                p == "gemini" and bool(os.getenv("GOOGLE_API_KEY"))
+            )
+            if has_key:
+                available.append(p)
+        return available
 
     # ------------------------------------------------------------------
     # Generation
@@ -219,7 +227,9 @@ class AIStrategyRouter:
 
         for provider in ["anthropic", "groq", "gemini", "openai"]:
             env_key = PROVIDER_ENV_KEYS.get(provider, f"{provider.upper()}_API_KEY")
-            has_key = bool(os.getenv(env_key))
+            has_key = bool(os.getenv(env_key)) or (
+                provider == "gemini" and bool(os.getenv("GOOGLE_API_KEY"))
+            )
 
             statuses.append(
                 {
