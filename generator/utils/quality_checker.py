@@ -288,6 +288,32 @@ def validate_quality(
         score -= 10
         warnings.append("No tools specified")
 
+    # Check allowed-tools is a YAML list, not a quoted string
+    # A quoted string still works (we split() it) but diverges from the documented
+    # contract and will propagate the bad pattern to generated skills.
+    meta_for_tools, _ = _parse_frontmatter(content)
+    raw_tools_value = meta_for_tools.get("tools") or meta_for_tools.get("allowed-tools")
+    if isinstance(raw_tools_value, str) and raw_tools_value.strip():
+        score -= 5
+        warnings.append(
+            "allowed-tools is a quoted string, not a YAML list. "
+            "Use a YAML list (- Bash\\n  - Read ...) so the schema is consistent."
+        )
+
+    # Check description frontmatter contains When … trigger phrases
+    # The description field is the machine-readable trigger source for agents.
+    # It must contain at least one line starting with "When" so agents know when to activate.
+    desc_value = meta_for_tools.get("description", "")
+    if desc_value:
+        desc_lines = [ln.strip() for ln in str(desc_value).splitlines() if ln.strip()]
+        has_when_trigger = any(ln.lower().startswith("when") for ln in desc_lines)
+        if not has_when_trigger:
+            score -= 10
+            issues.append(
+                "description frontmatter lacks 'When ...' trigger phrases. "
+                "Each line should start with 'When the user ...' so agents know when to activate."
+            )
+
     # Check content length
     if len(content) < 200:
         score -= 20
