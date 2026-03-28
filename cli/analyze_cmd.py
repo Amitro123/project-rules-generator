@@ -227,7 +227,7 @@ def setup_orchestrator(config):
 @click.argument("project_path", type=click.Path(exists=True, file_okay=False), default=".")
 @click.option("--commit/--no-commit", default=True, help="Auto-commit to git")
 @click.option("--interactive", "-i", is_flag=True, help="Interactive prompts")
-@click.option("--verbose/--quiet", default=True, help="Verbose output")
+@click.option("--verbose/--quiet", default=False, help="Verbose output (version banner, provider info)")
 @click.option("--export-json", is_flag=True, help="Export skills as JSON")
 @click.option("--export-yaml", is_flag=True, help="Export skills as YAML")
 @click.option(

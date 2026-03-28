@@ -90,14 +90,6 @@ class CoworkRulesCreator(ArtifactGenerator):
     # Technology-Specific Rules mapping (single source of truth: tech_registry.py)
     TECH_RULES = _TECH_RULES
 
-    # Anti-patterns to detect from git history
-    GIT_ANTIPATTERNS = {
-        "repeated_fixes": "Frequent fixes to same file",
-        "large_commits": "Commits with 500+ lines",
-        "merge_conflicts": "Frequent merge conflicts",
-        "reverted_commits": "Commits that were reverted",
-    }
-
     def __init__(self, project_path: Path, provider: str = "groq"):
         """Initialize with project path for context awareness."""
         self.project_path = project_path

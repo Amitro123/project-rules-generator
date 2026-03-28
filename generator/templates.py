@@ -1,29 +1,6 @@
 """Template management for rules and skills generation."""
 
-from pathlib import Path
 from typing import Any, Dict
-
-import yaml
-
-
-def load_template(template_name: str, templates_dir: str = "templates") -> Dict[str, Any]:
-    """Load a YAML template file.
-
-    Args:
-        template_name: Name of template (e.g., 'rules' or 'skills')
-        templates_dir: Directory containing templates
-
-    Returns:
-        Template structure as dict
-    """
-    template_path = Path(templates_dir) / f"{template_name}_template.yaml"
-
-    if template_path.exists():
-        with open(template_path, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f)
-
-    # Return default templates if file doesn't exist
-    return get_default_template(template_name)
 
 
 def get_default_template(template_type: str) -> Dict[str, Any]:
@@ -145,11 +122,6 @@ Load these skills in your IDE agent or via:
 
 Or reference directly when starting a session with the agent.
 """
-
-
-def get_rules_template() -> str:
-    """Get the markdown template for rules generation."""
-    return RULES_TEMPLATE_MD
 
 
 def get_skills_template() -> str:

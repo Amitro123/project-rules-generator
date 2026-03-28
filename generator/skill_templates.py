@@ -69,20 +69,3 @@ def load_skill_from_yaml(file_path: Path) -> List[Skill]:
         print(f"Error loading skills from {file_path}: {e}")
         return []
 
-
-def get_tech_skills(tech_stack: List[str]) -> List[Skill]:
-    """Get skills for specific technologies."""
-    skills = []
-    # Tech skills are now also stored in YAML templates in the same dir
-    for tech in tech_stack:
-        tech_skills = load_skill_template(tech)
-        if tech_skills:
-            for s in tech_skills:
-                s.category = "tech"  # Ensure category is set
-                skills.append(s)
-    return skills
-
-
-def get_core_skills() -> List[Skill]:
-    """Get core generic skills."""
-    return load_skill_template("core")

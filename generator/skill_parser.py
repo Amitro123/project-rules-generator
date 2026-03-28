@@ -70,8 +70,6 @@ class SkillParser:
         return f"Integration patterns for {tech} in {project_name or 'this project'}."
 
     @staticmethod
-
-    @staticmethod
     def build_guidelines(tech: str, context_lines: List[str]) -> str:
         """Build guidelines from extracted project context."""
         guidelines = []

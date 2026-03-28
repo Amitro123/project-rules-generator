@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 if "click" not in sys.modules:
     sys.modules["click"] = MagicMock()
 
-from generator.readme_generator import generate_readme_interactively, generate_readme_with_llm, is_readme_minimal
+from generator.readme_generator import generate_readme_with_llm, is_readme_minimal
 
 
 class TestReadmeGenerator(unittest.TestCase):
@@ -49,27 +49,6 @@ class TestReadmeGenerator(unittest.TestCase):
         content = "# Title\n\nDesc\n" + ("\nLine" * 10) + ("A" * 200)
         p.write_text(content, encoding="utf-8")
         self.assertFalse(is_readme_minimal(p))
-
-    @patch("click.prompt")
-    @patch("click.confirm")
-    @patch("generator.readme_generator.generate_readme_template")
-    @patch("generator.project_analyzer.ProjectAnalyzer")
-    def test_generate_interactive(self, mock_analyzer_cls, mock_gen_template, mock_confirm, mock_prompt):
-        """Test flow of interactive generation."""
-        # Mocks
-        mock_prompt.side_effect = ["Test Proj", "Desc", "Purpose", "Python", "Features"]
-        mock_confirm.return_value = True
-        mock_gen_template.return_value = "# Template README"
-        mock_analyzer = MagicMock()
-        mock_analyzer.analyze.return_value = {"tech_stack": {}, "structure": {}}
-        mock_analyzer_cls.return_value = mock_analyzer
-
-        # Run
-        content = generate_readme_interactively(self.test_dir, use_ai=False)
-
-        # Verify
-        self.assertEqual(content, "# Template README")
-        mock_gen_template.assert_called_once()
 
     @patch("generator.llm_skill_generator.LLMSkillGenerator")
     def test_generate_readme_with_llm_success(self, mock_llm_gen_cls):

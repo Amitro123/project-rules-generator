@@ -42,61 +42,6 @@ def is_readme_minimal(readme_path: Path) -> bool:
         return True
 
 
-from generator.utils import flush_input
-
-
-def generate_readme_interactively(project_path: Path, use_ai: bool) -> str:
-    """Generate README through user prompts and LLM."""
-
-    click.echo("\n" + "=" * 60)
-    click.echo("📚 Interactive README Generation")
-    click.echo("=" * 60 + "\n")
-    click.echo("Let's create a README for your project!\n")
-
-    # Gather user input
-    user_input = {}
-
-    flush_input()
-    user_input["name"] = click.prompt("Project name", default=project_path.name)
-
-    user_input["description"] = click.prompt("One-line description", default="")
-
-    user_input["purpose"] = click.prompt("What problem does it solve?", default="")
-
-    user_input["tech_stack"] = click.prompt("Main technologies (comma-separated)", default="")
-
-    user_input["features"] = click.prompt("Key features (comma-separated)", default="")
-
-    # Scan project structure
-    click.echo("\n🔍 Scanning project structure...")
-    from generator.project_analyzer import ProjectAnalyzer
-
-    analyzer = ProjectAnalyzer(project_path)
-    context = analyzer.analyze()
-
-    if use_ai:
-        # Use LLM to generate README
-        click.echo("🤖 Generating README with AI...\n")
-        readme_content = generate_readme_with_llm(user_input, context)
-    else:
-        # Use template
-        readme_content = generate_readme_template(user_input, context)
-
-    # Preview
-    click.echo("=" * 60)
-    click.echo("📄 Generated README Preview:")
-    click.echo("=" * 60)
-    preview = readme_content[:600] + ("\n...\n(truncated)" if len(readme_content) > 600 else "")
-    click.echo(preview)
-    click.echo("=" * 60 + "\n")
-
-    flush_input()
-    if not click.confirm("Save this README?", default=True):
-        click.echo("❌ Cancelled.")
-        raise click.Abort()
-
-    return readme_content
-
 
 def generate_readme_with_llm(
     user_input: Dict,

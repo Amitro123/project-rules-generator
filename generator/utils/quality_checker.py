@@ -103,12 +103,21 @@ def _parse_frontmatter(content: str):
 
 
 def _extract_body_triggers(content: str) -> List[str]:
-    """Extract trigger phrases from the ## Auto-Trigger markdown section."""
+    """Extract trigger phrases from the ## Auto-Trigger markdown section.
+
+    Tries bold phrases first (**"phrase"** or **phrase**); falls back to plain
+    bullet-list items so skills that don't use bold formatting still count.
+    """
     if "## Auto-Trigger" not in content:
         return []
     section = re.split(r"\n## ", content.split("## Auto-Trigger", 1)[1])[0]
-    # Match bold phrases: **"phrase"** or **phrase**
-    return re.findall(r'\*\*["\']?([^"\'*\n]+)["\']?\*\*', section)
+    # Prefer bold phrases: **"phrase"** or **phrase**
+    bold = re.findall(r'\*\*["\']?([^"\'*\n]+)["\']?\*\*', section)
+    if bold:
+        return bold
+    # Fall back to plain bullet items: "- phrase" or "* phrase"
+    bullets = re.findall(r"^[-*]\s+(.+)", section, re.MULTILINE)
+    return [b.strip() for b in bullets if b.strip()]
 
 
 # Patterns that signal a Purpose section is describing the skill's features
@@ -242,8 +251,9 @@ def validate_quality(
                     elif isinstance(item, str):
                         flat.append(item)
                 yaml_triggers = flat
-            body_triggers = _extract_body_triggers(content) if not yaml_triggers else []
-            metadata_triggers = yaml_triggers or body_triggers
+            body_triggers = _extract_body_triggers(content)
+            # Merge both sources; yaml takes precedence for deduplication ordering
+            metadata_triggers = list(dict.fromkeys(yaml_triggers + body_triggers))
         if metadata_tools is None:
             raw_tools = meta.get("tools") or meta.get("allowed-tools") or []
             if isinstance(raw_tools, str):
@@ -310,6 +320,26 @@ def validate_quality(
         if re.search(rf"\b{sentinel}\b", content):  # case-sensitive, word boundary
             issues.append(f"Contains placeholder: {sentinel}")
             score -= 10
+
+    # General bracket-placeholder detection — catches patterns not covered by the
+    # specific list above (e.g. StubStrategy output: "[First step]", "[description]",
+    # "[One sentence: what problem does this solve and for whom.]").
+    # Strip frontmatter and code blocks first to avoid flagging YAML arrays or
+    # code syntax like Dict[str, int].
+    _, _body = _parse_frontmatter(content)
+    _body_no_code = re.sub(r"```.*?```", "", _body, flags=re.DOTALL)
+    _specific_prefixes = {p.lstrip("[").lower() for p in bracket_placeholders}
+    _general_placeholders = [
+        m for m in re.findall(r"\[([^\]]{5,})\](?!\()", _body_no_code)
+        if not any(m.lower().startswith(sp) for sp in _specific_prefixes)
+    ]
+    if _general_placeholders:
+        _unique_placeholders = list(dict.fromkeys(_general_placeholders))
+        score -= min(len(_unique_placeholders) * 5, 25)
+        issues.append(
+            f"Contains {len(_unique_placeholders)} unfilled bracket placeholder(s) "
+            f"(e.g. \"{_unique_placeholders[0]}\") — fill in or remove before using"
+        )
 
     # Check for generic path placeholders
     if "cd project_name" in content or "cd /path/to" in content:

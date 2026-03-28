@@ -144,60 +144,6 @@ def generate_clinerules(
     return yaml.dump(clinerules, default_flow_style=False, sort_keys=False, allow_unicode=True)
 
 
-def generate_clinerules_with_inline(
-    project_name: str,
-    selected_skills: Set[str],
-    rules_content: str = "",
-    project_context: Optional[Dict[str, Any]] = None,
-) -> str:
-    """
-    Generate a .clinerules file with inline skill content (backward compatible).
-
-    This produces the full unified format with rules + embedded skill definitions,
-    while also including the lightweight skill references.
-
-    Args:
-        project_name: Name of the project
-        selected_skills: Set of skill refs
-        rules_content: Pre-generated rules markdown content
-        project_context: Optional project context
-
-    Returns:
-        Markdown string with rules and embedded skills
-    """
-    content = rules_content or ""
-
-    # Add lightweight YAML header as comment
-    yaml_refs = generate_clinerules(project_name, selected_skills, project_context)
-    content += f"\n\n<!-- Skill References (lightweight)\n{yaml_refs}-->\n"
-
-    # Add skill section with loaded content
-    content += "\n# Agent Skills\n\n"
-
-    builtin_loaded = 0
-    learned_loaded = 0
-
-    for skill_ref in sorted(selected_skills):
-        skill_path = SkillPathManager.get_skill_path(skill_ref)
-        if skill_path and skill_path.exists():
-            try:
-                skill_content = skill_path.read_text(encoding="utf-8", errors="replace")
-                name = skill_ref.split("/")[-1]
-                content += f"\n## Skill: {name}\n\n{skill_content}\n\n---\n"
-
-                if skill_ref.startswith("builtin/"):
-                    builtin_loaded += 1
-                else:
-                    learned_loaded += 1
-            except Exception as e:
-                logger.warning(f"Failed to load skill {skill_ref}: {e}")
-        else:
-            logger.debug(f"Skill file not found for: {skill_ref}")
-
-    content += f"\n<!-- Skills loaded: {builtin_loaded} builtin, {learned_loaded} learned -->\n"
-
-    return content
-
 
 def _build_context_config(project_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Build context configuration for .clinerules.yaml.

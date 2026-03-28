@@ -32,7 +32,6 @@ class TriggerReport:
     total: int
     hits: int
     misses: List[str] = field(default_factory=list)
-    triggers_found: List[str] = field(default_factory=list)
 
 
 class TriggerEvaluator:

@@ -2,6 +2,7 @@
 
 import pytest
 from click.testing import CliRunner
+from unittest.mock import patch
 
 from generator.task_decomposer import SubTask, TaskDecomposer
 from main import cli
@@ -115,6 +116,31 @@ class TestGeneratePlanMd:
         assert "# PLAN" in md
         assert "0" in md  # 0 subtasks
 
+    def test_plan_skip_consequence_rendered(self):
+        """generate_plan_md() must render **Skip consequence:** when the field is set."""
+        tasks = [
+            SubTask(
+                id=1,
+                title="Write tests",
+                goal="Cover the feature",
+                skip_consequence="Regressions ship undetected",
+                estimated_minutes=3,
+            )
+        ]
+        md = TaskDecomposer.generate_plan_md(tasks, user_task="Add feature")
+
+        assert "**Skip consequence:**" in md
+        assert "Regressions ship undetected" in md
+
+    def test_plan_skip_consequence_omitted_when_empty(self):
+        """generate_plan_md() must NOT emit the Skip consequence line when field is empty."""
+        tasks = [
+            SubTask(id=1, title="Do thing", goal="A goal", estimated_minutes=2)
+        ]
+        md = TaskDecomposer.generate_plan_md(tasks)
+
+        assert "**Skip consequence:**" not in md
+
 
 class TestParseResponse:
     """Test parsing of LLM-style responses."""
@@ -165,9 +191,80 @@ Estimated: 4
 
         assert len(tasks) >= 1
 
+    def test_parse_skip_consequence_extracted(self):
+        """_parse_response() must populate skip_consequence from SkipConsequence: field."""
+        raw = """### 1. Add authentication middleware
+Goal: Protect all API endpoints
+SkipConsequence: All endpoints remain publicly accessible; security audit will fail
+Files: middleware/auth.py
+Changes:
+- Add JWT validation
+Tests:
+- Test auth middleware
+Dependencies: none
+Estimated: 4
+"""
+        decomposer = TaskDecomposer(api_key=None)
+        tasks = decomposer._parse_response(raw, "Add auth")
+
+        assert len(tasks) == 1
+        assert "publicly accessible" in tasks[0].skip_consequence
+
+    def test_parse_skip_consequence_empty_when_absent(self):
+        """skip_consequence defaults to empty string when field not in response."""
+        raw = """### 1. Create module
+Goal: Build the core module
+Files: core.py
+Changes:
+- Add main logic
+Tests:
+- pytest core
+Dependencies: none
+Estimated: 3
+"""
+        decomposer = TaskDecomposer(api_key=None)
+        tasks = decomposer._parse_response(raw, "Build module")
+
+        assert tasks[0].skip_consequence == ""
+
+    def test_parse_skip_consequence_multiple_tasks(self):
+        """skip_consequence is extracted independently for each task in a response."""
+        raw = """### 1. Write tests
+Goal: Cover the new endpoint
+SkipConsequence: Regressions go undetected in CI
+Files: tests/test_api.py
+Changes:
+- Add endpoint tests
+Tests:
+- pytest tests/test_api.py
+Dependencies: none
+Estimated: 3
+
+### 2. Implement endpoint
+Goal: Add the POST /items route
+Files: api/items.py
+Changes:
+- Add route handler
+Tests:
+- pytest tests/test_api.py
+Dependencies: 1
+Estimated: 4
+"""
+        decomposer = TaskDecomposer(api_key=None)
+        tasks = decomposer._parse_response(raw, "Add items endpoint")
+
+        assert tasks[0].skip_consequence == "Regressions go undetected in CI"
+        assert tasks[1].skip_consequence == ""
+
 
 class TestFromDesign:
     """Test generating tasks from a DESIGN.md file."""
+
+    @pytest.fixture(autouse=True)
+    def mock_llm(self):
+        """Prevent live Gemini calls regardless of env vars."""
+        with patch.object(TaskDecomposer, "_call_llm", return_value=""):
+            yield
 
     def _write_design(self, tmp_path):
         design_md = """# Design: Auth System

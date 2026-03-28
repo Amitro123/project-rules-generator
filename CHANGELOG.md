@@ -4,6 +4,98 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.2.1] — 2026-03-28
+
+### 🐛 Bug Fixes & Test Coverage
+
+#### FIX-1 — `TestFromDesign` flaky tests (live Gemini calls)
+**File:** `tests/test_task_decomposer.py`
+
+`TestFromDesign` created `TaskDecomposer(api_key=None)` but `__init__` still picked up
+`GOOGLE_API_KEY` / `GEMINI_API_KEY` from the environment, causing live API calls and
+non-deterministic results.
+
+Fix: added `@pytest.fixture(autouse=True)` to `TestFromDesign` that patches
+`TaskDecomposer._call_llm` to return `""`, forcing the deterministic
+`_tasks_from_design` fallback path. Tests run in ~0.3 s regardless of env state.
+
+---
+
+#### FIX-2 — `StubStrategy` output passed the quality gate with score 90
+**File:** `generator/utils/quality_checker.py`
+
+The existing bracket-placeholder check used a narrow list of 5 specific prefixes
+(`[describe`, `[example`, `[your`, `[add`, `[insert`). `StubStrategy` generates 8+
+unfilled placeholders (`[One sentence: ...]`, `[First step]`, `[Second step]`,
+`[description]`, `[What artifact...]`, `[What NOT to do]`, `[What to do instead]`) that
+none of those prefixes matched. Score stayed at 90 — above the 70 pass threshold.
+
+Fix: added a general bracket-placeholder detector after the specific list. It strips
+frontmatter and code blocks, then matches `[5+ chars]` not followed by `(` (excludes
+markdown links and code syntax like `Dict[str, int]`). Each unique unfilled placeholder
+deducts -5 points, capped at -25. `StubStrategy` output now scores ~65 (fails gate).
+
+---
+
+#### FIX-3 — Auto-trigger count: 0 when triggers are plain bullet items
+**File:** `generator/utils/quality_checker.py`
+
+`_extract_body_triggers()` only matched `**bold**` phrases. Skills using plain bullet
+lists (e.g. `systematic-debugging/SKILL.md`: `- User reports: "bug", "error", ...`)
+returned 0 triggers → -10 score penalty despite 3+ triggers being present.
+
+Additionally, body triggers were skipped entirely when YAML `triggers:` had any entries
+(`if not yaml_triggers else []`), meaning the two sources were never merged.
+
+Fix:
+- `_extract_body_triggers()` now falls back to plain `- bullet` extraction when no bold
+  phrases are found.
+- Merge logic changed to always read both sources:
+  `metadata_triggers = list(dict.fromkeys(yaml_triggers + body_triggers))`
+
+---
+
+#### FIX-4 — `SubTask.skip_consequence` field lacked dedicated tests
+**File:** `tests/test_task_decomposer.py`
+
+The `skip_consequence` field added in v0.2.0 had no tests verifying its extraction or
+rendering. `_parse_response()` could silently stop reading `SkipConsequence:` and
+`generate_plan_md()` could drop `**Skip consequence:**` without any test failing.
+
+Added 5 tests:
+- `TestParseResponse.test_parse_skip_consequence_extracted` — field populated from LLM response
+- `TestParseResponse.test_parse_skip_consequence_empty_when_absent` — defaults to `""`
+- `TestParseResponse.test_parse_skip_consequence_multiple_tasks` — extracted per-task independently
+- `TestGeneratePlanMd.test_plan_skip_consequence_rendered` — `**Skip consequence:**` rendered when set
+- `TestGeneratePlanMd.test_plan_skip_consequence_omitted_when_empty` — line absent when field empty
+
+---
+
+#### FIX-5 — `prg analyze` printed version banner on every run
+**File:** `cli/analyze_cmd.py`
+
+`--verbose/--quiet` defaulted to `True`, causing the `Project Rules Generator v0.2.0`
+banner (and provider info, target path) to appear on every `prg analyze` invocation.
+
+Fix: changed default to `False`. Diagnostic output (banner, target, provider) is now
+`--verbose` only. Meaningful action output (skill creation, rules saved, errors) was
+already unconditional and is unaffected.
+
+---
+
+### 🧪 Tests
+
+| Test class | Tests added | Covers |
+|---|---|---|
+| `TestBracketPlaceholderDetection` | 7 | FIX-2: clean skill no false-positive, specific stub patterns, full StubStrategy fails gate, code-block immunity, markdown link immunity, per-item penalty scaling |
+| `TestAutoTriggerParsing` | 5 | FIX-3: plain bullets, bold bullets, yaml+body merge, no-trigger penalty preserved, systematic-debugging exact format |
+| `TestParseResponse` | 3 | FIX-4: skip_consequence extracted, empty default, per-task independence |
+| `TestGeneratePlanMd` | 2 | FIX-4: rendered when set, omitted when empty |
+
+**Total: 547 passing, 11 skipped** (up from 530 before this session)
+
+---
+
 ## [v0.2.0] — 2026-03-28
 
 ### Strategic Depth Pipeline (v1.5 architecture)
@@ -86,31 +178,6 @@ Pain-first structure: opens with the developer's broken state ("Every AI agent s
 #### Builtin skill removed
 
 `.clinerules/skills/builtin/readme-improver.md` — deleted. Content was shallow and feature-first; replaced by live AI generation via `prg analyze . --create-skill readme-improver --ai`.
-
----
-
-### What to tackle next session
-
-- **Gemini quota**: `GOOGLE_API_KEY` hits the free-tier 20 req/day limit for `gemini-2.5-flash`.
-  Workaround confirmed: `export GEMINI_MODEL=gemini-2.5-flash-lite` uses separate quota.
-  Real fix: enable billing for the Generative Language API in the Google Cloud project
-  associated with `GOOGLE_API_KEY`, or set `GEMINI_API_KEY` to a paid-tier key.
-
-- **Quality gate for stubs**: When all providers fail, `StubStrategy` generates placeholder
-  content (brackets like `[One sentence: ...]`) that scores 90 — the checker doesn't penalise
-  unfilled placeholders. Consider adding a stub-detection pass that flags bracket placeholders
-  as a warning.
-
-- **Auto-trigger count warning**: Skills generated by CoworkStrategy/AI often have 3 triggers
-  in `## Auto-Trigger` prose but the parser counts 0 (reads only frontmatter `triggers:` list).
-  Parser and generator need to stay in sync.
-
-- **Version display**: `prg analyze` prints `Project Rules Generator v0.2.0` on every run —
-  consider making this a `--verbose` flag output only.
-
-- **`SubTask.skip_consequence` test coverage**: The new field has no dedicated tests yet.
-  Add tests for `_parse_response()` extracting the `SkipConsequence:` field and
-  `generate_plan_md()` rendering `**Skip consequence:**`.
 
 ---
 

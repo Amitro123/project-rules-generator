@@ -366,3 +366,183 @@ def test_link_from_learned_flat_file_still_works(tmp_path):
     assert link_calls, "link_from_learned() failed for flat .md skill"
     src, _ = link_calls[0]
     assert src == flat_skill
+
+
+# ---------------------------------------------------------------------------
+# Bracket placeholder detection — general regex catches StubStrategy output
+# ---------------------------------------------------------------------------
+
+
+class TestBracketPlaceholderDetection:
+    """validate_quality() must penalise unfilled [bracket placeholder] patterns."""
+
+    _BASE = (
+        "## Purpose\n\nWithout this skill developers forget to validate inputs.\n\n"
+        "## Auto-Trigger\n\n**\"run test\"** **\"execute test\"** **\"verify test\"**\n\n"
+        "## Process\n\n### 1. Do the thing\n\nRun the command.\n\n"
+        "```bash\npytest\n```\n\n"
+        "### 2. Check results\n\nVerify output matches expectations.\n\n"
+        "## Output\n\nGreen test suite.\n\n"
+        "## Anti-Patterns\n\n❌ Don't skip\n"
+    )
+
+    def test_clean_skill_has_no_placeholder_issue(self):
+        report = validate_quality(self._BASE)
+        placeholder_issues = [i for i in report.issues if "unfilled bracket" in i]
+        assert not placeholder_issues, f"False positive on clean skill: {placeholder_issues}"
+
+    def test_stub_first_step_placeholder_detected(self):
+        content = self._BASE.replace("### 1. Do the thing", "### 1. [First step]")
+        report = validate_quality(content)
+        assert any("unfilled bracket" in i for i in report.issues), (
+            "[First step] bracket placeholder should be flagged"
+        )
+
+    def test_stub_one_sentence_placeholder_detected(self):
+        content = self._BASE.replace(
+            "Without this skill developers forget to validate inputs.",
+            "[One sentence: what problem does this solve and for whom.]",
+        )
+        report = validate_quality(content)
+        assert any("unfilled bracket" in i for i in report.issues), (
+            "[One sentence: ...] bracket placeholder should be flagged"
+        )
+
+    def test_stub_strategy_output_fails_quality_gate(self):
+        """Full StubStrategy output must score below 70 (quality gate fails)."""
+        from generator.strategies.stub_strategy import StubStrategy
+
+        stub_content = StubStrategy().generate(
+            skill_name="my-test-skill",
+            project_path=None,
+            from_readme=None,
+            provider="gemini",
+        )
+        report = validate_quality(stub_content)
+        assert not report.passed, (
+            f"StubStrategy output passed quality gate with score={report.score:.0f}; "
+            "unfilled placeholders should push it below 70"
+        )
+        assert any("unfilled bracket" in i for i in report.issues), (
+            "No bracket-placeholder issue reported for StubStrategy output"
+        )
+
+    def test_bracket_in_code_block_not_flagged(self):
+        """Bracket patterns inside code blocks must NOT be penalised."""
+        content = self._BASE + "\n```python\ndef foo(x: Dict[str, int]) -> None:\n    pass\n```\n"
+        report = validate_quality(content)
+        placeholder_issues = [i for i in report.issues if "unfilled bracket" in i]
+        assert not placeholder_issues, (
+            f"Code-block bracket syntax falsely flagged: {placeholder_issues}"
+        )
+
+    def test_multiple_placeholders_penalised_per_item(self):
+        """Each unique unfilled placeholder adds to the penalty (capped at 25)."""
+        content = (
+            self._BASE
+            + "\n[First task]\n[Second task]\n[Third task]\n[Fourth task]\n[Fifth task]\n"
+        )
+        report_one = validate_quality(self._BASE + "\n[First task]\n")
+        report_five = validate_quality(content)
+        assert report_five.score < report_one.score, (
+            "More unfilled placeholders should produce a lower score"
+        )
+
+    def test_markdown_link_not_flagged(self):
+        """[text](url) markdown links must NOT trigger the placeholder check."""
+        content = self._BASE + "\nSee [the docs](https://example.com) for details.\n"
+        report = validate_quality(content)
+        placeholder_issues = [i for i in report.issues if "unfilled bracket" in i]
+        assert not placeholder_issues, (
+            f"Markdown link falsely flagged as placeholder: {placeholder_issues}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Auto-trigger count bug — parser must read both frontmatter AND body section
+# ---------------------------------------------------------------------------
+
+
+class TestAutoTriggerParsing:
+    """validate_quality() must count triggers from prose bullets, not only bold/frontmatter."""
+
+    _SECTIONS = (
+        "## Purpose\n\nWithout this developers miss bugs.\n\n"
+        "## Process\n\n### 1. Run\n\nExecute the command.\n\n"
+        "```bash\npytest\n```\n\n"
+        "### 2. Review\n\nCheck results.\n\n"
+        "## Output\n\nGreen suite.\n\n"
+        "## Anti-Patterns\n\n❌ Don't skip\n"
+    )
+
+    def test_plain_bullet_triggers_counted(self):
+        """Plain bullet list in ## Auto-Trigger must be counted (not bold-only)."""
+        content = (
+            "## Auto-Trigger\n\n"
+            "- run test\n"
+            "- execute test\n"
+            "- verify test\n\n"
+            + self._SECTIONS
+        )
+        report = validate_quality(content)
+        trigger_warnings = [w for w in report.warnings if "trigger" in w.lower()]
+        assert not trigger_warnings, (
+            f"Plain bullet triggers not counted: {trigger_warnings}"
+        )
+
+    def test_bold_bullet_triggers_still_counted(self):
+        """Existing **bold** format in body must still be counted."""
+        content = (
+            "## Auto-Trigger\n\n"
+            'Activate when user mentions:\n'
+            '- **"run test"**\n'
+            '- **"execute test"**\n'
+            '- **"verify test"**\n\n'
+            + self._SECTIONS
+        )
+        report = validate_quality(content)
+        trigger_warnings = [w for w in report.warnings if "trigger" in w.lower()]
+        assert not trigger_warnings, (
+            f"Bold body triggers not counted: {trigger_warnings}"
+        )
+
+    def test_yaml_and_body_triggers_merged(self):
+        """When YAML has some triggers and body has more, both are counted."""
+        content = (
+            "---\n"
+            "triggers:\n"
+            '  - "run test"\n'
+            "allowed-tools: Bash\n"
+            "---\n\n"
+            "## Auto-Trigger\n\n"
+            "- execute test\n"
+            "- verify test\n\n"
+            + self._SECTIONS
+        )
+        report = validate_quality(content)
+        trigger_warnings = [w for w in report.warnings if "trigger" in w.lower()]
+        assert not trigger_warnings, (
+            f"YAML + body triggers should combine to 3+: {trigger_warnings}"
+        )
+
+    def test_no_triggers_still_penalised(self):
+        """A skill with no triggers at all must still get the trigger warning."""
+        content = "## Auto-Trigger\n\nActivate for relevant tasks.\n\n" + self._SECTIONS
+        report = validate_quality(content)
+        trigger_warnings = [w for w in report.warnings if "trigger" in w.lower()]
+        assert trigger_warnings, "Missing triggers should still produce a warning"
+
+    def test_systematic_debugging_format_counted(self):
+        """The exact format used in systematic-debugging/SKILL.md must count triggers."""
+        content = (
+            "## Auto-Trigger\n"
+            '- User reports: "bug", "error", "not working", "failing test"\n'
+            "- CI/CD failure\n"
+            "- Exception in logs\n\n"
+            + self._SECTIONS
+        )
+        report = validate_quality(content)
+        trigger_warnings = [w for w in report.warnings if "trigger" in w.lower()]
+        assert not trigger_warnings, (
+            f"systematic-debugging-style triggers not counted: {trigger_warnings}"
+        )
