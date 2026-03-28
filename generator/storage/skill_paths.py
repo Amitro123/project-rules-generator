@@ -99,48 +99,10 @@ class SkillPathManager:
         return skill_path
 
     @classmethod
-    def get_learned_skill(cls, category: str, name: str) -> Optional[str]:
-        """Load a learned skill's content."""
-        for ext in (".md", ".yaml", ".yml"):
-            path = cls.GLOBAL_LEARNED / category / f"{name}{ext}"
-            if path.exists():
-                return path.read_text(encoding="utf-8", errors="replace")
-        return None
 
     @classmethod
-    def list_learned_skills(cls) -> Dict[str, list]:
-        """List all learned skills organized by category."""
-        result: Dict[str, list] = {}
-        if not cls.GLOBAL_LEARNED.exists():
-            return result
-
-        for category_dir in cls.GLOBAL_LEARNED.iterdir():
-            if category_dir.is_dir():
-                skills = []
-                for f in category_dir.iterdir():
-                    if f.is_file() and f.suffix in (".md", ".yaml", ".yml"):
-                        skills.append(f.stem)
-                    elif f.is_dir() and (f / "SKILL.md").exists():
-                        skills.append(f.name)
-                if skills:
-                    result[category_dir.name] = sorted(skills)
-
-        return result
 
     @classmethod
-    def list_builtin_skills(cls) -> list:
-        """List all builtin skills."""
-        skills: list = []
-        if not cls.GLOBAL_BUILTIN.exists():
-            return skills
-
-        for item in cls.GLOBAL_BUILTIN.iterdir():
-            if item.is_file() and item.suffix in (".md", ".yaml", ".yml"):
-                skills.append(item.stem)
-            elif item.is_dir() and (item / "SKILL.md").exists():
-                skills.append(item.name)
-
-        return sorted(skills)
 
     @classmethod
     def get_skill_path(cls, skill_ref: str) -> Optional[Path]:

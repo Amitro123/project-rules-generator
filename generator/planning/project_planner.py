@@ -196,35 +196,6 @@ class ProjectPlanner:
 
         return plan
 
-    def generate_task_plan(self, query: str, project_path: Optional[Path] = None) -> Plan:
-        """Generate task-specific plan from query.
-
-        Args:
-            query: Task description (e.g., "Fix config bug", "Add Redis cache")
-            project_path: Optional project root for context
-
-        Returns:
-            Plan with implementation tasks
-        """
-        # Build context from project
-        context = ""
-        if project_path:
-            context = self._extract_project_context(project_path)
-
-        # Build prompt
-        prompt = self._build_task_prompt(query, context)
-
-        # Generate plan with AI
-        try:
-            response = self.client.generate(prompt, temperature=0.5, max_tokens=2500)
-            plan = self._parse_task_response(response, query)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Task plan generation failed, using template: %s", exc)
-            # Fallback to template-based plan
-            plan = self._generate_template_task_plan(query)
-
-        return plan
-
     def _extract_features_from_readme(self, readme_content: str) -> List[str]:
         """Extract features from README content."""
         features = []

@@ -198,10 +198,6 @@ class IncrementalAnalyzer:
                 changed.add(key)
         return changed
 
-    def needs_regeneration(self) -> bool:
-        """Quick check: any changes detected at all?"""
-        return len(self.detect_changes()) > 0
-
     # ------------------------------------------------------------------
     # Merge
     # ------------------------------------------------------------------

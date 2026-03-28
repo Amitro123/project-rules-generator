@@ -119,86 +119,6 @@ class CoworkSkillCreator:
         self._tech_stack: Optional[Set[str]] = None
         self.discovery = SkillDiscovery(project_path)
 
-    def generate_all(self, project_path: Optional[Path] = None, use_ai: bool = False, provider: str = "gemini"):
-        """
-        GLOBAL LEARNED LIBRARY Flow (User's Vision!):
-        1. Detect skill needs (e.g. pytest-testing-workflow)
-        2. Check GLOBAL learned/
-        3. Exists -> ♻️ Reuse (Link to project)
-        4. Not exists -> ✨ Create (Cowork) -> Save to GLOBAL learned/ -> Link
-        """
-        proj_path = project_path or self.project_path
-
-        # Ensure global structure and local project structure
-        self.discovery.ensure_global_structure()
-        self.discovery.setup_project_structure()
-
-        # Get README for context
-        readme_path = proj_path / "README.md"
-        readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
-
-        # 1. Detect needed skills
-        needed_skills = self.detect_skill_needs(proj_path)
-        print(f"🔍 Detected Needs: {needed_skills if needed_skills else ['None']}")
-
-        if not needed_skills:
-            return
-
-        created = 0
-        reused = 0
-
-        # 2. Process each skill
-        for skill_name in needed_skills:
-            # Check GLOBAL learned
-            if self.exists_in_learned(skill_name):
-                print(f"♻️  Reusing: {skill_name}")
-                self.link_from_learned(skill_name)
-                reused += 1
-                continue
-
-            # Create NEW with Cowork quality
-            print(f"\n{'=' * 60}")
-            print(f"✨ Creating: {skill_name}")
-            print(f"{'=' * 60}\n")
-
-            try:
-                # We need to determine the main tech for this skill to pass to create_skill
-                # detect_skill_needs derives names like 'pytest-testing-workflow'
-                # extraction: 'pytest' from 'pytest-testing-workflow'
-                tech_hint = skill_name.split("-")[0]
-                tech_stack_hint = [tech_hint] if tech_hint else None
-
-                content, metadata, quality = self.create_skill(
-                    skill_name, readme_content, tech_stack=tech_stack_hint, use_ai=use_ai, provider=provider
-                )
-
-                print(f"📊 Quality: {quality.score:.1f}/100")
-                if not quality.passed and quality.issues:
-                    print(f"Issues: {', '.join(quality.issues[:2])}")
-
-                # Save to GLOBAL learned
-                self.save_to_learned(skill_name, content)
-
-                # Link to project
-                self.link_from_learned(skill_name)
-
-                print(f"💾 Saved to: ~/.project-rules-generator/learned/{skill_name}.md")
-                print(f"🔗 Linked to: .clinerules/skills/project/{skill_name}.md")
-                print(f"⚡ Triggers: {len(metadata.auto_triggers)} | Tools: {len(metadata.tools)}")
-
-                created += 1
-
-            except Exception as e:
-                print(f"❌ Failed to create {skill_name}: {e}")
-                import traceback
-
-                traceback.print_exc()
-                continue
-
-        print(f"\n{'=' * 60}")
-        print(f"⚡ Summary: ✨ Created: {created} | ♻️  Reused: {reused}")
-        print(f"{'=' * 60}")
-
     def detect_skill_needs(self, project_path: Path) -> List[str]:
         """Detect needed skills based on tech stack and context.
 
@@ -288,10 +208,6 @@ class CoworkSkillCreator:
         else:
             print(f"⚠️  Could not link {skill_name}: Source not found in global learned.")
 
-
-    def setup_symlinks(self):
-        """Ensure project symlinks are set up."""
-        self.discovery.setup_project_structure()
 
     def create_skill(
         self,
@@ -631,71 +547,6 @@ class CoworkSkillCreator:
         detected = set(_detect_tech_stack_util(self.project_path, readme_content))
         self._tech_stack = detected
         return list(detected)
-
-    def _detect_from_dependencies(self) -> Set[str]:
-        """Detect tech from actual dependency files.
-        Delegates to generator.utils.tech_detector.detect_from_dependencies().
-        """
-        return _detect_from_deps_util(self.project_path)
-
-    def _detect_from_readme(self, readme_content: str) -> Set[str]:
-        """Detect tech from README (least reliable - use only for confirmation)."""
-        tech_keywords = {
-            "fastapi",
-            "flask",
-            "django",
-            "express",
-            "react",
-            "vue",
-            "pytest",
-            "jest",
-            "docker",
-            "kubernetes",
-            "postgresql",
-            "mongodb",
-            "redis",
-            "celery",
-            "sqlalchemy",
-            "pydantic",
-            "openai",
-            "anthropic",
-            "langchain",
-            "typescript",
-            "python",
-        }
-
-        # Look for tech in structured sections (more reliable)
-        detected = set()
-
-        # Try to find "Tech Stack" or "Built With" sections
-        lines = readme_content.split("\n")
-        in_tech_section = False
-
-        for line in lines:
-            line_lower = line.lower()
-
-            # Check if entering tech section
-            if any(marker in line_lower for marker in ["tech stack", "built with", "technologies", "dependencies"]):
-                in_tech_section = True
-                continue
-
-            # Exit section if we hit a new header
-            if line.strip().startswith("#") and in_tech_section:
-                in_tech_section = False
-
-            # If in tech section, be more lenient
-            if in_tech_section:
-                for tech in tech_keywords:
-                    if tech in line_lower:
-                        detected.add(tech)
-            else:
-                # Outside tech section, only detect if it's in a bullet point or strong emphasis
-                if line.strip().startswith("-") or line.strip().startswith("*"):
-                    for tech in tech_keywords:
-                        if tech in line_lower:
-                            detected.add(tech)
-
-        return detected
 
     def _detect_project_signals(self) -> Set[str]:
         """Detect project structure signals (has_docker, has_tests, etc.)."""

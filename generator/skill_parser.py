@@ -70,32 +70,6 @@ class SkillParser:
         return f"Integration patterns for {tech} in {project_name or 'this project'}."
 
     @staticmethod
-    def build_triggers(tech: str, context_lines: List[str]) -> str:
-        """Build auto-trigger rules from context."""
-        triggers = []
-
-        # Extract file types and patterns mentioned in context
-        for line in context_lines:
-            # Look for file references
-            files = re.findall(r"(\w+\.(?:py|js|ts|jsx|tsx|yaml|yml|json|toml))", line)
-            for f in files:
-                trigger = f"- Editing or creating `{f}`"
-                if trigger not in triggers:
-                    triggers.append(trigger)
-
-            # Look for command/import patterns
-            imports = re.findall(r"(?:import|from)\s+(\w+)", line)
-            for imp in imports:
-                if imp.lower() in tech.lower() or tech.lower() in imp.lower():
-                    trigger = f"- Files importing `{imp}`"
-                    if trigger not in triggers:
-                        triggers.append(trigger)
-
-        # Always add the base trigger
-        triggers.append(f"- Working with {tech} integration code")
-        triggers.append(f"- Editing files that import or configure {tech}")
-
-        return "\n".join(triggers)
 
     @staticmethod
     def build_guidelines(tech: str, context_lines: List[str]) -> str:

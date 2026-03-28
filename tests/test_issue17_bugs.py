@@ -57,39 +57,6 @@ def test_validate_quality_warning_shows_actual_count(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_detect_from_readme_detects_tech_in_section(tmp_path):
-    """BUG-2: After removing the no-op readme_content.lower(), detection must still work."""
-    creator = CoworkSkillCreator(tmp_path)
-
-    readme = """
-# My Project
-
-## Tech Stack
-- FastAPI for REST endpoints
-- PostgreSQL as the database
-- Redis for caching
-"""
-    detected = creator._detect_from_readme(readme)
-    assert "fastapi" in detected
-    assert "postgresql" in detected
-    assert "redis" in detected
-
-
-def test_detect_from_readme_detects_tech_in_bullets_outside_section(tmp_path):
-    """BUG-2: Tech in bullet points outside a tech-stack section must also be detected."""
-    creator = CoworkSkillCreator(tmp_path)
-
-    readme = """
-# Project
-
-Some description here.
-
-- Uses pytest for testing
-- Uses docker for deployment
-"""
-    detected = creator._detect_from_readme(readme)
-    assert "pytest" in detected
-    assert "docker" in detected
 
 
 # ---------------------------------------------------------------------------

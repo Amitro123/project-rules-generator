@@ -19,13 +19,3 @@ class InvalidREADMEError(ProjectRulesGeneratorError):
     pass
 
 
-class TemplateNotFoundError(ProjectRulesGeneratorError):
-    """Skill template file not found."""
-
-    pass
-
-
-class DetectionFailedError(ProjectRulesGeneratorError):
-    """Failed to detect project type with confidence."""
-
-    pass

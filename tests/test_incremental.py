@@ -158,18 +158,6 @@ class TestDetectChanges:
         changes = analyzer.detect_changes()
         assert "readme" in changes
 
-    def test_needs_regeneration(self, tmp_path):
-        output_dir = tmp_path / ".clinerules"
-        output_dir.mkdir()
-        analyzer = IncrementalAnalyzer(tmp_path, output_dir)
-
-        # No cache → needs regen
-        assert analyzer.needs_regeneration() is True
-
-        # Save hash → no changes
-        analyzer.save_hash(analyzer.compute_project_hash())
-        assert analyzer.needs_regeneration() is False
-
 
 class TestMergeRules:
     """Test incremental merge of rules content."""

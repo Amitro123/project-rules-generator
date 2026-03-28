@@ -332,26 +332,6 @@ class ContentAnalyzer:
             improved += "\n\n```bash\n# example command\npytest -q\n```\n"
         return improved
 
-    def _parse_analysis_response(self, response: str) -> Tuple[QualityBreakdown, List[str]]:
-        text = response or ""
-
-        def extract(label: str) -> int:
-            m = re.search(rf"{label}\s*:\s*(\d+)", text, flags=re.IGNORECASE)
-            val = int(m.group(1)) if m else 0
-            return max(0, min(20, val))
-
-        breakdown = QualityBreakdown(
-            structure=extract("Structure"),
-            clarity=extract("Clarity"),
-            project_grounding=extract("Project Grounding"),
-            actionability=extract("Actionability"),
-            consistency=extract("Consistency"),
-        )
-        # Suggestions as numbered list
-        suggestions = re.findall(r"\n\s*\d+\.[\s\-]*(.+)", text)
-        suggestions = [s.strip() for s in suggestions if s.strip()]
-        return breakdown, suggestions
-
     def apply_fix(self, filepath: Path, patch: str) -> None:
         filepath = filepath.resolve()
         try:

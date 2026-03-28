@@ -19,7 +19,18 @@
       "Bash(git rm:*)",
       "Bash(git restore:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(xargs wc:*)",
+      "Bash(GEMINI_MODEL=gemini-2.5-flash python -m main analyze . --create-skill \"gemini-api-integration\" --ai --provider gemini --no-commit --verbose --force 2>&1)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/Dana/.gemini/antigravity/scratch/project-rules-generator/**)",
+      "Bash(grep -v \"^--$\")",
+      "Bash(done)",
+      "Bash(prg analyze:*)",
+      "Bash(vulture generator/ cli/ prg_utils/ --min-confidence 80)",
+      "Bash(vulture generator/ cli/ prg_utils/ --min-confidence 60)",
+      "Bash(cd:*)"
     ]
   }
 }

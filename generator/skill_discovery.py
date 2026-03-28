@@ -316,67 +316,6 @@ class SkillDiscovery:
 
         return None
 
-    def resolve_active_skills(self, query: str) -> List[Path]:
-        """Return ALL skills whose triggers match the query (composable, GAP 7).
-
-        Unlike resolve_skill() which returns one skill by name, this checks
-        every known skill's embedded trigger phrases against the query and
-        returns all that match — enabling multi-skill composition per the
-        Anthropic spec.
-
-        Scans all layers in priority order (project > learned > builtin).
-        Project-layer skill overrides a same-named builtin/learned one.
-
-        Args:
-            query: User query string to match against skill triggers
-
-        Returns:
-            List of paths to matching SKILL.md files (deduplicated by skill name)
-        """
-        from generator.utils.trigger_evaluator import TriggerEvaluator
-
-        # Collect all SKILL.md and *.md files across all layers
-        # Higher-priority layers win by name deduplication.
-        # DESIGN-5 fix: skip global_learned when project_learned_link resolves to it
-        # to prevent double-scanning the same directory.
-        _pll = self.project_learned_link
-        _skip_global_learned = bool(
-            _pll and _pll.exists() and _pll.resolve() == self.global_learned.resolve()
-        )
-        skill_roots: List[Optional[Path]] = [
-            self.project_local_dir,  # highest priority
-            _pll if _pll else None,
-            None if _skip_global_learned else self.global_learned,
-            self.global_builtin,
-        ]
-
-        seen_names: set = set()
-        active: List[Path] = []
-
-        for root in skill_roots:
-            if not root or not root.exists():
-                continue
-            # Collect all candidate skill files in this root
-            candidates: List[Path] = list(root.rglob("SKILL.md")) + [
-                p for p in root.rglob("*.md") if p.name != "SKILL.md"
-            ]
-            for skill_path in candidates:
-                # Use parent-dir name (for SKILL.md) or stem (for flat .md) as skill name
-                skill_name = skill_path.parent.name if skill_path.name == "SKILL.md" else skill_path.stem
-                if skill_name in seen_names:
-                    continue
-                seen_names.add(skill_name)
-                try:
-                    content = skill_path.read_text(encoding="utf-8", errors="replace")
-                    triggers = TriggerEvaluator.extract_triggers(content)
-                    if triggers and TriggerEvaluator._matches_any(query, triggers):
-                        active.append(skill_path)
-                except (OSError, ValueError) as exc:
-                    logger.debug("Skipping skill %s: %s", skill_path.name, exc)
-                    continue
-
-        return active
-
     def skill_exists(self, skill_name: str, scope: str = "learned") -> bool:
         """Check if a skill already exists, preventing duplicates.
 
