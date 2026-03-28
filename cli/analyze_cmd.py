@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 """Analyzer module for project rules generator."""
 
 import os
@@ -7,14 +6,6 @@ from pathlib import Path
 
 import click
 import yaml
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Ensure project root is in sys.path
-root_dir = Path(__file__).parent.parent.resolve()
-if str(root_dir) not in sys.path:
-    sys.path.insert(0, str(root_dir))
 
 try:
     from tqdm import tqdm

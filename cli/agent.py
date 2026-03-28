@@ -5,9 +5,6 @@ import sys
 from pathlib import Path
 
 import click
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 from cli.utils import detect_provider as _detect_provider

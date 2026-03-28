@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 """CLI orchestrator for project rules and skills generator."""
 
 import sys
@@ -18,16 +17,8 @@ if sys.platform == "win32":
     except (AttributeError, OSError):
         pass
 
-import click
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-
-# Ensure project root is in sys.path
-root_dir = Path(__file__).parent.parent.resolve()
-if str(root_dir) not in sys.path:
-    sys.path.insert(0, str(root_dir))
+import click  # noqa: E402
+from dotenv import load_dotenv  # noqa: E402
 
 # Import commands from modules
 # note: imports are delayed to avoid circular dependency issues during setup if any
@@ -105,6 +96,7 @@ cli.add_command(providers_group, name="providers")
 
 
 def main():
+    load_dotenv()  # load .env once, at entry point, not at import time
     cli()
 
 
