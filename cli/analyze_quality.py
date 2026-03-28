@@ -19,8 +19,8 @@ def run_quality_check(
     from rich.console import Console
     from rich.table import Table
 
-    from generator.content_analyzer import ContentAnalyzer
     from generator.config import AnalyzerConfig
+    from generator.content_analyzer import ContentAnalyzer
 
     analyzer_config = AnalyzerConfig(enable_opik=eval_opik)
     analyzer = ContentAnalyzer(provider=provider, api_key=api_key, config=analyzer_config)

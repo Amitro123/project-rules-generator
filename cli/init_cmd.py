@@ -99,6 +99,7 @@ def init(project_path, yes, provider, api_key):
     click.echo("Generating rules.md...")
     try:
         import yaml
+
         from prg_utils.config_schema import validate_config
 
         config_path = Path(__file__).parent.parent / "config.yaml"
@@ -109,7 +110,7 @@ def init(project_path, yes, provider, api_key):
         rules_content = generate_rules(project_data, config)
         rules_file = output_dir / "rules.md"
         rules_file.write_text(rules_content, encoding="utf-8")
-        click.echo(f"  Written: .clinerules/rules.md")
+        click.echo("  Written: .clinerules/rules.md")
     except Exception as exc:
         click.echo(f"  Error generating rules: {exc}", err=True)
         raise SystemExit(1)

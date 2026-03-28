@@ -30,7 +30,23 @@
       "Bash(prg analyze:*)",
       "Bash(vulture generator/ cli/ prg_utils/ --min-confidence 80)",
       "Bash(vulture generator/ cli/ prg_utils/ --min-confidence 60)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(prg create-rules:*)",
+      "Bash(pip show:*)",
+      "Bash(for skill:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $skill ===\")",
+      "Read(//c/Users/Dana/.gemini/antigravity/scratch/project-rules-generator/.clinerules/skills/learned/$skill/**)",
+      "Bash(pytest --tb=short -q)",
+      "Bash(rm -f DESIGN.md PLAN.md TASKS.json)",
+      "Bash(rm -rf .clinerules/skills/project/e2e-test-skill)",
+      "Bash(prg design:*)",
+      "Bash(prg plan:*)",
+      "Bash(prg --version)",
+      "Bash(prg providers:*)",
+      "Bash(pytest tests/test_provider_wiring.py --tb=short -q)",
+      "Bash(pytest tests/test_task_decomposer.py --tb=short -q)",
+      "Bash(find C:UsersDana.geminiantigravityscratchproject-rules-generator.clinerules -name *.md)"
     ]
   }
 }

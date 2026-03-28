@@ -6,7 +6,6 @@ from pathlib import Path
 
 import click
 
-
 from cli._version import __version__
 from cli.utils import detect_provider as _detect_provider
 from cli.utils import set_api_key_env as _set_api_key
