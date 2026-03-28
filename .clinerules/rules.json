@@ -41,7 +41,7 @@
   ],
   "testing": [
     "**Framework**: pytest",
-    "**Test files**: 54 (504 test cases)",
+    "**Test files**: 54 (505 test cases)",
     "**Test types**: unit, integration",
     "**Fixtures**: shared via `conftest.py`",
     "**Test data**: `tests/fixtures/` directory"
@@ -130,6 +130,16 @@
     "Follow project patterns for click usage",
     "Handle click errors with proper retries and fallbacks",
     "Add tests for click integration code"
+  ],
+  "project_context_(from_readme)": [
+    "\"failed ai skill\"",
+    "\"failed\"",
+    "\"skill\""
+  ],
+  "installation": [
+    "\"missing dep skill\"",
+    "\"missing\"",
+    "\"dep\""
   ],
   "critical": [
     "Read existing files before modifying them.",
