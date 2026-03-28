@@ -574,57 +574,10 @@ class CoworkSkillCreator:
         return len(readme_content.split()) >= self.README_MIN_WORDS
 
     def _scan_project_tree(self, max_depth: int = 3, max_items: int = 60) -> str:
-        """Walk the project directory and produce a structured tree for LLM context.
+        """Walk the project directory and produce a structured tree for LLM context."""
+        from generator.utils.readme_bridge import build_project_tree
 
-        Excludes noise directories (.git, __pycache__, venv, node_modules, etc.).
-        Capped at max_items entries to stay within token budget.
-        """
-        EXCLUDE = {
-            ".git",
-            "__pycache__",
-            ".venv",
-            "venv",
-            "node_modules",
-            ".pytest_cache",
-            "dist",
-            "build",
-            ".mypy_cache",
-            ".ruff_cache",
-            ".clinerules",
-            ".claude",
-            ".eggs",
-            "eggs",
-        }
-
-        lines: List[str] = [f"{self.project_path.name}/"]
-        count = 0
-
-        def _walk(path: Path, depth: int, prefix: str) -> None:
-            nonlocal count
-            if depth > max_depth or count >= max_items:
-                return
-            try:
-                entries = sorted(path.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
-            except PermissionError:
-                return
-
-            visible = [e for e in entries if not e.name.startswith(".") and e.name not in EXCLUDE]
-            for i, item in enumerate(visible):
-                if count >= max_items:
-                    lines.append(f"{prefix}... (truncated)")
-                    return
-                connector = "└── " if i == len(visible) - 1 else "├── "
-                child_prefix = prefix + ("    " if i == len(visible) - 1 else "│   ")
-                if item.is_dir():
-                    lines.append(f"{prefix}{connector}{item.name}/")
-                    count += 1
-                    _walk(item, depth + 1, child_prefix)
-                else:
-                    lines.append(f"{prefix}{connector}{item.name}")
-                    count += 1
-
-        _walk(self.project_path, 1, "")
-        return "\n".join(lines)
+        return build_project_tree(self.project_path, max_depth=max_depth, max_items=max_items)
 
     def _generate_description(self, skill_name: str, readme_content: str) -> str:
         """Generate concise skill description."""
