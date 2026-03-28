@@ -6,6 +6,12 @@
     "any code is written",
     "requirements are unclear"
   ],
+  "ci-lint-failures": [
+    "ci lint failure",
+    "github actions lint error",
+    "fix linting in ci",
+    "pipeline lint error"
+  ],
   "writing-skills": [
     "create a skill for...",
     "we should formalize...",
@@ -43,9 +49,70 @@
     "create a plan",
     "starting implementation"
   ],
-  "dup-skill": [
-    "dup skill",
-    "dup",
+  "click-cli": [
+    "working with click integration code",
+    "editing files that import or configure click"
+  ],
+  "failed-ai-skill": [
+    "failed ai skill",
+    "failed",
     "skill"
+  ],
+  "jinja2-template-workflow": [
+    "jinja2",
+    "template",
+    "workflow",
+    "working in backend code: *.py",
+    "working with *.j2 files"
+  ],
+  "missing-dep-skill": [
+    "missing dep skill",
+    "missing",
+    "dep"
+  ],
+  "claude-cowork-workflow": [
+    "create a cowork skill",
+    "generate skill with claude",
+    "run prg with anthropic",
+    "skill creation flow",
+    "cowork skill pipeline",
+    "prg analyze --ai --provider anthropic",
+    "has_tests (tests/ directory with 56 test files)",
+    "has_docs (docs/ directory with 14 docs)",
+    "has_api (generator/skills_manager.py as primary entry point)"
+  ],
+  "debugger": [
+    "debug python",
+    "pdb",
+    "breakpoint"
+  ],
+  "mypy-type-errors": [
+    "mypy errors",
+    "type checking failed",
+    "fix type hints"
+  ],
+  "pytest-debugger": [
+    "debug pytest",
+    "breakpoint in test",
+    "step through tests"
+  ],
+  "readme-improvement": [
+    "improve readme",
+    "update readme",
+    "fix readme",
+    "readme needs work",
+    "readme is outdated"
+  ],
+  "readme-improver": [
+    "improve readme",
+    "readme checklist",
+    "document project"
+  ],
+  "type-checking": [
+    "type checking",
+    "`has_docs`",
+    "`has_tests` \u2014 test suite available",
+    "`has_api` \u2014 api endpoints present",
+    "`has_ci`"
   ]
 }

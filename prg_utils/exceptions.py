@@ -17,5 +17,3 @@ class InvalidREADMEError(ProjectRulesGeneratorError):
     """README.md is empty or malformed."""
 
     pass
-
-
