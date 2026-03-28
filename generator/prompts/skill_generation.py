@@ -24,7 +24,7 @@ AVAILABLE TOOLS:
 CRITICAL RULES — FOLLOW EXACTLY:
 1. Be SPECIFIC to this project's tech stack and patterns
 2. NEVER invent file paths, line numbers, or code examples. If no code examples are provided above, write GENERAL best-practice patterns WITHOUT fake "File:" references
-3. NEVER invent library names or packages that are not listed in the dependencies above
+3. NEVER invent library names or packages that are not listed in the dependencies above. The skill topic name (e.g., "pytest-debugger") is a WORKFLOW NAME — do NOT treat it as a package to install
 4. Every action item MUST be a runnable command (not prose)
 5. Only include anti-patterns you can prove exist from the context above
 6. Include a "Tools" section listing runnable check/fix commands
@@ -255,7 +255,11 @@ def build_skill_prompt(
     recon_context = scan_project_context(project_path) if project_path else "No project paths provided for recon."
 
     if not topic_description:
-        topic_description = f"Best practices and patterns for {skill_topic.replace('-', ' ')} in this project."
+        topic_description = (
+            f"A workflow skill for {skill_topic.replace('-', ' ')} in this project. "
+            f"IMPORTANT: '{skill_topic}' is the name of this SKILL (workflow), NOT a package name. "
+            f"Only reference packages that exist in the dependencies listed above."
+        )
 
     # Detect relevant/exclude files for this skill topic
     relevant, exclude = _detect_relevant_files(skill_topic, context, project_path)
