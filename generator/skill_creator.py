@@ -565,13 +565,10 @@ class CoworkSkillCreator:
         self._detected_signals = signals
         return signals
 
-    README_MIN_WORDS = 80  # Below this → README is too sparse to rely on alone
-
     def is_readme_sufficient(self, readme_content: str) -> bool:
         """Return True if README has enough content for meaningful skill generation."""
-        if not readme_content or not readme_content.strip():
-            return False
-        return len(readme_content.split()) >= self.README_MIN_WORDS
+        from generator.utils.readme_bridge import is_readme_sufficient
+        return is_readme_sufficient(readme_content)
 
     def _scan_project_tree(self, max_depth: int = 3, max_items: int = 60) -> str:
         """Walk the project directory and produce a structured tree for LLM context."""

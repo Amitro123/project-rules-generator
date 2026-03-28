@@ -99,12 +99,6 @@ class SkillPathManager:
         return skill_path
 
     @classmethod
-
-    @classmethod
-
-    @classmethod
-
-    @classmethod
     def get_skill_path(cls, skill_ref: str) -> Optional[Path]:
         """
         Resolve a skill reference to its actual file path.
