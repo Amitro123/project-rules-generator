@@ -42,7 +42,6 @@ def is_readme_minimal(readme_path: Path) -> bool:
         return True
 
 
-
 def generate_readme_with_llm(
     user_input: Dict,
     context: Dict,

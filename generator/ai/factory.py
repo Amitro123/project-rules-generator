@@ -34,7 +34,4 @@ def create_ai_client(provider: str = "groq", **kwargs: Any) -> AIClient:
 
         return OpenAIClient(**kwargs)
     else:
-        raise ValueError(
-            f"Unknown AI provider: {provider!r}. "
-            f"Supported: {', '.join(SUPPORTED_PROVIDERS)}"
-        )
+        raise ValueError(f"Unknown AI provider: {provider!r}. " f"Supported: {', '.join(SUPPORTED_PROVIDERS)}")

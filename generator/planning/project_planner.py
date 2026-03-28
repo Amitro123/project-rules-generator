@@ -159,6 +159,7 @@ class ProjectPlanner:
                 class _Stub:
                     def generate(self, prompt: str, *args, **kwargs) -> str:  # noqa: D401
                         return ""
+
                 self.client = _Stub()
 
     def generate_roadmap_from_readme(self, readme_path: Path, project_path: Optional[Path] = None) -> Plan:

@@ -8,12 +8,7 @@ FIX-3: extract_process_steps — stop condition checked before section-entry che
 
 import pytest
 
-from generator.analyzers.readme_parser import (
-    extract_auto_triggers,
-    extract_process_steps,
-    extract_purpose,
-)
-
+from generator.analyzers.readme_parser import extract_auto_triggers, extract_process_steps, extract_purpose
 
 # ──────────────────────────────────────────────────────────────────────────────
 # FIX-1: extract_purpose
@@ -75,23 +70,23 @@ class TestExtractAutoTriggersFix:
     def test_no_ffmpeg_trigger_for_ffmpeg_readme(self):
         readme = self._readme_with_tech("ffmpeg", "python")
         triggers = extract_auto_triggers(readme, "my-video-skill")
-        assert not any("FFmpeg operations" in t for t in triggers), (
-            "Hard-coded 'FFmpeg operations needed' trigger should no longer be emitted"
-        )
+        assert not any(
+            "FFmpeg operations" in t for t in triggers
+        ), "Hard-coded 'FFmpeg operations needed' trigger should no longer be emitted"
 
     def test_no_frontend_trigger_for_react_readme(self):
         readme = self._readme_with_tech("react", "typescript")
         triggers = extract_auto_triggers(readme, "my-ui-skill")
-        assert not any("frontend code" in t for t in triggers), (
-            "Hard-coded 'Working in frontend code: *.tsx' trigger should not appear"
-        )
+        assert not any(
+            "frontend code" in t for t in triggers
+        ), "Hard-coded 'Working in frontend code: *.tsx' trigger should not appear"
 
     def test_no_backend_trigger_for_python_readme(self):
         readme = self._readme_with_tech("python")
         triggers = extract_auto_triggers(readme, "my-backend-skill")
-        assert not any("backend code" in t for t in triggers), (
-            "Hard-coded 'Working in backend code: *.py' trigger should not appear"
-        )
+        assert not any(
+            "backend code" in t for t in triggers
+        ), "Hard-coded 'Working in backend code: *.py' trigger should not appear"
 
     def test_skill_name_trigger_always_present(self):
         triggers = extract_auto_triggers("# Anything\n\nSome readme text.\n", "pytest-testing-workflow")
@@ -105,9 +100,9 @@ class TestExtractAutoTriggersFix:
     def test_no_video_trigger_without_explicit_glob(self):
         readme = "# Video Tool\n\nThis uses ffmpeg for video processing.\n"
         triggers = extract_auto_triggers(readme, "video-tool")
-        assert not any("video files" in t for t in triggers), (
-            "Video trigger should only fire when README contains explicit *.mp4/avi/mov glob"
-        )
+        assert not any(
+            "video files" in t for t in triggers
+        ), "Video trigger should only fire when README contains explicit *.mp4/avi/mov glob"
 
     def test_domain_specific_extension_trigger(self):
         readme = "# Jinja Tool\n\nRender `templates/model.py.j2` files.\n"
@@ -148,9 +143,9 @@ This section should NOT be collected.
         assert any("Install" in s for s in steps)
         assert any("Run" in s for s in steps)
         # Must NOT include anything from the Installation section
-        assert not any("Extra step from installation" in s for s in steps), (
-            "Steps from ## Installation must not appear when already inside ## Quick Start"
-        )
+        assert not any(
+            "Extra step from installation" in s for s in steps
+        ), "Steps from ## Installation must not appear when already inside ## Quick Start"
 
     def test_stops_at_same_level_unrelated_header(self):
         readme = """\
@@ -201,7 +196,5 @@ Content from AI Providers should not appear.
 """
         steps = extract_process_steps(readme)
         # Prerequisites items should not appear; Steps items should
-        assert not any("Python 3.10" in s for s in steps), (
-            "Prerequisites sub-section items should be skipped"
-        )
+        assert not any("Python 3.10" in s for s in steps), "Prerequisites sub-section items should be skipped"
         assert any("Clone" in s for s in steps)

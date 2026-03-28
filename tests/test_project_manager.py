@@ -18,9 +18,9 @@ def manager(mock_project_path):
 
 def test_phase1_setup(manager):
     """Verify Phase 1 setup generates missing docs."""
-    with patch(
-        "generator.planning.project_manager.ProjectManager._generate_missing_docs"
-    ) as mock_gen, patch("generator.planning.project_manager.ProjectManager._update_manager_checklist") as mock_update:
+    with patch("generator.planning.project_manager.ProjectManager._generate_missing_docs") as mock_gen, patch(
+        "generator.planning.project_manager.ProjectManager._update_manager_checklist"
+    ) as mock_update:
 
         manager.phase1_setup()
 

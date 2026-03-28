@@ -92,7 +92,7 @@ def _parse_frontmatter(content: str):
     if end == -1:
         return {}, content
     yaml_block = content[3:end].strip()
-    body = content[end + 4:]
+    body = content[end + 4 :]
     try:
         import yaml
 
@@ -197,7 +197,8 @@ def _check_strategic_depth(content: str) -> Tuple[List[str], List[str], List[str
         for block in step_blocks[1:]:  # skip leading empty segment
             prose_before_code = block.split("```")[0].strip()
             prose_lines = [
-                ln for ln in prose_before_code.splitlines()
+                ln
+                for ln in prose_before_code.splitlines()
                 if ln.strip() and not ln.strip().startswith(("-", "*", "#", "|"))
             ]
             if prose_lines:
@@ -330,7 +331,8 @@ def validate_quality(
     _body_no_code = re.sub(r"```.*?```", "", _body, flags=re.DOTALL)
     _specific_prefixes = {p.lstrip("[").lower() for p in bracket_placeholders}
     _general_placeholders = [
-        m for m in re.findall(r"\[([^\]]{5,})\](?!\()", _body_no_code)
+        m
+        for m in re.findall(r"\[([^\]]{5,})\](?!\()", _body_no_code)
         if not any(m.lower().startswith(sp) for sp in _specific_prefixes)
     ]
     if _general_placeholders:
@@ -338,7 +340,7 @@ def validate_quality(
         score -= min(len(_unique_placeholders) * 5, 25)
         issues.append(
             f"Contains {len(_unique_placeholders)} unfilled bracket placeholder(s) "
-            f"(e.g. \"{_unique_placeholders[0]}\") — fill in or remove before using"
+            f'(e.g. "{_unique_placeholders[0]}") — fill in or remove before using'
         )
 
     # Check for generic path placeholders

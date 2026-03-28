@@ -36,6 +36,7 @@ def find_readme(project_path: Path) -> Optional[Path]:
             return p
     return None
 
+
 _TREE_EXCLUDE = {
     ".git",
     "__pycache__",

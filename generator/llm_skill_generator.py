@@ -101,9 +101,7 @@ class LLMSkillGenerator:
 
             router = AIStrategyRouter(strategy=self.strategy)
             try:
-                content, used_provider = router.smart_generate(
-                    prompt, task_type="skills", max_tokens=max_tokens
-                )
+                content, used_provider = router.smart_generate(prompt, task_type="skills", max_tokens=max_tokens)
                 self.provider = used_provider  # record which provider was chosen
                 return content
             except Exception as e:
@@ -115,4 +113,3 @@ class LLMSkillGenerator:
             return self.client.generate(prompt, max_tokens=max_tokens, model=self.model_name)
         except Exception as e:
             raise RuntimeError(f"LLM generation failed: {e}")
-

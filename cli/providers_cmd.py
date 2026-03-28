@@ -82,8 +82,7 @@ def providers_list() -> None:
         print("-" * 70)
         for s in statuses:
             print(
-                f"{s['provider']:<14} {s['status']:<14} "
-                f"{s['quality']:>6}/100 {s['speed']:>5}/100  {s['env_key']}"
+                f"{s['provider']:<14} {s['status']:<14} " f"{s['quality']:>6}/100 {s['speed']:>5}/100  {s['env_key']}"
             )
 
 
@@ -102,9 +101,7 @@ def providers_test(provider: str | None) -> None:
     any_tested = False
     for p in to_test:
         env_key = PROVIDER_ENV_KEYS.get(p, f"{p.upper()}_API_KEY")
-        has_key = bool(os.getenv(env_key)) or (
-            p == "gemini" and bool(os.getenv("GOOGLE_API_KEY"))
-        )
+        has_key = bool(os.getenv(env_key)) or (p == "gemini" and bool(os.getenv("GOOGLE_API_KEY")))
         if not has_key:
             click.echo(f"⚠️  {p:<12} — no API key ({env_key} not set)")
             continue

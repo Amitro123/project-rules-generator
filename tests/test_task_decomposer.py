@@ -1,8 +1,9 @@
 """Tests for task decomposition (Feature 4)."""
 
+from unittest.mock import patch
+
 import pytest
 from click.testing import CliRunner
-from unittest.mock import patch
 
 from generator.task_decomposer import SubTask, TaskDecomposer
 from main import cli
@@ -135,9 +136,7 @@ class TestGeneratePlanMd:
 
     def test_plan_skip_consequence_omitted_when_empty(self):
         """generate_plan_md() must NOT emit the Skip consequence line when field is empty."""
-        tasks = [
-            SubTask(id=1, title="Do thing", goal="A goal", estimated_minutes=2)
-        ]
+        tasks = [SubTask(id=1, title="Do thing", goal="A goal", estimated_minutes=2)]
         md = TaskDecomposer.generate_plan_md(tasks)
 
         assert "**Skip consequence:**" not in md

@@ -38,9 +38,7 @@ class TestAISkillGeneration(unittest.TestCase):
             return_value=ai_content,
         ) as mock_ai_generate:
             manager = SkillsManager()
-            skill_path = manager.create_skill(
-                "ai-test-skill", project_path=".", use_ai=True, force=True
-            )
+            skill_path = manager.create_skill("ai-test-skill", project_path=".", use_ai=True, force=True)
 
             # AIStrategy.generate should have been called once
             mock_ai_generate.assert_called_once()

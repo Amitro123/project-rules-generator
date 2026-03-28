@@ -59,9 +59,11 @@ class AIStrategy:
             return generator.generate_skill(skill_name, context)
         except ImportError as e:
             import click
+
             click.secho(f"[!] AI provider not available ({e}). Falling back to next strategy.", fg="red", err=True)
             return None
         except Exception as e:
             import click
+
             click.secho(f"[!] AI generation failed ({e}). Falling back to next strategy.", fg="red", err=True)
             return None

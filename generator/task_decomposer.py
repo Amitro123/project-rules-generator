@@ -339,7 +339,7 @@ Generate the subtasks now:
             f"## Task\n{user_task}\n"
             f"{ctx_block}\n"
             f"## Requirements\n\n"
-            f"1. Each subtask MUST specify concrete file paths (e.g. `src/api.py`, not \"the API file\")\n"
+            f'1. Each subtask MUST specify concrete file paths (e.g. `src/api.py`, not "the API file")\n'
             f"2. Each subtask MUST include code change descriptions with +/- line indicators\n"
             f"3. Each subtask MUST include test commands (e.g. `pytest tests/test_api.py -k test_create`)\n"
             f"4. Subtasks must be ordered by dependency (foundations first, features next, tests last)\n"
@@ -362,7 +362,7 @@ Generate the subtasks now:
             f"Files: <comma-separated file paths>\n"
             f"Changes: <bullet list with code snippets>\n"
             f"Tests: <bullet list with test commands>\n"
-            f"Dependencies: <comma-separated subtask numbers or \"none\">\n"
+            f'Dependencies: <comma-separated subtask numbers or "none">\n'
             f"Estimated: <minutes>\n\n"
             f"Generate exactly 5-8 subtasks now:\n"
         )

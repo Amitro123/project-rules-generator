@@ -52,25 +52,25 @@ class EnhancedProjectParser:
 
         readme_path = find_readme(self.path)
         if readme_path:
-                try:
-                    from generator.analyzers.readme_parser import parse_readme
+            try:
+                from generator.analyzers.readme_parser import parse_readme
 
-                    return parse_readme(readme_path)
-                except Exception as e:
-                    logger.warning(f"README parsing failed: {e}")
-                    # Return raw content as fallback
-                    try:
-                        content = readme_path.read_text(encoding="utf-8", errors="replace")
-                        return {
-                            "name": self.path.name,
-                            "tech_stack": [],
-                            "features": [],
-                            "description": "",
-                            "raw_readme": content[:4000],
-                            "readme_path": str(readme_path),
-                        }
-                    except OSError:
-                        pass
+                return parse_readme(readme_path)
+            except Exception as e:
+                logger.warning(f"README parsing failed: {e}")
+                # Return raw content as fallback
+                try:
+                    content = readme_path.read_text(encoding="utf-8", errors="replace")
+                    return {
+                        "name": self.path.name,
+                        "tech_stack": [],
+                        "features": [],
+                        "description": "",
+                        "raw_readme": content[:4000],
+                        "readme_path": str(readme_path),
+                    }
+                except OSError:
+                    pass
         return {
             "name": self.path.name,
             "tech_stack": [],

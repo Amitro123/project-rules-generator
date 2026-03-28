@@ -17,5 +17,3 @@ class FileOperationError(PRGError):
     """Raised when file operations fail."""
 
     pass
-
-

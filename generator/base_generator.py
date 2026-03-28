@@ -12,6 +12,7 @@ Subclasses keep their own __init__.  The base contributes:
   - validate_depth()       — runs the strategic-depth quality gate
   - Abstract _build_prompt() — every subclass must embed the preamble
 """
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 

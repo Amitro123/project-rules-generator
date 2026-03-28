@@ -68,4 +68,3 @@ def load_skill_from_yaml(file_path: Path) -> List[Skill]:
     except Exception as e:
         print(f"Error loading skills from {file_path}: {e}")
         return []
-

@@ -18,7 +18,6 @@ from generator.ai.ai_strategy_router import (
 )
 from generator.ai.factory import SUPPORTED_PROVIDERS, create_ai_client
 
-
 # ---------------------------------------------------------------------------
 # Factory tests
 # ---------------------------------------------------------------------------
@@ -198,10 +197,13 @@ class TestRouterSmartGenerate:
             mock_client.generate.return_value = f"content from {provider}"
             return mock_client
 
-        with patch.dict(os.environ, {
-            "ANTHROPIC_API_KEY": "sk-ant-test",
-            "OPENAI_API_KEY": "sk-test",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ANTHROPIC_API_KEY": "sk-ant-test",
+                "OPENAI_API_KEY": "sk-test",
+            },
+        ):
             with patch("generator.ai.ai_strategy_router.create_ai_client", side_effect=_factory):
                 content, provider = router.smart_generate("hello", task_type="skills")
 
@@ -221,13 +223,16 @@ class TestRouterSmartGenerate:
         router = AIStrategyRouter(strategy="quality")
 
         # Only GROQ_API_KEY present, all others absent
-        with patch.dict(os.environ, {
-            "ANTHROPIC_API_KEY": "",
-            "OPENAI_API_KEY": "",
-            "GEMINI_API_KEY": "",
-            "GOOGLE_API_KEY": "",
-            "GROQ_API_KEY": "gsk_test",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "ANTHROPIC_API_KEY": "",
+                "OPENAI_API_KEY": "",
+                "GEMINI_API_KEY": "",
+                "GOOGLE_API_KEY": "",
+                "GROQ_API_KEY": "gsk_test",
+            },
+        ):
             with patch("generator.ai.ai_strategy_router.create_ai_client") as mock_factory:
                 mock_client = MagicMock()
                 mock_client.generate.return_value = "groq result"

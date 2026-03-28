@@ -106,8 +106,7 @@ def test_create_skill_project_scope(manager):
 
     expected_path = manager.project_local_dir / skill_name / "SKILL.md"
     assert expected_path.exists(), (
-        f"Skill should be in project_local_dir when scope='project'. "
-        f"project_local_dir={manager.project_local_dir}"
+        f"Skill should be in project_local_dir when scope='project'. " f"project_local_dir={manager.project_local_dir}"
     )
 
 
@@ -119,8 +118,7 @@ def test_create_skill_fallback_to_global_learned_when_no_project_setup(manager):
 
     expected_path = manager.global_learned / skill_name / "SKILL.md"
     assert expected_path.exists(), (
-        f"Skill should be in global_learned by default. "
-        f"global_learned={manager.global_learned}"
+        f"Skill should be in global_learned by default. " f"global_learned={manager.global_learned}"
     )
 
 

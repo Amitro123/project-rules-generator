@@ -187,7 +187,6 @@ class CoworkSkillCreator:
         else:
             print(f"⚠️  Could not link {skill_name}: Source not found in global learned.")
 
-
     def create_skill(
         self,
         skill_name: str,
@@ -547,6 +546,7 @@ class CoworkSkillCreator:
     def is_readme_sufficient(self, readme_content: str) -> bool:
         """Return True if README has enough content for meaningful skill generation."""
         from generator.utils.readme_bridge import is_readme_sufficient
+
         return is_readme_sufficient(readme_content)
 
     def _scan_project_tree(self, max_depth: int = 3, max_items: int = 60) -> str:

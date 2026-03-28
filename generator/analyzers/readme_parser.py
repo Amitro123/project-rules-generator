@@ -699,10 +699,10 @@ def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[P
             in_standards = True
             # Track the header level (##, ###, etc.) to detect when the section ends
             header_match = re.match(r"^(#+)", line.strip())
-            if header_match: # Ensure there's a match before accessing group(1)
+            if header_match:  # Ensure there's a match before accessing group(1)
                 section_level = len(header_match.group(1))
             else:
-                section_level = 0 # Fallback if header format is unexpected
+                section_level = 0  # Fallback if header format is unexpected
             continue
 
         if in_standards:

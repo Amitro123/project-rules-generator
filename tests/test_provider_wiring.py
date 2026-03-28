@@ -9,7 +9,6 @@ from cli.autopilot_cmd import autopilot
 from cli.manager_cmd import manager
 from generator.task_decomposer import TaskDecomposer
 
-
 # ---------------------------------------------------------------------------
 # TaskDecomposer — provider wiring
 # ---------------------------------------------------------------------------
@@ -71,14 +70,26 @@ class TestDesignProviderWiring:
         with patch("generator.design_generator.DesignGenerator") as MockDG:
             mock_instance = MagicMock()
             mock_instance.generate_design.return_value = MagicMock(
-                title="T", architecture_decisions=[], api_contracts=[],
-                data_models=[], success_criteria=[], to_markdown=lambda: "# Design"
+                title="T",
+                architecture_decisions=[],
+                api_contracts=[],
+                data_models=[],
+                success_criteria=[],
+                to_markdown=lambda: "# Design",
             )
             MockDG.return_value = mock_instance
-            result = runner.invoke(design, [
-                "some task", "--provider", "groq",
-                "--project-path", str(tmp_path), "--output", str(tmp_path / "DESIGN.md")
-            ])
+            result = runner.invoke(
+                design,
+                [
+                    "some task",
+                    "--provider",
+                    "groq",
+                    "--project-path",
+                    str(tmp_path),
+                    "--output",
+                    str(tmp_path / "DESIGN.md"),
+                ],
+            )
         call_kwargs = MockDG.call_args
         assert call_kwargs is not None
         # provider='groq' must be passed — either positional or keyword
@@ -93,14 +104,26 @@ class TestDesignProviderWiring:
             with patch("generator.design_generator.DesignGenerator") as MockDG:
                 mock_instance = MagicMock()
                 mock_instance.generate_design.return_value = MagicMock(
-                    title="T", architecture_decisions=[], api_contracts=[],
-                    data_models=[], success_criteria=[], to_markdown=lambda: "# Design"
+                    title="T",
+                    architecture_decisions=[],
+                    api_contracts=[],
+                    data_models=[],
+                    success_criteria=[],
+                    to_markdown=lambda: "# Design",
                 )
                 MockDG.return_value = mock_instance
-                result = runner.invoke(design, [
-                    "task", "--provider", prov,
-                    "--project-path", str(tmp_path), "--output", str(tmp_path / "DESIGN.md")
-                ])
+                result = runner.invoke(
+                    design,
+                    [
+                        "task",
+                        "--provider",
+                        prov,
+                        "--project-path",
+                        str(tmp_path),
+                        "--output",
+                        str(tmp_path / "DESIGN.md"),
+                    ],
+                )
             assert result.exit_code == 0, f"provider={prov} failed: {result.output}"
 
 

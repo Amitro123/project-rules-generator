@@ -144,7 +144,6 @@ def generate_clinerules(
     return yaml.dump(clinerules, default_flow_style=False, sort_keys=False, allow_unicode=True)
 
 
-
 def _build_context_config(project_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Build context configuration for .clinerules.yaml.
 

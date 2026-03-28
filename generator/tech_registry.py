@@ -556,27 +556,19 @@ _PROFILES: List[TechProfile] = [
 REGISTRY: Dict[str, TechProfile] = {p.name: p for p in _PROFILES}
 
 # tech name → preferred skill filename
-TECH_SKILL_NAMES: Dict[str, str] = {
-    p.name: p.skill_name for p in _PROFILES if p.skill_name
-}
+TECH_SKILL_NAMES: Dict[str, str] = {p.name: p.skill_name for p in _PROFILES if p.skill_name}
 # Also include legacy aliases that pointed to the same skill
 TECH_SKILL_NAMES["websockets"] = "websocket-handler"
 TECH_SKILL_NAMES["chrome-extension"] = "chrome-extension"
 
 # tech name → list of shell tools
-TECH_TOOLS: Dict[str, List[str]] = {
-    p.name: p.tools for p in _PROFILES if p.tools
-}
+TECH_TOOLS: Dict[str, List[str]] = {p.name: p.tools for p in _PROFILES if p.tools}
 
 # tech name → coding rules {priority: [rules]}
-TECH_RULES: Dict[str, Dict[str, List[str]]] = {
-    p.name: p.rules for p in _PROFILES if p.rules
-}
+TECH_RULES: Dict[str, Dict[str, List[str]]] = {p.name: p.rules for p in _PROFILES if p.rules}
 
 # tech name → list of README keywords
-TECH_README_KEYWORDS: Dict[str, List[str]] = {
-    p.name: p.readme_keywords for p in _PROFILES if p.readme_keywords
-}
+TECH_README_KEYWORDS: Dict[str, List[str]] = {p.name: p.readme_keywords for p in _PROFILES if p.readme_keywords}
 
 # package name → canonical tech name  (inverse of TechProfile.packages)
 PKG_MAP: Dict[str, str] = {}

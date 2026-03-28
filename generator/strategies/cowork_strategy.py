@@ -46,8 +46,7 @@ class SkillCreatorProtocol(Protocol):
 
     def create_skill(
         self, skill_name: str, readme_content: str, use_ai: bool, provider: str
-    ) -> Tuple[str, Mapping[str, Any], _QualityProtocol]:
-        ...  # pragma: no cover
+    ) -> Tuple[str, Mapping[str, Any], _QualityProtocol]: ...  # pragma: no cover
 
 
 # Log message templates (centralized to avoid magic strings)
@@ -68,9 +67,7 @@ class CoworkStrategy:
             instantiate CoworkSkillCreator on demand.
     """
 
-    def __init__(
-        self, creator_factory: Optional[Callable[[Path], SkillCreatorProtocol]] = None
-    ) -> None:
+    def __init__(self, creator_factory: Optional[Callable[[Path], SkillCreatorProtocol]] = None) -> None:
         self._creator_factory = creator_factory or self._default_creator_factory
 
     @staticmethod
@@ -148,9 +145,7 @@ class CoworkStrategy:
         try:
             sufficient = is_readme_sufficient(readme_content)
         except Exception as exc:
-            logging.exception(
-                "Failed to assess README sufficiency for '%s': %s", skill_name, exc
-            )
+            logging.exception("Failed to assess README sufficiency for '%s': %s", skill_name, exc)
             sufficient = False  # fall back to bridging if unsure
 
         if not sufficient:
@@ -159,9 +154,7 @@ class CoworkStrategy:
                 if supplement:
                     readme_content = f"{supplement}\n\n{readme_content}" if readme_content else supplement
             except Exception as exc:
-                logging.exception(
-                    "Failed to bridge missing context for '%s': %s", skill_name, exc
-                )
+                logging.exception("Failed to bridge missing context for '%s': %s", skill_name, exc)
                 # Proceed with whatever README content we have
 
         # Without AI, CoworkSkillCreator falls back to inline/Jinja2 template

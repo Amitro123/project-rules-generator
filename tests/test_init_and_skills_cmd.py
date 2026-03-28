@@ -9,7 +9,6 @@ from click.testing import CliRunner
 from cli.init_cmd import init
 from cli.skills_cmd import skills_group
 
-
 # ---------------------------------------------------------------------------
 # prg init
 # ---------------------------------------------------------------------------
@@ -23,9 +22,7 @@ class TestInitCommand:
         assert "First-run wizard" in result.output
 
     def test_init_creates_rules_md(self, tmp_path):
-        (tmp_path / "README.md").write_text(
-            "# My Project\nA Python project using FastAPI.", encoding="utf-8"
-        )
+        (tmp_path / "README.md").write_text("# My Project\nA Python project using FastAPI.", encoding="utf-8")
         runner = CliRunner()
         with patch("generator.rules_generator.generate_rules", return_value="# Rules\n- rule 1"):
             result = runner.invoke(init, [str(tmp_path), "--yes"])
@@ -143,9 +140,7 @@ class TestSkillsValidateCommand:
     def test_validate_fails_for_stub_skill(self, tmp_path):
         skill_dir = tmp_path / ".clinerules" / "skills" / "project" / "bad-skill"
         skill_dir.mkdir(parents=True)
-        (skill_dir / "SKILL.md").write_text(
-            "Follow project conventions\n[describe what this does]\n", encoding="utf-8"
-        )
+        (skill_dir / "SKILL.md").write_text("Follow project conventions\n[describe what this does]\n", encoding="utf-8")
 
         runner = CliRunner()
         skill_path = str(skill_dir / "SKILL.md")

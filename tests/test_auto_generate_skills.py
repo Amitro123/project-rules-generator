@@ -34,17 +34,19 @@ class TestAutoGenerateSkillsNames:
 
         def fake_create_skill(skill_name, readme_content, **kwargs):
             captured_names.append(skill_name)
-            from generator.utils.quality_checker import QualityReport
             from generator.skill_creator import SkillMetadata
+            from generator.utils.quality_checker import QualityReport
 
             meta = SkillMetadata(name=skill_name, description="stub")
             quality = QualityReport(score=90.0, passed=True, issues=[], warnings=[], suggestions=[])
             return f"# {skill_name}\n", meta, quality
 
         with patch.object(creator, "create_skill", side_effect=fake_create_skill):
-            with patch.object(creator, "_detect_tech_stack", return_value=list(
-                {t for t in readme.lower().split() if t in SkillGenerator.TECH_SKILL_NAMES}
-            )):
+            with patch.object(
+                creator,
+                "_detect_tech_stack",
+                return_value=list({t for t in readme.lower().split() if t in SkillGenerator.TECH_SKILL_NAMES}),
+            ):
                 creator.auto_generate_skills(readme, output_dir)
 
         return captured_names
@@ -59,8 +61,8 @@ class TestAutoGenerateSkillsNames:
 
         def fake_create(name, readme, **kwargs):
             captured.append(name)
-            from generator.utils.quality_checker import QualityReport
             from generator.skill_creator import SkillMetadata
+            from generator.utils.quality_checker import QualityReport
 
             meta = SkillMetadata(name=name, description="stub")
             q = QualityReport(score=90.0, passed=True, issues=[], warnings=[], suggestions=[])
@@ -71,9 +73,9 @@ class TestAutoGenerateSkillsNames:
                 creator.auto_generate_skills("# readme\n- fastapi", output_dir)
 
         assert "fastapi-endpoints" in captured, f"Expected 'fastapi-endpoints', got {captured}"
-        assert not any("api-workflow" in n for n in captured), (
-            f"Old broken name 'fastapi-api-workflow' must not appear. Got: {captured}"
-        )
+        assert not any(
+            "api-workflow" in n for n in captured
+        ), f"Old broken name 'fastapi-api-workflow' must not appear. Got: {captured}"
 
     def test_pytest_uses_canonical_name(self, tmp_path):
         """pytest should produce 'pytest-testing', NOT 'pytest-testing-workflow'."""
@@ -85,8 +87,8 @@ class TestAutoGenerateSkillsNames:
 
         def fake_create(name, readme, **kwargs):
             captured.append(name)
-            from generator.utils.quality_checker import QualityReport
             from generator.skill_creator import SkillMetadata
+            from generator.utils.quality_checker import QualityReport
 
             meta = SkillMetadata(name=name, description="stub")
             q = QualityReport(score=90.0, passed=True, issues=[], warnings=[], suggestions=[])
@@ -97,9 +99,9 @@ class TestAutoGenerateSkillsNames:
                 creator.auto_generate_skills("# readme\n- pytest", output_dir)
 
         assert "pytest-testing" in captured, f"Expected 'pytest-testing', got {captured}"
-        assert not any(n == "pytest-testing-workflow" for n in captured), (
-            f"Old broken name 'pytest-testing-workflow' must not appear. Got: {captured}"
-        )
+        assert not any(
+            n == "pytest-testing-workflow" for n in captured
+        ), f"Old broken name 'pytest-testing-workflow' must not appear. Got: {captured}"
 
     def test_unknown_tech_falls_back_to_project_workflow(self, tmp_path):
         """Unknown tech that has no TECH_SKILL_NAMES entry should yield a project workflow."""
@@ -111,8 +113,8 @@ class TestAutoGenerateSkillsNames:
 
         def fake_create(name, readme, **kwargs):
             captured.append(name)
-            from generator.utils.quality_checker import QualityReport
             from generator.skill_creator import SkillMetadata
+            from generator.utils.quality_checker import QualityReport
 
             meta = SkillMetadata(name=name, description="stub")
             q = QualityReport(score=90.0, passed=True, issues=[], warnings=[], suggestions=[])
@@ -123,9 +125,7 @@ class TestAutoGenerateSkillsNames:
             with patch.object(creator, "_detect_tech_stack", return_value=["cobol"]):
                 creator.auto_generate_skills("# readme\n- cobol", output_dir)
 
-        assert any(n.endswith("-workflow") for n in captured), (
-            f"Expected a generic *-workflow fallback, got {captured}"
-        )
+        assert any(n.endswith("-workflow") for n in captured), f"Expected a generic *-workflow fallback, got {captured}"
 
     def test_all_generated_names_match_tech_skill_names(self, tmp_path):
         """Every skill name produced must be a value from TECH_SKILL_NAMES (or the fallback)."""
@@ -137,8 +137,8 @@ class TestAutoGenerateSkillsNames:
 
         def fake_create(name, readme, **kwargs):
             captured.append(name)
-            from generator.utils.quality_checker import QualityReport
             from generator.skill_creator import SkillMetadata
+            from generator.utils.quality_checker import QualityReport
 
             meta = SkillMetadata(name=name, description="stub")
             q = QualityReport(score=90.0, passed=True, issues=[], warnings=[], suggestions=[])
@@ -151,6 +151,6 @@ class TestAutoGenerateSkillsNames:
 
         valid_values = set(SkillGenerator.TECH_SKILL_NAMES.values())
         for name in captured:
-            assert name in valid_values or name.endswith("-workflow"), (
-                f"Unexpected skill name '{name}' not in TECH_SKILL_NAMES values and not a fallback."
-            )
+            assert name in valid_values or name.endswith(
+                "-workflow"
+            ), f"Unexpected skill name '{name}' not in TECH_SKILL_NAMES values and not a fallback."

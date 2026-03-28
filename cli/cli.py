@@ -128,7 +128,7 @@ def _sanitize_env_from_dotenv() -> None:
 
 
 def main():
-    load_dotenv()          # standard KEY=value lines
+    load_dotenv()  # standard KEY=value lines
     _sanitize_env_from_dotenv()  # catch KEY:'value' / KEY: value syntax
     cli()
 

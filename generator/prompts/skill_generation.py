@@ -122,10 +122,10 @@ Otherwise write a generic pattern without fake File: paths.]
 def scan_project_context(project_root: Path) -> str:
     """Scans the codebase to detect frameworks, structure, and key files."""
     context = []
-    
+
     if not project_root or not project_root.exists():
         return "No specific project directory available for reconnaissance."
-        
+
     # 1. Detect Package Managers
     if (project_root / "package.json").exists():
         context.append("Ecosystem: Node.js/NPM")
@@ -135,14 +135,14 @@ def scan_project_context(project_root: Path) -> str:
         context.append("Ecosystem: Rust")
     if (project_root / "go.mod").exists():
         context.append("Ecosystem: Go")
-        
+
     # 2. Detect Key Directories
     try:
-        top_dirs = [d.name for d in project_root.iterdir() if d.is_dir() and not d.name.startswith('.')]
+        top_dirs = [d.name for d in project_root.iterdir() if d.is_dir() and not d.name.startswith(".")]
         context.append(f"Top-level directories: {', '.join(top_dirs)}")
     except Exception as e:
         context.append(f"Could not read top-level directories: {e}")
-    
+
     return "\n".join(context)
 
 

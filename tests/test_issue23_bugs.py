@@ -22,7 +22,6 @@ from generator.skill_creator import CoworkSkillCreator
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
 
-
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 
@@ -86,10 +85,7 @@ class TestBug1FlatFileReturnPath:
         result = generator.create_skill("fastapi-endpoints", force=False)
 
         # The returned path must actually exist on disk
-        assert result.exists(), (
-            f"BUG-1: create_skill() returned non-existent path {result!r} "
-            "for a flat-file skill."
-        )
+        assert result.exists(), f"BUG-1: create_skill() returned non-existent path {result!r} " "for a flat-file skill."
 
     def test_flat_file_skill_does_not_return_phantom_suffix(self, tmp_path):
         """Regression: the bugged code returned `learned/fastapi-endpoints` (non-existent)."""
@@ -104,9 +100,7 @@ class TestBug1FlatFileReturnPath:
 
         # Must NOT be the phantom `learned/my-skill` directory
         phantom = discovery.global_learned / "my-skill"
-        assert result != phantom or phantom.exists(), (
-            "BUG-1: returned the phantom non-existent directory path."
-        )
+        assert result != phantom or phantom.exists(), "BUG-1: returned the phantom non-existent directory path."
 
     def test_directory_style_skill_still_returns_skill_dir(self, tmp_path):
         """Regression guard: dir-style skills in project scope must return the skill directory."""
@@ -123,9 +117,7 @@ class TestBug1FlatFileReturnPath:
         generator = SkillGenerator(discovery)
         result = generator.create_skill("docker-deployment", force=False, scope="project")
 
-        assert result == skill_dir, (
-            f"Dir-style skill in project scope must return its directory, got {result!r}"
-        )
+        assert result == skill_dir, f"Dir-style skill in project scope must return its directory, got {result!r}"
 
 
 # ─── BUG-3 ───────────────────────────────────────────────────────────────────
@@ -142,9 +134,7 @@ class TestBug3ReadmeContextTrimmed:
     def _make_long_project_readme(self, length: int = 2000) -> str:
         """README whose purpose mentions 'project' — matches skill name 'project-workflow'."""
         return (
-            "# Project Workflow Tool\n\n"
-            "Automates the project workflow with intelligent analysis.\n\n"
-            + "A" * length
+            "# Project Workflow Tool\n\n" "Automates the project workflow with intelligent analysis.\n\n" + "A" * length
         )
 
     def test_context_section_capped_at_400_chars(self, tmp_path):
@@ -157,8 +147,7 @@ class TestBug3ReadmeContextTrimmed:
         content = strategy.generate("project-workflow", tmp_path, long_readme, "groq")
 
         assert content is not None, (
-            "READMEStrategy returned None unexpectedly. "
-            "Ensure the skill name words appear in the README purpose."
+            "READMEStrategy returned None unexpectedly. " "Ensure the skill name words appear in the README purpose."
         )
 
         # Extract everything after "## Context"
@@ -168,9 +157,9 @@ class TestBug3ReadmeContextTrimmed:
 
         # The README body after the section header should be ≤ 400 chars of actual README text
         # (the header + truncation note + newlines account for ~80 chars of overhead)
-        assert len(context_slice) < 600, (
-            f"BUG-3: Context section is {len(context_slice)} chars — full README still embedded."
-        )
+        assert (
+            len(context_slice) < 600
+        ), f"BUG-3: Context section is {len(context_slice)} chars — full README still embedded."
 
     def test_short_readme_not_truncated(self, tmp_path):
         """Short READMEs (≤ 400 chars) must be included in full without truncation note."""
@@ -181,12 +170,8 @@ class TestBug3ReadmeContextTrimmed:
         strategy = READMEStrategy()
         content = strategy.generate("project-tool", tmp_path, short_readme, "groq")
 
-        assert content is not None, (
-            "READMEStrategy returned None unexpectedly for relevant skill name."
-        )
-        assert "truncated" not in content, (
-            "Short README must not be truncated."
-        )
+        assert content is not None, "READMEStrategy returned None unexpectedly for relevant skill name."
+        assert "truncated" not in content, "Short README must not be truncated."
 
     def test_long_readme_includes_truncation_note(self, tmp_path):
         """Long READMEs must mention truncation so agents know to check the source."""
@@ -197,12 +182,10 @@ class TestBug3ReadmeContextTrimmed:
         # "project" and "workflow" both appear in the README purpose
         content = strategy.generate("project-workflow", tmp_path, long_readme, "groq")
 
-        assert content is not None, (
-            "READMEStrategy returned None unexpectedly for relevant skill name."
-        )
-        assert "truncated" in content.lower() or "README.md" in content, (
-            "BUG-3: Long README embedded without any truncation notice."
-        )
+        assert content is not None, "READMEStrategy returned None unexpectedly for relevant skill name."
+        assert (
+            "truncated" in content.lower() or "README.md" in content
+        ), "BUG-3: Long README embedded without any truncation notice."
 
     def test_irrelevant_skill_name_returns_none(self, tmp_path):
         """Relevance check: skill name words absent from purpose must return None."""
@@ -213,9 +196,9 @@ class TestBug3ReadmeContextTrimmed:
         # "readme" and "improvement" do not appear in the purpose above
         content = strategy.generate("readme-improvement", tmp_path, readme, "groq")
 
-        assert content is None, (
-            "READMEStrategy must return None when skill name words are absent from the README purpose."
-        )
+        assert (
+            content is None
+        ), "READMEStrategy must return None when skill name words are absent from the README purpose."
 
 
 # ─── BUG-4 ───────────────────────────────────────────────────────────────────
@@ -248,9 +231,7 @@ class TestBug4ProjectLayerDirStyleSkill:
         discovery._skills_cache = None
 
         result = discovery.resolve_skill("my-dir-skill")
-        assert result == skill_md, (
-            f"BUG-4: dir-style skill in project layer was not found, got {result!r}"
-        )
+        assert result == skill_md, f"BUG-4: dir-style skill in project layer was not found, got {result!r}"
 
     def test_project_layer_takes_priority_over_learned(self, tmp_path):
         """Project-layer dir-style skill must shadow learned-layer flat skill."""
@@ -268,9 +249,9 @@ class TestBug4ProjectLayerDirStyleSkill:
         discovery._skills_cache = None
 
         result = discovery.resolve_skill("shared-skill")
-        assert result == project_md, (
-            f"BUG-4: project dir-style skill did not override learned flat skill. Got {result!r}"
-        )
+        assert (
+            result == project_md
+        ), f"BUG-4: project dir-style skill did not override learned flat skill. Got {result!r}"
 
 
 # ─── DESIGN-1 ─────────────────────────────────────────────────────────────────
@@ -314,9 +295,7 @@ class TestDesign1CacheInvalidatedAfterCreate:
         generator = SkillGenerator(discovery)
         generator.create_skill("another-skill")
 
-        assert discovery._skills_cache is None, (
-            "DESIGN-1: create_skill() did not call invalidate_cache()."
-        )
+        assert discovery._skills_cache is None, "DESIGN-1: create_skill() did not call invalidate_cache()."
 
 
 # ─── DESIGN-2 ─────────────────────────────────────────────────────────────────
@@ -365,9 +344,7 @@ class TestDesign2LinkFromLearnedDirectory:
         creator.link_from_learned("docker-deployment")
 
         target_dir = discovery.project_local_dir / "docker-deployment"
-        assert target_dir.exists(), (
-            "DESIGN-2: directory-style skill was not linked as a directory."
-        )
+        assert target_dir.exists(), "DESIGN-2: directory-style skill was not linked as a directory."
         assert (target_dir / "SKILL.md").exists(), "SKILL.md missing from linked dir."
 
     def test_dir_style_skill_subdirs_are_accessible(self, tmp_path):

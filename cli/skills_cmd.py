@@ -55,7 +55,7 @@ def _parse_frontmatter(content: str):
     if end == -1:
         return {}, content
     yaml_block = content[3:end].strip()
-    body = content[end + 4:]
+    body = content[end + 4 :]
     try:
         import yaml
 
@@ -138,9 +138,7 @@ def skills_list(path, show_all):
     col_name = max(len(r[0]) for r in rows)
     col_layer = max(len(r[1]) for r in rows)
 
-    header = (
-        f"{'Name':<{col_name}}  {'Layer':<{col_layer}}  {'Triggers':>8}  {'Tools':<30}  FM"
-    )
+    header = f"{'Name':<{col_name}}  {'Layer':<{col_layer}}  {'Triggers':>8}  {'Tools':<30}  FM"
     click.echo(header)
     click.echo("-" * len(header))
     for name, layer, triggers, tools, fm in rows:

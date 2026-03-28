@@ -33,9 +33,7 @@ class StubStrategy:
             f"  [One sentence: what this skill does and when to activate it.]\n"
             f"  Use when user mentions {trigger_str}.\n"
             f'allowed-tools: "Bash Read Write Edit Glob Grep"\n'
-            f"triggers:\n"
-            + "".join(f'  - "{t}"\n' for t in ([skill_label] + parts)[:3])
-            + f"metadata:\n"
+            f"triggers:\n" + "".join(f'  - "{t}"\n' for t in ([skill_label] + parts)[:3]) + f"metadata:\n"
             f"  tags: [{', '.join(parts[:4])}]\n"
             f"---\n\n"
             f"# Skill: {title}\n\n"

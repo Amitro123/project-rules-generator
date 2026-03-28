@@ -50,21 +50,15 @@ class TestExtractProcessStepsGeneralized:
         """Numbered list items under '## Development Workflow' must be captured."""
         steps = extract_process_steps(CALCULATOR_README)
         texts = " ".join(steps)
-        assert "Create a new file" in texts, (
-            f"Step 1 ('Create a new file') not extracted.\nGot: {steps}"
-        )
-        assert "calculate" in texts, (
-            f"Step 2 ('calculate') not extracted.\nGot: {steps}"
-        )
+        assert "Create a new file" in texts, f"Step 1 ('Create a new file') not extracted.\nGot: {steps}"
+        assert "calculate" in texts, f"Step 2 ('calculate') not extracted.\nGot: {steps}"
 
     def test_multiple_steps_returned(self):
         """All 4 numbered steps from the workflow section should be captured."""
         steps = extract_process_steps(CALCULATOR_README)
         # Filter to items that look like numbered steps (not code blocks)
         numbered = [s for s in steps if re.match(r"^\d+[\.)]\s+", s)]
-        assert len(numbered) >= 4, (
-            f"Expected ≥4 numbered steps, got {len(numbered)}.\nSteps: {steps}"
-        )
+        assert len(numbered) >= 4, f"Expected ≥4 numbered steps, got {len(numbered)}.\nSteps: {steps}"
 
     def test_bullet_list_steps_extracted(self):
         """Bullet-list workflow steps should also be captured."""
@@ -122,17 +116,15 @@ class TestExtractAntiPatternsFromCodingStandards:
         """'Never use global variables' → anti-pattern."""
         patterns = extract_anti_patterns(CALCULATOR_README, tech=[])
         texts = " ".join(patterns)
-        assert "global variables" in texts, (
-            f"'Never use global variables' not found in anti-patterns.\nGot: {patterns}"
-        )
+        assert "global variables" in texts, f"'Never use global variables' not found in anti-patterns.\nGot: {patterns}"
 
     def test_positive_rule_not_extracted(self):
         """'Always use type hints' MUST NOT appear as an anti-pattern."""
         patterns = extract_anti_patterns(CALCULATOR_README, tech=[])
         texts = " ".join(patterns)
-        assert "type hints" not in texts, (
-            f"Positive rule 'type hints' incorrectly included as anti-pattern.\nGot: {patterns}"
-        )
+        assert (
+            "type hints" not in texts
+        ), f"Positive rule 'type hints' incorrectly included as anti-pattern.\nGot: {patterns}"
 
     def test_do_not_statement_extracted(self):
         """'Do not import * from modules' → anti-pattern."""
@@ -146,12 +138,8 @@ class TestExtractAntiPatternsFromCodingStandards:
 """
         patterns = extract_anti_patterns(readme, tech=[])
         texts = " ".join(patterns)
-        assert "import" in texts.lower(), (
-            f"'Do not import *' not captured.\nGot: {patterns}"
-        )
-        assert "secrets" in texts.lower(), (
-            f"'Never commit secrets' not captured.\nGot: {patterns}"
-        )
+        assert "import" in texts.lower(), f"'Do not import *' not captured.\nGot: {patterns}"
+        assert "secrets" in texts.lower(), f"'Never commit secrets' not captured.\nGot: {patterns}"
 
     def test_dont_statement_extracted(self):
         """Contraction form "Don't use X" is also captured."""
@@ -163,9 +151,7 @@ class TestExtractAntiPatternsFromCodingStandards:
 """
         patterns = extract_anti_patterns(readme, tech=[])
         texts = " ".join(patterns)
-        assert "mutable default" in texts, (
-            f"Don't-form not captured.\nGot: {patterns}"
-        )
+        assert "mutable default" in texts, f"Don't-form not captured.\nGot: {patterns}"
 
     def test_avoid_statement_extracted(self):
         """'Avoid using bare except clauses' → anti-pattern."""
@@ -178,9 +164,7 @@ class TestExtractAntiPatternsFromCodingStandards:
 """
         patterns = extract_anti_patterns(readme, tech=[])
         texts = " ".join(patterns)
-        assert "bare except" in texts, (
-            f"Avoid-form not captured.\nGot: {patterns}"
-        )
+        assert "bare except" in texts, f"Avoid-form not captured.\nGot: {patterns}"
 
     def test_existing_cross_mark_not_duplicated(self):
         """Items already captured via ❌ are not duplicated by the standards pass."""
@@ -194,9 +178,9 @@ class TestExtractAntiPatternsFromCodingStandards:
 """
         patterns = extract_anti_patterns(readme, tech=[])
         credential_hits = [p for p in patterns if "credential" in p.lower()]
-        assert len(credential_hits) == 1, (
-            f"Expected 1 credential anti-pattern, got {len(credential_hits)}.\nPatterns: {patterns}"
-        )
+        assert (
+            len(credential_hits) == 1
+        ), f"Expected 1 credential anti-pattern, got {len(credential_hits)}.\nPatterns: {patterns}"
 
     def test_best_practices_section_recognised(self):
         """'Best Practices' header is recognised as a standards section."""
@@ -227,13 +211,9 @@ class TestSkillDiscoveryUsesLogging:
         source = source_path.read_text(encoding="utf-8")
         # Look for print calls that contain "[Warning]" text
         bad_prints = [
-            line.strip()
-            for line in source.splitlines()
-            if re.search(r'print\s*\(', line) and "Warning" in line
+            line.strip() for line in source.splitlines() if re.search(r"print\s*\(", line) and "Warning" in line
         ]
-        assert not bad_prints, (
-            f"Found print-based warnings in skill_discovery.py:\n" + "\n".join(bad_prints)
-        )
+        assert not bad_prints, f"Found print-based warnings in skill_discovery.py:\n" + "\n".join(bad_prints)
 
     def test_logging_imported_in_skill_discovery(self):
         """skill_discovery.py must import logging."""

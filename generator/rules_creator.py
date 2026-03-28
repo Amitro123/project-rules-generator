@@ -59,17 +59,21 @@ class QualityReport:
 
 def append_mandatory_anti_patterns(generated_rules: str, framework: str = "") -> str:
     """Forces the LLM output to include explicit negative constraints."""
-    
+
     anti_patterns_section = "\n## 🚫 Critical Anti-Patterns (NEVER DO THIS)\n\n"
-    
+
     # Generic constraints for all setups
-    anti_patterns_section += "- NEVER run destructive commands (rm -rf, drop table, etc.) without explicit user confirmation.\n"
-    anti_patterns_section += "- NEVER generate placeholder comments like 'Implement logic here' - write the full code.\n"
-    
+    anti_patterns_section += (
+        "- NEVER run destructive commands (rm -rf, drop table, etc.) without explicit user confirmation.\n"
+    )
+    anti_patterns_section += (
+        "- NEVER generate placeholder comments like 'Implement logic here' - write the full code.\n"
+    )
+
     # Framework specific
     if framework and "react" in framework.lower():
         anti_patterns_section += "- NEVER mutate React state directly; always use the setter functions.\n"
-        
+
     return generated_rules + anti_patterns_section + "\n"
 
 
@@ -284,8 +288,15 @@ class CoworkRulesCreator(ArtifactGenerator):
         tree = build_project_tree(self.project_path)
 
         snippets: list[str] = []
-        for fname in ["main.py", "app.py", "pyproject.toml", "requirements.txt",
-                      "package.json", "Cargo.toml", "go.mod"]:
+        for fname in [
+            "main.py",
+            "app.py",
+            "pyproject.toml",
+            "requirements.txt",
+            "package.json",
+            "Cargo.toml",
+            "go.mod",
+        ]:
             p = self.project_path / fname
             if p.exists():
                 try:

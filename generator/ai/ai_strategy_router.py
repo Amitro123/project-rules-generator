@@ -33,18 +33,18 @@ DEFAULT_PREFERRED: List[str] = ["anthropic", "groq", "gemini", "openai"]
 
 # Intrinsic quality rankings (0-100)
 QUALITY_SCORES: Dict[str, int] = {
-    "anthropic": 95,   # Claude 3.5 Sonnet — best reasoning
-    "openai": 90,      # GPT-4o-mini — strong general purpose
-    "gemini": 85,      # Gemini 2.0 Flash — fast & capable
-    "groq": 75,        # Llama 3.1 — fastest inference, lower quality
+    "anthropic": 95,  # Claude 3.5 Sonnet — best reasoning
+    "openai": 90,  # GPT-4o-mini — strong general purpose
+    "gemini": 85,  # Gemini 2.0 Flash — fast & capable
+    "groq": 75,  # Llama 3.1 — fastest inference, lower quality
 }
 
 # Intrinsic speed rankings (0-100, higher = faster)
 SPEED_SCORES: Dict[str, int] = {
-    "groq": 95,        # Hardware-optimised inference
+    "groq": 95,  # Hardware-optimised inference
     "gemini": 85,
     "openai": 70,
-    "anthropic": 65,   # Slower but thorough
+    "anthropic": 65,  # Slower but thorough
 }
 
 # Environment variable names for each provider
@@ -111,9 +111,7 @@ class AIStrategyRouter:
                         "rules": "groq",
                     },
                 }
-                STRATEGY_CONFIG_PATH.write_text(
-                    yaml.dump(default, default_flow_style=False), encoding="utf-8"
-                )
+                STRATEGY_CONFIG_PATH.write_text(yaml.dump(default, default_flow_style=False), encoding="utf-8")
         except OSError:
             pass
 
@@ -129,13 +127,10 @@ class AIStrategyRouter:
             return [forced]
 
         # 2. Task-specific override from config
-        task_override: Optional[str] = (
-            self.config.get("task_overrides", {}).get(task_type)
-        )
+        task_override: Optional[str] = self.config.get("task_overrides", {}).get(task_type)
         if task_override:
             preferred = [task_override] + [
-                p for p in self.config.get("preferred", DEFAULT_PREFERRED)
-                if p != task_override
+                p for p in self.config.get("preferred", DEFAULT_PREFERRED) if p != task_override
             ]
         else:
             preferred = self.config.get("preferred", DEFAULT_PREFERRED)
@@ -160,9 +155,7 @@ class AIStrategyRouter:
         available = []
         for p in candidates:
             env_key = PROVIDER_ENV_KEYS.get(p, f"{p.upper()}_API_KEY")
-            has_key = bool(os.getenv(env_key)) or (
-                p == "gemini" and bool(os.getenv("GOOGLE_API_KEY"))
-            )
+            has_key = bool(os.getenv(env_key)) or (p == "gemini" and bool(os.getenv("GOOGLE_API_KEY")))
             if has_key:
                 available.append(p)
         return available
@@ -190,9 +183,7 @@ class AIStrategyRouter:
         for provider in ranked:
             env_key = PROVIDER_ENV_KEYS.get(provider, f"{provider.upper()}_API_KEY")
             # Gemini accepts either GEMINI_API_KEY or GOOGLE_API_KEY
-            has_key = bool(os.getenv(env_key)) or (
-                provider == "gemini" and bool(os.getenv("GOOGLE_API_KEY"))
-            )
+            has_key = bool(os.getenv(env_key)) or (provider == "gemini" and bool(os.getenv("GOOGLE_API_KEY")))
             if not has_key:
                 errors.append(f"{provider}: no API key ({env_key} not set)")
                 continue
@@ -209,8 +200,7 @@ class AIStrategyRouter:
                 continue
 
         raise RuntimeError(
-            f"All providers failed for task_type={task_type!r}:\n"
-            + "\n".join(f"  • {e}" for e in errors)
+            f"All providers failed for task_type={task_type!r}:\n" + "\n".join(f"  • {e}" for e in errors)
         )
 
     # ------------------------------------------------------------------
@@ -227,9 +217,7 @@ class AIStrategyRouter:
 
         for provider in ["anthropic", "groq", "gemini", "openai"]:
             env_key = PROVIDER_ENV_KEYS.get(provider, f"{provider.upper()}_API_KEY")
-            has_key = bool(os.getenv(env_key)) or (
-                provider == "gemini" and bool(os.getenv("GOOGLE_API_KEY"))
-            )
+            has_key = bool(os.getenv(env_key)) or (provider == "gemini" and bool(os.getenv("GOOGLE_API_KEY")))
 
             statuses.append(
                 {
@@ -240,11 +228,7 @@ class AIStrategyRouter:
                     "quality": QUALITY_SCORES.get(provider, 0),
                     "speed": SPEED_SCORES.get(provider, 0),
                     "default_model": PROVIDER_DEFAULT_MODELS.get(provider, "unknown"),
-                    "latency": (
-                        f"{self._latency_cache[provider]:.2f}s"
-                        if provider in self._latency_cache
-                        else "—"
-                    ),
+                    "latency": (f"{self._latency_cache[provider]:.2f}s" if provider in self._latency_cache else "—"),
                     "preferred": provider in preferred,
                 }
             )

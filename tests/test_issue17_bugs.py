@@ -19,8 +19,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import pytest
-
 from generator.skill_creator import CoworkSkillCreator, SkillMetadata
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
@@ -59,8 +57,6 @@ def test_validate_quality_warning_shows_actual_count(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-
-
 # ---------------------------------------------------------------------------
 # BUG-3: Flat-file skills return wrong directory from create_skill()
 # ---------------------------------------------------------------------------
@@ -91,8 +87,7 @@ def test_create_skill_flat_file_returns_correct_dir(tmp_path):
 
     # The returned path must actually exist on disk
     assert result_path.exists(), (
-        f"create_skill() returned non-existent path {result_path!r}. "
-        f"The returned path must exist on disk."
+        f"create_skill() returned non-existent path {result_path!r}. " f"The returned path must exist on disk."
     )
 
 
@@ -206,8 +201,7 @@ def test_cowork_strategy_does_not_force_use_ai(tmp_path):
     result = strategy.generate("test-skill", tmp_path, "# README content", "gemini", use_ai=False)
 
     assert result is None, (
-        f"CoworkStrategy must return None when use_ai=False (skips to StubStrategy), "
-        f"got: {result!r}"
+        f"CoworkStrategy must return None when use_ai=False (skips to StubStrategy), " f"got: {result!r}"
     )
 
 
@@ -328,8 +322,9 @@ Test skill for quality checker sentinel fix.
         """'TodoWrite' contains 'todo' as substring — must NOT fire TODO placeholder check."""
         from generator.utils.quality_checker import validate_quality
 
-        report = validate_quality(self.BASE_SKILL, metadata_triggers=["tasks", "workflows", "scheduling"],
-                                  metadata_tools=["Bash"])
+        report = validate_quality(
+            self.BASE_SKILL, metadata_triggers=["tasks", "workflows", "scheduling"], metadata_tools=["Bash"]
+        )
         todo_issues = [i for i in report.issues if "TODO" in i]
         assert todo_issues == [], f"False positive: 'TodoWrite' triggered TODO check — {todo_issues}"
 
@@ -346,8 +341,7 @@ Test skill for quality checker sentinel fix.
         """'FIXME_utils' — FIXME followed immediately by underscore — is NOT a bare sentinel."""
         from generator.utils.quality_checker import validate_quality
 
-        report = validate_quality(self.BASE_SKILL, metadata_triggers=["a", "b", "c"],
-                                  metadata_tools=["Bash"])
+        report = validate_quality(self.BASE_SKILL, metadata_triggers=["a", "b", "c"], metadata_tools=["Bash"])
         fixme_issues = [i for i in report.issues if "FIXME" in i]
         assert fixme_issues == [], f"False positive: 'FIXME_utils' triggered FIXME check — {fixme_issues}"
 
@@ -440,13 +434,13 @@ class TestStrategyChainFallback:
         stub_strategy = MagicMock()
         stub_strategy.generate.return_value = stub_content
 
-        with patch("generator.skill_generator.SkillGenerator._run_strategy_chain",
-                   wraps=generator._run_strategy_chain):
+        with patch("generator.skill_generator.SkillGenerator._run_strategy_chain", wraps=generator._run_strategy_chain):
             # Inject the two strategies directly to avoid importing real ones
             original = generator._run_strategy_chain
 
             def patched_chain(safe_name, from_readme, project_path, **kwargs):
                 from generator.strategies import StubStrategy
+
                 strategies = [exploding_strategy, StubStrategy()]
                 for s in strategies:
                     try:
@@ -511,12 +505,10 @@ class TestStrategyChainFallback:
                 "test-skill",
                 from_readme=None,
                 project_path=str(tmp_path),
-                use_ai=True,   # forces AIStrategy into the chain first
+                use_ai=True,  # forces AIStrategy into the chain first
                 provider="groq",
             )
 
         # After the fix: falls through to CoworkStrategy/StubStrategy
         # Before the fix: RuntimeError propagates out uncaught
-        assert result is not None, (
-            "_run_strategy_chain must catch per-strategy errors and fall through to StubStrategy"
-        )
+        assert result is not None, "_run_strategy_chain must catch per-strategy errors and fall through to StubStrategy"

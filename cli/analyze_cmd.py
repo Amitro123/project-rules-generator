@@ -169,8 +169,17 @@ def _handle_skill_management(
         sys.exit(0)
 
 
-def _run_create_rules(project_path, readme_path, project_name, project_data, enhanced_context, output_dir,
-                      rules_quality_threshold, verbose, generated_files):
+def _run_create_rules(
+    project_path,
+    readme_path,
+    project_name,
+    project_data,
+    enhanced_context,
+    output_dir,
+    rules_quality_threshold,
+    verbose,
+    generated_files,
+):
     """Run the --create-rules CoworkRulesCreator block."""
     try:
         from generator.rules_creator import CoworkRulesCreator
@@ -210,6 +219,7 @@ def _run_create_rules(project_path, readme_path, project_name, project_data, enh
         click.echo(f"   ⚠️  Cowork rules generation failed: {e}", err=True)
         if verbose:
             import traceback
+
             traceback.print_exc()
 
 
@@ -303,10 +313,7 @@ def setup_orchestrator(config):
     "--strategy",
     default="auto",
     show_default=True,
-    help=(
-        "Router strategy: auto (smart fallback), speed, quality, "
-        "or provider:<name> (e.g. provider:anthropic)"
-    ),
+    help=("Router strategy: auto (smart fallback), speed, quality, " "or provider:<name> (e.g. provider:anthropic)"),
 )
 @click.option("--add-skill", help="Add a skill (alias for create-skill)")
 @click.option(
