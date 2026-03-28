@@ -356,14 +356,18 @@ class TestQualityComparison:
 
     RICH_README = JINJA2_README
 
-    def _generate_via_strategy(self, content: str, tmp_path: Path) -> str:
+    def _generate_via_strategy(self, content: str, skill_name: str, tmp_path: Path) -> str:
         strategy = READMEStrategy()
-        result = strategy.generate("test-skill", tmp_path, content, "groq")
+        result = strategy.generate(skill_name, tmp_path, content, "groq")
         return result or ""
 
     def test_rich_readme_scores_higher(self, tmp_path):
-        bare_content = self._generate_via_strategy(self.BARE_README, tmp_path)
-        rich_content = self._generate_via_strategy(self.RICH_README, tmp_path)
+        # Use skill names whose significant words appear in each README's purpose.
+        # BARE_README purpose: "A project." → use "project-tool"
+        # RICH_README purpose: "Build dynamic code and configuration files from structured templates."
+        #   → "jinja2-template-workflow": "jinja2", "template", "workflow" — "template" matches
+        bare_content = self._generate_via_strategy(self.BARE_README, "project-tool", tmp_path)
+        rich_content = self._generate_via_strategy(self.RICH_README, "jinja2-template-workflow", tmp_path)
 
         bare_report = validate_quality(bare_content)
         rich_report = validate_quality(rich_content)
@@ -373,7 +377,10 @@ class TestQualityComparison:
         ), f"Rich README score ({rich_report.score}) should be >= bare ({bare_report.score})"
 
     def test_rich_readme_generates_more_content(self, tmp_path):
-        bare_content = self._generate_via_strategy(self.BARE_README, tmp_path)
-        rich_content = self._generate_via_strategy(self.RICH_README, tmp_path)
+        # Use skill names whose significant words appear in each README's purpose.
+        # BARE_README purpose: "A project." → use "project-tool"
+        # RICH_README purpose: mentions "template" → "jinja2-template-workflow" passes relevance check
+        bare_content = self._generate_via_strategy(self.BARE_README, "project-tool", tmp_path)
+        rich_content = self._generate_via_strategy(self.RICH_README, "jinja2-template-workflow", tmp_path)
 
         assert len(rich_content) > len(bare_content), "Rich README should produce more content than a bare one"

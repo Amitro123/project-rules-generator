@@ -47,6 +47,17 @@ class READMEStrategy:
             steps = extract_process_steps(readme_content)
             anti_patterns = extract_anti_patterns(readme_content, tech, project_path=project_path)
 
+            # Relevance check: if the skill name words don't appear in the
+            # extracted PURPOSE, this README is context-only — the skill is about
+            # a meta-task (e.g. "readme-improvement", "code-review") not the
+            # project's primary workflow. Return None so CoworkStrategy can
+            # generate the right content via LLM instead of echoing README prose.
+            # NOTE: triggers are excluded from this check because they are derived
+            # from the skill name itself and would always match.
+            skill_words = {w for w in skill_name.replace("-", " ").split() if len(w) > 3}
+            if skill_words and not any(w in purpose.lower() for w in skill_words):
+                return None
+
             # Build Anthropic-spec YAML frontmatter (GAP 1 fix).
             # Use skill-name-derived trigger phrases for the description — the
             # README-extracted `triggers` list is for the body Auto-Trigger

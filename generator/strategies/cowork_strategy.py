@@ -164,8 +164,15 @@ class CoworkStrategy:
                 )
                 # Proceed with whatever README content we have
 
-        # Delegate to the creator
+        # Without AI, CoworkSkillCreator falls back to inline/Jinja2 template
+        # generation that parses README content — fine for project-workflow skills
+        # but produces garbage for meta-skills (e.g. "readme-improvement").
+        # Return None so StubStrategy produces a clean, honest skeleton instead.
         use_ai: bool = bool(kwargs.get("use_ai", False))
+        if not use_ai:
+            logging.debug("CoworkStrategy: use_ai=False — skipping to StubStrategy")
+            return None
+
         try:
             content, _metadata, quality = creator.create_skill(
                 skill_name=skill_name,

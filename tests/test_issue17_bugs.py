@@ -156,30 +156,21 @@ def test_generate_from_readme_reuse_null_resolve_falls_through(tmp_path):
 
 
 def test_cowork_strategy_does_not_force_use_ai(tmp_path):
-    """BUG-5: CoworkStrategy.generate() must call create_skill with use_ai=False."""
+    """BUG-5: CoworkStrategy.generate() must return None when use_ai=False.
+
+    New behavior: CoworkStrategy skips to StubStrategy by returning None immediately
+    when use_ai=False, rather than calling create_skill with use_ai=False.
+    """
     from generator.strategies.cowork_strategy import CoworkStrategy
 
     strategy = CoworkStrategy()
 
-    captured_kwargs = {}
+    result = strategy.generate("test-skill", tmp_path, "# README content", "gemini", use_ai=False)
 
-    def fake_create_skill(skill_name, readme_content, **kwargs):
-        captured_kwargs.update(kwargs)
-        # Return a valid tuple so the strategy completes
-        from generator.skill_creator import SkillMetadata
-        from generator.utils.quality_checker import QualityReport
-
-        meta = SkillMetadata(name=skill_name, description="test")
-        quality = QualityReport(score=80.0, passed=True)
-        return "# Skill content", meta, quality
-
-    with patch("generator.skill_creator.CoworkSkillCreator.create_skill", side_effect=fake_create_skill):
-        result = strategy.generate("test-skill", tmp_path, "# README content", "gemini")
-
-    assert "use_ai" in captured_kwargs, "create_skill was not called with use_ai kwarg"
-    assert (
-        captured_kwargs["use_ai"] is False
-    ), f"CoworkStrategy must pass use_ai=False, got: {captured_kwargs['use_ai']}"
+    assert result is None, (
+        f"CoworkStrategy must return None when use_ai=False (skips to StubStrategy), "
+        f"got: {result!r}"
+    )
 
 
 # ---------------------------------------------------------------------------

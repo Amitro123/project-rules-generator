@@ -104,10 +104,13 @@ Description of test project.
 
     runner = CliRunner()
     with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager):
-        result = runner.invoke(main, ["--create-skill", "readme-skill", "--from-readme", str(readme)])
+        # Use "test-project" so the skill name words ("test", "project") appear in the
+        # README purpose ("Description of test project.") and READMEStrategy returns
+        # content rather than falling through to StubStrategy.
+        result = runner.invoke(main, ["--create-skill", "test-project", "--from-readme", str(readme)])
         assert result.exit_code == 0
 
-        skill_path = temp_skills_dir / ".clinerules" / "skills" / "project" / "readme-skill" / "SKILL.md"
+        skill_path = temp_skills_dir / ".clinerules" / "skills" / "project" / "test-project" / "SKILL.md"
         assert skill_path.exists()
         content = skill_path.read_text(encoding="utf-8")
 

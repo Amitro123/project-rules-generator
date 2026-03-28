@@ -132,20 +132,34 @@ class TestBug1FlatFileReturnPath:
 
 
 class TestBug3ReadmeContextTrimmed:
-    """BUG-3: READMEStrategy must not embed the full README in the skill body."""
+    """BUG-3: READMEStrategy must not embed the full README in the skill body.
 
-    def _make_long_readme(self, length: int = 2000) -> str:
-        return ("# My Project\n\n" + "A" * length)
+    New behavior: READMEStrategy returns None when the skill name words don't
+    appear in the extracted purpose (relevance check). Tests must use skill names
+    whose significant words (>3 chars) appear in the README purpose/description.
+    """
+
+    def _make_long_project_readme(self, length: int = 2000) -> str:
+        """README whose purpose mentions 'project' — matches skill name 'project-workflow'."""
+        return (
+            "# Project Workflow Tool\n\n"
+            "Automates the project workflow with intelligent analysis.\n\n"
+            + "A" * length
+        )
 
     def test_context_section_capped_at_400_chars(self, tmp_path):
         """Generated skill body must contain at most 400 chars of README context."""
         from generator.strategies.readme_strategy import READMEStrategy
 
-        long_readme = self._make_long_readme(2000)
+        long_readme = self._make_long_project_readme(2000)
         strategy = READMEStrategy()
-        content = strategy.generate("my-skill", tmp_path, long_readme, "groq")
+        # "project" and "workflow" both appear in the README purpose
+        content = strategy.generate("project-workflow", tmp_path, long_readme, "groq")
 
-        assert content is not None, "READMEStrategy returned None unexpectedly."
+        assert content is not None, (
+            "READMEStrategy returned None unexpectedly. "
+            "Ensure the skill name words appear in the README purpose."
+        )
 
         # Extract everything after "## Context"
         idx = content.find("## Context")
@@ -162,11 +176,14 @@ class TestBug3ReadmeContextTrimmed:
         """Short READMEs (≤ 400 chars) must be included in full without truncation note."""
         from generator.strategies.readme_strategy import READMEStrategy
 
-        short_readme = "# Mini Project\n\nA short description.\n"
+        # "project" appears in the purpose so the relevance check passes
+        short_readme = "# Project Tool\n\nA project management tool for short descriptions.\n"
         strategy = READMEStrategy()
-        content = strategy.generate("mini-skill", tmp_path, short_readme, "groq")
+        content = strategy.generate("project-tool", tmp_path, short_readme, "groq")
 
-        assert content is not None
+        assert content is not None, (
+            "READMEStrategy returned None unexpectedly for relevant skill name."
+        )
         assert "truncated" not in content, (
             "Short README must not be truncated."
         )
@@ -175,13 +192,29 @@ class TestBug3ReadmeContextTrimmed:
         """Long READMEs must mention truncation so agents know to check the source."""
         from generator.strategies.readme_strategy import READMEStrategy
 
-        long_readme = self._make_long_readme(2000)
+        long_readme = self._make_long_project_readme(2000)
         strategy = READMEStrategy()
-        content = strategy.generate("my-skill", tmp_path, long_readme, "groq")
+        # "project" and "workflow" both appear in the README purpose
+        content = strategy.generate("project-workflow", tmp_path, long_readme, "groq")
 
-        assert content is not None
+        assert content is not None, (
+            "READMEStrategy returned None unexpectedly for relevant skill name."
+        )
         assert "truncated" in content.lower() or "README.md" in content, (
             "BUG-3: Long README embedded without any truncation notice."
+        )
+
+    def test_irrelevant_skill_name_returns_none(self, tmp_path):
+        """Relevance check: skill name words absent from purpose must return None."""
+        from generator.strategies.readme_strategy import READMEStrategy
+
+        readme = "# Project Tool\n\nAutomates project workflows.\n"
+        strategy = READMEStrategy()
+        # "readme" and "improvement" do not appear in the purpose above
+        content = strategy.generate("readme-improvement", tmp_path, readme, "groq")
+
+        assert content is None, (
+            "READMEStrategy must return None when skill name words are absent from the README purpose."
         )
 
 
