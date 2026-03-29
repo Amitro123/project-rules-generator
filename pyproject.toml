@@ -25,26 +25,47 @@ dependencies = [
     "pathspec>=0.11.0",
     "pydantic>=2.0.0",
     "tqdm>=4.66.0",
-    "google-generativeai>=0.8.6",
-    "groq>=0.4.0",
     "python-dotenv>=1.0.0",
     "rich>=13.0.0",
     "jinja2>=3.1.0",
+    "gitpython>=3.1.0",
 ]
 
 [project.optional-dependencies]
+gemini = ["google-generativeai>=0.8.6", "google-genai>=0.2.0"]
+groq = ["groq>=0.4.0"]
+openai = ["openai>=1.0.0"]
+anthropic = ["anthropic>=0.20.0"]
+llm = [
+    "google-generativeai>=0.8.6",
+    "google-genai>=0.2.0",
+    "groq>=0.4.0",
+    "openai>=1.0.0",
+    "anthropic>=0.20.0",
+]
 opik = ["opik>=0.1.0"]
+all = [
+    "google-generativeai>=0.8.6",
+    "google-genai>=0.2.0",
+    "groq>=0.4.0",
+    "openai>=1.0.0",
+    "anthropic>=0.20.0",
+    "opik>=0.1.0",
+]
 
 [project.scripts]
-project-rules-generator = "main:cli"
-prg = "main:cli"
+project-rules-generator = "cli.cli:main"
+prg = "cli.cli:main"
 
 [tool.setuptools]
-py-modules = ["main", "project_rules_generator"]
+py-modules = ["main"]
 packages = ["generator", "prg_utils", "cli"]
 
 [tool.setuptools.package-data]
-generator = ["skills/**/*"]
+generator = ["skills/**/*", "templates/**/*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["__pycache__", "*.pyc", "*.pyo"]
 
 [tool.ruff]
 line-length = 120

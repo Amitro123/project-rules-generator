@@ -1,12 +1,17 @@
-﻿click>=8.0.0
+# Core (always installed)
+click>=8.0.0
 pyyaml>=6.0.0
 pydantic>=2.0.0
 tqdm>=4.66.0
-google-generativeai>=0.8.6
-groq>=0.4.0
 python-dotenv>=1.0.0
 gitpython>=3.1.0
 rich>=13.0.0
-opik>=0.1.0
 pathspec>=0.11.0
 jinja2>=3.1.0
+
+# LLM providers (optional — install with pip install project-rules-generator[llm])
+google-generativeai>=0.8.6
+google-genai>=0.2.0
+groq>=0.4.0
+openai>=1.0.0
+anthropic>=0.20.0

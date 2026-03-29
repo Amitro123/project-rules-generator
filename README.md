@@ -2,7 +2,7 @@
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-530%20Passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-550%2B%20Passing-brightgreen.svg)](tests/)
 
 ---
 

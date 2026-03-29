@@ -1,0 +1,11 @@
+# Exclude build artifacts and internal directories
+recursive-exclude * __pycache__
+recursive-exclude * *.pyc
+recursive-exclude * *.pyo
+recursive-exclude _bmad *
+recursive-exclude tests *
+recursive-exclude .clinerules *
+recursive-exclude .claude *
+prune _bmad
+prune .clinerules
+prune .claude
