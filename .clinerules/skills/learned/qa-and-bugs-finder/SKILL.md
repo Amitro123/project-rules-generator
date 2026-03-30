@@ -1,4 +1,4 @@
-﻿---
+---
 name: qa-and-bugs-finder
 description: QA finder for this project
 auto_triggers:

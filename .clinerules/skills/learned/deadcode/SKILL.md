@@ -1,4 +1,4 @@
-﻿---
+---
 name: deadcode
 description:  workflow for this project
 auto_triggers:
