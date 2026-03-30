@@ -17,7 +17,7 @@ try:
     _tomllib = _tomllib_impl
 except ModuleNotFoundError:
     try:
-        import tomli as _tomllib_impl2  # type: ignore[import-untyped]
+        import tomli as _tomllib_impl2
 
         _tomllib = _tomllib_impl2
     except ModuleNotFoundError:

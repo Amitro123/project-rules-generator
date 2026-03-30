@@ -108,6 +108,40 @@ exclude = '''
 )
 '''
 
+[tool.mypy]
+python_version = "3.8"
+# All third-party stubs are missing; use per-module overrides instead of a
+# global --ignore-missing-imports flag so we catch errors in our own code.
+ignore_missing_imports = false
+follow_imports = "skip"
+warn_unused_ignores = true
+warn_return_any = false
+disallow_untyped_defs = false
+
+# Third-party packages with no stubs — silence at the module level only
+[[tool.mypy.overrides]]
+module = [
+    "yaml.*",
+    "click.*",
+    "rich.*",
+    "tqdm.*",
+    "pydantic.*",
+    "dotenv.*",
+    "jinja2.*",
+    "git.*",
+    "pathspec.*",
+    "google.*",
+    "groq.*",
+    "openai.*",
+    "anthropic.*",
+    "opik.*",
+    "litellm.*",
+    "tomllib",
+    "tomli",
+]
+ignore_missing_imports = true
+
+
 [tool.isort]
 profile = "black"
 line_length = 120

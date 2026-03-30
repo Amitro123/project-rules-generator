@@ -24,7 +24,7 @@ class SkillGenerator(ArtifactGenerator):
     # Tech name → preferred skill filename (single source of truth: tech_registry.py)
     TECH_SKILL_NAMES = _TECH_SKILL_NAMES
 
-    def _build_prompt(  # type: ignore[override]
+    def _build_prompt(
         self,
         skill_name: str,
         project_name: str = "",
