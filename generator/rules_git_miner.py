@@ -107,12 +107,11 @@ class RulesGitMiner:
         if result.returncode != 0:
             return []
 
-        large_commits = sum(
-            1
-            for line in result.stdout.split("\n")
-            if re.search(r"(\d+) insertions?\(\+\)", line)
-            and int(re.search(r"(\d+) insertions?\(\+\)", line).group(1)) > 500  # type: ignore[union-attr]
-        )
+        large_commits = 0
+        for line in result.stdout.split("\n"):
+            m = re.search(r"(\d+) insertions?\(\+\)", line)
+            if m and int(m.group(1)) > 500:
+                large_commits += 1
 
         if large_commits <= 2:
             return []

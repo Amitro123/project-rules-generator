@@ -312,7 +312,7 @@ Generate the subtasks now:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _build_prompt(  # type: ignore[override]
+    def _build_prompt(
         self,
         user_task: str,
         project_context: Optional[Dict] = None,

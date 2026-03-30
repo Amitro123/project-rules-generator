@@ -1,9 +1,10 @@
 """Shared CLI utilities."""
 
 import os
+from typing import Optional
 
 
-def detect_provider(provider: str | None, api_key: str | None) -> str:
+def detect_provider(provider: Optional[str], api_key: Optional[str]) -> str:
     """Auto-detect AI provider from api_key prefix or environment variables.
 
     Priority:
@@ -31,7 +32,7 @@ def detect_provider(provider: str | None, api_key: str | None) -> str:
     return "groq"
 
 
-def set_api_key_env(provider: str, api_key: str | None) -> None:
+def set_api_key_env(provider: str, api_key: Optional[str]) -> None:
     """Set the correct environment variable for the given provider."""
     if not api_key:
         return

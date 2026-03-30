@@ -78,7 +78,7 @@ class CoworkStrategy:
         import-time coupling.
         """
         # Lazy import to avoid circular imports at module import time
-        from generator.skill_creator import CoworkSkillCreator  # type: ignore
+        from generator.skill_creator import CoworkSkillCreator
 
         return CoworkSkillCreator(project_path)  # type: ignore[return-value]
 
@@ -118,7 +118,7 @@ class CoworkStrategy:
             return None
         if not isinstance(project_path, Path):
             try:
-                project_path = Path(project_path)  # type: ignore[arg-type]
+                project_path = Path(project_path)
             except Exception as exc:  # defensive cast
                 logging.exception("Failed to coerce project_path to Path: %s", exc)
                 return None

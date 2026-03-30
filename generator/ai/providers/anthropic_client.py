@@ -11,7 +11,7 @@ try:
 
     ANTHROPIC_AVAILABLE = True
 except ImportError:
-    _anthropic = None  # type: ignore[assignment]
+    _anthropic = None
     ANTHROPIC_AVAILABLE = False
 
 
@@ -41,7 +41,7 @@ class AnthropicClient(AIClient):
         """Generate content using Anthropic Claude."""
         try:
             msg = self.client.messages.create(
-                model=model or os.getenv("ANTHROPIC_MODEL", self.DEFAULT_MODEL),  # type: ignore[arg-type]
+                model=model or os.getenv("ANTHROPIC_MODEL", self.DEFAULT_MODEL),
                 max_tokens=max_tokens,
                 system=system_message or "You are an expert AI skill generator for developer tools.",
                 messages=[{"role": "user", "content": prompt}],
