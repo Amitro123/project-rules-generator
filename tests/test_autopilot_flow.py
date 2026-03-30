@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from generator.exceptions import SecurityError
 from generator.planning.autopilot import AutopilotOrchestrator
 from generator.planning.task_creator import TaskEntry, TaskManifest
 from generator.task_decomposer import SubTask
@@ -99,6 +100,55 @@ def test_execution_loop_happy_path(orchestrator):
         mock_executor_instance.complete_task.assert_called_with(1)
         mock_git.merge_branch.assert_called_with("autopilot/task-1", orchestrator.project_path)
         mock_git.delete_branch.assert_called_with("autopilot/task-1", force=True, repo_path=orchestrator.project_path)
+
+
+def test_validate_write_path_within_project(tmp_path):
+    """Valid relative paths resolve inside project_path."""
+    orch = AutopilotOrchestrator(project_path=tmp_path, verbose=False)
+    result = orch._validate_write_path("src/foo.py")
+    assert result == (tmp_path / "src" / "foo.py").resolve()
+
+
+def test_validate_write_path_traversal_raises(tmp_path):
+    """Path traversal attempt raises SecurityError."""
+    orch = AutopilotOrchestrator(project_path=tmp_path, verbose=False)
+    with pytest.raises(SecurityError):
+        orch._validate_write_path("../../etc/passwd")
+
+
+def test_load_subtask_details_structured(tmp_path):
+    """Uses structured manifest fields when present."""
+    orch = AutopilotOrchestrator(project_path=tmp_path, verbose=False)
+    entry = TaskEntry(
+        id=1,
+        file="task001-test.md",
+        title="My Task",
+        goal="Do the thing",
+        files=["a.py", "b.py"],
+        changes=["Add function"],
+        tests=["test_a.py"],
+    )
+    subtask = orch._load_subtask_details(entry)
+    assert subtask.goal == "Do the thing"
+    assert subtask.files == ["a.py", "b.py"]
+    assert subtask.changes == ["Add function"]
+    assert subtask.tests == ["test_a.py"]
+
+
+def test_load_subtask_details_legacy_fallback(tmp_path):
+    """Falls back to regex parsing when structured fields are empty."""
+    orch = AutopilotOrchestrator(project_path=tmp_path, verbose=False)
+    task_dir = tmp_path / "tasks"
+    task_dir.mkdir()
+    task_md = task_dir / "task001-legacy.md"
+    task_md.write_text(
+        "# Task 1: Legacy\n\n**Goal:** Parse from markdown\n\n## Files\n- `legacy.py`\n",
+        encoding="utf-8",
+    )
+    entry = TaskEntry(id=1, file="task001-legacy.md", title="Legacy")
+    subtask = orch._load_subtask_details(entry)
+    assert subtask.goal == "Parse from markdown"
+    assert "legacy.py" in subtask.files
 
 
 def test_execution_loop_rejection(orchestrator):

@@ -17,3 +17,9 @@ class FileOperationError(PRGError):
     """Raised when file operations fail."""
 
     pass
+
+
+class SecurityError(PRGError):
+    """Raised when a security constraint is violated (e.g. path traversal)."""
+
+    pass

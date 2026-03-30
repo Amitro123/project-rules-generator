@@ -34,6 +34,11 @@ class TaskEntry:
     estimated_minutes: int = 5
     started_at: Optional[str] = None
     completed_at: Optional[str] = None
+    # Structured fields so callers don't need to regex-parse individual task files
+    goal: str = ""
+    files: List[str] = field(default_factory=list)
+    changes: List[str] = field(default_factory=list)
+    tests: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict:
         d = {
@@ -43,6 +48,10 @@ class TaskEntry:
             "status": self.status.value,
             "dependencies": self.dependencies,
             "estimated_minutes": self.estimated_minutes,
+            "goal": self.goal,
+            "files": self.files,
+            "changes": self.changes,
+            "tests": self.tests,
         }
         if self.started_at:
             d["started_at"] = self.started_at
@@ -61,6 +70,10 @@ class TaskEntry:
             estimated_minutes=data.get("estimated_minutes", 5),
             started_at=data.get("started_at"),
             completed_at=data.get("completed_at"),
+            goal=data.get("goal", ""),
+            files=data.get("files", []),
+            changes=data.get("changes", []),
+            tests=data.get("tests", []),
         )
 
 
@@ -157,6 +170,10 @@ class TaskCreator:
                     status=TaskFileStatus.pending,
                     dependencies=list(subtask.dependencies),
                     estimated_minutes=subtask.estimated_minutes,
+                    goal=subtask.goal,
+                    files=list(subtask.files or []),
+                    changes=list(subtask.changes or []),
+                    tests=list(subtask.tests or []),
                 )
             )
 
