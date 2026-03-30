@@ -20,8 +20,8 @@ from typing import Dict, List, Optional, Set, Tuple
 import yaml
 
 from generator.base_generator import ArtifactGenerator
-from generator.rules_git_miner import RulesGitMiner
 from generator.quality_validators import RulesQualityValidator
+from generator.rules_git_miner import RulesGitMiner
 from generator.rules_renderer import RulesContentRenderer, append_mandatory_anti_patterns  # noqa: F401 (re-export)
 from generator.tech_registry import TECH_RULES as _TECH_RULES
 

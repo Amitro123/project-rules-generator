@@ -10,7 +10,7 @@ it is purely a rendering concern (appending to generated text).
 """
 
 from pathlib import Path
-from typing import Dict, List, Set, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Set
 
 import yaml
 

@@ -18,10 +18,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import yaml
 
+from generator.quality_validators import SkillQualityValidator
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_doc_loader import SkillDocLoader
 from generator.skill_metadata_builder import SkillMetadataBuilder
-from generator.quality_validators import SkillQualityValidator
 from generator.tech_registry import TECH_TOOLS as _TECH_TOOLS
 from generator.utils.quality_checker import QualityReport
 from generator.utils.tech_detector import detect_from_dependencies as _detect_from_deps_util
