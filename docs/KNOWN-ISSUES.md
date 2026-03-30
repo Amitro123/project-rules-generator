@@ -6,13 +6,13 @@ Discovered during session on 2026-03-30 by running `prg design` and `prg plan --
 
 ---
 
-### Issue 1 — `prg design`: Success Criteria section generates empty bullets
+### Issue 1 — `prg design`: Success Criteria section generates empty bullets ✅ FIXED
 
 **Command:** `prg design "Refactor remaining god-modules: rules_creator.py (864 LOC), agent.py (630 LOC)..."`
 
 **Expected:** Each success criterion has a concrete, measurable description.
 
-**Actual output:**
+**Actual output (before fix):**
 ```markdown
 ## Success Criteria
 
@@ -22,62 +22,70 @@ Discovered during session on 2026-03-30 by running `prg design` and `prg plan --
 - **Reliability**:
 ```
 
-Labels are correct but bodies are empty. The LLM prompt likely asks for criteria headings separately from their descriptions and one call returns nothing.
+**Root cause:** `_extract_bullets()` in `design_generator.py` used `re.finditer(r"^-\s+(.+)", text, re.MULTILINE)` — only captured the first line of each bullet. When the LLM writes multi-line criteria (label on one line, body indented below), only the label was captured.
 
-**Severity:** Medium — DESIGN.md is technically valid but not useful for planning.
+**Fix (PR `fix/known-issues-plan-design`):** Replaced the regex with a line-by-line parser that accumulates continuation lines until the next bullet or heading starts.
+
+**Severity:** Medium
 
 ---
 
-### Issue 2 — `prg plan --from-design`: Generates only 1 subtask instead of ~5
+### Issue 2 — `prg plan --from-design`: Generates only 1 subtask instead of ~5 ✅ FIXED
 
 **Command:** `prg plan --from-design DESIGN.md`
 
 **Expected:** Multiple concrete subtasks mapped to each architectural decision.
 
-**Actual:**
+**Actual (before fix):**
 ```
 Generated 1 subtasks
 Estimated time: 5 minutes
 ```
 
-For a design with 4 architecture decisions and 13 API contracts, this is severely under-decomposed.
+**Root cause:** `_parse_response()` in `task_decomposer.py` used a single regex `r"###?\s*(\d+)\.\s*"` to split LLM output. When the LLM used `##`, `**1.**`, or `1)` heading styles instead of `### 1.`, the regex didn't match → fallback single-task was returned.
 
-**Severity:** High — the core value of Feature 4 is task decomposition.
+**Fix:** Pre-normalise all common LLM heading variants (`## N.`, `**N.**`, `N)`) to `### N.` before splitting.
+
+**Severity:** High
 
 ---
 
-### Issue 3 — `prg plan`: Generated task references wrong file path
+### Issue 3 — `prg plan`: Generated task references wrong file path ✅ FIXED
 
-**Actual output:**
+**Actual output (before fix):**
 ```markdown
 **Files:**
 - `src/config.py` (new)
 ```
 
-This project uses `generator/` not `src/`. The planner hallucinated a generic Python project layout instead of grounding itself in the actual project tree.
+**Root cause:** `_build_design_prompt()` had no project tree injection. When `project_context=None` (CLI default), the LLM received no structural grounding and hallucinated a generic `src/` layout.
 
-**Severity:** High — hallucinated paths break agent handoffs downstream.
+**Fix:** Inject `build_project_tree(project_path)` output directly into `_build_design_prompt()`. `project_path` is now derived from `design_path.parent` in `from_design()`.
+
+**Severity:** High
 
 ---
 
-### Issue 4 — `prg plan`: Task content truncated mid-sentence
+### Issue 4 — `prg plan`: Task content truncated mid-sentence ✅ FIXED
 
-**Actual output:**
+**Actual output (before fix):**
 ```markdown
 - Define a Pydantic `BaseModel` named `LLMConfig` with fields: `provider: str`, `model: str`, `api_key:
 ```
 
-The task description is cut off. Likely a token-budget or string-slicing bug in the task serializer.
+**Root cause:** `_call_llm()` set `max_tokens=3000` — far too low when generating 5-8 detailed subtasks with Goals, Files, Changes, Tests, Dependencies, and Estimated fields each.
 
-**Severity:** High — incomplete tasks cannot be executed by `prg exec` or `prg next`.
+**Fix:** Increased `max_tokens` from `3000` → `5000`.
+
+**Severity:** High
 
 ---
 
 ## Summary Table
 
-| # | Feature | Severity | Area |
-|---|---------|----------|------|
-| 1 | `prg design` | Medium | LLM prompt / success criteria generation |
-| 2 | `prg plan` | High | Task decomposition (under-generates subtasks) |
-| 3 | `prg plan` | High | Hallucinated file paths (not grounded in project tree) |
-| 4 | `prg plan` | High | Task content truncated mid-sentence |
+| # | Feature | Severity | Status | Fix |
+|---|---------|----------|--------|-----|
+| 1 | `prg design` | Medium | ✅ Fixed | Multi-line `_extract_bullets()` in `design_generator.py` |
+| 2 | `prg plan` | High | ✅ Fixed | Normalise LLM heading variants in `_parse_response()` |
+| 3 | `prg plan` | High | ✅ Fixed | Inject project tree into `_build_design_prompt()` |
+| 4 | `prg plan` | High | ✅ Fixed | Raise `max_tokens` 3000 → 5000 in `_call_llm()` |
