@@ -98,7 +98,8 @@ class TaskDecomposer(ArtifactGenerator):
         text = Path(design_path).read_text(encoding="utf-8")
         design = Design.from_markdown(text)
 
-        prompt = self._build_design_prompt(design, project_context)
+        project_path = Path(design_path).parent
+        prompt = self._build_design_prompt(design, project_context, project_path)
         raw = self._call_llm(prompt)
         tasks = self._parse_response(raw, design.title)
 
@@ -180,12 +181,18 @@ class TaskDecomposer(ArtifactGenerator):
 
         return tasks
 
-    def _build_design_prompt(self, design, project_context: Optional[Dict]) -> str:
+    def _build_design_prompt(self, design, project_context: Optional[Dict], project_path: Optional[Path] = None) -> str:
         """Build a prompt that decomposes an existing design into tasks."""
+        from generator.utils.readme_bridge import build_project_tree
+
         ctx_block = ""
+        if project_path and project_path.is_dir():
+            tree = build_project_tree(project_path, max_depth=3, max_items=60)
+            ctx_block = f"\n## Project Structure\n```\n{tree[:1200]}\n```\n"
+
         if project_context:
             meta = project_context.get("metadata", {})
-            ctx_block = (
+            ctx_block += (
                 f"\n## Project Context\n"
                 f"- Type: {meta.get('project_type', 'unknown')}\n"
                 f"- Tech: {', '.join(meta.get('tech_stack', []))}\n"
@@ -375,7 +382,7 @@ Generate the subtasks now:
             from generator.ai.factory import create_ai_client
 
             client = create_ai_client(self.provider, api_key=self.api_key)
-            return client.generate(prompt, max_tokens=3000) or ""
+            return client.generate(prompt, max_tokens=5000) or ""
         except Exception:
             return ""
 
@@ -397,8 +404,14 @@ Generate the subtasks now:
         tasks: List[SubTask] = []
         import re
 
+        # Normalise various LLM heading styles to "### N. " before splitting:
+        # "## 1.", "**1.**", "1)", bare "1." at line start, etc.
+        normalised = re.sub(r"(?m)^#+\s*(\d+)\.\s*", r"### \1. ", raw)
+        normalised = re.sub(r"(?m)^\*+(\d+)\.\*+\s*", r"### \1. ", normalised)
+        normalised = re.sub(r"(?m)^(\d+)\)\s+", r"### \1. ", normalised)
+
         # Split on numbered headings like "### 1. Title" or "1. Title"
-        blocks = re.split(r"###?\s*(\d+)\.\s*", raw)
+        blocks = re.split(r"###?\s*(\d+)\.\s*", normalised)
         # blocks[0] is preamble, then alternating (number, content)
         i = 1
         while i < len(blocks) - 1:
