@@ -1,4 +1,4 @@
-﻿---
+---
 name: cleanup
 description:  workflow for this project
 auto_triggers:
