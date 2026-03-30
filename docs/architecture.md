@@ -11,16 +11,21 @@ before prescribing action, and explain WHY before HOW for each step or rule.
 | File | Role | Status |
 |------|------|--------|
 | `generator/base_generator.py` | **Base** - `ArtifactGenerator` ABC, strategic-depth contract | ✅ NEW (v1.5) |
-| `generator/rules_creator.py` | **Rules** - `CoworkRulesCreator(ArtifactGenerator)` | ✅ Refactored (v1.5) |
+| `generator/rules_creator.py` | **Rules** - `CoworkRulesCreator(ArtifactGenerator)` — orchestrator (622 LOC) | ✅ Refactored |
+| `generator/rules_git_miner.py` | **Rules/Git** - Hot-spot + large-commit detection | ✅ NEW |
+| `generator/rules_renderer.py` | **Rules/Render** - rules.md content + anti-pattern appending | ✅ NEW |
 | `generator/task_decomposer.py` | **Plans** - `TaskDecomposer(ArtifactGenerator)` | ✅ Refactored (v1.5) |
 | `generator/skills_manager.py` | **Facade** - Single entry point for all skill operations | ✅ Active |
 | `generator/skill_generator.py` | **Skills** - `SkillGenerator(ArtifactGenerator)`, Strategy Pattern | ✅ Refactored (v1.5) |
-| `generator/skill_creator.py` | **Cowork Intelligence** - High-quality skill generation | ✅ Active |
+| `generator/skill_creator.py` | **Cowork Intelligence** - High-quality skill generation — orchestrator (824 LOC) | ✅ Refactored |
+| `generator/skill_doc_loader.py` | **Skills/Docs** - Supplementary doc discovery + key-file loading | ✅ NEW |
+| `generator/skill_metadata_builder.py` | **Skills/Metadata** - Triggers, tools, tags, frontmatter rendering | ✅ NEW |
+| `generator/quality_validators.py` | **Quality** - `SkillQualityValidator` + `RulesQualityValidator` | ✅ NEW |
 | `generator/skill_parser.py` | **Parser** - Extracts data from skill files | ✅ Active |
 | `generator/skill_templates.py` | **Templates** - Loads YAML skill templates | ✅ Active |
 | `generator/tech_registry.py` | **Tech Registry** - Single source for all tech metadata | ✅ NEW (v1.4) |
 | `generator/utils/tech_detector.py` | **Tech Detection** - Consolidated tech stack detection | ✅ NEW (v1.1) |
-| `generator/utils/quality_checker.py` | **Quality** - Strategic-depth + format validation | ✅ Refactored (v1.5) |
+| `generator/utils/quality_checker.py` | **Quality/Shared** - Strategic-depth + format validation (base checks) | ✅ Refactored (v1.5) |
 
 ## Architecture Diagram
 

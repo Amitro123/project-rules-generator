@@ -19,6 +19,9 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import yaml
 
 from generator.skill_discovery import SkillDiscovery
+from generator.skill_doc_loader import SkillDocLoader
+from generator.skill_metadata_builder import SkillMetadataBuilder
+from generator.quality_validators import SkillQualityValidator
 from generator.tech_registry import TECH_TOOLS as _TECH_TOOLS
 from generator.utils.quality_checker import QualityReport
 from generator.utils.tech_detector import detect_from_dependencies as _detect_from_deps_util
@@ -61,24 +64,6 @@ class CoworkSkillCreator:
     # Technology → Required Tools mapping (single source of truth: tech_registry.py)
     TECH_TOOLS = _TECH_TOOLS
 
-    # Common trigger patterns (Cowork-style synonyms)
-    TRIGGER_SYNONYMS = {
-        "test": ["test", "testing", "unit test", "integration test", "verify"],
-        "deploy": ["deploy", "deployment", "ship", "release", "publish"],
-        "api": ["api", "endpoint", "route", "rest api", "graphql"],
-        "database": ["database", "db", "schema", "migration", "query"],
-        "debug": ["debug", "troubleshoot", "investigate", "diagnose"],
-        "optimize": ["optimize", "improve", "enhance", "speed up", "performance"],
-        "security": ["security", "secure", "audit", "vulnerability", "pentest"],
-        "docs": ["documentation", "docs", "readme", "guide", "tutorial"],
-        "refactor": ["refactor", "cleanup", "improve code", "reorganize"],
-        # LLM / AI provider synonyms (key = provider name, not model name)
-        "anthropic": ["anthropic", "claude", "llm skill", "ai provider", "cowork skill"],
-        "openai": ["openai", "gpt", "chatgpt", "llm"],
-        "gemini": ["gemini", "google ai", "vertex ai"],
-        "groq": ["groq", "llama", "fast inference"],
-    }
-
     # Project signal detection (from file/folder structure)
     PROJECT_SIGNALS = {
         "has_docker": ["Dockerfile", "docker-compose.yml", ".dockerignore"],
@@ -97,6 +82,9 @@ class CoworkSkillCreator:
         self._detected_signals: Optional[Set[str]] = None
         self._tech_stack: Optional[Set[str]] = None
         self.discovery = SkillDiscovery(project_path)
+        self._quality = SkillQualityValidator(project_path)
+        self._doc_loader = SkillDocLoader(project_path)
+        self._meta_builder = SkillMetadataBuilder(project_path)
 
     def detect_skill_needs(self, project_path: Path) -> List[str]:
         """Detect needed skills based on tech stack and context.
@@ -313,207 +301,43 @@ class CoworkSkillCreator:
         readme_content: str,
         tech_stack: Optional[List[str]] = None,
     ) -> SkillMetadata:
-        """Build smart metadata with Cowork intelligence."""
-
-        # Extract tech from name and README
+        """Build smart metadata — delegates to SkillMetadataBuilder."""
         if tech_stack is None:
             tech_stack = self._detect_tech_stack(readme_content)
-
-        # Generate smart triggers with synonyms
-        triggers = self._generate_triggers(skill_name, readme_content, tech_stack)
-
-        # Detect project signals
-        signals = self._detect_project_signals()
-
-        # Select tools intelligently
-        tools = self._select_tools(skill_name, tech_stack)
-
-        # Generate description
-        description = self._generate_description(skill_name, readme_content)
-
-        # GAP 5: negative triggers prevent over-activation
-        negative_triggers = self._generate_negative_triggers(skill_name, tech_stack)
-
-        # GAP 8: tags for search/filter
-        tags = self._generate_tags(skill_name, tech_stack)
-
-        return SkillMetadata(
-            name=skill_name,
-            description=description,
-            auto_triggers=triggers,
-            project_signals=list(signals),
-            tools=tools,
-            negative_triggers=negative_triggers,
-            tags=tags,
-        )
+        signals = list(self._detect_project_signals())
+        return self._meta_builder.build(skill_name, readme_content, tech_stack, signals)
 
     def _generate_triggers(self, skill_name: str, readme_content: str, tech_stack: List[str]) -> List[str]:
-        """
-        Generate smart auto-triggers with Cowork-style variations.
-
-        This is one of Cowork's key intelligences: creating multiple
-        natural ways to invoke a skill.
-        """
-        triggers = []
-
-        # 1. Base trigger from skill name
-        base = skill_name.replace("-", " ").lower()
-        triggers.append(base)
-
-        # 2. Add tech-specific triggers
-        for tech in tech_stack:
-            tech_lower = tech.lower()
-            if tech_lower in base:
-                # "fastapi security" Γזע "audit fastapi", "review api security"
-                triggers.append(f"audit {tech_lower}")
-                triggers.append(f"review {tech_lower}")
-
-        # 3. Expand with synonyms (Cowork magic!)
-        expanded = set(triggers)
-        for trigger in triggers:
-            words = trigger.split()
-            for word in words:
-                if word in self.TRIGGER_SYNONYMS:
-                    for synonym in self.TRIGGER_SYNONYMS[word][:2]:  # Top 2
-                        new_trigger = trigger.replace(word, synonym)
-                        expanded.add(new_trigger)
-
-        # 4. Add action-based triggers from README context
-        action_triggers = self._extract_action_triggers(readme_content, base)
-        expanded.update(action_triggers)
-
-        # Deduplicate and limit to top 8 most relevant
-        return list(sorted(expanded))[:8]
-
-    def _extract_action_triggers(self, readme_content: str, skill_base: str) -> Set[str]:
-        """Extract action-based triggers from README."""
-        triggers = set()
-
-        # Look for imperative verbs near skill topic
-        action_verbs = [
-            "run",
-            "execute",
-            "check",
-            "validate",
-            "analyze",
-            "generate",
-            "create",
-            "build",
-            "test",
-            "deploy",
-        ]
-
-        # Simple pattern matching
-        lines = readme_content.lower().split("\n")
-        skill_words = skill_base.split()
-
-        for line in lines:
-            # If line mentions skill-related words
-            if any(word in line for word in skill_words):
-                for verb in action_verbs:
-                    if verb in line:
-                        # "run security audit" Γזע "security audit"
-                        triggers.add(f"{verb} {skill_base}")
-                        break
-
-        return triggers
+        """Delegate to SkillMetadataBuilder."""
+        return self._meta_builder._generate_triggers(skill_name, readme_content, tech_stack)
 
     def _select_tools(self, skill_name: str, tech_stack: List[str]) -> List[str]:
-        """
-        Intelligently select tools needed for this skill.
-
-        Cowork knows which tools are required for each tech stack.
-        """
-        tools = set()
-
-        # 1. Tools from tech stack
-        for tech in tech_stack:
-            tech_lower = tech.lower()
-            if tech_lower in self.TECH_TOOLS:
-                tools.update(self.TECH_TOOLS[tech_lower])
-
-        # 2. Common tools for skill type
-        skill_lower = skill_name.lower()
-
-        if "test" in skill_lower or "pytest" in skill_lower:
-            tools.update(["pytest", "coverage", "tox"])
-
-        if "deploy" in skill_lower or "docker" in skill_lower:
-            tools.update(["docker", "docker-compose"])
-
-        if "api" in skill_lower or "endpoint" in skill_lower or "fastapi" in skill_lower:
-            tools.update(["curl", "httpx", "pytest", "uvicorn"])
-
-        if "security" in skill_lower or "audit" in skill_lower:
-            tools.update(["bandit", "safety", "ruff"])
-
-        if "duplication" in skill_lower or "duplicate" in skill_lower or "dry" in skill_lower:
-            tools.update(["pylint", "radon", "vulture"])
-
-        if "refactor" in skill_lower or "cleanup" in skill_lower:
-            tools.update(["pylint", "ruff", "black"])
-
-        if "qa" in skill_lower or "bugs" in skill_lower:
-            tools.update(["pytest", "ruff", "vulture", "mypy"])
-
-        # 3. Validate tools exist in project
-        tools = self._validate_tools_availability(tools)
-
-        return list(sorted(tools))
+        """Delegate to SkillMetadataBuilder."""
+        return self._meta_builder._select_tools(skill_name, tech_stack)
 
     def _validate_tools_availability(self, tools: Set[str]) -> Set[str]:
-        """Check if tools are actually available/referenced in project."""
-        available = set()
+        """Delegate to SkillMetadataBuilder."""
+        return self._meta_builder._validate_tools_availability(tools)
 
-        # Check requirements.txt, pyproject.toml, package.json
-        requirement_files = [
-            self.project_path / "requirements.txt",
-            self.project_path / "pyproject.toml",
-            self.project_path / "package.json",
-        ]
+    def _generate_description(self, skill_name: str, readme_content: str) -> str:
+        """Delegate to SkillMetadataBuilder."""
+        return self._meta_builder._generate_description(skill_name, readme_content)
 
-        all_content = ""
-        for req_file in requirement_files:
-            if req_file.exists():
-                try:
-                    all_content += req_file.read_text(encoding="utf-8", errors="ignore")
-                except OSError:
-                    pass
+    def _generate_negative_triggers(self, skill_name: str, tech_stack: List[str]) -> List[str]:
+        """Delegate to SkillMetadataBuilder."""
+        return self._meta_builder._generate_negative_triggers(skill_name, tech_stack)
 
-        # Common Python/Node tools that are always available
-        system_tools = {
-            "git",
-            "docker",
-            "curl",
-            "bash",
-            "pytest",
-            "python",
-            "pip",
-            "npm",
-            "node",
-            "pylint",
-            "ruff",
-            "black",
-            "mypy",
-            "coverage",
-            "radon",
-            "vulture",
-            "bandit",
-            "safety",
-            # LLM / AI SDK names — always available when referenced in requirements
-            "anthropic",
-            "openai",
-            "gemini",
-            "groq",
-            "langchain",
-        }
+    def _generate_tags(self, skill_name: str, tech_stack: List[str]) -> List[str]:
+        """Delegate to SkillMetadataBuilder."""
+        return self._meta_builder._generate_tags(skill_name, tech_stack)
 
-        for tool in tools:
-            # Tool exists in requirements OR is a common system/Python tool
-            if tool in all_content or tool in system_tools:
-                available.add(tool)
+    def _generate_critical_rules(self, skill_name: str, tech_stack: List[str]) -> List[str]:
+        """Delegate to SkillMetadataBuilder."""
+        return self._meta_builder.generate_critical_rules(skill_name, tech_stack)
 
-        return available
+    def _render_frontmatter(self, metadata: "SkillMetadata") -> str:
+        """Delegate to SkillMetadataBuilder."""
+        return self._meta_builder.render_frontmatter(metadata)
 
     def _detect_tech_stack(self, readme_content: str) -> List[str]:
         """
@@ -687,141 +511,17 @@ class CoworkSkillCreator:
         ]
         return "\n".join(lines)
 
-    # Max total chars for supplementary docs (to stay within token budget)
-    SUPPLEMENTARY_BUDGET = 1500
-
-    # Filenames that are noise — never useful as skill context
-    _DOCS_SKIP = {
-        "readme.md",
-        "changelog.md",
-        "changelog",
-        "license.md",
-        "license",
-        "contributing.md",
-        "contributors.md",
-        "authors.md",
-        "history.md",
-        "news.md",
-        "releases.md",
-        "security.md",
-        "code_of_conduct.md",
-    }
-
-    # Filename signals that indicate high-value context docs (any project)
-    _DOCS_HIGH_VALUE = {
-        "spec",
-        "architecture",
-        "design",
-        "constitution",
-        "features",
-        "preferences",
-        "coding",
-        "style",
-        "guide",
-        "workflow",
-        "overview",
-        "plan",
-        "roadmap",
-        "rules",
-        "standards",
-        "conventions",
-        "adr",
-    }
-
     def _score_doc(self, path: Path, content: str) -> int:
-        """Score a supplementary doc by relevance. Higher = more useful."""
-        stem = path.stem.lower()
-        score = 0
-        # High-value keyword in filename
-        if any(kw in stem for kw in self._DOCS_HIGH_VALUE):
-            score += 2
-        # Bonus for being in a docs/ subdirectory (intentional documentation)
-        if path.parent.name.lower() in ("docs", "doc", "documentation"):
-            score += 1
-        # Penalise very short files (likely stubs)
-        if len(content) < 200:
-            score -= 1
-        return score
+        """Delegate to SkillDocLoader."""
+        return self._doc_loader._score_doc(path, content)
 
     def _discover_supplementary_docs(self) -> List[Path]:
-        """Dynamically discover relevant .md docs in the project.
-
-        Scans root + docs/ subdirectory, skips noise files (CHANGELOG, LICENSE …),
-        and returns paths sorted by relevance score descending.
-        Works for any project — no hardcoded filenames.
-        """
-        candidates: List[Path] = []
-
-        search_dirs = [self.project_path] + [
-            d for d in self.project_path.iterdir() if d.is_dir() and d.name.lower() in ("docs", "doc", "documentation")
-        ]
-
-        for directory in search_dirs:
-            for md_file in directory.glob("*.md"):
-                if md_file.name.lower() in self._DOCS_SKIP:
-                    continue
-                if md_file.name.lower() == "readme.md":
-                    continue
-                candidates.append(md_file)
-
-        # Sort by score descending, then alphabetically for determinism
-        candidates.sort(key=lambda p: (-self._score_doc(p, ""), p.name))
-        return candidates
+        """Delegate to SkillDocLoader."""
+        return self._doc_loader.discover_supplementary_docs()
 
     def _load_key_files(self, skill_name: str) -> Dict[str, str]:
-        """Load actual key project files to ground the LLM in real project content.
-
-        Always includes: entry points + config + project tree +
-        top supplementary docs discovered dynamically (no hardcoded names).
-        Supplementary docs are capped at SUPPLEMENTARY_BUDGET total chars.
-        """
-        key_files: Dict[str, str] = {}
-        skill_lower = skill_name.lower()
-
-        # Always try to include entry points and config
-        candidates = ["main.py", "app.py", "pyproject.toml", "requirements.txt"]
-
-        # Topic-specific code file additions
-        if any(w in skill_lower for w in ["backend", "api", "developer"]):
-            candidates += ["project_rules_generator.py", "generator/__init__.py"]
-        if "test" in skill_lower:
-            candidates += ["pytest.ini", "tests/conftest.py"]
-        if "cli" in skill_lower or "command" in skill_lower:
-            candidates += ["main.py"]
-
-        for candidate in candidates:
-            path = self.project_path / candidate
-            if path.exists() and path.is_file():
-                try:
-                    content = path.read_text(encoding="utf-8", errors="ignore")
-                    key_files[candidate] = content[:600]
-                except OSError:
-                    pass
-
-        # Project tree: always include (gives LLM structural grounding)
-        tree = self._scan_project_tree()
-        key_files["project_tree"] = tree[:800]
-
-        # Supplementary docs: discovered dynamically, capped by total budget
-        remaining_budget = self.SUPPLEMENTARY_BUDGET
-        for doc_path in self._discover_supplementary_docs():
-            if remaining_budget <= 0:
-                break
-            try:
-                content = doc_path.read_text(encoding="utf-8", errors="ignore").strip()
-                if not content:
-                    continue
-                # Re-score with actual content (short files get penalised)
-                if self._score_doc(doc_path, content) < 0:
-                    continue
-                rel = str(doc_path.relative_to(self.project_path))
-                chunk = content[:remaining_budget]
-                key_files[rel] = chunk
-                remaining_budget -= len(chunk)
-            except OSError:
-                pass
-
-        return key_files
+        """Delegate to SkillDocLoader."""
+        return self._doc_loader.load_key_files(skill_name)
 
     def _generate_content(
         self,
@@ -1052,82 +752,16 @@ Signals: {", ".join(metadata.project_signals)}
         return "\n".join(f"- `{s}`" for s in signals)
 
     def _validate_quality(self, content: str, metadata: SkillMetadata) -> QualityReport:
-        """
-        Cowork's quality gates: ensure skill is actionable and specific.
-
-        Delegates shared checks to quality_checker.validate_quality(), then adds
-        the project-specific hallucination check that requires self.project_path.
-        """
-        from generator.utils.quality_checker import validate_quality
-
-        report = validate_quality(content, metadata.auto_triggers, metadata.tools)
-
-        # Project-specific: detect hallucinated file paths (needs self.project_path)
-        hallucinated = self._detect_hallucinated_paths(content)
-        if hallucinated:
-            extra_issue = f"Hallucinated file paths: {', '.join(hallucinated[:3])}"
-            score = max(0.0, report.score - 20)
-            issues = report.issues + [extra_issue]
-            return QualityReport(
-                score=score,
-                passed=score >= 70 and not issues,
-                issues=issues,
-                warnings=report.warnings,
-                suggestions=report.suggestions,
-            )
-
-        return report
+        """Delegate to SkillQualityValidator."""
+        return self._quality.validate(content, metadata)
 
     def _detect_hallucinated_paths(self, content: str) -> List[str]:
-        """
-        Detect file paths that don't exist in project.
-
-        This is critical for Cowork quality: no fake files!
-        """
-        hallucinated = []
-
-        # Extract file path patterns
-        patterns = [
-            r"(?:File:|Path:|`)([\w/.-]+\.[\w]+)",  # File: path/to/file.py
-            r"`(src/[\w/]+\.py)`",  # `src/module.py`
-            r"(?:in|check|see) `([\w/.-]+\.[\w]+)`",  # in `file.py`
-        ]
-
-        for pattern in patterns:
-            matches = re.findall(pattern, content)
-            for match in matches:
-                file_path = self.project_path / match
-                if not file_path.exists():
-                    hallucinated.append(match)
-
-        return hallucinated
+        """Delegate to SkillQualityValidator."""
+        return self._quality._detect_hallucinated_paths(content)
 
     def _auto_fix_quality_issues(self, content: str, quality: QualityReport) -> str:
-        """Attempt to auto-fix common quality issues."""
-
-        # Fix generic paths
-        content = content.replace("cd project_name", f"cd {self.project_path.name}")
-        content = content.replace("/path/to/project", str(self.project_path))
-
-        # Remove placeholder sections if empty
-        content = re.sub(r"\[describe.*?\]", "", content, flags=re.IGNORECASE)
-        content = re.sub(r"\[example.*?\]", "", content, flags=re.IGNORECASE)
-
-        # Add anti-patterns if missing
-        if "## Anti-Patterns" not in content:
-            anti_pattern_section = """
-
-## Anti-Patterns
-
-❌ **Don't** use generic solutions without understanding project context
-✅ **Do** analyze project structure first
-
-❌ **Don't** skip validation steps
-✅ **Do** always verify changes work
-"""
-            content += anti_pattern_section
-
-        return content
+        """Delegate to SkillQualityValidator."""
+        return self._quality.auto_fix(content, quality)
 
     def export_to_file(
         self,

@@ -12,7 +12,6 @@ It generates high-quality, project-specific rules with:
 """
 
 import re
-import subprocess
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -21,6 +20,9 @@ from typing import Dict, List, Optional, Set, Tuple
 import yaml
 
 from generator.base_generator import ArtifactGenerator
+from generator.rules_git_miner import RulesGitMiner
+from generator.quality_validators import RulesQualityValidator
+from generator.rules_renderer import RulesContentRenderer, append_mandatory_anti_patterns  # noqa: F401 (re-export)
 from generator.tech_registry import TECH_RULES as _TECH_RULES
 
 
@@ -57,25 +59,6 @@ class QualityReport:
     conflicts: List[str] = field(default_factory=list)  # Contradictory rules
 
 
-def append_mandatory_anti_patterns(generated_rules: str, framework: str = "") -> str:
-    """Forces the LLM output to include explicit negative constraints."""
-
-    anti_patterns_section = "\n## 🚫 Critical Anti-Patterns (NEVER DO THIS)\n\n"
-
-    # Generic constraints for all setups
-    anti_patterns_section += (
-        "- NEVER run destructive commands (rm -rf, drop table, etc.) without explicit user confirmation.\n"
-    )
-    anti_patterns_section += (
-        "- NEVER generate placeholder comments like 'Implement logic here' - write the full code.\n"
-    )
-
-    # Framework specific
-    if framework and "react" in framework.lower():
-        anti_patterns_section += "- NEVER mutate React state directly; always use the setter functions.\n"
-
-    return generated_rules + anti_patterns_section + "\n"
-
 
 class CoworkRulesCreator(ArtifactGenerator):
     """
@@ -98,7 +81,10 @@ class CoworkRulesCreator(ArtifactGenerator):
         """Initialize with project path for context awareness."""
         self.project_path = project_path
         self.provider = provider
-        self._git_available = self._check_git_available()
+        self._git_miner = RulesGitMiner(project_path)
+        self._git_available = self._git_miner.available
+        self._quality_validator = RulesQualityValidator()
+        self._renderer = RulesContentRenderer()
 
     def create_rules(
         self,
@@ -124,16 +110,15 @@ class CoworkRulesCreator(ArtifactGenerator):
         rules_by_category = self._generate_rules(metadata, enhanced_context)
 
         # 3. Extract anti-patterns from git history
-        if self._git_available:
-            git_antipatterns = self._extract_git_antipatterns()
-            if git_antipatterns:
-                rules_by_category["Anti-Patterns from History"] = git_antipatterns
+        git_antipatterns = self._git_miner.extract_antipatterns()
+        if git_antipatterns:
+            rules_by_category["Anti-Patterns from History"] = git_antipatterns
 
         # 4. Generate content
-        content = self._generate_content(metadata, rules_by_category, readme_content)
+        content = self._renderer.render(metadata, rules_by_category, readme_content)
 
         # 5. Quality validation
-        quality = self._validate_quality(content, metadata, rules_by_category)
+        quality = self._quality_validator.validate(content, metadata, rules_by_category)
 
         return content, metadata, quality
 
@@ -587,73 +572,8 @@ class CoworkRulesCreator(ArtifactGenerator):
         ]
 
     def _extract_git_antipatterns(self) -> List[Rule]:
-        """Extract anti-patterns from git history (Cowork magic!)."""
-        antipatterns = []
-
-        try:
-            # Check for frequently modified files (hot spots)
-            result = subprocess.run(
-                ["git", "log", "--pretty=format:", "--name-only"],
-                cwd=self.project_path,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="ignore",
-                timeout=5,
-            )
-
-            if result.returncode == 0:
-                file_changes: Dict[str, int] = defaultdict(int)
-                for line in result.stdout.split("\n"):
-                    if line.strip():
-                        file_changes[line] += 1
-
-                # Find hot spots (files changed > 10 times)
-                hotspots = [f for f, count in file_changes.items() if count > 10]
-
-                if hotspots:
-                    antipatterns.append(
-                        Rule(
-                            f"🔥 Hot spots detected: {', '.join(hotspots[:3])} - consider refactoring",
-                            priority="Medium",
-                            category="Anti-Patterns from History",
-                            source="git_history",
-                        )
-                    )
-
-            # Check for large commits (> 500 lines)
-            result = subprocess.run(
-                ["git", "log", "--shortstat", "--oneline", "-10"],
-                cwd=self.project_path,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="ignore",
-                timeout=5,
-            )
-
-            if result.returncode == 0:
-                large_commits = 0
-                for line in result.stdout.split("\n"):
-                    match = re.search(r"(\d+) insertions?\(\+\)", line)
-                    if match and int(match.group(1)) > 500:
-                        large_commits += 1
-
-                if large_commits > 2:
-                    antipatterns.append(
-                        Rule(
-                            "🔥 Large commits detected - break down changes into smaller commits",
-                            priority="Low",
-                            category="Anti-Patterns from History",
-                            source="git_history",
-                        )
-                    )
-
-        except (OSError, subprocess.SubprocessError):
-            # Git analysis failed, skip
-            pass
-
-        return antipatterns
+        """Delegate to RulesGitMiner."""
+        return self._git_miner.extract_antipatterns()
 
     def _generate_content(
         self,
@@ -661,95 +581,12 @@ class CoworkRulesCreator(ArtifactGenerator):
         rules_by_category: Dict[str, List[Rule]],
         readme_content: str,
     ) -> str:
-        """Generate complete rules.md content."""
-
-        # YAML frontmatter
-        frontmatter = {
-            "project": metadata.project_name,
-            "tech_stack": metadata.tech_stack,
-            "priority_rules": metadata.priority_areas,
-            "project_type": metadata.project_type,
-            "version": "2.0",
-            "generated": "cowork-powered",
-        }
-
-        yaml_str = yaml.dump(frontmatter, sort_keys=False, allow_unicode=True)
-
-        # Build content
-        content = f"""---
-{yaml_str}---
-
-# {metadata.project_name} - Coding Rules
-
-**Generated by Cowork-Powered Rules Creator** 🤖
-
-## 📋 Priority Areas
-
-{self._format_priority_areas(metadata.priority_areas)}
-
-## 💻 Coding Standards
-
-"""
-
-        # Collect all rules flat for priority view
-        all_rules_flat = [rule for rules in rules_by_category.values() for rule in rules]
-
-        # Add rules by priority (Coding Standards section)
-        shown_in_priority: Set[str] = set()
-        for priority in ["High", "Medium", "Low"]:
-            priority_rules = [r for r in all_rules_flat if r.priority == priority]
-            if priority_rules:
-                content += f"\n### {priority} Priority\n\n"
-                for rule in priority_rules:
-                    content += f"- ✅ **{rule.content}**\n"
-                    shown_in_priority.add(rule.content)
-
-        # Add rules by category — only rules NOT already shown in priority view
-        # This eliminates the duplication between the two sections
-        content += "\n## 📂 Rules by Category\n\n"
-
-        priority_emoji = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}
-        for category, rules in sorted(rules_by_category.items()):
-            # Only include rules unique to this category (not already in priority view)
-            unique_rules = [r for r in rules if r.content not in shown_in_priority]
-            if not unique_rules:
-                continue
-            content += f"\n### {category}\n\n"
-            for rule in unique_rules:
-                emoji = priority_emoji.get(rule.priority, "🟢")
-                content += f"- {emoji} {rule.content}\n"
-
-        # Add tech stack section
-        content += "\n## 🛠️ Tech Stack\n\n"
-        for tech in metadata.tech_stack:
-            content += f"- {tech}\n"
-
-        # Add project signals
-        if metadata.detected_signals:
-            content += "\n## 🏗️ Project Structure\n\n"
-            for signal in metadata.detected_signals:
-                content += f"- `{signal}`\n"
-
-        content += "\n---\n"
-        content += "*Generated by Cowork-Powered PRG Rules Creator*\n"
-        content += f"*Tech Stack: {len(metadata.tech_stack)} | Rules: {sum(len(rules) for rules in rules_by_category.values())} | Quality: Cowork-level*\n"
-
-        framework_hint = "react" if "react" in metadata.tech_stack else ""
-        content = append_mandatory_anti_patterns(content, framework_hint)
-
-        return content
+        """Delegate to RulesContentRenderer."""
+        return self._renderer.render(metadata, rules_by_category, readme_content)
 
     def _format_priority_areas(self, areas: List[str]) -> str:
-        """Format priority areas as markdown list."""
-        if not areas:
-            return "- No specific priority areas detected"
-
-        formatted = []
-        for area in areas:
-            readable = area.replace("_", " ").title()
-            formatted.append(f"- **{readable}**")
-
-        return "\n".join(formatted)
+        """Delegate to RulesContentRenderer."""
+        return self._renderer._format_priority_areas(areas)
 
     def _validate_quality(
         self,
@@ -757,95 +594,16 @@ class CoworkRulesCreator(ArtifactGenerator):
         metadata: RulesMetadata,
         rules_by_category: Dict[str, List[Rule]],
     ) -> QualityReport:
-        """Validate rules quality with Cowork standards."""
-
-        issues = []
-        warnings = []
-        score = 100.0
-
-        # 1. Check completeness
-        required_sections = [
-            "Coding Standards",
-            "Priority Areas",
-            "Tech Stack",
-        ]
-
-        completeness = sum(1 for sec in required_sections if sec in content) / len(required_sections)
-
-        if completeness < 1.0:
-            issues.append(f"Missing sections (completeness: {completeness * 100:.0f}%)")
-            score -= 20
-
-        # 2. Check for sufficient rules
-        total_rules = sum(len(rules) for rules in rules_by_category.values())
-        if total_rules < 5:
-            warnings.append(f"Only {total_rules} rules generated (recommend 10+)")
-            score -= 10
-
-        # 3. Check for priority distribution
-        high_priority = sum(1 for rules in rules_by_category.values() for rule in rules if rule.priority == "High")
-
-        if high_priority < 2:
-            warnings.append("Few high-priority rules (recommend 3+)")
-            score -= 5
-
-        # 4. Detect rule conflicts
-        conflicts = self._detect_rule_conflicts(rules_by_category)
-        if conflicts:
-            issues.extend(conflicts)
-            score -= len(conflicts) * 10
-
-        # 5. Check for tech-specific rules
-        if not any(rule.source.endswith("_patterns") for rules in rules_by_category.values() for rule in rules):
-            warnings.append("No tech-specific rules (may be too generic)")
-            score -= 5
-
-        passed = score >= 85 and len(issues) == 0
-
-        return QualityReport(
-            score=max(0, score),
-            passed=passed,
-            issues=issues,
-            warnings=warnings,
-            completeness=completeness,
-            conflicts=conflicts,
-        )
+        """Delegate to RulesQualityValidator."""
+        return self._quality_validator.validate(content, metadata, rules_by_category)
 
     def _detect_rule_conflicts(self, rules_by_category: Dict[str, List[Rule]]) -> List[str]:
-        """Detect genuinely contradictory rules (same topic, opposite direction)."""
-        conflicts = []
-
-        all_rules = [rule.content.lower() for rules in rules_by_category.values() for rule in rules]
-
-        # Check for explicit contradictions: "use X" vs "don't use X" about the same thing
-        # We require both terms to appear in the same rule, not just anywhere in the ruleset
-        conflict_pairs = [
-            ("use async", "don't use async"),
-            ("use class components", "don't use class components"),
-            ("use sync", "don't use sync"),
-        ]
-
-        for positive, negative in conflict_pairs:
-            has_positive = any(positive in rule for rule in all_rules)
-            has_negative = any(negative in rule for rule in all_rules)
-
-            if has_positive and has_negative:
-                conflicts.append(f"Conflicting rules about '{positive}'")
-
-        return conflicts
+        """Delegate to RulesQualityValidator."""
+        return self._quality_validator._detect_rule_conflicts(rules_by_category)
 
     def _check_git_available(self) -> bool:
-        """Check if git is available and project is a git repo."""
-        try:
-            result = subprocess.run(
-                ["git", "rev-parse", "--git-dir"],
-                cwd=self.project_path,
-                capture_output=True,
-                timeout=2,
-            )
-            return result.returncode == 0
-        except (OSError, subprocess.SubprocessError):
-            return False
+        """Delegate to RulesGitMiner."""
+        return self._git_miner.available
 
     def export_to_file(
         self,

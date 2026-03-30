@@ -4,6 +4,57 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Unreleased] — 2026-03-30
+
+### ♻️ Refactor — God-Module Decomposition (`skill_creator.py`, `rules_creator.py`)
+
+Addressed two of the four remaining god-modules flagged in `intructions.md`.
+All public APIs unchanged; no feature behaviour modified.
+
+#### `generator/skill_creator.py`: 1190 → 824 LOC (−31%)
+
+Three focused helper modules extracted:
+
+| New module | LOC | Responsibility |
+|---|---|---|
+| `generator/skill_doc_loader.py` | 149 | Supplementary doc discovery + key-file loading for LLM context |
+| `generator/skill_metadata_builder.py` | 287 | Trigger generation, tool selection, tags, YAML frontmatter rendering |
+
+`SkillQualityValidator` extracted then consolidated (see below).
+
+#### `generator/rules_creator.py`: 864 → 622 LOC (−28%)
+
+Three focused helper modules extracted:
+
+| New module | LOC | Responsibility |
+|---|---|---|
+| `generator/rules_git_miner.py` | 127 | Git history analysis — hot spots + large-commit detection |
+| `generator/rules_renderer.py` | 111 | rules.md content rendering + anti-pattern appending |
+
+`RulesQualityValidator` extracted then consolidated (see below).
+
+#### `generator/quality_validators.py` — NEW (consolidated)
+
+`SkillQualityValidator` and `RulesQualityValidator` merged into one file instead of two separate modules, since both are quality-validation concerns:
+
+```
+generator/quality_validators.py
+  ├── SkillQualityValidator   — hallucination detection, auto-fix
+  └── RulesQualityValidator   — completeness, conflicts, priority checks
+```
+
+Shared low-level checks remain in `generator/utils/quality_checker.py`.
+
+#### Known Issues documented
+
+`docs/KNOWN-ISSUES.md` created, recording 4 bugs found in `prg design` / `prg plan`:
+- Success Criteria section generates empty bullets
+- `prg plan` generates only 1 subtask (under-decomposed)
+- Hallucinated file paths (`src/` instead of `generator/`)
+- Task content truncated mid-sentence
+
+---
+
 ## [v0.2.2] — 2026-03-28
 
 ### ✨ Features
