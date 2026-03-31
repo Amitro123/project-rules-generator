@@ -91,7 +91,7 @@ Branch: `improve/code-review-fixes`
 | Priority | Finding | Where | Notes |
 |---|---|---|---|
 | HIGH | `analyze_cmd.py` is 1100+ lines — God Object mixing CLI parsing, filesystem writes, pipeline orchestration | `cli/analyze_cmd.py` | Needs extraction of pipeline logic into `generator/` core |
-| HIGH | `ProjectManager` invokes CLI via `CliRunner` internally | `generator/planning/project_manager.py` | Decouple — call generator functions directly, not CLI commands |
+| ~~HIGH~~ ✅ | ~~`ProjectManager` invokes CLI via `CliRunner` internally~~ | `generator/planning/project_manager.py` | Fixed: extracted `_generate_rules_and_skills()` that calls `CoworkRulesCreator` + `SkillsManager` directly; no CLI layer involved |
 | ~~MEDIUM~~ ✅ | ~~Prompt/template strings hard-coded as Python strings~~ | `generator/planning/project_manager.py` | Fixed: spec.md prompt extracted to `generator/prompts/spec_generation.py`, following existing `skill_generation.py` pattern |
 | ~~MEDIUM~~ ✅ | ~~`_handle_skill_management` calls `sys.exit()` directly~~ | `cli/analyze_helpers.py` | Fixed: replaced with `raise click.exceptions.Exit(0/1)`; added re-raise guard in `analyze_cmd.py` broad except |
 | ~~MEDIUM~~ ✅ | ~~README says Python 3.11+ but `pyproject.toml` specifies 3.8+~~ | `README.md`, `pyproject.toml` | Verified: both already say 3.8+ — CR finding was incorrect |
