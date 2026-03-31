@@ -2,23 +2,36 @@ project: project-rules-generator
 version: '2.0'
 generated_by: project-rules-generator
 tech_stack:
+- anthropic
 - claude
 - click
 - gemini
+- gitpython
+- gpt
+- groq
+- openai
 - pydantic
 - pytest
 - python
 project_type: python-cli
 tools:
-  test: pytest
   check: ruff check .
+  format: black .
   lint: mypy .
+  test: pytest
 skills:
   builtin:
   - skills/builtin/code-review.md
-  - skills/builtin/SKILL.md
-  - skills/builtin/readme-improver.md
+  - skills/builtin/systematic-debugging.md
+  - skills/builtin/test-driven-development.md
   learned:
+  - skills/learned/api-client-patterns.md
+  - skills/learned/rate-limiting.md
+  - skills/learned/response-parsing.md
+  - skills/learned/retry-error-handling.md
+  - skills/learned/branch-management.md
+  - skills/learned/diff-patterns.md
+  - skills/learned/repo-operations.md
   - skills/learned/coverage-patterns.md
   - skills/learned/fixture-patterns.md
   - skills/learned/mocking-patterns.md
@@ -26,12 +39,11 @@ skills:
   - skills/learned/argparse-patterns.md
   - skills/learned/click-commands.md
   - skills/learned/config-management.md
-  - skills/learned/validation-patterns.md
   - skills/learned/error-handling.md
 skills_count:
   builtin: 3
-  learned: 9
-  total: 12
+  learned: 15
+  total: 18
 context:
   exclude:
   - '**/*.pyc'
