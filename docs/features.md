@@ -44,9 +44,8 @@ prg analyze .
 
 **Command**:
 ```bash
-prg analyze . --auto-generate-skills --ai --api-key YOUR_KEY
-# Or shorter:
-prg analyze . --mode ai --api-key YOUR_KEY
+prg analyze . --ai
+prg analyze . --ai --provider anthropic   # force a specific provider
 ```
 
 **Output**:
@@ -73,7 +72,7 @@ prg analyze . --mode ai --api-key YOUR_KEY
 | :--- | :--- | :--- | :--- |
 | **Groq** | Llama 3.1 8b | ⚡⚡⚡ | Free |
 | **Gemini** | Gemini 2.0 Flash | ⚡⚡ | Free |
-| **Claude** | Sonnet 3.5 | ⚡ | Paid |
+| **Claude** | Sonnet 4.6 | ⚡ | Paid |
 
 ### Feature 3: Incremental Mode ⚡ NEW
 **What it does**: Only regenerates sections rules that have changed since the last run (3-5x faster on large projects).
@@ -185,16 +184,18 @@ prg analyze . --constitution
 **Commands**:
 ```bash
 # List all available skills
-prg analyze . --list-skills
+prg skills list
+prg skills list --all        # include builtin skills
 
-# Add specific skill
-prg analyze . --add-skill builtin/brainstorming
+# View a skill's content
+prg skills show fastapi-endpoints
 
-# Remove skill
-prg analyze . --remove-skill test-driven-development
+# Validate quality score
+prg skills validate my-skill
 
-# Add custom skill from file
-prg analyze . --add-skill ~/my-team-workflow.md
+# Create a new skill
+prg analyze . --create-skill "auth-flow" --ai
+prg analyze . --create-skill "deploy-checklist" --scope project
 ```
 
 **Output**:

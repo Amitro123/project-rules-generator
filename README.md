@@ -20,7 +20,7 @@ The AI isn't dumb. It's **context-blind.**
 
 **Project Rules Generator (PRG)** builds a persistent intelligence layer for your project — rules, skills, and patterns — that every AI agent reads automatically.
 
-Run it once. Every future AI session starts with full context: your stack, your conventions, your architecture, your do's and don'ts.
+Run it once. Every future AI session starts with project context: your stack, your conventions, your architecture, your do's and don'ts.
 
 ```bash
 cd your-project
@@ -70,7 +70,7 @@ pip install -e .
 prg init .
 ```
 
-**With a free API key** — deeper analysis, LLM-generated skills:
+**With a free API key** — LLM-generated skills and richer analysis:
 
 ```bash
 export GROQ_API_KEY=gsk_...   # free at console.groq.com
@@ -132,7 +132,7 @@ prg providers benchmark  # Side-by-side quality ranking
 ```bash
 prg init .                                    # First-run wizard: detect stack, generate rules
 prg analyze .                                 # Regenerate from README + file structure
-prg analyze . --ai                            # AI-powered deep analysis
+prg analyze . --ai                            # AI-powered analysis (LLM-generated skills)
 prg analyze . --ai --provider anthropic       # Force a specific provider
 prg analyze . --incremental                   # Update only what changed (3–5x faster)
 prg analyze . --constitution                  # Also generate constitution.md
@@ -235,4 +235,4 @@ MIT — see [`LICENSE`](LICENSE).
 
 ---
 
-> Full version history: [`CHANGELOG.md`](CHANGELOG.md) · Architecture: [`docs/architecture.md`](docs/architecture.md)
+> Full version history: [`CHANGELOG.md`](CHANGELOG.md) · Architecture: [`docs/architecture.md`](docs/architecture.md) · Feature deep-dives: [`docs/features.md`](docs/features.md)
