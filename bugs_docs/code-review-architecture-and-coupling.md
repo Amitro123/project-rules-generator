@@ -94,7 +94,7 @@ Branch: `improve/code-review-fixes`
 | HIGH | `ProjectManager` invokes CLI via `CliRunner` internally | `generator/planning/project_manager.py` | Decouple — call generator functions directly, not CLI commands |
 | MEDIUM | Prompt/template strings hard-coded as Python strings | `generator/planning/project_manager.py`, `generator/skills_manager.py` | Move to `.jinja2` template files |
 | MEDIUM | `_handle_skill_management` calls `sys.exit()` directly | `cli/analyze_cmd.py` | Return status codes instead; let CLI layer call `sys.exit` |
-| MEDIUM | README says Python 3.11+ but `pyproject.toml` specifies 3.8+ | `README.md`, `pyproject.toml` | Align to single source of truth |
+| ~~MEDIUM~~ ✅ | ~~README says Python 3.11+ but `pyproject.toml` specifies 3.8+~~ | `README.md`, `pyproject.toml` | Verified: both already say 3.8+ — CR finding was incorrect |
 | MEDIUM | Version hard-coded in multiple files | multiple | Single source of truth via `_version.py` or `pyproject.toml` |
 | LOW | Tests for `ProjectManager` verify method calls, not output correctness | `tests/` | Replace shallow mocks with behavioural assertions |
 | LOW | `TECH_RULES` dict in `rules_creator.py` — static templates, not learned patterns | `generator/rules_creator.py` | Long-term: move to YAML config, consider actual pattern learning |
