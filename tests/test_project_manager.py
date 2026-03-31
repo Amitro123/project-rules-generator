@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -72,3 +72,25 @@ def test_phase4_summary(manager):
     content = report_path.read_text(encoding="utf-8")
     assert "# Project Completion Report" in content
     assert "Generated Artifacts" in content
+
+
+def test_generate_rules_and_skills_calls_generator_directly(manager):
+    """Verify _generate_rules_and_skills uses generator functions, not CliRunner."""
+    mock_creator = MagicMock()
+    mock_creator.create_rules.return_value = ("content", MagicMock(), MagicMock())
+    mock_skills_mgr = MagicMock()
+
+    with (
+        patch("generator.rules_creator.CoworkRulesCreator", return_value=mock_creator),
+        patch("generator.skills_manager.SkillsManager", return_value=mock_skills_mgr),
+        patch("generator.utils.readme_bridge.find_readme", return_value=None),
+        patch("generator.parsers.enhanced_parser.EnhancedProjectParser") as MockParser,
+    ):
+        MockParser.return_value.extract_full_context.return_value = {}
+        manager._generate_rules_and_skills()
+
+    # Must call CoworkRulesCreator directly — no CliRunner involved
+    mock_creator.create_rules.assert_called_once()
+    mock_creator.export_to_file.assert_called_once()
+    mock_skills_mgr.save_triggers_json.assert_called_once()
+    mock_skills_mgr.generate_perfect_index.assert_called_once()

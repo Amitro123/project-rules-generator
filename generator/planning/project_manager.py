@@ -93,18 +93,7 @@ class ProjectManager:
         # Group 1: Analysis (rules, skills)
         if any(x in missing for x in [".clinerules/rules.md", ".clinerules/skills/index.md"]):
             logger.info("   ⚙️  Running analysis (rules + skills)...")
-            # We can use AgentWorkflow's internal or call specific commands.
-            # Using AgentWorkflow.run_setup() covers a lot, but might be too broad.
-            # Let's use the CLI logic roughly:
-            from click.testing import CliRunner
-
-            from cli.analyze_cmd import analyze
-
-            runner = CliRunner()
-            args = [str(self.project_path), "--no-commit"]
-            if self.api_key:
-                args.append("--ai")
-            runner.invoke(analyze, args, catch_exceptions=False)
+            self._generate_rules_and_skills()
 
         # Group 2: Planning (PLAN.md, tasks/)
         if "PLAN.md" in missing or "tasks/TASKS.yaml" in missing:
@@ -193,6 +182,42 @@ class ProjectManager:
 
         (self.project_path / "spec.md").write_text(spec_content, encoding="utf-8")
         logger.info(f"   ✅ Generated spec.md ({len(spec_content.splitlines())} lines)")
+
+    def _generate_rules_and_skills(self) -> None:
+        """Generate rules.md and skills/index.md directly without going through the CLI layer."""
+        from generator.rules_creator import CoworkRulesCreator
+        from generator.skills_manager import SkillsManager
+        from generator.utils.readme_bridge import find_readme
+
+        output_dir = self.project_path / ".clinerules"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build enhanced context
+        enhanced_context = None
+        try:
+            from generator.parsers.enhanced_parser import EnhancedProjectParser
+
+            enhanced_context = EnhancedProjectParser(self.project_path).extract_full_context()
+        except Exception as exc:
+            logger.warning("Enhanced analysis unavailable: %s", exc)
+
+        # README text for rules generation
+        readme_path = find_readme(self.project_path)
+        readme_text = (
+            readme_path.read_text(encoding="utf-8", errors="replace") if readme_path else f"# {self.project_path.name}"
+        )
+
+        # Generate rules.md via CoworkRulesCreator
+        creator = CoworkRulesCreator(self.project_path)
+        content, metadata, _ = creator.create_rules(readme_text, enhanced_context=enhanced_context)
+        creator.export_to_file(content, metadata, output_dir)
+        logger.info("   Generated rules.md")
+
+        # Generate skills index and auto-triggers
+        skills_mgr = SkillsManager(project_path=self.project_path)
+        skills_mgr.save_triggers_json(output_dir)
+        skills_mgr.generate_perfect_index()
+        logger.info("   Generated skills/index.md")
 
     def _update_manager_checklist(self):
         """Create or update PROJECT-MANAGER.md."""
