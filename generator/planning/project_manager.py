@@ -268,10 +268,8 @@ Rules:
         logger.info(report.format_report())
 
         if not report.all_passed:
-            logger.info("❌ Verification failed. Please fix issues before proceeding.")
-            # In interactive mode we might pause here, but for now we stop.
-            # Or asking user via input?
-            pass
+            failed = [c.name for c in report.failed_checks]
+            raise RuntimeError(f"Readiness verification failed: {', '.join(failed)}. Fix issues before proceeding.")
 
     # -- Phase 3: Copilot -------------------------------------------------
 
