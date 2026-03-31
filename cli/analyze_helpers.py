@@ -1,6 +1,5 @@
 """Extracted helper functions for analyze_cmd.py to reduce module complexity."""
 
-import sys
 from pathlib import Path
 
 import click
@@ -24,7 +23,7 @@ def _handle_skill_management(
 ):
     """Handle create-skill / remove-skill / list-skills early-exit actions.
 
-    Returns True if the caller should sys.exit(0) immediately after, False otherwise.
+    Raises click.exceptions.Exit on completion or error — never calls sys.exit() directly.
     """
     import shutil
 
@@ -47,9 +46,9 @@ def _handle_skill_management(
             click.echo("\u2705 auto-triggers.json refreshed!")
         except Exception as e:
             click.echo(f"\u274c Failed to create skill: {e}", err=True)
-            sys.exit(1)
+            raise click.exceptions.Exit(1)
         if not create_rules_flag:
-            sys.exit(0)
+            raise click.exceptions.Exit(0)
 
     if remove_skill:
         target = (skills_manager.learned_path / remove_skill).resolve()
@@ -57,14 +56,14 @@ def _handle_skill_management(
             target.relative_to(skills_manager.learned_path.resolve())
         except ValueError:
             click.echo(f"\u274c Invalid skill path: {remove_skill}", err=True)
-            sys.exit(1)
+            raise click.exceptions.Exit(1)
         if target.exists():
             shutil.rmtree(target)
             click.echo(f"\U0001f5d1\ufe0f Removed skill '{remove_skill}'")
         else:
             click.echo(f"\u274c Skill '{remove_skill}' not found in learned skills.", err=True)
-            sys.exit(1)
-        sys.exit(0)
+            raise click.exceptions.Exit(1)
+        raise click.exceptions.Exit(0)
 
     if list_skills:
         skills = skills_manager.list_skills()
@@ -89,7 +88,7 @@ def _handle_skill_management(
                 click.echo(f"  - {s}")
         if not total:
             click.echo("  No skills found.")
-        sys.exit(0)
+        raise click.exceptions.Exit(0)
 
 
 def _run_create_rules(
