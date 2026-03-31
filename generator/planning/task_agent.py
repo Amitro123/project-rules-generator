@@ -1,9 +1,14 @@
 """Task implementation agent — generates code changes for a subtask."""
 
+import logging
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from generator.ai.factory import create_ai_client
+from generator.exceptions import SecurityError
 from generator.task_decomposer import SubTask
+
+logger = logging.getLogger(__name__)
 
 TASK_AGENT_SYSTEM_PROMPT = """You are an expert software engineer. 
 Your task is to implement the changes described in the provided subtask.
@@ -59,11 +64,47 @@ Tests to Verify:
 {ctx_str}
 """
 
+    @staticmethod
+    def _sanitize_path(raw: str) -> Optional[str]:
+        """Validate and normalise an LLM-supplied file path.
+
+        Accepts only relative paths with no ``..`` components.
+        Returns the normalised POSIX-style path string, or ``None`` if the
+        path is rejected (absolute, contains traversal, or empty).
+        """
+        raw = raw.strip()
+        if not raw:
+            return None
+
+        try:
+            p = Path(raw)
+        except ValueError:
+            logger.warning("Rejected malformed LLM file path: %r", raw)
+            return None
+
+        # Block absolute paths: pathlib covers Windows (C:\...) and Unix (/)
+        # on their native platforms; the leading-slash check catches Unix-style
+        # paths when running on Windows where Path("/foo").is_absolute() is False.
+        if p.is_absolute() or raw.startswith("/") or raw.startswith("\\"):
+            logger.warning("Rejected absolute LLM file path: %r", raw)
+            return None
+
+        # Block any path traversal component
+        if any(part == ".." for part in p.parts):
+            logger.warning("Rejected path-traversal LLM file path: %r", raw)
+            return None
+
+        # Return normalised, forward-slash form
+        return p.as_posix()
+
     def _parse_response(self, response: str) -> Dict[str, str]:
-        """Parse the AI response into a dict of {filepath: content}."""
-        files = {}
-        # Simple parsing for [FILE: path]
-        current_file = None
+        """Parse the AI response into a dict of {filepath: content}.
+
+        Paths are validated by ``_sanitize_path``; invalid paths are logged
+        and silently dropped so callers always receive a safe dict.
+        """
+        files: Dict[str, str] = {}
+        current_file: Optional[str] = None
         current_content: List[str] = []
 
         for line in response.split("\n"):
@@ -71,8 +112,10 @@ Tests to Verify:
                 if current_file:
                     files[current_file] = "\n".join(current_content).strip()
 
-                # Extract path: [FILE: path/to/file] -> path/to/file
-                current_file = line.replace("[FILE:", "").replace("]", "").strip()
+                raw_path = line.replace("[FILE:", "").replace("]", "").strip()
+                current_file = self._sanitize_path(raw_path)
+                if current_file is None:
+                    raise SecurityError(f"LLM returned unsafe file path: {raw_path!r}")
                 current_content = []
             elif current_file:
                 current_content.append(line)
