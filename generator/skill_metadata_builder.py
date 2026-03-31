@@ -86,7 +86,6 @@ class SkillMetadataBuilder:
             desc += f" Do NOT activate for {neg_str}."
         desc = desc[:1024]
 
-        claude_tools = "Bash Read Write Edit Glob Grep"
         tags = metadata.tags if metadata.tags else [metadata.category]
         tags_str = "[" + ", ".join(tags) + "]"
 
@@ -96,7 +95,13 @@ class SkillMetadataBuilder:
             "description: |",
             f"  {desc}",
             "license: MIT",
-            f'allowed-tools: "{claude_tools}"',
+            "allowed-tools:",
+            "  - Bash",
+            "  - Read",
+            "  - Write",
+            "  - Edit",
+            "  - Glob",
+            "  - Grep",
             "metadata:",
             "  author: PRG",
             "  version: 1.0.0",
@@ -165,8 +170,16 @@ class SkillMetadataBuilder:
         """Extract action-based triggers from README."""
         triggers = set()
         action_verbs = [
-            "run", "execute", "check", "validate", "analyze",
-            "generate", "create", "build", "test", "deploy",
+            "run",
+            "execute",
+            "check",
+            "validate",
+            "analyze",
+            "generate",
+            "create",
+            "build",
+            "test",
+            "deploy",
         ]
         lines = readme_content.lower().split("\n")
         skill_words = skill_base.split()
@@ -227,10 +240,29 @@ class SkillMetadataBuilder:
                     pass
 
         system_tools = {
-            "git", "docker", "curl", "bash", "pytest", "python", "pip",
-            "npm", "node", "pylint", "ruff", "black", "mypy", "coverage",
-            "radon", "vulture", "bandit", "safety",
-            "anthropic", "openai", "gemini", "groq", "langchain",
+            "git",
+            "docker",
+            "curl",
+            "bash",
+            "pytest",
+            "python",
+            "pip",
+            "npm",
+            "node",
+            "pylint",
+            "ruff",
+            "black",
+            "mypy",
+            "coverage",
+            "radon",
+            "vulture",
+            "bandit",
+            "safety",
+            "anthropic",
+            "openai",
+            "gemini",
+            "groq",
+            "langchain",
         }
 
         for tool in tools:

@@ -32,7 +32,7 @@ CRITICAL RULES — FOLLOW EXACTLY:
 8. If the skill involves CI/CD or troubleshooting, explicitly instruct the user to verify environment parity (e.g., checking tool versions) before attempting to reproduce the issue
 9. ## Purpose MUST open with the reader's pain — what they are doing WRONG or suffering WITHOUT this skill. Do NOT start with "This skill". Start with the developer's broken state ("Without X...", "Every time you...", "The common mistake is...").
 10. For each ## Process step: write one WHY sentence (the reasoning) BEFORE the command. The reader must understand the consequence of skipping this step before they run anything.
-11. The frontmatter description: one precise sentence naming who has what pain and how this skill resolves it — NOT "This skill does X".
+11. The frontmatter description MUST use "When the user ..." trigger lines (one per line, multi-line YAML block). Each line must start with "When the user" so agents know when to activate this skill. NOT "This skill does X".
 
 NOW GENERATE SKILL FOR: {skill_topic}
 Topic Description: {topic_description}
@@ -47,9 +47,16 @@ OUTPUT FORMAT — use EXACTLY this markdown structure (no deviations):
 ---
 name: {{skill_name}}
 description: |
-  [One sentence: who experiences what pain, and how this skill fixes it. NOT "This skill generates X".]
+  When the user [describes the pain or situation this skill addresses].
+  When the user [another trigger scenario for this skill].
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [relevant, tags, here]
 ---

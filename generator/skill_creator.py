@@ -487,9 +487,6 @@ class CoworkSkillCreator:
             desc += f" Do NOT activate for {neg_str}."
         desc = desc[:1024]
 
-        # GAP 1: allowed-tools uses Claude's tool names, not CLI tools
-        claude_tools = "Bash Read Write Edit Glob Grep"
-
         # GAP 8: tags derived from skill name + tech stack
         tags = metadata.tags if metadata.tags else [metadata.category]
         tags_str = "[" + ", ".join(tags) + "]"
@@ -500,7 +497,13 @@ class CoworkSkillCreator:
             "description: |",
             f"  {desc}",
             "license: MIT",
-            f'allowed-tools: "{claude_tools}"',
+            "allowed-tools:",
+            "  - Bash",
+            "  - Read",
+            "  - Write",
+            "  - Edit",
+            "  - Glob",
+            "  - Grep",
             "metadata:",
             "  author: PRG",
             "  version: 1.0.0",
