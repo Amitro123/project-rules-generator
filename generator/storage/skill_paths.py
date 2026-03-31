@@ -86,13 +86,10 @@ class SkillPathManager:
         skill_name = skill.get("name", "unnamed-skill")
         skill_content = skill.get("content", "")
 
-        # Determine file extension based on content
-        if skill_content.strip().startswith("---") or skill_content.strip().startswith("name:"):
-            ext = ".yaml"
-        else:
-            ext = ".md"
-
-        skill_path = category_dir / f"{skill_name}{ext}"
+        # Always write in the standard subfolder/SKILL.md layout
+        skill_dir = category_dir / skill_name
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        skill_path = skill_dir / "SKILL.md"
         skill_path.write_text(skill_content, encoding="utf-8")
 
         logger.info(f"Saved learned skill: {skill_path}")

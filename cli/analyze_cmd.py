@@ -711,13 +711,15 @@ def analyze(
                 for skill_ref in sorted(enhanced_selected_skills):
                     skill_path = SkillPathManager.get_skill_path(skill_ref)
                     ref_name = skill_ref.split("/")[-1]
-                    dest_name = f"{ref_name}.md" if not ref_name.endswith(".md") else ref_name
+                    # Strip stale .md suffix; always write as subfolder/SKILL.md
+                    ref_name = ref_name[:-3] if ref_name.endswith(".md") else ref_name
                     if skill_ref.startswith("builtin/"):
-                        dest = output_dir / "skills" / "builtin" / dest_name
+                        dest = output_dir / "skills" / "builtin" / ref_name / "SKILL.md"
                     elif skill_ref.startswith("learned/"):
-                        dest = output_dir / "skills" / "learned" / dest_name
+                        dest = output_dir / "skills" / "learned" / ref_name / "SKILL.md"
                     else:
                         continue
+                    dest.parent.mkdir(parents=True, exist_ok=True)
 
                     if skill_path and skill_path.exists():
                         shutil.copy2(skill_path, dest)
@@ -769,7 +771,7 @@ def analyze(
                         dest.write_text(stub, encoding="utf-8")
                         if verbose:
                             label = "📝 Stub+" if stub_context_lines else "📄 Stub"
-                            click.echo(f"   {label}: {dest_name}")
+                            click.echo(f"   {label}: {ref_name}")
 
             # Write rules.md into output directory (with incremental merge if applicable)
             rules_path = output_dir / "rules.md"
