@@ -250,16 +250,16 @@ class TestLightweightClinerules:
             }
         }
 
-        # With output_dir, paths should use skill names, not SKILL.md
+        # With output_dir, paths use subfolder layout: skills/builtin/{name}/SKILL.md
         output = generate_clinerules("test", selected, context, output_dir=Path("/fake"))
         parsed = yaml.safe_load(output)
 
         builtin_paths = parsed["skills"]["builtin"]
-        # Each path must be unique and named after the skill
+        # Each path must be unique
         assert len(builtin_paths) == len(set(builtin_paths)), f"Duplicate paths: {builtin_paths}"
         for p in builtin_paths:
-            assert "SKILL.md" not in p, f"Generic SKILL.md found in path: {p}"
-            assert p.startswith("skills/builtin/")
+            assert p.startswith("skills/builtin/"), f"Unexpected path prefix: {p}"
+            assert p.endswith("/SKILL.md"), f"Expected subfolder layout (name/SKILL.md): {p}"
 
     def test_clinerules_skill_names_in_paths(self):
         """Each builtin skill path should contain the skill name."""
@@ -271,8 +271,8 @@ class TestLightweightClinerules:
         parsed = yaml.safe_load(output)
 
         paths = parsed["skills"]["builtin"]
-        assert "skills/builtin/brainstorming.md" in paths
-        assert "skills/builtin/writing-plans.md" in paths
+        assert "skills/builtin/brainstorming/SKILL.md" in paths
+        assert "skills/builtin/writing-plans/SKILL.md" in paths
 
 
 class TestCLIIntegration:

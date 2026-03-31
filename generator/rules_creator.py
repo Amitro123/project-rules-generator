@@ -262,7 +262,7 @@ class CoworkRulesCreator(ArtifactGenerator):
 
         return signals
 
-    def _build_prompt(self, metadata: "RulesMetadata", readme_content: str = "") -> str:  # type: ignore[override]
+    def _build_prompt(self, metadata: "RulesMetadata", readme_content: str = "") -> str:
         """Build the LLM prompt for rules generation.
 
         Embeds _PAIN_FIRST_PREAMBLE and _WHY_RULE_FORMAT so every generated
@@ -272,7 +272,7 @@ class CoworkRulesCreator(ArtifactGenerator):
 
         tree = build_project_tree(self.project_path)
 
-        snippets: list[str] = []
+        snippets: List[str] = []
         for fname in [
             "main.py",
             "app.py",

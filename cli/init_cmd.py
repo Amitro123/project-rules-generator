@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Optional
 
 import click
 
@@ -16,7 +17,7 @@ _PROVIDER_ENV = {
 }
 
 
-def _key_available(provider: str, explicit_key: str | None) -> bool:
+def _key_available(provider: str, explicit_key: Optional[str]) -> bool:
     if explicit_key:
         return True
     if os.environ.get(_PROVIDER_ENV.get(provider, "")):

@@ -134,8 +134,28 @@ class Design(BaseModel):
 
 
 def _extract_bullets(text: str) -> List[str]:
-    """Pull top-level bullet items from markdown text."""
-    return [m.group(1).strip() for m in re.finditer(r"^-\s+(.+)", text, re.MULTILINE)]
+    """Pull top-level bullet items from markdown text.
+
+    Each bullet may span multiple lines; continuation lines are indented or
+    start with optional whitespace but do NOT start with '- '.
+    """
+    items: List[str] = []
+    current: List[str] = []
+    for line in text.splitlines():
+        if re.match(r"^-\s+", line):
+            if current:
+                items.append(" ".join(current))
+            current = [line.lstrip("- ").strip()]
+        elif current and line.strip() and not re.match(r"^#+\s", line):
+            # continuation line of the current bullet
+            current.append(line.strip())
+        else:
+            if current:
+                items.append(" ".join(current))
+                current = []
+    if current:
+        items.append(" ".join(current))
+    return [item for item in items if item]
 
 
 class DesignGenerator:

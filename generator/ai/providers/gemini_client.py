@@ -7,15 +7,15 @@ from ...utils.encoding import normalize_mojibake
 from ..ai_client import AIClient
 
 try:
-    from google import genai  # type: ignore[import-untyped]
-    from google.genai import types  # type: ignore[import-untyped]
+    from google import genai
+    from google.genai import types
 
     GEMINI_AVAILABLE = True
 except ImportError:
     import types as _stdlib_types
 
-    genai = _stdlib_types.SimpleNamespace(Client=None)  # type: ignore[assignment]
-    types = _stdlib_types.SimpleNamespace(GenerateContentConfig=lambda **kwargs: None)  # type: ignore[assignment]
+    genai = _stdlib_types.SimpleNamespace(Client=None)
+    types = _stdlib_types.SimpleNamespace(GenerateContentConfig=lambda **kwargs: None)
     GEMINI_AVAILABLE = False
 
 

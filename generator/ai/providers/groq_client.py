@@ -45,7 +45,7 @@ class GroqClient(AIClient):
             messages.append({"role": "user", "content": prompt})
             completion = self.client.chat.completions.create(
                 model=model or self.DEFAULT_MODEL,
-                messages=messages,  # type: ignore[arg-type]
+                messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
             )

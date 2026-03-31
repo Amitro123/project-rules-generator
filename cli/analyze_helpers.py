@@ -1,8 +1,37 @@
 """Extracted helper functions for analyze_cmd.py to reduce module complexity."""
 
 from pathlib import Path
+from typing import Optional, Tuple
 
 import click
+
+
+def normalize_analyze_options(
+    mode: Optional[str],
+    provider: Optional[str],
+    auto_generate_skills: bool,
+    ai: bool,
+    constitution: bool,
+) -> Tuple[bool, bool, bool]:
+    """Resolve --mode shortcuts and provider-implied feature flags.
+
+    Returns:
+        (auto_generate_skills, ai, constitution) after applying mode and provider rules.
+    """
+    if mode == "ai":
+        auto_generate_skills = True
+        ai = True
+    elif mode == "constitution":
+        constitution = True
+    # mode == 'manual' changes nothing (no AI)
+
+    # Explicit --provider implies AI intent unless mode is manual
+    if provider is not None and mode != "manual":
+        auto_generate_skills = True
+        ai = True
+        constitution = True
+
+    return auto_generate_skills, ai, constitution
 
 
 def _handle_skill_management(

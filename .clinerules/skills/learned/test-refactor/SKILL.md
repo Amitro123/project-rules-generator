@@ -1,4 +1,4 @@
-﻿---
+---
 name: test-refactor
 description: TEST refactor for this project
 auto_triggers:
