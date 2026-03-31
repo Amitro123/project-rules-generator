@@ -123,8 +123,8 @@ Branch: `improve/code-review-fixes`
 | Priority | Finding | Where | Notes |
 |---|---|---|---|
 | ~~HIGH~~ ✅ | ~~`TaskImplementationAgent` parses LLM `[FILE: path]` blocks without validating paths~~ | `generator/planning/task_agent.py` | Fixed: `_sanitize_path()` rejects absolute paths, `..` traversal, empty strings; `_parse_response` raises `SecurityError` on unsafe path |
-| MEDIUM | `AgentWorkflow._get_project_context()` silently swallows all exceptions → `None` | `generator/planning/workflow.py` | Narrow the `except Exception` to log real errors |
-| MEDIUM | `ProjectManager.phase2_verify()` logs failures but does not halt | `generator/planning/project_manager.py` | Should raise or return a failure status |
+| ~~MEDIUM~~ ✅ | ~~`AgentWorkflow._get_project_context()` silently swallows all exceptions → `None`~~ | `generator/planning/workflow.py` | Fixed: logs `WARNING` with the exception message |
+| ~~MEDIUM~~ ✅ | ~~`ProjectManager.phase2_verify()` logs failures but does not halt~~ | `generator/planning/project_manager.py` | Fixed: raises `RuntimeError` listing failed checks |
 | MEDIUM | README claims "full context" / "deep analysis" — overstated vs shallow `ProjectAnalyzer` | `README.md` | Soften language to match actual heuristic-based implementation |
 | LOW | Magic numbers in `ai_strategy.py` (`_ANALYSIS_TIMEOUT_SECS = 10`) and string literals in `StructureAnalyzer` | `generator/ai/ai_strategy.py`, `generator/analyzers/structure_analyzer.py` | Extract to named constants |
 | LOW | Diff review before file write (confirm *before* writing, not after tests run) | `generator/planning/autopilot.py` | UX change — show diff, prompt user, then write |
