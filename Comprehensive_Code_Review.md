@@ -122,7 +122,7 @@ Branch: `improve/code-review-fixes`
 
 | Priority | Finding | Where | Notes |
 |---|---|---|---|
-| HIGH | `TaskImplementationAgent` parses LLM `[FILE: path]` blocks without validating paths | `generator/planning/task_agent.py` | Path traversal still possible at the agent parsing layer; our `_validate_write_path` only guards the write step |
+| ~~HIGH~~ ✅ | ~~`TaskImplementationAgent` parses LLM `[FILE: path]` blocks without validating paths~~ | `generator/planning/task_agent.py` | Fixed: `_sanitize_path()` rejects absolute paths, `..` traversal, empty strings; `_parse_response` raises `SecurityError` on unsafe path |
 | MEDIUM | `AgentWorkflow._get_project_context()` silently swallows all exceptions → `None` | `generator/planning/workflow.py` | Narrow the `except Exception` to log real errors |
 | MEDIUM | `ProjectManager.phase2_verify()` logs failures but does not halt | `generator/planning/project_manager.py` | Should raise or return a failure status |
 | MEDIUM | README claims "full context" / "deep analysis" — overstated vs shallow `ProjectAnalyzer` | `README.md` | Soften language to match actual heuristic-based implementation |
