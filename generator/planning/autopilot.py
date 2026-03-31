@@ -148,20 +148,29 @@ class AutopilotOrchestrator:
             except SecurityError as e:
                 logger.error(f"🔒 Security violation in task #{nxt.id}: {e}")
                 if main_branch:
-                    git_ops.checkout(main_branch, self.project_path)
-                    git_ops.rollback_to_head(self.project_path)
+                    try:
+                        git_ops.checkout(main_branch, self.project_path)
+                        git_ops.rollback_to_head(self.project_path)
+                    except Exception as cleanup_exc:
+                        logger.warning("Cleanup failed after security error: %s", cleanup_exc)
                 break
             except (OSError, IOError) as e:
                 logger.error(f"❌ File I/O error in task #{nxt.id}: {e}")
                 if main_branch:
-                    git_ops.checkout(main_branch, self.project_path)
-                    git_ops.rollback_to_head(self.project_path)
+                    try:
+                        git_ops.checkout(main_branch, self.project_path)
+                        git_ops.rollback_to_head(self.project_path)
+                    except Exception as cleanup_exc:
+                        logger.warning("Cleanup failed after I/O error: %s", cleanup_exc)
                 break
             except RuntimeError as e:
                 logger.error(f"❌ Task #{nxt.id} failed: {e}")
                 if main_branch:
-                    git_ops.checkout(main_branch, self.project_path)
-                    git_ops.rollback_to_head(self.project_path)
+                    try:
+                        git_ops.checkout(main_branch, self.project_path)
+                        git_ops.rollback_to_head(self.project_path)
+                    except Exception as cleanup_exc:
+                        logger.warning("Cleanup failed after runtime error: %s", cleanup_exc)
                 break
 
     # ── Private helpers ───────────────────────────────────────────────────────
@@ -279,7 +288,7 @@ class AutopilotOrchestrator:
         structured-fields schema (goal/files/changes/tests empty).
         """
         # Prefer structured data stored in the manifest entry (new schema)
-        if entry.goal or entry.files:
+        if entry.goal or entry.files or entry.changes or entry.tests:
             return SubTask(
                 id=entry.id,
                 title=entry.title,
@@ -289,6 +298,7 @@ class AutopilotOrchestrator:
                 tests=list(entry.tests),
                 dependencies=entry.dependencies,
                 estimated_minutes=entry.estimated_minutes,
+                type=Path(entry.file).suffix.lstrip(".") or "py",
             )
 
         # Legacy fallback: parse the individual task markdown file

@@ -1,3 +1,4 @@
+import subprocess
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -193,3 +194,62 @@ def test_execution_loop_rejection(orchestrator):
         mock_git.rollback_to_head.assert_called()
         mock_git.delete_branch.assert_called()
         mock_executor_instance.complete_task.assert_not_called()
+
+
+def test_load_subtask_details_only_changes(tmp_path):
+    """Entries with only changes (no goal/files) still use structured path."""
+    orch = AutopilotOrchestrator(project_path=tmp_path, verbose=False)
+    entry = TaskEntry(
+        id=2,
+        file="task002-refactor.py",
+        title="Refactor",
+        changes=["Remove dead code"],
+    )
+    subtask = orch._load_subtask_details(entry)
+    assert subtask.title == "Refactor"
+    assert subtask.changes == ["Remove dead code"]
+    assert subtask.goal == "Refactor"  # falls back to title
+
+
+def test_load_subtask_details_preserves_type(tmp_path):
+    """Structured branch preserves file extension as task type."""
+    orch = AutopilotOrchestrator(project_path=tmp_path, verbose=False)
+    entry = TaskEntry(
+        id=3,
+        file="task003-update.ts",
+        title="Update types",
+        goal="Add TypeScript types",
+        files=["src/types.ts"],
+    )
+    subtask = orch._load_subtask_details(entry)
+    assert subtask.type == "ts"
+
+
+def test_cleanup_failure_does_not_swallow_original_error(tmp_path):
+    """If git cleanup raises, the original error is not swallowed."""
+    import generator.planning.autopilot as autopilot_mod
+
+    orch = AutopilotOrchestrator(project_path=tmp_path, verbose=False)
+
+    manifest = MagicMock()
+    entry = TaskEntry(id=1, file="task001.md", title="T", status="pending")
+    manifest.__iter__ = MagicMock(return_value=iter([]))
+
+    executor = MagicMock()
+    executor.get_next_task.return_value = entry
+    subtask = SubTask(id=1, title="T", goal="g", files=[], changes=[], tests=[], dependencies=[])
+
+    with (
+        patch.object(orch, "_load_subtask_details", return_value=subtask),
+        patch.object(orch, "_run_tests", return_value=(True, "")),
+        patch.object(orch, "_ask_user", side_effect=SecurityError("bad path")),
+        patch("generator.planning.autopilot.TaskExecutor", return_value=executor),
+        patch("generator.planning.autopilot.TaskImplementationAgent"),
+        patch("generator.planning.autopilot.git_ops") as mock_git,
+    ):
+        mock_git.get_current_branch.return_value = "main"
+        mock_git.create_branch.return_value = None
+        mock_git.checkout.side_effect = subprocess.SubprocessError("git failed")
+
+        # Should NOT raise — cleanup failure is logged, not re-raised
+        orch.execution_loop(manifest)

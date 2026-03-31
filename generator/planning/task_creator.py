@@ -5,11 +5,22 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 
 from generator.task_decomposer import SubTask
+
+
+def _to_str_list(value: Any) -> List[str]:
+    """Normalize a YAML value to a list of non-empty strings."""
+    if not value:
+        return []
+    if isinstance(value, str):
+        return [value] if value.strip() else []
+    if isinstance(value, list):
+        return [str(item) for item in value if item is not None and str(item).strip()]
+    return []
 
 
 class TaskFileStatus(str, Enum):
@@ -70,10 +81,10 @@ class TaskEntry:
             estimated_minutes=data.get("estimated_minutes", 5),
             started_at=data.get("started_at"),
             completed_at=data.get("completed_at"),
-            goal=data.get("goal", ""),
-            files=data.get("files", []),
-            changes=data.get("changes", []),
-            tests=data.get("tests", []),
+            goal=str(data.get("goal", "") or ""),
+            files=_to_str_list(data.get("files")),
+            changes=_to_str_list(data.get("changes")),
+            tests=_to_str_list(data.get("tests")),
         )
 
 
