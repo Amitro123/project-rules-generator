@@ -27,7 +27,7 @@ class SubTask(BaseModel):
     tests: List[str] = Field(default_factory=list, description="Tests to write or verify")
     dependencies: List[int] = Field(default_factory=list, description="IDs of prerequisite subtasks")
     estimated_minutes: int = Field(default=5, ge=1, le=10, description="Time estimate (2-5 min target)")
-    type: str = Field(default="py", description="Task file extension (e.g. py, md)")
+    type: str = Field(default="md", description="Task file extension (md or py)")
 
 
 class TaskDecomposer(ArtifactGenerator):
