@@ -124,15 +124,15 @@ class CoworkSkillCreator:
         """
         return self.discovery.skill_exists(skill_name, scope="learned")
 
-    def save_to_learned(self, skill_name: str, content: str):
-        """Save skill to global learned cache."""
-        # We prefer flat files for simplicity unless it needs resources, but
-        # Cowork flow often uses directories?
-        # Let's use flat .md for now as per previous patterns, or match existing.
-        # implementation_plan said "global/learned/"
+    def save_to_learned(self, skill_name: str, content: str, category: str = "general") -> Path:
+        """Save skill to global learned cache using the standard subfolder layout.
 
-        target = self.discovery.global_learned / f"{skill_name}.md"
-        target.write_text(content, encoding="utf-8")
+        Delegates to SkillPathManager.save_learned_skill() so all callers write
+        to the same layout: global_learned/{category}/{name}/SKILL.md.
+        """
+        from generator.storage.skill_paths import SkillPathManager
+
+        return SkillPathManager.save_learned_skill({"name": skill_name, "content": content}, category)
 
     def link_from_learned(self, skill_name: str):
         """Link a learned skill from Global Cache to Project Local Skills.

@@ -127,9 +127,7 @@ class RulesQualityValidator:
             warnings.append(f"Only {total_rules} rules generated (recommend 10+)")
             score -= 10
 
-        high_priority = sum(
-            1 for rules in rules_by_category.values() for rule in rules if rule.priority == "High"
-        )
+        high_priority = sum(1 for rules in rules_by_category.values() for rule in rules if rule.priority == "High")
         if high_priority < 2:
             warnings.append("Few high-priority rules (recommend 3+)")
             score -= 5
@@ -139,11 +137,7 @@ class RulesQualityValidator:
             issues.extend(conflicts)
             score -= len(conflicts) * 10
 
-        if not any(
-            rule.source.endswith("_patterns")
-            for rules in rules_by_category.values()
-            for rule in rules
-        ):
+        if not any(rule.source.endswith("_patterns") for rules in rules_by_category.values() for rule in rules):
             warnings.append("No tech-specific rules (may be too generic)")
             score -= 5
 

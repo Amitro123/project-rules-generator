@@ -175,7 +175,9 @@ def analyze(
             sys.exit(1)
 
     # Resolve mode shortcuts and provider-implied flags
-    auto_generate_skills, ai, constitution = normalize_analyze_options(mode, provider, auto_generate_skills, ai, constitution)
+    auto_generate_skills, ai, constitution = normalize_analyze_options(
+        mode, provider, auto_generate_skills, ai, constitution
+    )
 
     # Create output directory
     output_dir = project_path / output

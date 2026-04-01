@@ -59,7 +59,6 @@ class QualityReport:
     conflicts: List[str] = field(default_factory=list)  # Contradictory rules
 
 
-
 class CoworkRulesCreator(ArtifactGenerator):
     """
     Generates Cowork-quality rules for PRG projects.

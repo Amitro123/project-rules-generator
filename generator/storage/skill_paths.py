@@ -116,15 +116,15 @@ class SkillPathManager:
         if source_type == "builtin":
             name = parts[-1]
             base = cls.GLOBAL_BUILTIN
-            # Check various extensions and structures
+            # Prefer subfolder layout (name/SKILL.md) — matches the canonical export format
+            dir_path = base / name / "SKILL.md"
+            if dir_path.exists():
+                return dir_path
+            # Fallback: flat file layout (legacy)
             for ext in (".md", ".yaml", ".yml"):
                 path = base / f"{name}{ext}"
                 if path.exists():
                     return path
-            # Check directory style
-            dir_path = base / name / "SKILL.md"
-            if dir_path.exists():
-                return dir_path
 
         elif source_type == "learned":
             if len(parts) >= 3:
