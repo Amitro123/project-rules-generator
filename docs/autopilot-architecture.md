@@ -21,7 +21,7 @@ to approve/skip/stop — with full git branch isolation per task.
 ## Two Entry Points
 
 ```
-prg copilot <task>                     prg lifecycle
+prg autopilot <task>                   prg manager
       │                                      │
       ▼                                      ▼
 AutopilotOrchestrator                  ProjectManager
