@@ -169,3 +169,29 @@ class TestPreflightChecker:
         path = checker._find_design_file()
         assert path is not None
         assert "add-redis" in path.name
+
+    def test_rules_md_accepted(self, tmp_path):
+        """prg init writes rules.md — preflight must accept it (CR0104 fix)."""
+        proj = self._make_project(tmp_path, rules=False)
+        clinerules = tmp_path / ".clinerules"
+        clinerules.mkdir(parents=True, exist_ok=True)
+        (clinerules / "rules.md").write_text("# Rules\n", encoding="utf-8")
+        checker = PreflightChecker(proj)
+        result = checker._check_rules_json()
+        assert result.passed
+        assert "rules.md" in result.detail
+
+    def test_rules_json_still_accepted(self, tmp_path):
+        """rules.json (from prg analyze) must still pass preflight."""
+        proj = self._make_project(tmp_path)  # _make_project writes rules.json
+        checker = PreflightChecker(proj)
+        result = checker._check_rules_json()
+        assert result.passed
+
+    def test_no_rules_fix_command_points_to_init(self, tmp_path):
+        """fix_command should suggest prg init when no rules file exists."""
+        proj = self._make_project(tmp_path, rules=False)
+        checker = PreflightChecker(proj)
+        result = checker._check_rules_json()
+        assert not result.passed
+        assert "prg init" in result.fix_command

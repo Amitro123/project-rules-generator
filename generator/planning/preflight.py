@@ -73,10 +73,12 @@ class PreflightChecker:
     # -- Individual checks ------------------------------------------------
 
     def _check_rules_json(self) -> CheckResult:
-        """Check that rules.json exists in .clinerules/."""
+        """Check that a rules file exists in .clinerules/ (rules.json or rules.md)."""
         candidates = [
             self.project_path / ".clinerules" / "rules.json",
+            self.project_path / ".clinerules" / "rules.md",
             self.project_path / "rules.json",
+            self.project_path / "rules.md",
         ]
         for p in candidates:
             if p.exists():
@@ -84,13 +86,13 @@ class PreflightChecker:
                     name="rules.json",
                     passed=True,
                     path=str(p),
-                    detail="Project rules found.",
+                    detail=f"Project rules found ({p.name}).",
                 )
         return CheckResult(
             name="rules.json",
             passed=False,
-            fix_command="prg analyze .",
-            detail="No rules.json found. Run analyze first.",
+            fix_command="prg init .",
+            detail="No rules file found. Run 'prg init .' to generate rules.md.",
         )
 
     def _check_skills(self) -> CheckResult:
