@@ -17,6 +17,7 @@ Project Rules Generator offers a suite of tools to analyze your codebase and gen
 | **Skill Management** (`--create-skill`, `--list-skills`) | Managing your learned/project skills library | Instant | No | ✅ |
 | **`prg init`** | First-run wizard — detect stack, generate rules, print next steps | Fast | No | ✅ |
 | **`prg skills list/validate/show`** | Sub-commands for skill inspection and validation | Instant | No | ✅ |
+| **Spec Generation** | LLM-generated `spec.md` (Overview, Goals, User Stories, Acceptance Criteria) | Medium | Yes | ✅ |
 
 ---
 
@@ -44,9 +45,8 @@ prg analyze .
 
 **Command**:
 ```bash
-prg analyze . --auto-generate-skills --ai --api-key YOUR_KEY
-# Or shorter:
-prg analyze . --mode ai --api-key YOUR_KEY
+prg analyze . --ai
+prg analyze . --ai --provider anthropic   # force a specific provider
 ```
 
 **Output**:
@@ -73,7 +73,7 @@ prg analyze . --mode ai --api-key YOUR_KEY
 | :--- | :--- | :--- | :--- |
 | **Groq** | Llama 3.1 8b | ⚡⚡⚡ | Free |
 | **Gemini** | Gemini 2.0 Flash | ⚡⚡ | Free |
-| **Claude** | Sonnet 3.5 | ⚡ | Paid |
+| **Claude** | Sonnet 4.6 | ⚡ | Paid |
 
 ### Feature 3: Incremental Mode ⚡ NEW
 **What it does**: Only regenerates sections rules that have changed since the last run (3-5x faster on large projects).
@@ -185,16 +185,18 @@ prg analyze . --constitution
 **Commands**:
 ```bash
 # List all available skills
-prg analyze . --list-skills
+prg skills list
+prg skills list --all        # include builtin skills
 
-# Add specific skill
-prg analyze . --add-skill builtin/brainstorming
+# View a skill's content
+prg skills show fastapi-endpoints
 
-# Remove skill
-prg analyze . --remove-skill test-driven-development
+# Validate quality score
+prg skills validate my-skill
 
-# Add custom skill from file
-prg analyze . --add-skill ~/my-team-workflow.md
+# Create a new skill
+prg analyze . --create-skill "auth-flow" --ai
+prg analyze . --create-skill "deploy-checklist" --scope project
 ```
 
 **Output**:
@@ -263,4 +265,50 @@ prg manager .
 4.  **Summary**: Generates `PROJECT-COMPLETION.md`.
 
 **Use Case**: When you want a structured, professional workflow that guarantees documentation and process compliance.
+
+---
+
+### Feature 11: Spec Generation 📋
+
+**What it does**: Uses an LLM to generate a structured `spec.md` — a complete project specification document covering Overview, Goals, User Personas, User Stories, Constraints, Acceptance Criteria, and Out of Scope sections.
+
+**Command**:
+```bash
+# Triggered automatically by prg manager when spec.md is missing
+prg manager .
+
+# Or invoke directly via the planning pipeline
+prg plan "Add authentication system"   # generates PLAN.md; spec.md auto-generated if absent
+```
+
+**Output (`spec.md`)**:
+```markdown
+# Project Specification
+
+## Overview
+One paragraph describing what the project does, who it's for, and the core problem it solves.
+
+## Goals
+- Concrete, measurable outcome 1
+- Concrete, measurable outcome 2
+
+## User Personas
+**Developer** (Backend Engineer) — needs to generate project rules without manual setup.
+
+## User Stories
+As a developer, I want rules auto-generated so that every AI session starts with project context.
+
+## Constraints
+- Python 3.8+ compatibility required
+- Must work offline (no API key required for basic analysis)
+
+## Acceptance Criteria
+1. Given a project with README.md, when `prg manager .` runs, then spec.md is generated.
+
+## Out of Scope
+- Web UI or dashboard
+- Real-time collaboration features
+```
+
+**Use Case**: Onboarding new contributors, aligning stakeholders on project scope, or feeding structured requirements into the autopilot/planning pipeline.
 

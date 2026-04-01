@@ -41,7 +41,7 @@
   ],
   "testing": [
     "**Framework**: pytest",
-    "**Test files**: 56 (551 test cases)",
+    "**Test files**: 58 (573 test cases)",
     "**Test types**: unit, integration",
     "**Fixtures**: shared via `conftest.py`",
     "**Test data**: `tests/fixtures/` directory"
@@ -80,39 +80,18 @@
     "Status report with changes",
     "Recommendations for next steps"
   ],
-  "pre-review_checklist": [
-    "✓ Read every line you changed",
-    "✓ Remove debug statements",
-    "✓ Check for commented-out code",
-    "✓ Verify no secrets/credentials",
-    "✓ All tests pass locally",
-    "✓ New tests for new features",
-    "✓ Edge cases covered",
-    "✓ No skipped/ignored tests without reason",
-    "✓ Follows project style guide",
-    "✓ Functions < 50 lines",
-    "✓ No TODO/FIXME without ticket reference",
-    "✓ Docstrings for public APIs",
-    "✓ README updated if needed",
-    "✓ API docs updated",
-    "✓ CHANGELOG.md entry added",
-    "✓ Comments explain \"why\", not \"what\"",
-    "✓ No unnecessary dependencies added",
-    "✓ If new deps: justify in PR description",
-    "✓ Lock file updated",
-    "✓ No obvious performance issues",
-    "✓ Database queries optimized",
-    "✓ No N+1 queries",
-    "✓ No SQL injection vectors",
-    "✓ User input sanitized",
-    "✓ Authentication/authorization checked",
-    "✓ No sensitive data in logs"
+  "critical": [
+    "Read existing files before modifying them.",
+    "Run tests after any code change and verify they pass.",
+    "Never generate or reference file paths that don't exist in the project.",
+    "Never skip tests or suppress coverage with `--no-cov` / `--no-cover`."
   ],
-  "code_review_self-assessment": [
-    "[✓] All tests pass",
-    "[✓] No debug code",
-    "[✓] Documentation updated",
-    "[file] (+lines, -lines)"
+  "what_changed": [
+    "Bullet point summary of the key changes"
+  ],
+  "test_plan": [
+    "[ ] Unit tests added/updated",
+    "[ ] Manually tested with: <describe scenario>"
   ],
   "5-phase_process": [
     "**Binary Search**: Comment out half the code",
@@ -132,12 +111,6 @@
     "\"failed\"",
     "\"skill\""
   ],
-  "critical": [
-    "Read existing files before modifying them.",
-    "Run tests after any code change and verify they pass.",
-    "Never generate or reference file paths that don't exist in the project.",
-    "Never skip tests or suppress coverage with `--no-cov` / `--no-cover`."
-  ],
   "tech_stack_notes": [
     "`groq`",
     "`gemini`",
@@ -147,5 +120,46 @@
     "`pytest`",
     "`gitpython`",
     "`click`"
+  ],
+  "project_context": [
+    "anthropic",
+    "claude",
+    "click",
+    "gemini",
+    "gitpython",
+    "gpt",
+    "groq",
+    "openai",
+    "pydantic",
+    "pytest",
+    "python",
+    "skills/builtin/code-review.md",
+    "skills/builtin/systematic-debugging.md",
+    "skills/builtin/test-driven-development.md",
+    "skills/learned/api-client-patterns.md",
+    "skills/learned/rate-limiting.md",
+    "skills/learned/response-parsing.md",
+    "skills/learned/retry-error-handling.md",
+    "skills/learned/branch-management.md",
+    "skills/learned/diff-patterns.md",
+    "skills/learned/repo-operations.md",
+    "skills/learned/coverage-patterns.md",
+    "skills/learned/fixture-patterns.md",
+    "skills/learned/mocking-patterns.md",
+    "skills/learned/parametrize-patterns.md",
+    "skills/learned/argparse-patterns.md",
+    "skills/learned/click-commands.md",
+    "skills/learned/config-management.md",
+    "skills/learned/error-handling.md",
+    "'**/*.pyc'",
+    "'**/__pycache__/**'",
+    "'**/.venv/**'",
+    "'**/node_modules/**'",
+    "'**/*-skills.md'",
+    "'**/*-skills.json'",
+    "'**/.clinerules*'",
+    "tests/",
+    "docs/",
+    ">\\n"
   ]
 }

@@ -1,13 +1,13 @@
 """Autopilot orchestrator — manages the end-to-end discovery and execution loop."""
 
 import logging
-import re
 import subprocess
 from pathlib import Path
 from typing import Optional, Tuple
 
 import click
 
+from generator.exceptions import SecurityError
 from generator.planning.task_agent import TaskImplementationAgent
 from generator.planning.task_creator import TaskManifest
 from generator.planning.task_executor import TaskExecutor
@@ -93,7 +93,7 @@ class AutopilotOrchestrator:
                 try:
                     git_ops.create_branch(branch_name, self.project_path)
                     logger.info(f"🌿 Branch: {branch_name}")
-                except Exception as e:
+                except (OSError, subprocess.SubprocessError) as e:
                     logger.warning(f"⚠️  Branch creation failed: {e}")
 
             try:
@@ -107,7 +107,7 @@ class AutopilotOrchestrator:
                 )
 
                 for fpath, content in changes.items():
-                    full_path = self.project_path / fpath
+                    full_path = self._validate_write_path(fpath)
                     full_path.parent.mkdir(parents=True, exist_ok=True)
                     full_path.write_text(content, encoding="utf-8")
                     logger.info(f"   ✅ {fpath}")
@@ -145,11 +145,32 @@ class AutopilotOrchestrator:
                     self._print_summary(completed, skipped)
                     break
 
-            except Exception as e:
+            except SecurityError as e:
+                logger.error(f"🔒 Security violation in task #{nxt.id}: {e}")
+                if main_branch:
+                    try:
+                        git_ops.checkout(main_branch, self.project_path)
+                        git_ops.rollback_to_head(self.project_path)
+                    except Exception as cleanup_exc:
+                        logger.warning("Cleanup failed after security error: %s", cleanup_exc)
+                break
+            except (OSError, IOError) as e:
+                logger.error(f"❌ File I/O error in task #{nxt.id}: {e}")
+                if main_branch:
+                    try:
+                        git_ops.checkout(main_branch, self.project_path)
+                        git_ops.rollback_to_head(self.project_path)
+                    except Exception as cleanup_exc:
+                        logger.warning("Cleanup failed after I/O error: %s", cleanup_exc)
+                break
+            except RuntimeError as e:
                 logger.error(f"❌ Task #{nxt.id} failed: {e}")
                 if main_branch:
-                    git_ops.checkout(main_branch, self.project_path)
-                    git_ops.rollback_to_head(self.project_path)
+                    try:
+                        git_ops.checkout(main_branch, self.project_path)
+                        git_ops.rollback_to_head(self.project_path)
+                    except Exception as cleanup_exc:
+                        logger.warning("Cleanup failed after runtime error: %s", cleanup_exc)
                 break
 
     # ── Private helpers ───────────────────────────────────────────────────────
@@ -181,7 +202,7 @@ class AutopilotOrchestrator:
             return False, "Tests timed out after 120s."
         except FileNotFoundError:
             return True, f"Test runner '{runner}' not found — skipping."
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError) as e:
             return False, f"Test execution error: {e}"
 
     def _detect_test_runner(self, subtask: SubTask) -> Tuple[Optional[str], list]:
@@ -247,8 +268,42 @@ class AutopilotOrchestrator:
         logger.info(f"   ⏭️  Skipped   : {skipped}")
         logger.info(f"{'=' * 60}")
 
+    def _validate_write_path(self, fpath: str) -> Path:
+        """Resolve and validate that fpath stays within project_path.
+
+        Raises:
+            SecurityError: if the resolved path escapes the project directory.
+        """
+        full_path = (self.project_path / fpath).resolve()
+        try:
+            full_path.relative_to(self.project_path)
+        except ValueError:
+            raise SecurityError(f"LLM attempted to write outside project root: {fpath!r} → {full_path}")
+        return full_path
+
     def _load_subtask_details(self, entry) -> SubTask:
-        """Load full SubTask details from the task file."""
+        """Build a SubTask from structured manifest fields.
+
+        Falls back to reading the task file when the manifest predates the
+        structured-fields schema (goal/files/changes/tests empty).
+        """
+        # Prefer structured data stored in the manifest entry (new schema)
+        if entry.goal or entry.files or entry.changes or entry.tests:
+            return SubTask(
+                id=entry.id,
+                title=entry.title,
+                goal=entry.goal or entry.title,
+                files=list(entry.files),
+                changes=list(entry.changes),
+                tests=list(entry.tests),
+                dependencies=entry.dependencies,
+                estimated_minutes=entry.estimated_minutes,
+                type=Path(entry.file).suffix.lstrip(".") or "py",
+            )
+
+        # Legacy fallback: parse the individual task markdown file
+        import re
+
         task_file = self.project_path / "tasks" / entry.file
         content = task_file.read_text(encoding="utf-8")
 

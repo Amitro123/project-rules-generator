@@ -366,6 +366,9 @@ def analyze(
         click.echo(f"❌ Error: {e}", err=True)
         sys.exit(1)
 
+    except click.exceptions.Exit:
+        raise
+
     except Exception as e:
         if verbose:
             import traceback

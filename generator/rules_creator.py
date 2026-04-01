@@ -543,7 +543,7 @@ class CoworkRulesCreator(ArtifactGenerator):
             )
             rules.append(
                 Rule(
-                    "Maintain test coverage above 70%",
+                    "Maintain test coverage above 90%",
                     priority="Medium",
                     category="Testing",
                 )

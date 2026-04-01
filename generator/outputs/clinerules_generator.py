@@ -44,9 +44,7 @@ def generate_clinerules(
             name = parts[-1]
 
             if output_dir:
-                # Use the skill name as filename (not the resolved path which
-                # may be generic "SKILL.md" for directory-style skills)
-                rel_path = f"skills/builtin/{name}.md"
+                rel_path = f"skills/builtin/{name}/SKILL.md"
             else:
                 global_path = SkillPathManager.GLOBAL_BUILTIN / f"{name}.md"
                 if not global_path.exists():
@@ -77,8 +75,7 @@ def generate_clinerules(
                 name = parts[-1]
 
             if output_dir:
-                # Use the skill name as filename (consistent with copy logic)
-                rel_path = f"skills/learned/{name}.md"
+                rel_path = f"skills/learned/{name}/SKILL.md"
             else:
                 global_path = SkillPathManager.GLOBAL_LEARNED / category / f"{name}.md"
                 if not global_path.exists():

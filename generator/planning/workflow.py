@@ -247,5 +247,6 @@ class AgentWorkflow:
 
             parser = EnhancedProjectParser(self.project_path)
             return parser.extract_full_context()
-        except Exception:
+        except Exception as exc:
+            logger.warning("Could not extract project context: %s", exc)
             return None

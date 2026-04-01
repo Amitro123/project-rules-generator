@@ -280,7 +280,9 @@ class SkillGenerator(ArtifactGenerator):
         project_path_str = str(project_path) if project_path else None
         for skill_name in skill_names:
             action = reuse_map.get(skill_name, "create")
-            dest = target_dir / f"{skill_name}.md"
+            # Always use the subfolder/SKILL.md layout
+            dest = target_dir / skill_name / "SKILL.md"
+            dest.parent.mkdir(parents=True, exist_ok=True)
 
             if action == "reuse":
                 # Rich global skill exists — copy it to project dir as-is
@@ -318,7 +320,8 @@ class SkillGenerator(ArtifactGenerator):
             elif action == "create":
                 # No global skill — write to project dir and save to global learned
                 dest.write_text(skill_content or "", encoding="utf-8")
-                global_dest = self.discovery.global_learned / f"{skill_name}.md"
+                global_dest = self.discovery.global_learned / skill_name / "SKILL.md"
+                global_dest.parent.mkdir(parents=True, exist_ok=True)
                 if not global_dest.exists():
                     global_dest.write_text(skill_content or "", encoding="utf-8")
                     print(f"  [create] {skill_name} (saved to global learned)")

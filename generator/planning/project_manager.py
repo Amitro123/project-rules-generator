@@ -93,18 +93,7 @@ class ProjectManager:
         # Group 1: Analysis (rules, skills)
         if any(x in missing for x in [".clinerules/rules.md", ".clinerules/skills/index.md"]):
             logger.info("   ⚙️  Running analysis (rules + skills)...")
-            # We can use AgentWorkflow's internal or call specific commands.
-            # Using AgentWorkflow.run_setup() covers a lot, but might be too broad.
-            # Let's use the CLI logic roughly:
-            from click.testing import CliRunner
-
-            from cli.analyze_cmd import analyze
-
-            runner = CliRunner()
-            args = [str(self.project_path), "--no-commit"]
-            if self.api_key:
-                args.append("--ai")
-            runner.invoke(analyze, args, catch_exceptions=False)
+            self._generate_rules_and_skills()
 
         # Group 2: Planning (PLAN.md, tasks/)
         if "PLAN.md" in missing or "tasks/TASKS.yaml" in missing:
@@ -140,6 +129,7 @@ class ProjectManager:
         import subprocess
 
         from generator.ai.factory import create_ai_client
+        from generator.prompts.spec_generation import SPEC_GENERATION_PROMPT, SPEC_SYSTEM_MESSAGE
         from generator.utils.readme_bridge import build_project_tree, is_readme_sufficient
 
         client = create_ai_client(provider=self.provider, api_key=self.api_key)
@@ -179,49 +169,12 @@ class ProjectManager:
 
         context_block = "\n\n".join(context_parts)
 
-        prompt = f"""You are a senior product manager. Based on the project context below, write a complete **spec.md** document.
-
----
-{context_block}
----
-
-Generate a spec.md with EXACTLY these sections (use the headings verbatim):
-
-# Project Specification
-
-## Overview
-One paragraph: what this project does, who it's for, and the core problem it solves.
-
-## Goals
-3-5 bullet points. Each goal is a concrete, measurable outcome.
-
-## User Personas
-2-3 short personas. Format: **Name** (Role) — one sentence describing their need.
-
-## User Stories
-5-8 stories in "As a [persona], I want [action] so that [benefit]." format.
-
-## Constraints
-Technical and non-functional constraints (performance, security, compatibility, budget, timeline).
-Use bullets.
-
-## Acceptance Criteria
-Numbered list. Each criterion is testable and unambiguous.
-Format: [ID] Given [context], when [action], then [expected result].
-
-## Out of Scope
-What this project explicitly does NOT cover. 2-4 bullets.
-
-Rules:
-- Be specific to THIS project — no generic filler.
-- Do not include section titles not listed above.
-- Use clean Markdown only.
-"""
+        prompt = SPEC_GENERATION_PROMPT.format(context_block=context_block)
 
         spec_content = client.generate(
             prompt,
             temperature=0.3,
-            system_message="You are a senior product manager. Write precise, actionable project specifications.",
+            system_message=SPEC_SYSTEM_MESSAGE,
         )
 
         # Encoding safety
@@ -229,6 +182,42 @@ Rules:
 
         (self.project_path / "spec.md").write_text(spec_content, encoding="utf-8")
         logger.info(f"   ✅ Generated spec.md ({len(spec_content.splitlines())} lines)")
+
+    def _generate_rules_and_skills(self) -> None:
+        """Generate rules.md and skills/index.md directly without going through the CLI layer."""
+        from generator.rules_creator import CoworkRulesCreator
+        from generator.skills_manager import SkillsManager
+        from generator.utils.readme_bridge import find_readme
+
+        output_dir = self.project_path / ".clinerules"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build enhanced context
+        enhanced_context = None
+        try:
+            from generator.parsers.enhanced_parser import EnhancedProjectParser
+
+            enhanced_context = EnhancedProjectParser(self.project_path).extract_full_context()
+        except Exception as exc:
+            logger.warning("Enhanced analysis unavailable: %s", exc)
+
+        # README text for rules generation
+        readme_path = find_readme(self.project_path)
+        readme_text = (
+            readme_path.read_text(encoding="utf-8", errors="replace") if readme_path else f"# {self.project_path.name}"
+        )
+
+        # Generate rules.md via CoworkRulesCreator
+        creator = CoworkRulesCreator(self.project_path)
+        content, metadata, _ = creator.create_rules(readme_text, enhanced_context=enhanced_context)
+        creator.export_to_file(content, metadata, output_dir)
+        logger.info("   Generated rules.md")
+
+        # Generate skills index and auto-triggers
+        skills_mgr = SkillsManager(project_path=self.project_path)
+        skills_mgr.save_triggers_json(output_dir)
+        skills_mgr.generate_perfect_index()
+        logger.info("   Generated skills/index.md")
 
     def _update_manager_checklist(self):
         """Create or update PROJECT-MANAGER.md."""
@@ -268,10 +257,8 @@ Rules:
         logger.info(report.format_report())
 
         if not report.all_passed:
-            logger.info("❌ Verification failed. Please fix issues before proceeding.")
-            # In interactive mode we might pause here, but for now we stop.
-            # Or asking user via input?
-            pass
+            failed = [c.name for c in report.failed_checks]
+            raise RuntimeError(f"Readiness verification failed: {', '.join(failed)}. Fix issues before proceeding.")
 
     # -- Phase 3: Copilot -------------------------------------------------
 

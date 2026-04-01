@@ -77,30 +77,59 @@ class ProjectAnalyzer:
             "languages": [],
         }
 
-        # From requirements.txt (Python)
-        req_file = self.project_path / "requirements.txt"
-        if req_file.exists():
-            tech["languages"].append("Python")
-            try:
-                req_content = req_file.read_text(encoding="utf-8", errors="replace").lower()
-                if "fastapi" in req_content:
-                    tech["backend"].append("FastAPI")
-                if "flask" in req_content:
-                    tech["backend"].append("Flask")
-                if "django" in req_content:
-                    tech["backend"].append("Django")
-                if "redis" in req_content:
-                    tech["database"].append("Redis")
-                if "postgresql" in req_content or "psycopg" in req_content:
-                    tech["database"].append("PostgreSQL")
-                if "mysql" in req_content or "pymysql" in req_content:
-                    tech["database"].append("MySQL")
-                if "whisper" in req_content or "openai-whisper" in req_content:
-                    tech["backend"].append("Whisper")
-                if "gemini" in req_content or "google-generativeai" in req_content:
-                    tech["backend"].append("Gemini")
-            except OSError:
-                pass
+        # Gather raw text from all Python dependency sources
+        dep_content = ""
+        for dep_file in ["requirements.txt", "requirements-dev.txt", "pyproject.toml", "setup.cfg", "Pipfile"]:
+            dep_path = self.project_path / dep_file
+            if dep_path.exists():
+                tech["languages"].append("Python")
+                try:
+                    dep_content += dep_path.read_text(encoding="utf-8", errors="replace").lower()
+                except OSError:
+                    pass
+
+        if dep_content:
+            # Frameworks
+            if "fastapi" in dep_content:
+                tech["backend"].append("FastAPI")
+            if "flask" in dep_content:
+                tech["backend"].append("Flask")
+            if "django" in dep_content:
+                tech["backend"].append("Django")
+            # CLI
+            if "click" in dep_content:
+                tech["backend"].append("Click")
+            # Validation / data
+            if "pydantic" in dep_content:
+                tech["backend"].append("Pydantic")
+            # Testing
+            if "pytest" in dep_content:
+                tech["backend"].append("pytest")
+            # AI providers
+            if "gemini" in dep_content or "google-generativeai" in dep_content:
+                tech["backend"].append("Gemini")
+            if "anthropic" in dep_content:
+                tech["backend"].append("Anthropic")
+            if "openai" in dep_content:
+                tech["backend"].append("OpenAI")
+            if "groq" in dep_content:
+                tech["backend"].append("Groq")
+            # Databases
+            if "redis" in dep_content:
+                tech["database"].append("Redis")
+            if "postgresql" in dep_content or "psycopg" in dep_content:
+                tech["database"].append("PostgreSQL")
+            if "mysql" in dep_content or "pymysql" in dep_content:
+                tech["database"].append("MySQL")
+            # Utilities
+            if "rich" in dep_content:
+                tech["backend"].append("rich")
+            if "jinja2" in dep_content:
+                tech["backend"].append("Jinja2")
+            if "gitpython" in dep_content:
+                tech["backend"].append("GitPython")
+            if "whisper" in dep_content or "openai-whisper" in dep_content:
+                tech["backend"].append("Whisper")
 
         # From package.json (JavaScript/TypeScript)
         pkg_file = self.project_path / "package.json"
@@ -198,6 +227,28 @@ class ProjectAnalyzer:
                     content = file_path.read_text(encoding="utf-8", errors="replace")
                     files[filename] = content[:800]
                     break  # Only one main file
+                except OSError:
+                    pass
+
+        # Sample up to 3 source files from the main source directories
+        # to give the LLM real project patterns (CLI commands, generators, etc.)
+        source_dirs = ["generator", "cli", "src", "app", "backend", "lib"]
+        sampled = 0
+        for src_dir_name in source_dirs:
+            src_dir = self.project_path / src_dir_name
+            if not src_dir.is_dir() or sampled >= 3:
+                break
+            for py_file in sorted(src_dir.glob("*.py"))[:2]:
+                if py_file.name.startswith("_"):
+                    continue
+                try:
+                    content = py_file.read_text(encoding="utf-8", errors="replace")
+                    if len(content) > 100:  # skip empty/tiny files
+                        rel = str(py_file.relative_to(self.project_path))
+                        files[rel] = content[:600]
+                        sampled += 1
+                        if sampled >= 3:
+                            break
                 except OSError:
                     pass
 
