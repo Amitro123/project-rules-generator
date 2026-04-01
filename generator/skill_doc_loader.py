@@ -80,9 +80,7 @@ class SkillDocLoader:
         candidates: List[Path] = []
 
         search_dirs = [self.project_path] + [
-            d
-            for d in self.project_path.iterdir()
-            if d.is_dir() and d.name.lower() in ("docs", "doc", "documentation")
+            d for d in self.project_path.iterdir() if d.is_dir() and d.name.lower() in ("docs", "doc", "documentation")
         ]
 
         for directory in search_dirs:
