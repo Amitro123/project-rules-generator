@@ -19,10 +19,15 @@
     "project has unique workflow in readme"
   ],
   "requesting-code-review": [
-    "task/feature complete",
+    "request code review",
+    "open pr",
+    "make a pr",
+    "create a pull request",
+    "submit for review",
     "ready for review",
-    "can you review?",
-    "creating pr/merge request"
+    "push for review",
+    "i'm done with my changes",
+    "all tests pass, what's next?"
   ],
   "subagent-driven-development": [
     "plan.md exists and user approves execution",
@@ -49,70 +54,9 @@
     "create a plan",
     "starting implementation"
   ],
-  "click-cli": [
-    "working with click integration code",
-    "editing files that import or configure click"
-  ],
-  "failed-ai-skill": [
-    "failed ai skill",
-    "failed",
+  "dup-skill": [
+    "dup skill",
+    "dup",
     "skill"
-  ],
-  "jinja2-template-workflow": [
-    "jinja2",
-    "template",
-    "workflow",
-    "working in backend code: *.py",
-    "working with *.j2 files"
-  ],
-  "missing-dep-skill": [
-    "missing dep skill",
-    "missing",
-    "dep"
-  ],
-  "claude-cowork-workflow": [
-    "create a cowork skill",
-    "generate skill with claude",
-    "run prg with anthropic",
-    "skill creation flow",
-    "cowork skill pipeline",
-    "prg analyze --ai --provider anthropic",
-    "has_tests (tests/ directory with 56 test files)",
-    "has_docs (docs/ directory with 14 docs)",
-    "has_api (generator/skills_manager.py as primary entry point)"
-  ],
-  "debugger": [
-    "debug python",
-    "pdb",
-    "breakpoint"
-  ],
-  "mypy-type-errors": [
-    "mypy errors",
-    "type checking failed",
-    "fix type hints"
-  ],
-  "pytest-debugger": [
-    "debug pytest",
-    "breakpoint in test",
-    "step through tests"
-  ],
-  "readme-improvement": [
-    "improve readme",
-    "update readme",
-    "fix readme",
-    "readme needs work",
-    "readme is outdated"
-  ],
-  "readme-improver": [
-    "improve readme",
-    "readme checklist",
-    "document project"
-  ],
-  "type-checking": [
-    "type checking",
-    "`has_docs`",
-    "`has_tests` \u2014 test suite available",
-    "`has_api` \u2014 api endpoints present",
-    "`has_ci`"
   ]
 }
