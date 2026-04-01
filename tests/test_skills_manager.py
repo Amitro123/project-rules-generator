@@ -4,7 +4,7 @@ import pytest
 from click.testing import CliRunner
 
 from generator.skills_manager import SkillsManager
-from main import main
+from cli.cli import cli as main
 
 
 @pytest.fixture

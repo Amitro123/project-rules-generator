@@ -6,7 +6,7 @@ import pytest
 from click.testing import CliRunner
 
 from generator.task_decomposer import SubTask, TaskDecomposer
-from main import cli
+from cli.cli import cli
 
 
 class TestSubTaskModel:

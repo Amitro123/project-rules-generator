@@ -11,7 +11,7 @@ from generator.extractors.code_extractor import CodeExampleExtractor
 from generator.outputs.clinerules_generator import generate_clinerules
 from generator.parsers.enhanced_parser import EnhancedProjectParser
 from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
-from main import main
+from cli.cli import cli as main
 
 
 class TestEndToEndEnhancedPipeline:

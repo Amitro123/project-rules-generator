@@ -3,7 +3,7 @@
 from click.testing import CliRunner
 
 from generator.constitution_generator import generate_constitution
-from main import main
+from cli.cli import cli as main
 
 
 def _make_enhanced_context(

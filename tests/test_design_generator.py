@@ -5,7 +5,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from generator.design_generator import ArchitectureDecision, Design, DesignGenerator
-from main import cli
+from cli.cli import cli
 
 
 class TestDesignModel:

@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 from click.testing import CliRunner
 
-from main import main
+from cli.cli import cli as main
 
 
 class TestIntegration:
