@@ -313,3 +313,73 @@ class TestCLIIntegration:
         assert (
             result.exit_code == 0
         ), f"Exit code {result.exit_code}.\nOutput:\n{result.output}\nException: {result.exception}"
+
+
+class TestCopySkillFiles:
+    """Unit tests for _copy_skill_files to catch the SameFileError regression."""
+
+    def test_same_file_skipped(self, tmp_path):
+        """When source and dest resolve to the same path (symlinked global dir), skip silently."""
+        import shutil as _shutil
+
+        from cli.analyze_pipeline import _copy_skill_files
+
+        output_dir = tmp_path / ".clinerules"
+        output_dir.mkdir()
+
+        # Simulate a skill file in global dir
+        global_builtin = tmp_path / "global" / "builtin"
+        global_builtin.mkdir(parents=True)
+        skill_file = global_builtin / "code-review" / "SKILL.md"
+        skill_file.parent.mkdir()
+        skill_file.write_text("# Code Review", encoding="utf-8")
+
+        # output_dir/skills/builtin is a symlink to global_builtin (Linux/Mac scenario)
+        skills_builtin = output_dir / "skills" / "builtin"
+        (output_dir / "skills").mkdir()
+        try:
+            skills_builtin.symlink_to(global_builtin)
+        except (OSError, NotImplementedError):
+            _shutil.copytree(str(global_builtin), str(skills_builtin))
+
+        with patch("generator.storage.skill_paths.SkillPathManager.get_skill_path", return_value=skill_file):
+            # Should not raise SameFileError
+            _copy_skill_files(
+                enhanced_selected_skills={"builtin/code-review"},
+                output_dir=output_dir,
+                merge=False,
+                readme_path=None,
+                project_name="test",
+                skills_manager=None,
+                verbose=False,
+            )
+
+        # File exists at the correct subfolder path
+        dest = output_dir / "skills" / "builtin" / "code-review" / "SKILL.md"
+        assert dest.exists()
+
+    def test_dest_parent_created(self, tmp_path):
+        """dest.parent directories are created even when they don't exist yet."""
+        from cli.analyze_pipeline import _copy_skill_files
+
+        output_dir = tmp_path / ".clinerules"
+        output_dir.mkdir()
+
+        skill_file = tmp_path / "global" / "builtin" / "brainstorming.md"
+        skill_file.parent.mkdir(parents=True)
+        skill_file.write_text("# Brainstorming", encoding="utf-8")
+
+        with patch("generator.storage.skill_paths.SkillPathManager.get_skill_path", return_value=skill_file):
+            _copy_skill_files(
+                enhanced_selected_skills={"builtin/brainstorming"},
+                output_dir=output_dir,
+                merge=False,
+                readme_path=None,
+                project_name="test",
+                skills_manager=None,
+                verbose=False,
+            )
+
+        dest = output_dir / "skills" / "builtin" / "brainstorming" / "SKILL.md"
+        assert dest.exists()
+        assert dest.read_text(encoding="utf-8") == "# Brainstorming"
