@@ -103,7 +103,8 @@ class PreflightChecker:
                 fix_command="prg analyze .",
                 detail="No skills directory found.",
             )
-        md_files = list(skills_dir.glob("*.md"))
+        # Skills can be flat (*.md) or subfolder layout (*/SKILL.md)
+        md_files = list(skills_dir.glob("*.md")) + list(skills_dir.glob("*/SKILL.md"))
         count = len(md_files)
         if count >= 3:
             return CheckResult(

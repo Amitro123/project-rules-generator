@@ -87,6 +87,9 @@ tests/test_samples/sample-project/skills/learned/konva/konva-nesting-canvas.md
 tests/test_samples/sample-project/skills/learned/test-refactor/SKILL.md
 amitro_todo.md
 
+# Auto-generated project skills (created by prg analyze)
+.clinerules/skills/project/
+
 # BMAD
 _bmad/
 _bmad-output/

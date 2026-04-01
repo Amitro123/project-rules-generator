@@ -312,3 +312,40 @@ As a developer, I want rules auto-generated so that every AI session starts with
 
 **Use Case**: Onboarding new contributors, aligning stakeholders on project scope, or feeding structured requirements into the autopilot/planning pipeline.
 
+---
+
+### Feature 12: Self-Review 🔍
+
+**What it does**: Critiques a generated artifact (PLAN.md, skill file, design doc) for quality issues and hallucinations using an LLM + static analysis pass. Detects fabricated file paths, invented library names, and project-specific inconsistencies by cross-referencing the README.
+
+**Command**:
+```bash
+prg review PLAN.md
+prg review .clinerules/skills/learned/my-skill/SKILL.md --project-path .
+prg review DESIGN.md --output CRITIQUE.md --tasks
+```
+
+**Options**:
+- `--project-path` — project root for README context (default: `.`)
+- `--output` / `-o` — where to write the critique (default: `CRITIQUE.md` next to input)
+- `--tasks` — also generate an actionable task list from the review findings
+- `--provider` — AI provider override
+
+**Output (`CRITIQUE.md`)**:
+```markdown
+# Review Report
+
+**Verdict**: needs_revision
+**Score**: 62/100
+
+## Issues
+- Hallucinated import: `from mylib.utils import helper` — not found in README
+
+## Suggestions
+- Add concrete example commands to the Process section
+```
+
+**Fallback**: When the LLM is unavailable, a static hallucination check still runs — detecting invented `src/` paths and common placeholder patterns.
+
+**Use Case**: Quality-gate generated artifacts before committing them. Especially useful after `prg plan` or `prg design` to catch LLM hallucinations early.
+

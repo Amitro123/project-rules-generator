@@ -122,7 +122,8 @@ class ContentAnalyzer:
                     proposal = self.client.generate("Improve document quality with examples and clear sections.")
                     if isinstance(proposal, str) and len(proposal.strip()) > 0:
                         patch = proposal
-            except Exception:
+            except Exception as exc:
+                logger.debug("LLM improvement call failed, using fallback: %s", exc)
                 patch = None
             if patch is None:
                 # Fallback: add minimal structure to nudge improvement
