@@ -48,6 +48,27 @@ def cleanup_awesome_skills():
         pass
 
 
+def _register_ide_rules(ide: str, project_path: Path, project_name: str, output_dir: Path, verbose: bool):
+    """Write generated rules to IDE-specific location. Returns the written Path or None."""
+    ide = ide.lower().strip()
+    if ide == "antigravity":
+        rules_src = output_dir / "rules.md"
+        if not rules_src.exists():
+            if verbose:
+                click.echo(f"⚠️  IDE registration skipped: {rules_src} not found")
+            return None
+        agents_dir = project_path / ".agents" / "rules"
+        agents_dir.mkdir(parents=True, exist_ok=True)
+        dest = agents_dir / f"{project_name}.md"
+        dest.write_text(rules_src.read_text(encoding="utf-8"), encoding="utf-8")
+        click.echo(f"   Antigravity rules → {dest.relative_to(project_path)}")
+        return dest
+    else:
+        if verbose:
+            click.echo(f"⚠️  IDE '{ide}' not yet supported (supported: antigravity)")
+        return None
+
+
 @click.command(name="analyze")
 @click.argument("project_path", type=click.Path(exists=True, file_okay=False), default=".")
 @click.option("--commit/--no-commit", default=True, help="Auto-commit to git")
@@ -289,6 +310,12 @@ def analyze(
             inc_analyzer=inc_analyzer,
             strategy=strategy,
         )
+
+        # IDE registration — write rules to IDE-specific location
+        if ide:
+            ide_file = _register_ide_rules(ide, project_path, project_name, output_dir, verbose)
+            if ide_file:
+                generated_files.append(str(ide_file))
 
         if interactive:
             from generator.interactive import show_generated_files
