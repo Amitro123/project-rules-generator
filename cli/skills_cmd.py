@@ -1,9 +1,12 @@
 """prg skills — skill inspection and validation sub-commands."""
 
+import logging
 from pathlib import Path
 from typing import Optional
 
 import click
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_skill(name_or_path: str, project_path: Path):
@@ -41,8 +44,8 @@ def _resolve_skill(name_or_path: str, project_path: Path):
                 return skill_file, info["type"]
             if skill_file.parent.name.lower() == name_or_path.lower():
                 return skill_file, info["type"]
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Could not resolve skill %r via SkillsManager: %s", name_or_path, exc)
 
     return None, None
 
@@ -128,8 +131,8 @@ def skills_list(path, show_all):
                 tools_str = " ".join(tools)
             elif isinstance(tools, str):
                 tools_str = tools
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Could not read skill file %s: %s", skill_path, exc)
 
         fm_status = "✓" if has_frontmatter else "✗ no frontmatter"
         rows.append((name, layer, trigger_count, tools_str or "(none)", fm_status))
