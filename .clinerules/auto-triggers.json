@@ -54,9 +54,9 @@
     "create a plan",
     "starting implementation"
   ],
-  "dup-skill": [
-    "dup skill",
-    "dup",
-    "skill"
+  "duplicate-skill": [
+    "duplicate skill",
+    "skill already exists",
+    "duplicate"
   ]
 }

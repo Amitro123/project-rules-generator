@@ -136,6 +136,11 @@ class SkillPathManager:
 
             base = cls.GLOBAL_LEARNED
             if category:
+                # Prefer subfolder layout (category/name/SKILL.md) — matches save_learned_skill output
+                subfolder = base / category / name / "SKILL.md"
+                if subfolder.exists():
+                    return subfolder
+                # Fallback: flat file layout (category/name.md)
                 for ext in (".md", ".yaml", ".yml"):
                     path = base / category / f"{name}{ext}"
                     if path.exists():
@@ -144,6 +149,10 @@ class SkillPathManager:
                 # Search all categories
                 for cat_dir in base.iterdir():
                     if cat_dir.is_dir():
+                        # Prefer subfolder layout first
+                        subfolder = cat_dir / name / "SKILL.md"
+                        if subfolder.exists():
+                            return subfolder
                         for ext in (".md", ".yaml", ".yml"):
                             path = cat_dir / f"{name}{ext}"
                             if path.exists():

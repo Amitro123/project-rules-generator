@@ -106,7 +106,7 @@ class TestPreflightChecker:
         checker = PreflightChecker(proj)
         report = checker.run_checks()
         failed_names = [c.name for c in report.failed_checks]
-        assert "rules.json" in failed_names
+        assert "Rules file" in failed_names
 
     def test_insufficient_skills(self, tmp_path):
         proj = self._make_project(tmp_path, skills=1)

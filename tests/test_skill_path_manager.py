@@ -148,3 +148,32 @@ def test_get_skill_path_yaml_extension_supported(spm):
 
     result = spm.get_skill_path("builtin/some-skill")
     assert result == yaml_file
+
+
+def test_get_skill_path_learned_subfolder_layout(spm):
+    """save_learned_skill writes category/name/SKILL.md — get_skill_path must find it (PR44 bug fix)."""
+    path = spm.save_learned_skill({"name": "async-patterns", "content": "# Async"}, category="fastapi")
+    result = spm.get_skill_path("learned/fastapi/async-patterns")
+    assert result == path
+    assert result.name == "SKILL.md"
+
+
+def test_get_skill_path_learned_subfolder_without_category(spm):
+    """Two-part ref searches all categories for subfolder layout too."""
+    spm.save_learned_skill({"name": "my-skill", "content": "# My"}, category="misc")
+    result = spm.get_skill_path("learned/my-skill")
+    assert result is not None
+    assert result.name == "SKILL.md"
+
+
+def test_get_skill_path_learned_prefers_subfolder_over_flat(spm):
+    """Subfolder layout takes priority over flat file for learned skills."""
+    cat_dir = spm.GLOBAL_LEARNED / "fastapi"
+    cat_dir.mkdir(parents=True)
+    flat = cat_dir / "async-patterns.md"
+    flat.write_text("flat")
+    # Also create subfolder layout
+    spm.save_learned_skill({"name": "async-patterns", "content": "subfolder"}, category="fastapi")
+
+    result = spm.get_skill_path("learned/fastapi/async-patterns")
+    assert result.name == "SKILL.md"

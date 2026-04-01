@@ -83,13 +83,13 @@ class PreflightChecker:
         for p in candidates:
             if p.exists():
                 return CheckResult(
-                    name="rules.json",
+                    name="Rules file",
                     passed=True,
                     path=str(p),
                     detail=f"Project rules found ({p.name}).",
                 )
         return CheckResult(
-            name="rules.json",
+            name="Rules file",
             passed=False,
             fix_command="prg init .",
             detail="No rules file found. Run 'prg init .' to generate rules.md.",
