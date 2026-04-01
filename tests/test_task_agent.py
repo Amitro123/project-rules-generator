@@ -47,6 +47,27 @@ def test_sanitize_rejects_empty(agent):
     assert agent._sanitize_path("   ") is None
 
 
+def test_sanitize_rejects_windows_drive_forward_slash(agent):
+    # C:/tmp/x.py — drive letter with forward slash (LLM on any OS)
+    assert agent._sanitize_path("C:/tmp/x.py") is None
+
+
+def test_sanitize_rejects_unc_path(agent):
+    # \\server\share\x.py — UNC/network path from Windows LLM output
+    assert agent._sanitize_path("\\\\server\\share\\x.py") is None
+
+
+def test_sanitize_normalises_double_slash(agent):
+    # src//foo.py — redundant separators are collapsed
+    assert agent._sanitize_path("src//foo.py") == "src/foo.py"
+
+
+def test_sanitize_strips_trailing_space_in_component(agent):
+    # Trailing space on a path component is stripped
+    result = agent._sanitize_path("path/with trailing space ")
+    assert result == "path/with trailing space"
+
+
 # ── _parse_response ────────────────────────────────────────────────────────
 
 

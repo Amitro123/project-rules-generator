@@ -1,6 +1,7 @@
 """Task implementation agent — generates code changes for a subtask."""
 
 import logging
+import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -68,34 +69,55 @@ Tests to Verify:
     def _sanitize_path(raw: str) -> Optional[str]:
         """Validate and normalise an LLM-supplied file path.
 
-        Accepts only relative paths with no ``..`` components.
-        Returns the normalised POSIX-style path string, or ``None`` if the
-        path is rejected (absolute, contains traversal, or empty).
+        Treats all input as untrusted/hostile regardless of the host OS.
+        Steps:
+          1. Normalize backslashes → forward slashes so Windows-style paths
+             from LLM output are handled identically on Linux and Windows.
+          2. Reject Windows drive letters (``C:/``) and UNC/network paths
+             (``//server``).  pathlib alone is insufficient because
+             ``Path("C:/foo").is_absolute()`` is False on Linux.
+          3. Reject leading slashes (absolute Unix paths).
+          4. Split and rebuild from safe components only — empty segments,
+             ``.`` , and ``..`` are stripped or trigger rejection.
+
+        Returns the normalised POSIX-style relative path string, or ``None``
+        if the path is rejected.
         """
         raw = raw.strip()
         if not raw:
             return None
 
-        try:
-            p = Path(raw)
-        except ValueError:
-            logger.warning("Rejected malformed LLM file path: %r", raw)
+        # Step 1: normalize separators — must happen before any pattern checks
+        normalized = raw.replace("\\", "/")
+
+        # Step 2: reject Windows drive letters (C:/, D:/) and UNC paths (//host)
+        if re.match(r"^[a-zA-Z]:/", normalized):
+            logger.warning("Rejected Windows drive path from LLM: %r", raw)
+            return None
+        if normalized.startswith("//"):
+            logger.warning("Rejected UNC/network path from LLM: %r", raw)
             return None
 
-        # Block absolute paths: pathlib covers Windows (C:\...) and Unix (/)
-        # on their native platforms; the leading-slash check catches Unix-style
-        # paths when running on Windows where Path("/foo").is_absolute() is False.
-        if p.is_absolute() or raw.startswith("/") or raw.startswith("\\"):
-            logger.warning("Rejected absolute LLM file path: %r", raw)
+        # Step 3: reject absolute Unix-style paths
+        if normalized.startswith("/"):
+            logger.warning("Rejected absolute path from LLM: %r", raw)
             return None
 
-        # Block any path traversal component
-        if any(part == ".." for part in p.parts):
-            logger.warning("Rejected path-traversal LLM file path: %r", raw)
+        # Step 4: rebuild from safe components — reject on traversal
+        safe_parts: List[str] = []
+        for part in normalized.split("/"):
+            part = part.strip()
+            if part == "..":
+                logger.warning("Rejected path-traversal from LLM: %r", raw)
+                return None
+            if not part or part == ".":
+                continue  # skip empty segments and redundant current-dir markers
+            safe_parts.append(part)
+
+        if not safe_parts:
             return None
 
-        # Return normalised, forward-slash form
-        return p.as_posix()
+        return "/".join(safe_parts)
 
     def _parse_response(self, response: str) -> Dict[str, str]:
         """Parse the AI response into a dict of {filepath: content}.
