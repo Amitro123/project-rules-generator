@@ -1,11 +1,14 @@
 """Self-review agent for critiquing generated artifacts."""
 
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
 from generator.ai.factory import create_ai_client
+
+logger = logging.getLogger(__name__)
 
 REVIEW_SYSTEM_PROMPT = (
     "You are a document reviewer. Evaluate the provided artifact for quality, "
@@ -93,7 +96,8 @@ class SelfReviewer:
                 system_message=REVIEW_SYSTEM_PROMPT,
             )
             report = self._parse_review(response)
-        except Exception:
+        except Exception as exc:
+            logger.debug("LLM review failed, falling back to static review: %s", exc)
             report = self._static_review(content, readme_excerpt)
 
         # Always run static hallucination check

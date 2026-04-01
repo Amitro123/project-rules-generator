@@ -1,10 +1,13 @@
 """prg init — first-run wizard."""
 
+import logging
 import os
 from pathlib import Path
 from typing import Optional
 
 import click
+
+logger = logging.getLogger(__name__)
 
 from cli._version import __version__
 from cli.utils import detect_provider, set_api_key_env
@@ -71,7 +74,8 @@ def init(project_path, yes, provider, api_key):
             analyzer = ProjectAnalyzer(project_path)
             context = analyzer.analyze()
             tech = sorted(set(sum(context["tech_stack"].values(), [])))
-        except Exception:
+        except Exception as exc:
+            logger.debug("Tech stack detection failed during init: %s", exc)
             tech = []
         project_data = {
             "name": project_path.name,

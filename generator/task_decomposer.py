@@ -1,8 +1,11 @@
 """AI-powered task decomposition into actionable subtasks."""
 
+import logging
 import os
 from pathlib import Path
 from typing import Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 from pydantic import BaseModel, Field
 
@@ -383,7 +386,8 @@ Generate the subtasks now:
 
             client = create_ai_client(self.provider, api_key=self.api_key)
             return client.generate(prompt, max_tokens=5000) or ""
-        except Exception:
+        except Exception as exc:
+            logger.debug("LLM call failed in TaskDecomposer: %s", exc)
             return ""
 
     def _parse_response(self, raw: str, user_task: str) -> List[SubTask]:
