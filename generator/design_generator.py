@@ -440,8 +440,8 @@ NOW generate the complete design following this structure. Be specific, detailed
         if raw.strip():
             try:
                 return Design.from_markdown(raw)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Could not parse LLM output as Design markdown, using template fallback: %s", exc)
 
         # Fallback: Generate comprehensive template-based design
         # This demonstrates production-quality output structure

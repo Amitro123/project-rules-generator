@@ -175,8 +175,8 @@ class ContentAnalyzer:
                     metrics=metrics,
                     output_props=output_props,
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Opik trace logging skipped: %s", exc)
 
         return QualityReport(
             filepath=str(filepath),

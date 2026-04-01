@@ -43,6 +43,19 @@ def test_phase2_verify(manager):
         mock_instance.run_checks.assert_called_once()
 
 
+def test_phase2_verify_raises_on_failure(manager):
+    """Verify Phase 2 raises RuntimeError when preflight checks fail."""
+    with patch("generator.planning.project_manager.PreflightChecker") as MockChecker:
+        mock_report = MockChecker.return_value.run_checks.return_value
+        mock_report.all_passed = False
+        mock_failed = MagicMock()
+        mock_failed.name = "missing-rules"
+        mock_report.failed_checks = [mock_failed]
+
+        with pytest.raises(RuntimeError, match="missing-rules"):
+            manager.phase2_verify()
+
+
 def test_phase3_copilot(manager):
     """Verify Phase 3 delegates to AutopilotOrchestrator."""
     with patch("generator.planning.project_manager.AutopilotOrchestrator") as MockOrch, patch(
