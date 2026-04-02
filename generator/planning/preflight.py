@@ -141,7 +141,11 @@ class PreflightChecker:
         )
 
     def _check_task_files(self) -> CheckResult:
-        """Check that tasks/001-*.md exists."""
+        """Check that a tasks/ directory contains at least one task .md file.
+
+        Accepts both legacy ``001-*.md`` naming and the current ``task001-*.md``
+        naming produced by TaskCreator.
+        """
         tasks_dir = self.project_path / "tasks"
         if not tasks_dir.is_dir():
             return CheckResult(
@@ -150,7 +154,8 @@ class PreflightChecker:
                 fix_command="prg setup <task>",
                 detail="No tasks/ directory found.",
             )
-        task_files = sorted(tasks_dir.glob("0*.md"))
+        # Match both legacy "001-first.md" and current "task001-slug.md" layouts.
+        task_files = sorted(tasks_dir.glob("0*.md")) + sorted(tasks_dir.glob("task[0-9]*.md"))
         if task_files:
             return CheckResult(
                 name="Task files",

@@ -136,6 +136,26 @@ class TestPreflightChecker:
         failed_names = [c.name for c in report.failed_checks]
         assert "Task files" in failed_names
 
+    def test_task_files_task_prefix_naming(self, tmp_path):
+        """TaskCreator generates task001-*.md — preflight must accept that layout."""
+        proj = self._make_project(tmp_path, tasks=False)
+        tasks_dir = tmp_path / "tasks"
+        tasks_dir.mkdir(parents=True)
+        (tasks_dir / "task001-research.md").write_text("# Task 1", encoding="utf-8")
+        checker = PreflightChecker(proj)
+        result = checker._check_task_files()
+        assert result.passed, "task001-*.md naming must be accepted by _check_task_files"
+
+    def test_task_files_legacy_naming_still_works(self, tmp_path):
+        """Legacy 001-*.md naming (manual tasks) must still pass."""
+        proj = self._make_project(tmp_path, tasks=False)
+        tasks_dir = tmp_path / "tasks"
+        tasks_dir.mkdir(parents=True)
+        (tasks_dir / "001-first.md").write_text("# Task 1", encoding="utf-8")
+        checker = PreflightChecker(proj)
+        result = checker._check_task_files()
+        assert result.passed
+
     def test_no_design(self, tmp_path):
         proj = self._make_project(tmp_path, design=False)
         checker = PreflightChecker(proj, task_description="Add cache")

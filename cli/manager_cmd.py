@@ -25,4 +25,8 @@ def manager(project_path, provider, api_key, verbose):
 
     pm = ProjectManager(project_path=project_path, provider=provider, api_key=api_key, verbose=verbose)
 
-    pm.run_lifecycle()
+    try:
+        pm.run_lifecycle()
+    except RuntimeError as exc:
+        click.secho(f"\n❌ {exc}", fg="red", err=True)
+        raise click.exceptions.Exit(1)
