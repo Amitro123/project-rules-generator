@@ -44,6 +44,11 @@ That's it. Your `.clinerules/` is now the memory your AI agents never had.
     └── builtin/          ← Battle-tested best practices, bundled
 ```
 
+**Project Lifecycle Generators (Optional):**
+- `spec.md`: High-level Product Specifications and constraints (Goals, Stories).
+- `DESIGN.md`: Phase 1 Architecture Document detailing technical integrations.
+- `PLAN.md` & `TASKS.json`: Phase 2 AI-driven granular task decomposition.
+
 **Example `rules.md` output for a FastAPI project:**
 
 ```markdown
@@ -77,10 +82,12 @@ export GROQ_API_KEY=gsk_...   # free at console.groq.com
 prg analyze . --ai
 ```
 
-**Full autopilot** — design, plan, code, commit, repeat:
+**Full autopilot or granular workflow** — analyze, design, plan, code, commit, repeat:
 
 ```bash
-prg autopilot . --provider anthropic
+prg analyze . --incremental            # 3-5x faster subsequent runs
+prg design "Add OAuth2 login"          # Two-Stage Planning
+prg autopilot . --provider anthropic   # Full automation loop
 ```
 
 ---
@@ -125,46 +132,44 @@ prg providers benchmark  # Side-by-side quality ranking
 
 ---
 
-## All Commands
+## All Features & Commands
 
-### Analyze & Generate
+### 🔍 1. Analysis & Generation
 
 ```bash
 prg init .                                    # First-run wizard: detect stack, generate rules
 prg analyze .                                 # Regenerate from README + file structure
 prg analyze . --ai                            # AI-powered analysis (LLM-generated skills)
-prg analyze . --ai --provider anthropic       # Force a specific provider
 prg analyze . --incremental                   # Update only what changed (3–5x faster)
 prg analyze . --constitution                  # Also generate constitution.md
-prg analyze . --create-skill "auth-flow" --ai                  # → global learned/ (reusable)
-prg analyze . --create-skill "mypy-type-errors" --scope builtin # → global builtin/ (universal)
-prg analyze . --create-skill "deploy-checklist" --scope project # → .clinerules/skills/project/
 ```
 
-### Plan & Design
+### 🧠 2. Two-Stage Planning & Specs
 
 ```bash
-prg design "Add OAuth2 login"     # Stage 1: architecture document
-prg plan   "Add OAuth2 login"     # Stage 2: implementation plan (PLAN.md + tasks/)
-prg next                          # Execute the next pending task
+prg design "Add OAuth2 login"                 # Stage 1: Generates DESIGN.md architecture document
+prg plan   "Add OAuth2 login"                 # Stage 2: Generates PLAN.md + TASKS.json implementation plan
+        # Note: spec.md is auto-generated if absent during planning
 ```
 
-### Skills
+### 🛠️ 3. Skill Management
 
 ```bash
-prg skills list                   # All skills (project + learned + builtin)
-prg skills list --all             # Include builtin skills
-prg skills show fastapi-endpoints # View a skill's content
-prg skills validate my-skill      # Quality score (must be ≥ 90)
+prg analyze . --create-skill "auth-flow" --ai             # Create a global learned/ reusable skill
+prg analyze . --create-skill "mypy-types" --scope builtin # Create a universal builtin/ skill
+prg skills list --all                                     # List project + learned + builtin skills
+prg skills validate my-skill                              # Run quality checker (score must be ≥ 90)
 ```
 
-### Autopilot
+### 🤖 4. Autonomous Orchestration
 
 ```bash
-prg autopilot .                        # Full loop: discover → plan → code → commit
-prg autopilot . --provider anthropic   # Specify provider
-prg manager .                          # 4-phase lifecycle: setup → verify → execute → report
+prg agent "fix a bug"                         # Smart Orchestration (Maps generic text to an exact skill)
+prg review PLAN.md                            # AI Self-Review mode (Generates CRITIQUE.md scorecard)
+prg autopilot .                               # Full autonomous loop (discover → plan → code → commit)
 ```
+
+*(Note: The Lifecycle Manager `prg manager .` is also theoretically available for complete setup → verify → execute → report cycles).*
 
 ---
 
