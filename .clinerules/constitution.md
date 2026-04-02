@@ -21,7 +21,7 @@
 
 ## Testing Standards
 
-- **Framework**: pytest (58 test files, 573 test cases)
+- **Framework**: pytest (59 test files, 605 test cases)
 - Run `pytest` before merging any changes
 - Use shared fixtures from `conftest.py` — avoid duplicating test setup
 - Store test data in `tests/fixtures/`
