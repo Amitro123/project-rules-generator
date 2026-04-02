@@ -84,6 +84,8 @@
     "**argparse-patterns**: how to add a new cli command, argparse example, command line arguments, define a new cli, cli patterns",
     "**click-commands**: add new cli command, create a command line tool, how to organize commands, test my command line script",
     "**config-management**: manage config, update configuration, config settings",
+    "**test-ai-skill**: how to test ai components, testing llm integrations, validate ai model output, pytest for pydantic and ai",
+    "**test-skill-2**: test skill 2, test, skill",
     "**test-skill**: test skill, test, skill",
     "**ai-provider-integration**: integrate gemini, add ai capabilities, connect to ai provider, setup ai client",
     "**claude-cowork-workflow**: create a cowork skill, generate skill with claude, run prg with anthropic, skill creation flow, cowork skill pipeline, prg analyze --ai --provider anthropic, has_tests (tests/ directory with 56 test files), has_docs (docs/ directory with 14 docs), has_api (generator/skills_manager.py as primary entry point)",
