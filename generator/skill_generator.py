@@ -158,6 +158,20 @@ class SkillGenerator(ArtifactGenerator):
             except OSError:
                 pass  # from_readme is content, not a path — use as-is
 
+        # Auto-read project README when not explicitly provided via --from-readme.
+        # Without this, CoworkStrategy receives no README content and falls back to
+        # the interactive bridge_missing_context prompt even when README.md exists.
+        if not readme_content and project_path:
+            from generator.utils.readme_bridge import find_readme
+
+            readme_path = find_readme(Path(project_path))
+            if readme_path:
+                try:
+                    readme_content = readme_path.read_text(encoding="utf-8", errors="replace")
+                    logger.debug("Auto-read README from %s", readme_path)
+                except OSError:
+                    pass
+
         if readme_content:
             strategies.append(READMEStrategy())
         if project_path:
