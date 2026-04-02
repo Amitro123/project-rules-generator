@@ -174,6 +174,7 @@ class ProjectManager:
         spec_content = client.generate(
             prompt,
             temperature=0.3,
+            max_tokens=4000,
             system_message=SPEC_SYSTEM_MESSAGE,
         )
 

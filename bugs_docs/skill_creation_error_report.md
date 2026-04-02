@@ -58,3 +58,37 @@ In addition to this error flow, these are the bugs documented in `PR_44_BUGS.md`
 ## Primary Bug (This Report)
 
 5. ✅ **FIXED** — **`--create-skill` ignores existing README** (`generator/skill_generator.py:_run_strategy_chain`): Added auto-read of project README via `find_readme()` when `from_readme=None` and `project_path` is set. Regression tests added in `TestAutoReadProjectReadme` (commit `b33dab4`)
+
+## Feature Testing Follow-up
+After validating fixes, I proceeded to test the remaining untouched features as requested:
+* **Incremental Analysis** (`prg analyze . --incremental`): Passed ✅
+* **Constitution Mode** (`prg analyze . --constitution`): Passed ✅
+* **Smart Orchestration** (`prg agent "fix a bug"`): Passed ✅
+* **Task Breakdown** (`prg plan "Auth API"`): Passed ✅
+* **Two-stage Design** (`prg design "Auth system"`): Passed ✅
+
+### 🚨 New Bug Discovered: Project Manager Pipeline Crash
+When attempting to run the **Project Manager Lifecycle** feature (`prg manager .`), the execution crashed and halted throwing a raw stack trace instead of a soft abort or auto-correcting the environment.
+
+**Error Snippet:**
+```text
+RuntimeError: Readiness verification failed: Task files. Fix issues before proceeding.
+```
+
+**Context:** The manager pre-flight `verify()` function immediately threw an unhandled Python `RuntimeError` claiming "Task files" were missing or malformed, even though the pipeline had already generated `TASKS.json` natively. This suggests there is a mismatch between the Task Breakdown outputs and the Manager's readiness expectations (e.g., verifying `tasks/` directory vs `TASKS.json`). As requested, I left this un-fixed and aborted further testing.
+
+### ✅ Autopilot Mode — FIXED
+While testing the **Autopilot flow** (`prg autopilot .`), the application did not crash but appeared to hang indefinitely (over 60 seconds of execution) without console output or progress beyond establishing the API key.
+
+> **Root cause:** `autopilot_cmd.py` and `manager_cmd.py` never called `setup_logging()`, so all `logger.info()` calls were silently dropped. Secondary bug: `workflow._auto_fix()` checked stale name `"rules.json"` (renamed to `"Rules file"`) so auto-fix for missing rules never triggered.
+> ✅ **FIXED** — Added `logging.basicConfig()` at command entry; corrected stale check name (commit `ccaf984`)
+
+### 🚨 Note on Spec Generation 
+The `spec.md` generation explicitly failed to complete. The output file (`spec.md`) was only 4 lines long and abruptly cut off mid-sentence (`...by providing`). It failed to yield any of the structured sections detailed in the project features (Goals, User Stories, Acceptance Criteria, Out of Scope). This suggests a severe token-limit interruption or chunk streaming bug during the LLM generation payload phase.
+
+### Quality Assessment of the Other Output Files
+I have double-checked the content of the other generated files for quality and completeness:
+* ✅ **`constitution.md`**: Flawless. It successfully synthesized 54 lines of code-quality rules, architecture traits (`python-cli`), constraints (`ruff`, `mypy`), and testing patterns. No truncation.
+* ✅ **`DESIGN.md`**: Passed cleanly. Properly sectioned into "Problem Statement", "Architecture Decisions", "API Contracts", and "Success Criteria" without hitting any truncation boundaries.
+* ✅ **`CRITIQUE.md`**: Exceptionally high quality. The reviewer LLM correctly assessed its input and generated a valid review report with actionable feedback.
+* 🚨 **`PLAN.md` & `TASKS.json`**: Both of these outputs suffered the exact same truncation malfunction as `spec.md`. The `PLAN.md` file cuts out entirely midway through the "Changes" block of the very first subtask. Correspondingly, `TASKS.json` only holds 1 single task. The `CRITIQUE.md` explicitly complained about this bug, stating: *"The 'PLAN' is incomplete; it only details one subtask, and the 'Changes' section for that subtask is empty, lacking any actual content or code."*

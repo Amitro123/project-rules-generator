@@ -186,7 +186,7 @@ class ProjectPlanner:
             response = self.client.generate(
                 prompt,
                 temperature=0.5,
-                max_tokens=3000,
+                max_tokens=6000,
                 system_message=ROADMAP_SYSTEM_PROMPT,
             )
             plan = self._parse_roadmap_response(response, readme_content)
