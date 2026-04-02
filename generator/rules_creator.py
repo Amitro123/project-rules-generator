@@ -11,8 +11,11 @@ It generates high-quality, project-specific rules with:
 - Conflict detection
 """
 
+import logging
 import re
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
@@ -356,13 +359,14 @@ class CoworkRulesCreator(ArtifactGenerator):
                     )
 
             if rules_by_category:
-                print(
-                    f"✨ LLM generated {sum(len(v) for v in rules_by_category.values())} rules for unknown tech stack."
+                logger.info(
+                    "LLM generated %d rules for unknown tech stack.",
+                    sum(len(v) for v in rules_by_category.values()),
                 )
                 return dict(rules_by_category)
 
         except Exception as e:
-            print(f"⚠️  LLM rules fallback failed ({e}). Using generic rules.")
+            logger.warning("LLM rules fallback failed (%s). Using generic rules.", e)
 
         # Final fallback — return empty so _generate_rules continues to generic
         return {}

@@ -1,8 +1,11 @@
 """AI-based skill generation strategy using LLM providers."""
 
 import concurrent.futures
+import logging
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 # How long (seconds) to allow ProjectAnalyzer.analyze() to run before giving up.
 # Large repos with deep directory trees can stall the strategy chain indefinitely.
@@ -38,7 +41,7 @@ class AIStrategy:
             from generator.llm_skill_generator import LLMSkillGenerator
             from generator.project_analyzer import ProjectAnalyzer
 
-            print(f"🤖 Analyzing project context in {project_path}...")
+            logger.info("Analyzing project context in %s...", project_path)
             analyzer = ProjectAnalyzer(Path(project_path))
 
             # Run in a thread so a slow/large repo can't block the strategy chain forever.
@@ -47,14 +50,14 @@ class AIStrategy:
                 try:
                     context = future.result(timeout=_ANALYSIS_TIMEOUT_SECS)
                 except concurrent.futures.TimeoutError:
-                    print(
-                        f"[!] Warning: ProjectAnalyzer timed out after {_ANALYSIS_TIMEOUT_SECS}s "
-                        f"(large repo?). Falling back to next strategy."
+                    logger.warning(
+                        "ProjectAnalyzer timed out after %ds (large repo?). Falling back to next strategy.",
+                        _ANALYSIS_TIMEOUT_SECS,
                     )
                     return None
 
             provider_label = f"router:{strategy}" if strategy else provider
-            print(f"✨ Generating skill with AI ({provider_label})...")
+            logger.info("Generating skill with AI (%s)...", provider_label)
             generator = LLMSkillGenerator(provider=provider, strategy=strategy)
             return generator.generate_skill(skill_name, context)
         except ImportError as e:

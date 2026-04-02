@@ -105,7 +105,7 @@ class SkillGenerator(ArtifactGenerator):
         _check_scope = scope if (scope != "project" or self.discovery.project_local_dir) else "learned"
         if self.discovery.skill_exists(safe_name, scope=_check_scope) and not force:
             existing = self.discovery.resolve_skill(safe_name)
-            print(f"Skill '{safe_name}' already exists — skipping. (use force=True to overwrite)")
+            logger.info("Skill '%s' already exists — skipping. (use force=True to overwrite)", safe_name)
             if existing is not None:
                 return existing.parent
             return target_root / safe_name
@@ -304,14 +304,14 @@ class SkillGenerator(ArtifactGenerator):
                 if resolved and resolved.exists():
                     if resolved.resolve() != dest.resolve():
                         shutil.copy2(resolved, dest)
-                    print(f"  [reuse]  {skill_name} (from global learned)")
+                    logger.info("  [reuse]  %s (from global learned)", skill_name)
                     generated.append(f"{skill_name} (reused)")
                     continue
                 # BUG-4 fix: resolve_skill returned None (stale cache or file deleted).
                 # Log a warning and fall through to the create path so the skill
                 # is not silently lost. We use a second `if` below (not elif) so that
                 # the reassigned action='create' is actually evaluated.
-                print(f"  [warn]  {skill_name}: cached skill not found, falling through to create")
+                logger.warning("  [warn]  %s: cached skill not found, falling through to create", skill_name)
                 action = "create"
 
             # Delegate to _run_strategy_chain() so adapt/create cases go through the
@@ -328,7 +328,7 @@ class SkillGenerator(ArtifactGenerator):
                 # learned cache — that would pollute it with project-name, project-specific
                 # triggers, and README context that don't apply to other projects.
                 dest.write_text(skill_content or "", encoding="utf-8")
-                print(f"  [adapt]  {skill_name} (project override)")
+                logger.info("  [adapt]  %s (project override)", skill_name)
                 generated.append(f"{skill_name} (adapted)")
 
             elif action == "create":
@@ -338,9 +338,9 @@ class SkillGenerator(ArtifactGenerator):
                 global_dest.parent.mkdir(parents=True, exist_ok=True)
                 if not global_dest.exists():
                     global_dest.write_text(skill_content or "", encoding="utf-8")
-                    print(f"  [create] {skill_name} (saved to global learned)")
+                    logger.info("  [create] %s (saved to global learned)", skill_name)
                 else:
-                    print(f"  [create] {skill_name} (project copy only)")
+                    logger.info("  [create] %s (project copy only)", skill_name)
                 generated.append(skill_name)
 
         return generated

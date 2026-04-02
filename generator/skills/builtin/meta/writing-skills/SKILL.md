@@ -12,16 +12,17 @@ tools:
 # Meta-Skill: Writing New Skills
 
 ## Purpose
-Create new skills from project documentation and learned patterns.
+Without formalizing repeated workflows as skills, agents re-derive the same process each time — inconsistently and without the hard-won lessons from previous attempts. This skill captures proven patterns as reusable, validated skill files.
 
 ## Auto-Trigger
 - User says: "Create a skill for...", "We should formalize..."
-- Repetitive pattern identified
+- Repetitive pattern identified (3+ times)
 - Project has unique workflow in README
 
 ## Process
 
 ### 1. Identify the Pattern
+Confirm the workflow is worth formalizing — only patterns that recur and benefit from consistency should become skills.
 - Does this happen repeatedly?
 - Is it documented?
 - Would automation help?
@@ -30,41 +31,53 @@ Create new skills from project documentation and learned patterns.
 Look for:
 - "Always do X before Y"
 - "Never do A without B"
-- Step-by-step guides
+- Step-by-step guides in README or CLAUDE.md
 - Best practices sections
 
 ### 3. Create SKILL.md Structure
-
+Write the skill following the standard format with all required sections:
 ```markdown
-# Skill: [Name]
+# Skill: Systematic Code Review
 
 ## Purpose
-[One sentence: what problem does this solve]
+Without a structured review checklist, reviewers miss security issues and inconsistencies that accumulate into technical debt. This skill ensures every review covers correctness, security, and maintainability.
 
 ## Auto-Trigger
-[When should agent activate this skill]
+- User says "review this code" or "check my PR"
+- Before merging any feature branch
 
 ## Process
-[Step-by-step instructions]
+
+### 1. Check correctness
+...
 
 ## Output
-[What artifact/state results]
+Review report with severity-ranked findings.
 
 ## Anti-Patterns
-❌ [What NOT to do]
+❌ Reviewing only happy-path logic
 ```
 
 ### 4. Test the Skill
 - Create example scenario
-- Follow the skill
+- Follow the skill step-by-step
 - Verify output matches expectations
 - Refine based on issues
 
 ### 5. Save to Directory
-- `learned/` for project-specific
-- `builtin/` for general-purpose (after validation)
+```bash
+# Project-specific skill
+mkdir -p .clinerules/skills/my-skill && cp SKILL.md .clinerules/skills/my-skill/
+
+# General-purpose skill (after validation)
+cp -r my-skill ~/.claude/skills/
+```
+
+## Output
+A `SKILL.md` file with score >= 90 from `prg skills validate`, saved to the appropriate directory.
 
 ## Anti-Patterns
-❌ Creating skill without testing
-❌ Vague trigger conditions
-❌ Missing anti-patterns section
+❌ Creating a skill without testing it first
+❌ Vague trigger conditions that activate too broadly
+❌ Missing Anti-Patterns section
+❌ Placeholder text left in the skill body

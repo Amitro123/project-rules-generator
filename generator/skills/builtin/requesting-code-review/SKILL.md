@@ -12,34 +12,36 @@ tools:
 # Skill: Requesting Code Review
 
 ## Purpose
-Ensure code quality through pre-review checklist before asking for human review.
+Without a pre-review checklist, it is easy to forget debug statements, skipped tests, or missing context — causing avoidable review cycles and wasted reviewer time. This skill ensures code is genuinely ready before asking for human review.
 
 ## Auto-Trigger
 - Task/feature complete
 - User says: "Ready for review", "Can you review?"
 - Before creating PR/merge request
 
-## Pre-Review Checklist
+## Process
 
 ### 1. Self-Review
+Run a diff to read every line changed before anyone else does.
 ```bash
 git diff main...HEAD
 ```
-- ✓ Read every line you changed
 - ✓ Remove debug statements
 - ✓ Check for commented-out code
 - ✓ Verify no secrets/credentials
 
 ### 2. Tests
+Verify the test suite is clean — reviewers should not discover broken tests.
 - ✓ All tests pass locally
 - ✓ New tests for new features
 - ✓ Edge cases covered
 - ✓ No skipped/ignored tests without reason
 
 ### 3. Code Quality
+Catching style issues before review keeps feedback focused on logic, not formatting.
 - ✓ Follows project style guide
 - ✓ Functions < 50 lines
-- ✓ No TODO/FIXME without ticket reference
+- ✓ No unresolved task markers without ticket reference
 - ✓ Docstrings for public APIs
 
 ### 4. Documentation
@@ -64,12 +66,12 @@ git diff main...HEAD
 - ✓ Authentication/authorization checked
 - ✓ No sensitive data in logs
 
-## Review Report Format
+## Output
 ```markdown
 ## Code Review Self-Assessment
 
 ### Changes Summary
-[Brief description]
+Brief description of what changed and why.
 
 ### Checklist
 - [✓] All tests pass
@@ -77,10 +79,10 @@ git diff main...HEAD
 - [✓] Documentation updated
 
 ### Risks/Notes
-[Any concerns or TODOs]
+Any concerns or open questions.
 
 ### Files Changed
-- [file] (+lines, -lines)
+- src/auth.py (+45, -12)
 
 Ready for review: **YES** ✓
 ```

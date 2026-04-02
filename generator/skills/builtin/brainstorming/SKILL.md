@@ -11,7 +11,7 @@ tools:
 # Skill: Brainstorming & Design Refinement
 
 ## Purpose
-Refine vague ideas into concrete, implementable designs through Socratic questioning.
+Without a structured design phase, developers often skip straight to implementation — producing code that solves the wrong problem or misses critical edge cases. This skill prevents that by refining vague ideas into concrete, implementable designs through Socratic questioning before any code is written.
 
 ## Auto-Trigger
 - User says: "I want to add...", "Let's build...", "I'm thinking about..."
@@ -54,6 +54,11 @@ Create `DESIGN.md` with:
 - Chosen approach
 - Implementation outline
 - Success criteria
+
+```bash
+# Verify DESIGN.md was created after the session
+cat DESIGN.md
+```
 
 ## Anti-Patterns
 ❌ Jumping to implementation without design

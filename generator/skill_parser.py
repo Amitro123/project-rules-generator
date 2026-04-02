@@ -1,7 +1,10 @@
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Dict, List
+
+logger = logging.getLogger(__name__)
 
 from generator.utils.tech_detector import extract_context as _extract_context
 
@@ -165,7 +168,7 @@ class SkillParser:
         try:
             output_file.write_text(json.dumps(triggers, indent=2), encoding="utf-8")
         except Exception as e:
-            print(f"[Warning] Failed to save auto-triggers.json: {e}")
+            logger.warning("Failed to save auto-triggers.json: %s", e)
 
     @staticmethod
     def parse_skill_md(content: str, filename: str) -> Dict:

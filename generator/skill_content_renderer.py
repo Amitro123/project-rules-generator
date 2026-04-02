@@ -79,17 +79,17 @@ class SkillContentRenderer:
                     "project_analysis": custom_context.get("project_analysis", {}) if custom_context else {},
                 }
 
-                print(f"🤖 Generating with AI ({provider})...")
+                logger.info("Generating with AI (%s)...", provider)
                 return generator.generate_skill(skill_name, context)
             except Exception as e:
-                print(f"⚠️  AI generation failed: {e}. Falling back to templates.")
+                logger.warning("AI generation failed: %s. Falling back to templates.", e)
 
         # 2. Try Jinja2 template first, fallback to inline generation
         if HAS_JINJA2:
             try:
                 return self._generate_with_jinja2(skill_name, readme_content, metadata, custom_context)
             except Exception as e:
-                print(f"Warning: Jinja2 template failed ({e}), using inline generation")
+                logger.warning("Jinja2 template failed (%s), using inline generation", e)
 
         # Fallback: inline generation
         return self._generate_inline(skill_name, readme_content, metadata)

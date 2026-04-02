@@ -14,9 +14,12 @@ Public API:
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 from typing import List, Optional
+
+logger = logging.getLogger(__name__)
 
 README_MIN_WORDS = 80  # Below this → README is too sparse
 
@@ -133,9 +136,11 @@ def bridge_missing_context(
     is_interactive = sys.stdin.isatty() if interactive is None else interactive
 
     if is_interactive:
-        print(f"\n⚠️  README is missing or too sparse to generate a good '{name}'.")
-        print("\n" + tree_block)
-        print("\n💬 In 2-3 sentences, describe what this project does (press Enter to skip):")
+        import click
+
+        click.echo(f"\n⚠️  README is missing or too sparse to generate a good '{name}'.")
+        click.echo("\n" + tree_block)
+        click.echo("\n💬 In 2-3 sentences, describe what this project does (press Enter to skip):")
         try:
             description = input("> ").strip()
         except (EOFError, KeyboardInterrupt):
@@ -145,5 +150,5 @@ def bridge_missing_context(
             return f"[User description]: {description}\n\n{tree_block}"
 
     # Non-interactive: tree only, AI infers the rest
-    print(f"ℹ️  README sparse for '{name}' — using project tree for context.")
+    logger.info("README sparse for '%s' — using project tree for context.", name)
     return tree_block

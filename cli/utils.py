@@ -33,6 +33,25 @@ def detect_provider(provider: Optional[str], api_key: Optional[str]) -> Optional
     return None
 
 
+def has_api_key(provider: Optional[str], api_key: Optional[str]) -> bool:
+    """Return True if a usable API key exists for the given provider.
+
+    Checks the passed api_key first, then the relevant environment variable(s).
+    Returns False when provider is None or no key can be found.
+    """
+    if api_key:
+        return True
+    if not provider:
+        return False
+    _env_keys = {
+        "gemini": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
+        "groq": ["GROQ_API_KEY"],
+        "anthropic": ["ANTHROPIC_API_KEY"],
+        "openai": ["OPENAI_API_KEY"],
+    }
+    return any(os.environ.get(k) for k in _env_keys.get(provider, []))
+
+
 def set_api_key_env(provider: str, api_key: Optional[str]) -> None:
     """Set the correct environment variable for the given provider."""
     if not api_key:

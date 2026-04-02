@@ -13,50 +13,53 @@ tools:
 # Skill: Systematic Debugging
 
 ## Purpose
-Find root cause of bugs through 5-phase structured process.
+Without a structured process, developers often guess at root causes and fix symptoms instead of the underlying problem — wasting time and leaving the bug latent. This skill prevents that by enforcing a 5-phase reproduce-locate-analyze-fix-verify cycle.
 
 ## Auto-Trigger
 - User reports: "bug", "error", "not working", "failing test"
 - CI/CD failure
 - Exception in logs
 
-## 5-Phase Process
+## Process
 
-### Phase 1: Reproduce
-1. Get exact steps to reproduce
-2. Identify expected vs actual behavior
-3. Create minimal failing test
-4. Verify reproduction consistently
-**Output**: Failing test that isolates the bug
+### 1. Reproduce
+Never diagnose a bug you cannot consistently reproduce — it leads to fixing the wrong thing.
+```bash
+# Run the failing test to get a stable reproduction
+pytest tests/test_foo.py::test_failing -v
+```
+- Get exact steps to reproduce
+- Identify expected vs actual behavior
+- Create a minimal failing test
 
-### Phase 2: Locate
-Use techniques to find *where* it breaks:
+### 2. Locate
+Find *where* it breaks before analyzing why; narrowing the search space saves time.
 - **Binary Search**: Comment out half the code
-- **Trace Backwards**: From error to source
+- **Trace Backwards**: From error message back to source
 - **Instrumentation**: Log state before/after suspected lines
-**Output**: Exact line causing bug
 
-### Phase 3: Analyze
-Understand *why* it breaks:
-- Check assumptions
-- Verify data types
-- Review recent changes
-**Output**: Root cause explanation
+### 3. Analyze
+Understand *why* it breaks — check assumptions, data types, and recent changes.
 
-### Phase 4: Fix
-1. **Immediate Fix**: Correct the logic
-2. **Defense in Depth**: Add input validation/guards
-3. **Monitoring**: Add logging if needed
-**Output**: Committed fix
+### 4. Fix
+Correct the logic, add input validation guards, and add logging if the failure mode was hard to detect.
 
-### Phase 5: Verify
-1. Failing test now passes
-2. All other tests still pass (regression check)
-3. Manual verification
-**Output**: Verified green build
+### 5. Verify
+Confirm the fix is complete before declaring done.
+```bash
+pytest  # all tests must pass, not just the originally failing one
+```
+- Failing test now passes
+- No regressions introduced
+- Manual verification if needed
+
+## Output
+- Committed fix with root-cause explanation in commit message
+- Minimal failing test that will catch regressions
+- Green CI build
 
 ## Anti-Patterns
-❌ Guessing without reproducing
+❌ Guessing without reproducing first
 ❌ Fixing symptoms without finding root cause
-❌ precise line not identified in stack trace
-❌ Declaring "fixed" without verification
+❌ Declaring "fixed" without running the full test suite
+❌ Skipping the minimal reproduction step

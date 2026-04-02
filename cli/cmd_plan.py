@@ -13,6 +13,7 @@ from cli.agent_plan_helpers import (
     write_tasks_manifest,
 )
 from cli.utils import detect_provider as _detect_provider
+from cli.utils import has_api_key as _has_api_key
 from cli.utils import set_api_key_env as _set_api_key
 
 
@@ -119,6 +120,13 @@ def plan(
 
     provider = _detect_provider(provider, api_key)
     _set_api_key(provider, api_key)
+
+    if provider and not _has_api_key(provider, api_key) and verbose:
+        click.echo(
+            f"Warning: provider '{provider}' selected but no API key found — "
+            "using template-based generation.",
+            err=True,
+        )
 
     if verbose:
         click.echo(f"Project Rules Generator v{__version__} — Task Planner")

@@ -10,22 +10,52 @@ tools:
   - exec
 ---
 
-## Description
-Parse and analyze codebase for quality issues.
+# Skill: Analyze Code
 
-## Tools
-read, search, exec
+## Purpose
+Without regular code analysis, quality issues accumulate silently — lint violations, dead code, and style drift that make future changes harder and riskier. This skill runs a structured analysis pass to surface issues before they compound.
 
-## Triggers
-- analyze code
-- check quality
-- lint
+## Auto-Trigger
+- User says: "analyze code", "check quality", "lint the project"
+- Before a PR or release cut
+- After a large refactor
 
-## Output
-Quality report with suggestions
+## Process
 
-## Usage
+### 1. Run Static Analysis
+Start with automated tools to get an objective baseline before any manual review.
 ```bash
 prg analyze .
 ```
-(Note: The original index said `analyze-code src/` but `prg analyze` is the actual command)
+Or run the linter stack directly:
+```bash
+ruff check .
+black --check .
+mypy .
+```
+
+### 2. Review Output by Severity
+Focus on errors and warnings first; suggestions are optional.
+- **Errors**: Must fix before merging
+- **Warnings**: Fix unless there is a documented reason to suppress
+- **Suggestions**: Address in a follow-up or refactor
+
+### 3. Check for Dead Code
+```bash
+# Python projects
+python -m py_compile **/*.py && echo "No syntax errors"
+```
+
+### 4. Summarize Findings
+Group issues by file and category so the developer can prioritize the fix order.
+
+## Output
+Quality report with:
+- Issue count by severity
+- Top offending files
+- Actionable fix suggestions per issue
+
+## Anti-Patterns
+❌ Suppressing warnings without a comment explaining why
+❌ Fixing style issues without running tests afterward
+❌ Analyzing only changed files — issues in unchanged files still matter

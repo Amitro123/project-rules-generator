@@ -1,8 +1,11 @@
 """README parsing strategy for skill generation."""
 
+import logging
 import re
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 class READMEStrategy:
@@ -143,5 +146,5 @@ class READMEStrategy:
 
             return content
         except Exception as e:
-            print(f"[!] Warning: Smart parsing failed ({e}). Falling back to next strategy.")
+            logger.warning("Smart parsing failed (%s). Falling back to next strategy.", e)
             return None

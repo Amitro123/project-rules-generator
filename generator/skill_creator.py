@@ -11,7 +11,10 @@ It generates high-quality, project-specific skills with:
 - Actionable, specific steps
 """
 
+import logging
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -123,7 +126,7 @@ class CoworkSkillCreator:
         source_dir = self.discovery.global_learned / skill_name
 
         if not self.discovery.project_local_dir:
-            print(f"⚠️  Could not link {skill_name}: No project path configured.")
+            logger.warning("Could not link %s: No project path configured.", skill_name)
             return
 
         if source_flat.exists():
@@ -147,7 +150,7 @@ class CoworkSkillCreator:
                     dest.parent.mkdir(parents=True, exist_ok=True)
                     self.discovery._link_or_copy(item, dest)
         else:
-            print(f"⚠️  Could not link {skill_name}: Source not found in global learned.")
+            logger.warning("Could not link %s: Source not found in global learned.", skill_name)
 
     def create_skill(
         self,
@@ -242,7 +245,7 @@ class CoworkSkillCreator:
                     path = self.export_to_file(content, metadata, output_dir)
                     generated_files.append(path)
             except Exception as e:
-                print(f"Warning: Failed to generate {skill_name}: {e}")
+                logger.warning("Failed to generate %s: %s", skill_name, e)
 
         return generated_files
 

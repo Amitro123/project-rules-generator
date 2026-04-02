@@ -1,10 +1,13 @@
 """Template management with structured data"""
 
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import List
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 from .types import Skill
 
@@ -45,7 +48,7 @@ def load_skill_template(project_type: str) -> List[Skill]:
                 skills.append(Skill(**s_data))
         return skills
     except Exception as e:
-        print(f"Error loading template {project_type}: {e}")
+        logger.error("Error loading template %s: %s", project_type, e)
         return []
 
 
@@ -66,5 +69,5 @@ def load_skill_from_yaml(file_path: Path) -> List[Skill]:
                 skills.append(Skill(**s_data))
         return skills
     except Exception as e:
-        print(f"Error loading skills from {file_path}: {e}")
+        logger.error("Error loading skills from %s: %s", file_path, e)
         return []
