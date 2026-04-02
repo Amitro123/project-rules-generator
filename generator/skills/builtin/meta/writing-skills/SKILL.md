@@ -1,3 +1,14 @@
+---
+name: writing-skills
+description: |-
+  When the user wants to create a new skill for a repeated pattern.
+  When the user says "create a skill for" or "we should formalize this".
+  When the user identifies a repetitive workflow that should be automated.
+tools:
+  - read
+  - edit
+---
+
 # Meta-Skill: Writing New Skills
 
 ## Purpose

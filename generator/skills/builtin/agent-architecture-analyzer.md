@@ -1,3 +1,14 @@
+---
+name: agent-architecture-analyzer
+description: |-
+  When the user wants to analyze or review the agent architecture.
+  When the user wants to check or improve multi-agent workflows.
+  When the user is debugging agent loops or planning new agent capabilities.
+tools:
+  - read
+  - search
+---
+
 ## Description
 Analyze agent architecture and suggest improvements.
 

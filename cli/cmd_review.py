@@ -41,6 +41,15 @@ def review(filepath, project_path, output, provider, api_key, tasks, verbose):
     project_path = Path(project_path).resolve()
 
     provider = _detect_provider(provider, api_key)
+
+    if provider is None:
+        click.echo(
+            "Error: No AI provider available. Set an API key environment variable "
+            "(e.g. ANTHROPIC_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, or GEMINI_API_KEY).",
+            err=True,
+        )
+        sys.exit(1)
+
     _set_api_key(provider, api_key)
 
     if verbose:

@@ -1,3 +1,14 @@
+---
+name: writing-plans
+description: |-
+  When the user wants to create an implementation plan.
+  When the user says "let's implement this" or "create a plan".
+  When a design has been approved and is ready to be broken into tasks.
+tools:
+  - read
+  - edit
+---
+
 # Skill: Writing Implementation Plans
 
 ## Purpose

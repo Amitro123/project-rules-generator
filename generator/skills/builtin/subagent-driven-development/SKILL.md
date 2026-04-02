@@ -1,3 +1,15 @@
+---
+name: subagent-driven-development
+description: |-
+  When the user approves a plan and wants to execute it.
+  When the user says "execute the plan" or "let's go" or "start implementation".
+  When a PLAN.md exists and is ready to be executed task-by-task.
+tools:
+  - read
+  - exec
+  - edit
+---
+
 # Skill: Subagent-Driven Development
 
 ## Purpose

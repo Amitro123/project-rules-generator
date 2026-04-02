@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import MagicMock, patch
 
 from generator.ai.providers.gemini_client import GeminiClient
@@ -26,6 +27,7 @@ class TestEncodingFix:
 
     def test_groq_client_encoding_fix(self):
         """Test that GroqClient cleans encoding artifacts."""
+        pytest.importorskip("groq")  # skip cleanly when groq package not installed
         # Patch where Groq is imported in groq_client.py
         with patch("generator.ai.providers.groq_client.Groq") as MockGroq:
             # Setup mock

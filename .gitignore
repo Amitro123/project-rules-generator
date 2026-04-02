@@ -113,3 +113,6 @@ Code Review*.md
 tests/test_samples/sample-project/.clinerules/
 .claude/settings.local.json
 .clinerules/auto-triggers.json
+
+# Internal developer notes — not for end users
+bugs_docs/

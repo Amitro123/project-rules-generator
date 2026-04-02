@@ -1,3 +1,14 @@
+---
+name: requesting-code-review
+description: |-
+  When the user says they are ready for review or wants to create a PR.
+  When the user asks to check if code is ready for review.
+  When the task or feature is complete and needs quality validation.
+tools:
+  - read
+  - exec
+---
+
 # Skill: Requesting Code Review
 
 ## Purpose

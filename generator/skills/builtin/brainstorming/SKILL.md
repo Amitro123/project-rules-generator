@@ -1,3 +1,13 @@
+---
+name: brainstorming
+description: |-
+  When the user wants to add a new feature or capability.
+  When the user says "I want to build" or "I'm thinking about".
+  When requirements are unclear and need to be refined.
+tools:
+  - read
+---
+
 # Skill: Brainstorming & Design Refinement
 
 ## Purpose

@@ -1,3 +1,14 @@
+---
+name: test-driven-development
+description: |-
+  When the user is implementing a new feature or fixing a bug.
+  When the user wants to write tests first before writing code.
+  When the user is refactoring and needs to verify behaviour is preserved.
+tools:
+  - read
+  - exec
+---
+
 # Skill: Test-Driven Development
 
 ## Purpose

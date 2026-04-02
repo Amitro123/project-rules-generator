@@ -1,3 +1,15 @@
+---
+name: systematic-debugging
+description: |-
+  When the user reports a bug, error, or something not working.
+  When there is a failing test or CI/CD failure.
+  When the user sees an exception in logs or unexpected behaviour.
+tools:
+  - read
+  - exec
+  - search
+---
+
 # Skill: Systematic Debugging
 
 ## Purpose

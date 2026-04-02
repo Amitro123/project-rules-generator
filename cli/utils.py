@@ -4,14 +4,14 @@ import os
 from typing import Optional
 
 
-def detect_provider(provider: Optional[str], api_key: Optional[str]) -> str:
+def detect_provider(provider: Optional[str], api_key: Optional[str]) -> Optional[str]:
     """Auto-detect AI provider from api_key prefix or environment variables.
 
     Priority:
     1. Explicit --provider flag (returned as-is).
     2. api_key prefix  (gsk_ → groq, sk-ant- → anthropic, sk- → openai).
-    3. Environment variables (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, GOOGLE_API_KEY).
-    4. Default: groq.
+    3. Environment variables (GROQ_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, GOOGLE_API_KEY).
+    4. Returns None if no key is found — callers must check for None and fail gracefully.
     """
     if provider is not None:
         return provider
@@ -22,14 +22,15 @@ def detect_provider(provider: Optional[str], api_key: Optional[str]) -> str:
             return "anthropic"
         if api_key.startswith("sk-"):
             return "openai"
+    if os.environ.get("GROQ_API_KEY"):
+        return "groq"
     if os.environ.get("ANTHROPIC_API_KEY"):
         return "anthropic"
     if os.environ.get("OPENAI_API_KEY"):
         return "openai"
-    _gemini_available = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    if _gemini_available and not os.environ.get("GROQ_API_KEY"):
+    if os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"):
         return "gemini"
-    return "groq"
+    return None
 
 
 def set_api_key_env(provider: str, api_key: Optional[str]) -> None:

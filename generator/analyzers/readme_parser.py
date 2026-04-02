@@ -388,7 +388,11 @@ def _extract_features(content: str, max_features: int = 10) -> List[str]:
         features = _parse_list_items(section_text)
 
     if not features:
-        early_content = content[: len(content) // 2]
+        cut = len(content) // 2
+        newline_pos = content.rfind("\n", 0, cut)
+        if newline_pos != -1:
+            cut = newline_pos + 1  # snap to line boundary
+        early_content = content[:cut]
         features = _parse_list_items(early_content)
         features = [f for f in features if 5 < len(f) < 200]
 
