@@ -207,7 +207,11 @@ class TaskCreator:
 
     @staticmethod
     def _render_task_md(subtask: SubTask) -> str:
-        """Render a single SubTask as a markdown or python file."""
+        """Render a single SubTask as a Markdown file.
+
+        Always returns Markdown content regardless of ``subtask.type``.
+        The file extension is controlled by ``_subtask_to_filename``.
+        """
         lines = [
             f"# Task {subtask.id}: {subtask.title}",
             "",
@@ -243,9 +247,4 @@ class TaskCreator:
         lines.append("- [ ] Not started")
         lines.append("")
 
-        content = "\n".join(lines)
-
-        if subtask.type == "py":
-            return f'"""\n{content}\n"""\n\nif __name__ == "__main__":\n    print("Task: {subtask.title}")\n    print("Goal: {subtask.goal}")\n'
-
-        return content
+        return "\n".join(lines)

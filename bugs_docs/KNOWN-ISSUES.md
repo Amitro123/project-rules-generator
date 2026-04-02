@@ -144,3 +144,90 @@ Identified in third-party code review CR0104. Not bugs — design constraints to
 | 6 | `TaskDecomposer` | Medium | Fallback plan quality |
 | 7 | `Autopilot` | Medium | Single-shot implementation |
 | 8 | Prompts | Low–High | Context size on large projects |
+
+---
+
+## Architectural Limitations (Comprehensive_CR_april — April 2026)
+
+Second-pass review. Not bugs — design constraints acknowledged for future iterations.
+
+---
+
+### Issue 9 — Parsers: Broad `except Exception` blocks mask diagnostics
+
+**Area:** `EnhancedProjectParser`, `DependencyParser`, `CodeExampleExtractor`
+
+**Description:** Most file-reading and parsing paths catch bare `Exception` and log a warning before returning a fallback. This hides specific errors (TOML parse failures, encoding issues, permission errors) and makes debugging hard.
+
+**Severity:** Low in production, High during development/debugging.
+
+**Future fix:** Replace with specific exception types (`FileNotFoundError`, `tomllib.TOMLDecodeError`, `json.JSONDecodeError`) and surface actionable error messages.
+
+---
+
+### Issue 10 — `DependencyParser`: Regex brittleness for `requirements.txt`
+
+**Area:** `generator/parsers/dependency_parser.py` — `parse_requirements_txt`
+
+**Description:** Standard lines are parsed via `re.match` after using `packaging.requirements.Requirement`. Complex directives (environment markers, VCS URLs, `--index-url`) may not be handled correctly.
+
+**Severity:** Low — most real-world `requirements.txt` files use simple name==version lines.
+
+**Future fix:** Use `pip`'s `RequirementsFile` parser or `pip-requirements-parser` library.
+
+---
+
+### Issue 11 — `ReadmeSkillExtractor`: Core logic is fragile regex
+
+**Area:** `generator/analyzers/readme_skill_extractor.py`
+
+**Description:** `extract_purpose`, `extract_auto_triggers`, `extract_process_steps`, and `extract_anti_patterns` are almost entirely regex-driven over Markdown. Minor formatting changes break extraction silently.
+
+**Severity:** Medium — README formatting varies widely across projects.
+
+**Future fix:** Parse README to a Markdown AST (e.g., `mistletoe`, `markdown-it-py`) and traverse nodes rather than scanning raw text.
+
+---
+
+### Issue 12 — `CodeExampleExtractor`: Hardcoded relevance scores and limits
+
+**Area:** `generator/extractors/code_extractor.py`
+
+**Description:** Relevance scores (7 for decorated functions, 6 for classes, etc.) and the 10-example cap are arbitrary constants. Large codebases may have all critical examples excluded.
+
+**Severity:** Low — affects skill quality on large projects, not correctness.
+
+**Future fix:** Make limits configurable; derive relevance from actual usage frequency or test coverage data.
+
+---
+
+### Issue 13 — `ProjectTypeDetector`: Arbitrary heuristic scores and `lru_cache` staleness
+
+**Area:** `generator/analyzers/project_type_detector.py`
+
+**Description:** Classification weights (0.5 for LLM providers, 0.15 for keywords) lack empirical basis. The `@lru_cache` on `_detect_project_type_cached` can return stale results if project files change between calls within the same process.
+
+**Severity:** Low — misclassification degrades skill quality but doesn't break functionality.
+
+**Future fix:** Tune weights from a labelled dataset; invalidate cache on file-system changes or remove `lru_cache` in favour of instance-level caching.
+
+---
+
+### Issue 14 — Autopilot: No schema validation of LLM output before file writes
+
+**Area:** `generator/planning/autopilot.py` and task execution pipeline
+
+**Description:** LLM-generated file paths, code blocks, and commands are written to disk without validation. No check that paths stay within the project directory, no sanitization of shell commands.
+
+**Severity:** Medium — mitigated by git-branch isolation, but bad LLM output requires manual triage.
+
+**Future fix:** Define Pydantic schemas for all LLM outputs; validate before writing; reject paths outside project root.
+
+| # | Feature | Severity | Area |
+|---|---------|----------|------|
+| 9 | Parsers | Low/High | Broad exception handling |
+| 10 | `DependencyParser` | Low | `requirements.txt` regex brittleness |
+| 11 | `ReadmeSkillExtractor` | Medium | Regex-based Markdown parsing |
+| 12 | `CodeExampleExtractor` | Low | Hardcoded relevance scores |
+| 13 | `ProjectTypeDetector` | Low | Arbitrary weights, `lru_cache` staleness |
+| 14 | Autopilot | Medium | No LLM output validation before file writes |
