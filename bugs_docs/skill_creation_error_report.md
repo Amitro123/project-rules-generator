@@ -83,12 +83,17 @@ While testing the **Autopilot flow** (`prg autopilot .`), the application did no
 > **Root cause:** `autopilot_cmd.py` and `manager_cmd.py` never called `setup_logging()`, so all `logger.info()` calls were silently dropped. Secondary bug: `workflow._auto_fix()` checked stale name `"rules.json"` (renamed to `"Rules file"`) so auto-fix for missing rules never triggered.
 > ✅ **FIXED** — Added `logging.basicConfig()` at command entry; corrected stale check name (commit `ccaf984`)
 
-### 🚨 Note on Spec Generation 
-The `spec.md` generation explicitly failed to complete. The output file (`spec.md`) was only 4 lines long and abruptly cut off mid-sentence (`...by providing`). It failed to yield any of the structured sections detailed in the project features (Goals, User Stories, Acceptance Criteria, Out of Scope). This suggests a severe token-limit interruption or chunk streaming bug during the LLM generation payload phase.
+### ✅ Spec Generation Truncation — FIXED
+The `spec.md` generation explicitly failed to complete. The output file (`spec.md`) was only 4 lines long and abruptly cut off mid-sentence (`...by providing`). It failed to yield any of the structured sections (Goals, User Stories, Acceptance Criteria, Out of Scope).
+
+> **Root cause:** `project_manager._generate_spec_md()` called `client.generate()` with no `max_tokens` override — falling back to the default of 2000, insufficient for a full spec document.
+> ✅ **FIXED** — Set `max_tokens=4000` (commit `29c88f9`)
 
 ### Quality Assessment of the Other Output Files
 I have double-checked the content of the other generated files for quality and completeness:
 * ✅ **`constitution.md`**: Flawless. It successfully synthesized 54 lines of code-quality rules, architecture traits (`python-cli`), constraints (`ruff`, `mypy`), and testing patterns. No truncation.
 * ✅ **`DESIGN.md`**: Passed cleanly. Properly sectioned into "Problem Statement", "Architecture Decisions", "API Contracts", and "Success Criteria" without hitting any truncation boundaries.
 * ✅ **`CRITIQUE.md`**: Exceptionally high quality. The reviewer LLM correctly assessed its input and generated a valid review report with actionable feedback.
-* 🚨 **`PLAN.md` & `TASKS.json`**: Both of these outputs suffered the exact same truncation malfunction as `spec.md`. The `PLAN.md` file cuts out entirely midway through the "Changes" block of the very first subtask. Correspondingly, `TASKS.json` only holds 1 single task. The `CRITIQUE.md` explicitly complained about this bug, stating: *"The 'PLAN' is incomplete; it only details one subtask, and the 'Changes' section for that subtask is empty, lacking any actual content or code."*
+* ✅ **`PLAN.md` & `TASKS.json` Truncation — FIXED**: Both outputs cut off mid-subtask because `ProjectPlanner.generate_roadmap` used `max_tokens=3000` — too low for 5-8 subtasks with Files/Changes/Tests content.
+  > **Root cause:** `max_tokens=3000` in `project_planner.py` — each full subtask block uses ~400 tokens; 8 tasks × 400 = 3200, exceeding the limit after the first task.
+  > ✅ **FIXED** — Raised to `max_tokens=6000`, matching `TaskDecomposer`'s limit (commit `29c88f9`)
