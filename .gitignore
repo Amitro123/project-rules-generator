@@ -33,10 +33,17 @@ Thumbs.db
 !tests/test_samples/sample-project/sample-project-rules.md
 SESSION_SUMMARY.md
 CHANGES_TRACKER.md
-AMIT_CODING_PREFERENCES.md
 CODE_REVIEW.md
-agent-prompt.md
 walkthrough.md
+
+# Auto-generated planning artifacts (created by prg plan/manager/autopilot test runs)
+PLAN.md
+DESIGN.md
+CRITIQUE.md
+PROJECT-MANAGER.md
+spec.md
+TASKS.json
+tasks/
 
 # Cache files
 .clinerules/.prg-cache.json
