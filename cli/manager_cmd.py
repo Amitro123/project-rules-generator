@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import click
@@ -18,6 +19,8 @@ from generator.planning.project_manager import ProjectManager
 @click.option("--verbose/--quiet", default=True, help="Verbose output")
 def manager(project_path, provider, api_key, verbose):
     """👨‍💼 Project Manager: Full Lifecycle (Setup -> Verify -> Execute -> Report)."""
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(message)s")
+
     project_path = Path(project_path).resolve()
 
     provider = _detect_provider(provider, api_key)

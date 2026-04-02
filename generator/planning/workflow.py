@@ -84,7 +84,7 @@ class AgentWorkflow:
     def _auto_fix(self, report: PreflightReport) -> None:
         """Attempt to fix failed checks by invoking generators directly."""
         for check in report.failed_checks:
-            if check.name == "rules.json":
+            if check.name == "Rules file":
                 self._fix_analyze()
             elif check.name == "Skills (3+)":
                 self._fix_analyze()

@@ -1,5 +1,6 @@
 """Autopilot command for project rules generator."""
 
+import logging
 from pathlib import Path
 
 import click
@@ -22,6 +23,8 @@ from generator.planning.autopilot import AutopilotOrchestrator
 @click.option("--verbose/--quiet", default=True, help="Verbose output")
 def autopilot(project_path, discovery_only, execute_only, provider, api_key, verbose):
     """Full End-to-End Autopilot: Discovery -> Planning -> Execution."""
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(message)s")
+
     project_path = Path(project_path).resolve()
 
     provider = _detect_provider(provider, api_key)
