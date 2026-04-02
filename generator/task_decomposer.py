@@ -34,15 +34,17 @@ class TaskDecomposer(ArtifactGenerator):
     """Break a high-level task into subtasks using an AI model."""
 
     def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None, provider: str = "gemini"):
-        self.provider = provider
+        # Normalise None → "gemini" so provider.upper() never crashes when called
+        # from cmd_plan.py with detect_provider() returning None (no key configured).
+        self.provider = provider or "gemini"
         self.api_key: Optional[str]
         # Resolve API key: explicit > env var for chosen provider > Gemini fallbacks
         if api_key:
             self.api_key = api_key
-        elif provider == "gemini":
+        elif self.provider == "gemini":
             self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         else:
-            self.api_key = os.getenv(f"{provider.upper()}_API_KEY")
+            self.api_key = os.getenv(f"{self.provider.upper()}_API_KEY")
         self.model_name = model_name
 
     def decompose(

@@ -19,15 +19,10 @@
     "project has unique workflow in readme"
   ],
   "requesting-code-review": [
-    "request code review",
-    "open pr",
-    "make a pr",
-    "create a pull request",
-    "submit for review",
+    "task/feature complete",
     "ready for review",
-    "push for review",
-    "i'm done with my changes",
-    "all tests pass, what's next?"
+    "can you review?",
+    "creating pr/merge request"
   ],
   "subagent-driven-development": [
     "plan.md exists and user approves execution",

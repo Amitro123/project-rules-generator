@@ -396,6 +396,11 @@ def _extract_features(content: str, max_features: int = 10) -> List[str]:
         features = _parse_list_items(early_content)
         features = [f for f in features if 5 < len(f) < 200]
 
+        # For short READMEs the midpoint may precede all list items — retry on full content.
+        if not features:
+            features = _parse_list_items(content)
+            features = [f for f in features if 5 < len(f) < 200]
+
     return features[:max_features]
 
 
