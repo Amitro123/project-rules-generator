@@ -1,9 +1,12 @@
 """Technical design document generator (Stage 1 of two-stage planning)."""
 
+import logging
 import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 from pydantic import BaseModel, Field
 
@@ -201,12 +204,12 @@ class DesignGenerator:
 
             if self.api_key:
                 self.client = create_ai_client(self.provider, api_key=self.api_key)
-                print(f"Design generator using: {self.provider}")
+                logger.debug("Design generator using: %s", self.provider)
             else:
                 self.client = None
         except Exception as e:
             self.client = None
-            print(f"Warning: Design AI client init failed: {e}")
+            logger.warning("Design AI client init failed: %s", e)
 
         self.model_name = model_name
 
@@ -424,15 +427,15 @@ NOW generate the complete design following this structure. Be specific, detailed
 
     def _call_llm(self, prompt: str) -> str:
         if not self.client:
-            print("Warning: No AI client available")
+            logger.warning("No AI client available")
             return ""
         try:
             result = self.client.generate(prompt, max_tokens=8000, model=self.model_name, temperature=0.7)
             if not result or len(result.strip()) < 100:
-                print(f"Warning: LLM returned short/empty response ({len(result)} chars)")
+                logger.warning("LLM returned short/empty response (%d chars)", len(result))
             return result
         except Exception as e:
-            print(f"Error calling LLM: {e}")
+            logger.error("Error calling LLM: %s", e)
             return ""
 
     def _parse_response(self, raw: str, user_request: str) -> Design:
