@@ -207,6 +207,82 @@ def skills_validate(name_or_path, path):
 
 
 # ---------------------------------------------------------------------------
+# prg skills feedback
+# ---------------------------------------------------------------------------
+
+
+@skills_group.command(name="feedback")
+@click.argument("skill_name")
+@click.option("--useful", "vote", flag_value="useful", help="Mark skill as useful.")
+@click.option("--not-useful", "vote", flag_value="not_useful", help="Mark skill as not useful.")
+def skills_feedback(skill_name, vote):
+    """Record useful / not-useful feedback for a skill.
+
+    Scores accumulate across sessions and are used by 'prg skills stale'
+    to flag candidates for regeneration.
+
+    Example:
+      prg skills feedback pytest-testing-workflow --useful
+      prg skills feedback pytest-testing-workflow --not-useful
+    """
+    if not vote:
+        click.echo("Specify --useful or --not-useful.", err=True)
+        raise SystemExit(1)
+
+    from generator.skill_tracker import SkillTracker
+
+    tracker = SkillTracker()
+    is_useful = vote == "useful"
+    score = tracker.record_feedback(skill_name, useful=is_useful)
+    stats = tracker.get_stats(skill_name)
+
+    label = "useful" if is_useful else "not useful"
+    click.echo(f"Recorded: '{skill_name}' marked as {label}.")
+    click.echo(
+        f"Score: {score:.0%}  "
+        f"({stats.get('useful_count', 0)} useful / "
+        f"{stats.get('not_useful_count', 0)} not useful / "
+        f"{stats.get('match_count', 0)} matches)"
+    )
+
+
+# ---------------------------------------------------------------------------
+# prg skills stale
+# ---------------------------------------------------------------------------
+
+
+@skills_group.command(name="stale")
+@click.option("--threshold", default=0.3, type=float, show_default=True, help="Score below this is flagged.")
+def skills_stale(threshold):
+    """List skills with low feedback scores that may need regeneration.
+
+    Only skills with at least 3 feedback votes are considered. Regenerate with:
+
+      prg analyze . --create-skill <name>
+    """
+    from generator.skill_tracker import MIN_FEEDBACK_FOR_FLAG, SkillTracker
+
+    tracker = SkillTracker()
+    low = tracker.get_low_scoring(threshold=threshold)
+
+    if not low:
+        click.echo(f"No skills below {threshold:.0%} score threshold (min {MIN_FEEDBACK_FOR_FLAG} votes required).")
+        return
+
+    click.echo(f"Skills below {threshold:.0%} score ({len(low)} found):\n")
+    for name in low:
+        stats = tracker.get_stats(name)
+        score = stats.get("score", 0.0)
+        useful = stats.get("useful_count", 0)
+        not_useful = stats.get("not_useful_count", 0)
+        matches = stats.get("match_count", 0)
+        click.echo(f"  {name}")
+        click.echo(f"    score={score:.0%}  useful={useful}  not-useful={not_useful}  matches={matches}")
+        click.echo(f"    → prg analyze . --create-skill {name}")
+        click.echo()
+
+
+# ---------------------------------------------------------------------------
 # prg skills show
 # ---------------------------------------------------------------------------
 

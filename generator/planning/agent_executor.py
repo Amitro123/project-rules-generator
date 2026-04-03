@@ -102,6 +102,12 @@ class AgentExecutor:
                             "returning anyway (may be a builtin)",
                             skill,
                         )
+                    try:
+                        from generator.skill_tracker import SkillTracker
+
+                        SkillTracker().record_match(skill)
+                    except Exception as _te:
+                        logger.debug("SkillTracker.record_match failed: %s", _te)
                     return skill
 
         logger.debug("No match found.")
