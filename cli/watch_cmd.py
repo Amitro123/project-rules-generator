@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import click
+import pathspec
 
 # Files that trigger a re-analyze when modified or created
 WATCH_FILES = {
@@ -36,6 +37,8 @@ WATCH_FILES = {
     "docker-compose.yml",
     "docker-compose.yaml",
     "Dockerfile",
+    "Gemini.md",
+    "CLAUDE.md",
 }
 
 # Directory name prefixes that trigger on any new file inside them
@@ -157,30 +160,31 @@ class _PRGHandler:
             self._timer.start()
 
     def _trigger(self) -> None:
-        with self._lock:
-            self._running = True
-            self._needs_rerun = False
-
-        try:
-            click.echo("[watch] Running: prg analyze --incremental ...")
-            cmd = [sys.executable, "-m", "cli.cli", "analyze", str(self._project_path), "--incremental"]
-            cmd.extend(self._extra_args)
-            result = subprocess.run(cmd, capture_output=False)
-            if result.returncode != 0 and self._verbose:
-                click.echo(f"[watch] analyze exited with code {result.returncode}", err=True)
-            else:
-                click.echo("[watch] Done.")
-        finally:
+        while True:
             with self._lock:
-                self._running = False
-                needs_rerun = self._needs_rerun
+                self._running = True
                 self._needs_rerun = False
 
-            # If a change arrived during the run, execute one final pass
-            if needs_rerun:
-                if self._verbose:
-                    click.echo("[watch] Change detected during run — re-running...")
-                self._trigger()
+            try:
+                click.echo("[watch] Running incremental analysis...")
+                cmd = [sys.executable, "-m", "cli.cli", "analyze", str(self._project_path), "--incremental"]
+                cmd.extend(self._extra_args)
+                result = subprocess.run(cmd, capture_output=False)
+                if result.returncode != 0 and self._verbose:
+                    click.echo(f"[watch] analyze exited with code {result.returncode}", err=True)
+                else:
+                    click.echo("[watch] Done.")
+            except Exception as e:
+                click.echo(f"[watch] Error during analysis: {e}", err=True)
+            finally:
+                with self._lock:
+                    if not self._needs_rerun:
+                        self._running = False
+                        return
+                    # Another change arrived while we were running
+                    self._needs_rerun = False
+                    if self._verbose:
+                        click.echo("[watch] Change detected during run — re-running...")
 
     def cancel(self) -> None:
         with self._lock:

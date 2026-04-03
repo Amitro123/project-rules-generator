@@ -93,6 +93,12 @@ class TestShouldTrigger:
     def test_gitignore_file_triggers(self, tmp_path):
         assert _should_trigger(str(tmp_path / ".gitignore"), tmp_path)
 
+    def test_gemini_md_triggers(self, tmp_path):
+        assert _should_trigger(str(tmp_path / "Gemini.md"), tmp_path)
+
+    def test_claude_md_triggers(self, tmp_path):
+        assert _should_trigger(str(tmp_path / "CLAUDE.md"), tmp_path)
+
 
 # ---------------------------------------------------------------------------
 # _PRGHandler — debounce and re-entry guard
@@ -139,27 +145,22 @@ class TestPRGHandlerDebounce:
 
     def test_dirty_bit_queues_rerun_when_change_arrives_during_run(self, tmp_path):
         """Issue #1 fix: change during active run sets dirty bit, triggers one final run."""
-        run_count = {"n": 0}
-        original_trigger = _PRGHandler._trigger
+        call_count = {"n": 0}
 
-        def slow_trigger(self):
-            run_count["n"] += 1
-            if run_count["n"] == 1:
-                # Simulate a change arriving while we're mid-run
-                self._needs_rerun = True
-            # Don't actually spawn subprocess
-            with self._lock:
-                self._running = False
-                needs_rerun = self._needs_rerun
-                self._needs_rerun = False
-            if needs_rerun and run_count["n"] < 3:
-                self._trigger()
+        def mock_run(*args, **kwargs):
+            call_count["n"] += 1
+            # First run: simulate a second change arriving while we are busy
+            if call_count["n"] == 1:
+                handler._needs_rerun = True
+            return MagicMock(returncode=0)
 
         handler = self._make_handler(tmp_path)
-        with patch.object(_PRGHandler, "_trigger", slow_trigger):
-            handler.on_change(str(tmp_path / "README.md"))
-            time.sleep(0.3)
-        assert run_count["n"] >= 2, "Dirty bit should have caused a second run"
+        with patch("subprocess.run", side_effect=mock_run):
+            # Kick off first trigger
+            handler._trigger()
+            
+        # Expect 2 calls: one for the initial trigger, and one for the dirty bit
+        assert call_count["n"] == 2, f"Expected 2 runs, got {call_count['n']}"
 
     def test_extra_args_passed_to_subprocess(self, tmp_path):
         handler = _PRGHandler(tmp_path, delay=0.05, extra_args=["--ide", "cursor"], verbose=False, gitignore_spec=None)
