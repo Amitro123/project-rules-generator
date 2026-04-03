@@ -5,11 +5,11 @@ import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
-logger = logging.getLogger(__name__)
-
 from pydantic import BaseModel, Field
 
 from generator.base_generator import ArtifactGenerator
+
+logger = logging.getLogger(__name__)
 
 
 class SubTask(BaseModel):

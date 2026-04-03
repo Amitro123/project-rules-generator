@@ -14,8 +14,6 @@ It generates high-quality, project-specific rules with:
 import logging
 import re
 from collections import defaultdict
-
-logger = logging.getLogger(__name__)
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
@@ -27,6 +25,8 @@ from generator.quality_validators import RulesQualityValidator
 from generator.rules_git_miner import RulesGitMiner
 from generator.rules_renderer import RulesContentRenderer, append_mandatory_anti_patterns  # noqa: F401 (re-export)
 from generator.tech_registry import TECH_RULES as _TECH_RULES
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

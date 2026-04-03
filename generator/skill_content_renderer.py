@@ -1,11 +1,16 @@
 """Skill content renderer — Jinja2 template + inline fallback generation."""
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from generator.skill_doc_loader import SkillDocLoader
 from generator.skill_metadata_builder import SkillMetadataBuilder
+
+if TYPE_CHECKING:
+    from generator.skill_creator import SkillMetadata
 
 try:
     from jinja2 import Environment, FileSystemLoader
@@ -40,7 +45,7 @@ class SkillContentRenderer:
         self,
         skill_name: str,
         readme_content: str,
-        metadata: "SkillMetadata",  # type: ignore[name-defined]  # noqa: F821
+        metadata: "SkillMetadata",
         custom_context: Optional[Dict] = None,
         use_ai: bool = False,
         provider: str = "gemini",
@@ -98,7 +103,7 @@ class SkillContentRenderer:
         self,
         skill_name: str,
         readme_content: str,
-        metadata: "SkillMetadata",  # noqa: F821
+        metadata: "SkillMetadata",
         custom_context: Optional[Dict] = None,
     ) -> str:
         """Generate using Jinja2 template."""
@@ -155,7 +160,7 @@ class SkillContentRenderer:
         self,
         skill_name: str,
         readme_content: str,
-        metadata: "SkillMetadata",  # noqa: F821
+        metadata: "SkillMetadata",
     ) -> str:
         """Fallback inline generation (no Jinja2)."""
         title = skill_name.replace("-", " ").title()

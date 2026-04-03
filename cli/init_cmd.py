@@ -7,10 +7,10 @@ from typing import Optional
 
 import click
 
-logger = logging.getLogger(__name__)
-
 from cli._version import __version__
 from cli.utils import detect_provider, set_api_key_env
+
+logger = logging.getLogger(__name__)
 
 _PROVIDER_ENV = {
     "anthropic": "ANTHROPIC_API_KEY",

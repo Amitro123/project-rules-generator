@@ -450,7 +450,7 @@ def _extract_description(content: str, max_length: int = 200) -> str:
 
 
 # Backward-compat re-exports — import from readme_skill_extractor directly for new code
-from generator.analyzers.readme_skill_extractor import (  # noqa: F401
+from generator.analyzers.readme_skill_extractor import (  # noqa: F401, E402
     extract_anti_patterns,
     extract_auto_triggers,
     extract_process_steps,

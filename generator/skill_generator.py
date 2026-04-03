@@ -104,11 +104,14 @@ class SkillGenerator(ArtifactGenerator):
         # ── Duplicate guard ──────────────────────────────────────────────────
         _check_scope = scope if (scope != "project" or self.discovery.project_local_dir) else "learned"
         if self.discovery.skill_exists(safe_name, scope=_check_scope) and not force:
-            existing = self.discovery.resolve_skill(safe_name)
-            logger.info("Skill '%s' already exists — skipping. (use force=True to overwrite)", safe_name)
-            if existing is not None:
-                return existing.parent
-            return target_root / safe_name
+            import click
+
+            click.echo(f"Skill '{safe_name}' already exists — skipping. (use force=True to overwrite)")
+            # Return the actual existing path (flat file takes priority over directory)
+            flat = target_root / f"{safe_name}.md"
+            if flat.exists():
+                return flat.parent  # return parent dir for flat files (consistent with directory style)
+            return target_root / safe_name  # directory-style skill
         # ─────────────────────────────────────────────────────────────────────
 
         target_dir = target_root / safe_name

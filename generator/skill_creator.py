@@ -13,8 +13,6 @@ It generates high-quality, project-specific skills with:
 
 import logging
 from dataclasses import dataclass, field
-
-logger = logging.getLogger(__name__)
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -26,6 +24,8 @@ from generator.skill_metadata_builder import SkillMetadataBuilder
 from generator.skill_project_scanner import ProjectContextScanner
 from generator.tech_registry import TECH_TOOLS as _TECH_TOOLS
 from generator.utils.quality_checker import QualityReport
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

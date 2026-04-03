@@ -7,9 +7,9 @@ from typing import List
 
 import yaml
 
-logger = logging.getLogger(__name__)
-
 from .types import Skill
+
+logger = logging.getLogger(__name__)
 
 # Base location for external templates
 TEMPLATE_DIR = Path(__file__).parent.parent / "templates" / "skills"

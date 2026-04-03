@@ -4,9 +4,9 @@ import re
 from pathlib import Path
 from typing import Dict, List
 
-logger = logging.getLogger(__name__)
-
 from generator.utils.tech_detector import extract_context as _extract_context
+
+logger = logging.getLogger(__name__)
 
 
 class SkillParser:

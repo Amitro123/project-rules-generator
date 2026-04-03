@@ -222,8 +222,8 @@ class RulesGenerator:
 from generator.rules_sections import (  # noqa: F401, E402
     _build_context_strategy,
     _build_dep_section,
-    _build_dont_rules,
     _build_do_rules,
+    _build_dont_rules,
     _build_file_structure,
     _build_test_section,
     _build_workflow_section,
@@ -231,7 +231,6 @@ from generator.rules_sections import (  # noqa: F401, E402
     _generate_enhanced_rules,
     _sanitize_readme_section,
 )
-
 
 # ═════════════════════════════════════════════════════════════════════════════
 # BACKWARD COMPATIBILITY — module-level functions
