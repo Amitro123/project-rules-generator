@@ -10,7 +10,7 @@ Project Rules Generator offers a suite of tools to analyze your codebase and gen
 | **AI Skills** | Uses LLM to generate custom skills | Slow | Yes | ✅ |
 | **Incremental** | Updates only changed sections | Very Fast | No | ✅ |
 | **Task Breakdown** | Breaks large tasks into smaller steps | Medium | Yes | ✅ |
-| **Autopilot** | End-to-end discovery & execution loop | Slow | Yes | ✅ |
+| **Autopilot** | End-to-end discovery & execution loop (supervised) | Slow | Yes | ✅ |
 | **Project Manager** | Lifecycle orchestration (Setup→Verify→Exec→Report) | Slow | Yes | ✅ |
 | **Two-Stage Planning** | Design → Plan workflow for complex features | Slow | Yes | ✅ |
 | **Constitution** | Generates high-level principles | Fast | No | ✅ |
@@ -20,6 +20,7 @@ Project Rules Generator offers a suite of tools to analyze your codebase and gen
 | **`prg watch`** | Watches project files and auto-runs `analyze --incremental` on change | Instant | No | ✅ |
 | **Spec Generation** | LLM-generated `spec.md` (Overview, Goals, User Stories, Acceptance Criteria) | Medium | Yes | ✅ |
 | **Skill Usage Tracking** | Auto-tracks match counts; `feedback` votes; `stale` detection | Instant | No | ✅ |
+| **Ralph Feature Loop** 🔁 | Autonomous feature-scoped iteration loop with git commits & self-review gate | Slow | Yes | ✅ |
 
 ---
 
@@ -230,8 +231,10 @@ prg agent "I need to fix a bug"
 
 **Use Case**: Building autonomous agents that know *exactly* which tool to use for a specific request, without hallucinating.
 
-### Feature 9: Autopilot 🤖 NEW
-**What it does**: A fully autonomous loop that takes a project from zero to implemented features.
+### Feature 9: Autopilot 🤖
+**What it does**: A project-wide supervised loop that takes a project from zero to implemented features, asking for human approval at each task boundary.
+
+> **Tip**: For feature-scoped *autonomous* iteration (no per-task prompts, persistent state, self-review gate), see [Feature 15: Ralph Feature Loop](#feature-15-ralph-feature-loop-engine-).
 
 **Command**:
 ```bash
@@ -246,11 +249,11 @@ prg autopilot .
     -   Creates a git branch (`autopilot/task-001`).
     -   Uses an AI agent to implement the changes.
     -   Runs verification (tests/lint).
-4.  **Human Review**: Asks for your approval.
+4.  **Human Review**: Asks for your approval at every task.
     -   **Yes**: Merges branch.
     -   **No**: Rolls back changes.
 
-**Use Case**: "Hands-off" development for well-defined projects or refactoring tasks.
+**Use Case**: "Supervised" development for well-defined projects with explicit human sign-off on each change.
 
 ### Feature 10: Project Manager Agent 👨‍💼 NEW
 **What it does**: Acts as a verified project manager. It ensures your project is set up correctly (Plan, Spec, Architecture), validates readiness, and then manages the execution.
@@ -421,3 +424,92 @@ prg watch . --ide cursor --quiet # target a specific IDE, suppress non-error out
 
 **Use Case**: Active development sessions where README, dependencies, or tests evolve frequently. Pair with `--quiet` for CI or background terminal use.
 
+---
+
+### Feature 15: Ralph Feature Loop Engine 🔁
+
+**What it does**: A feature-scoped autonomous loop that runs iteratively on a single git branch until a feature is complete — or max iterations are reached. Unlike [Autopilot (Feature 9)](#feature-9-autopilot-), Ralph requires **no human input per iteration**: it self-reviews, runs tests, and keeps going until success criteria are met.
+
+**Commands**:
+```bash
+# Step 1: Set up a new feature (creates plan, branch, STATE.json)
+prg feature "Add loading states to forms"
+# Output:
+#   features/FEATURE-001/PLAN.md
+#   features/FEATURE-001/TASKS.yaml
+#   features/FEATURE-001/STATE.json
+#   git branch: ralph/FEATURE-001-add-loading-states
+
+# Step 2: Run the autonomous loop
+prg ralph run FEATURE-001
+
+# Inspect progress
+prg ralph status FEATURE-001
+
+# Resume after an interruption or emergency stop
+prg ralph resume FEATURE-001
+
+# Emergency stop
+prg ralph stop FEATURE-001 --reason "scope changed"
+
+# Human approval → merge to main
+prg ralph approve FEATURE-001
+```
+
+**Loop Architecture**:
+```
+prg feature "Improve UI onboarding"
+    ↓
+features/FEATURE-001/ created + git branch
+    ↓
+prg ralph run FEATURE-001   ← [RALPH LOOP]
+    iteration 1: context (rules.md + PLAN.md) → skill match → agent → git commit → self-review
+    iteration 2: review issues fixed if score < 70 → tests run
+    ...
+    iteration N: score > 85 + tests pass + no pending tasks → success → PR created
+```
+
+**Persistent State (`features/FEATURE-001/STATE.json`)**:
+```json
+{
+  "feature_id": "FEATURE-001",
+  "task": "Add loading states to forms",
+  "branch_name": "ralph/FEATURE-001-add-loading-states",
+  "status": "running",
+  "iteration": 3,
+  "tasks_total": 5,
+  "tasks_complete": 2,
+  "max_iterations": 20,
+  "last_review_score": 82,
+  "test_pass_rate": 1.0,
+  "exit_condition": null
+}
+```
+
+**Exit Conditions**:
+| Condition | Behaviour |
+|---|---|
+| Review score > 85 + tests pass + no pending tasks | `status=success`, PR created |
+| Max iterations reached | `status=max_iterations`, PR created with findings |
+| Test failures 3× in a row | `status=stopped`, human intervention requested |
+| Review score < 60 | `status=stopped` (emergency stop) |
+| `prg ralph stop` | `status=stopped`, checkout main |
+
+**How it differs from Autopilot**:
+
+| | Autopilot `prg autopilot` | Ralph `prg ralph run` |
+|---|---|---|
+| **Scope** | Whole project | Single feature |
+| **Human gates** | Every task | Only at `prg ralph approve` |
+| **State persistence** | None | `STATE.json` (resumable) |
+| **Self-review** | No | Per-iteration (score gate) |
+| **Git strategy** | One branch per task | One branch per feature |
+| **Iteration limit** | Unlimited (until done) | Configurable (default 20) |
+
+**Integration with existing PRG**:
+- Reads `.clinerules/rules.md` as loop context on every iteration
+- Uses `AgentExecutor.match_skill()` to auto-trigger relevant skills
+- Uses `SelfReviewer` (same as `prg review`) for per-iteration quality gate
+- Saves per-iteration critiques to `features/FEATURE-001/CRITIQUES/iter-001.md`
+
+**Use Case**: Autonomous feature development where you want the AI to keep iterating on a single well-scoped change ("Add loading states", "Add caching layer") until it's genuinely done — rather than stopping every task to ask for approval.

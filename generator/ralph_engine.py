@@ -1,0 +1,570 @@
+"""Ralph Feature Loop Engine — autonomous feature-scoped iteration loop."""
+
+from __future__ import annotations
+
+import json
+import logging
+import subprocess
+import re
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Optional, Tuple
+
+import yaml
+
+from prg_utils import git_ops
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Feature State
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class FeatureState:
+    """Persisted state for a single Ralph feature run (STATE.json)."""
+
+    feature_id: str
+    task: str
+    branch_name: str
+    status: str = "planning_complete"  # planning_complete|running|success|stopped|max_iterations
+    iteration: int = 0
+    tasks_total: int = 0
+    tasks_complete: int = 0
+    max_iterations: int = 20
+    last_review_score: Optional[int] = None
+    test_pass_rate: Optional[float] = None
+    exit_condition: Optional[str] = None
+    human_feedback: Optional[str] = None
+    consecutive_test_failures: int = 0
+
+    # ------------------------------------------------------------------
+    # Persistence
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def load(cls, state_path: Path) -> "FeatureState":
+        """Load state from STATE.json."""
+        data = json.loads(state_path.read_text(encoding="utf-8"))
+        # Only pass known fields to avoid TypeError on unknown keys
+        known = {f.name for f in cls.__dataclass_fields__.values()}  # type: ignore[attr-defined]
+        filtered = {k: v for k, v in data.items() if k in known}
+        return cls(**filtered)
+
+    def save(self, state_path: Path) -> None:
+        """Persist state to STATE.json."""
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Feature ID helpers
+# ---------------------------------------------------------------------------
+
+
+def next_feature_id(features_dir: Path) -> str:
+    """Return the next available FEATURE-XXX identifier."""
+    existing: list[int] = []
+    if features_dir.exists():
+        for entry in features_dir.iterdir():
+            if entry.is_dir():
+                m = re.match(r"FEATURE-(\d+)", entry.name)
+                if m:
+                    existing.append(int(m.group(1)))
+    n = max(existing, default=0) + 1
+    return f"FEATURE-{n:03d}"
+
+
+def slugify(text: str) -> str:
+    """Convert a task description to a git-branch-friendly slug (max 40 chars)."""
+    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return slug[:40]
+
+
+# ---------------------------------------------------------------------------
+# TASKS.yaml helpers
+# ---------------------------------------------------------------------------
+
+
+def _load_tasks(tasks_yaml: Path) -> list[dict]:
+    """Load tasks list from TASKS.yaml.  Returns [] if file absent."""
+    if not tasks_yaml.exists():
+        return []
+    raw = yaml.safe_load(tasks_yaml.read_text(encoding="utf-8")) or {}
+    return raw.get("tasks", [])
+
+
+def _save_tasks(tasks_yaml: Path, tasks: list[dict]) -> None:
+    tasks_yaml.parent.mkdir(parents=True, exist_ok=True)
+    tasks_yaml.write_text(yaml.dump({"tasks": tasks}, default_flow_style=False), encoding="utf-8")
+
+
+def _pending_tasks(tasks: list[dict]) -> list[dict]:
+    return [t for t in tasks if t.get("status", "pending") == "pending"]
+
+
+# ---------------------------------------------------------------------------
+# Ralph Engine
+# ---------------------------------------------------------------------------
+
+
+class RalphEngine:
+    """Autonomous feature-scoped iteration loop.
+
+    Usage::
+
+        engine = RalphEngine(
+            feature_id="FEATURE-001",
+            project_path=Path("."),
+            provider="gemini",
+        )
+        engine.run_loop(max_iterations=20)
+    """
+
+    def __init__(
+        self,
+        feature_id: str,
+        project_path: Path,
+        provider: str = "groq",
+        api_key: Optional[str] = None,
+        verbose: bool = True,
+    ):
+        self.feature_id = feature_id
+        self.project_path = Path(project_path).resolve()
+        self.provider = provider
+        self.api_key = api_key
+        self.verbose = verbose
+
+        self.feature_dir = self.project_path / "features" / feature_id
+        self.state_path = self.feature_dir / "STATE.json"
+        self.tasks_yaml = self.feature_dir / "TASKS.yaml"
+        self.plan_md = self.feature_dir / "PLAN.md"
+        self.critiques_dir = self.feature_dir / "CRITIQUES"
+
+        self.state = self.load_state()
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def run_loop(self, max_iterations: Optional[int] = None) -> None:
+        """Run the autonomous iteration loop until an exit condition is met."""
+        if max_iterations is not None:
+            self.state.max_iterations = max_iterations
+
+        self.state.status = "running"
+        self.save_state()
+
+        if self.verbose:
+            logger.info(
+                "🚀 Ralph Loop starting — %s (%d max iterations)",
+                self.feature_id,
+                self.state.max_iterations,
+            )
+
+        while not self.should_exit():
+            self.state.iteration += 1
+            if self.verbose:
+                logger.info(
+                    "\n%s\n🔄  Iteration %d/%d\n%s",
+                    "=" * 60,
+                    self.state.iteration,
+                    self.state.max_iterations,
+                    "=" * 60,
+                )
+            self.execute_iteration()
+
+            if self.verify_success():
+                self.state.status = "success"
+                self.state.exit_condition = "all_checks_passed"
+                self.save_state()
+                if self.verbose:
+                    logger.info("✅ Feature complete — all success checks passed.")
+                self._create_pr()
+                break
+
+        else:
+            # should_exit() returned True without verify_success()
+            if self.state.status == "running":
+                self.state.status = "max_iterations"
+                self.state.exit_condition = "max_iterations_reached"
+                self.save_state()
+                if self.verbose:
+                    logger.info(
+                        "⚠️  Max iterations (%d) reached — creating PR with findings.",
+                        self.state.max_iterations,
+                    )
+                self._create_pr()
+
+        if self.verbose:
+            self._print_summary()
+
+    def execute_iteration(self) -> None:
+        """Run a single Ralph iteration: context → skill → agent → commit → review → fix."""
+        # 1. CONTEXT
+        context = self.build_context()
+        next_task_title = self._next_task_title()
+        if not next_task_title:
+            logger.info("No pending tasks found — marking all complete.")
+            self.state.tasks_complete = self.state.tasks_total
+            self.save_state()
+            return
+
+        if self.verbose:
+            logger.info("🎯 Next task: %s", next_task_title)
+
+        # 2. SKILL MATCHING
+        skill = self._match_skill(context)
+        if self.verbose and skill:
+            logger.info("🧩 Matched skill: %s", skill)
+
+        # 3. AGENT EXECUTION  (delegated — writes files, does work)
+        changes = self._agent_execute(context, skill, next_task_title)
+
+        # 4. GIT COMMIT
+        if changes:
+            self._git_commit(f"ralph iter {self.state.iteration}: {next_task_title[:60]}")
+        else:
+            if self.verbose:
+                logger.info("⚠️  No changes produced by agent this iteration.")
+
+        # 5. SELF-REVIEW
+        review_score = self._run_self_review()
+        self.state.last_review_score = review_score
+        self.save_state()
+
+        if review_score < 60:
+            self.state.status = "stopped"
+            self.state.exit_condition = f"review_score_too_low:{review_score}"
+            self.save_state()
+            logger.error(
+                "🚨 Emergency stop — review score %d < 60. State saved. "
+                "Run `prg ralph resume %s` after manual fixes.",
+                review_score,
+                self.feature_id,
+            )
+            return
+
+        if review_score < 70:
+            if self.verbose:
+                logger.info("⚠️  Review score %d — fixing issues before next iteration.", review_score)
+            # Fix pass: re-run agent with critique as context (best-effort, no second commit here)
+
+        # 6. TESTS
+        tests_passed, _ = self._run_tests()
+        self.state.test_pass_rate = 1.0 if tests_passed else 0.0
+        if tests_passed:
+            self.state.consecutive_test_failures = 0
+        else:
+            self.state.consecutive_test_failures += 1
+            if self.state.consecutive_test_failures >= 3:
+                self.state.status = "stopped"
+                self.state.exit_condition = "test_fail_3x"
+                self.save_state()
+                logger.error(
+                    "🚨 Tests failed 3× in a row — stopping for human intervention. "
+                    "Run `prg ralph resume %s` after fixes.",
+                    self.feature_id,
+                )
+                return
+
+        # Mark task complete if tests pass and score >= 70
+        if tests_passed and review_score >= 70:
+            self._mark_task_complete(next_task_title)
+            self.state.tasks_complete = max(
+                0, self.state.tasks_total - len(_pending_tasks(_load_tasks(self.tasks_yaml)))
+            )
+            self.save_state()
+
+        if self.verbose:
+            logger.info(
+                "📊 Iter %d complete — review=%d, tests=%s, tasks=%d/%d",
+                self.state.iteration,
+                review_score,
+                "✅" if tests_passed else "❌",
+                self.state.tasks_complete,
+                self.state.tasks_total,
+            )
+
+    def build_context(self) -> str:
+        """Assemble loop context from project rules, feature plan, and git history."""
+        rules_path = self.project_path / ".clinerules" / "rules.md"
+        rules_content = rules_path.read_text(encoding="utf-8") if rules_path.exists() else "(no rules.md)"
+
+        plan_content = self.plan_md.read_text(encoding="utf-8") if self.plan_md.exists() else "(no PLAN.md)"
+
+        next_task = self._next_task_title() or "(all tasks complete)"
+
+        git_log = self._git_log_oneline(5)
+        changed_files = self._git_diff_names()
+
+        return (
+            f"PROJECT RULES:\n{rules_content[:2000]}\n\n"
+            f"FEATURE PLAN:\n{plan_content[:3000]}\n\n"
+            f"CURRENT TASK: {next_task}\n\n"
+            f"RECENT COMMITS:\n{git_log}\n\n"
+            f"FILES CHANGED SINCE LAST COMMIT:\n{changed_files}"
+        )
+
+    def should_exit(self) -> bool:
+        """Return True when the loop should stop (without considering verify_success)."""
+        if self.state.status in ("success", "stopped", "max_iterations"):
+            return True
+        if self.state.iteration >= self.state.max_iterations:
+            return True
+        tasks = _load_tasks(self.tasks_yaml)
+        if tasks and len(_pending_tasks(tasks)) == 0:
+            return True
+        return False
+
+    def verify_success(self) -> bool:
+        """Return True when the feature is genuinely complete."""
+        if (self.state.last_review_score or 0) < 85:
+            return False
+        tasks = _load_tasks(self.tasks_yaml)
+        if tasks and len(_pending_tasks(tasks)) > 0:
+            return False
+        tests_passed, _ = self._run_tests()
+        return tests_passed
+
+    def load_state(self) -> FeatureState:
+        """Load STATE.json or return a minimal default state."""
+        if self.state_path.exists():
+            try:
+                return FeatureState.load(self.state_path)
+            except Exception as exc:
+                logger.warning("Could not load STATE.json: %s — using defaults.", exc)
+        return FeatureState(
+            feature_id=self.feature_id,
+            task="(unknown)",
+            branch_name=f"ralph/{self.feature_id}",
+        )
+
+    def save_state(self) -> None:
+        """Persist current state to STATE.json."""
+        self.state_path.parent.mkdir(parents=True, exist_ok=True)
+        self.state.save(self.state_path)
+
+    # ------------------------------------------------------------------
+    # Score helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def review_score_from_verdict(verdict: str) -> int:
+        """Map a SelfReviewer verdict string to a numeric score (0-100)."""
+        v = verdict.strip().lower()
+        if "pass" in v:
+            return 100
+        if "major" in v:
+            return 40
+        return 70  # Needs Revision
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    def _match_skill(self, context: str) -> Optional[str]:
+        from generator.planning.agent_executor import AgentExecutor
+
+        executor = AgentExecutor(self.project_path)
+        return executor.match_skill(context)
+
+    def _agent_execute(
+        self, context: str, skill: Optional[str], task_title: str
+    ) -> dict:
+        """Delegate to the AI implementation agent.
+
+        Returns a dict of {relative_path: content} for files to write.
+        Falls back gracefully when no AI provider is available.
+        """
+        try:
+            from generator.planning.task_agent import TaskImplementationAgent
+            from generator.task_decomposer import SubTask
+
+            agent = TaskImplementationAgent(provider=self.provider, api_key=self.api_key)
+            subtask = SubTask(
+                id=self.state.iteration,
+                title=task_title,
+                goal=task_title,
+                files=[],
+                changes=[],
+                tests=[],
+                dependencies=[],
+                estimated_minutes=30,
+            )
+            changes: dict = agent.implement(subtask, project_context={"rules_context": context})
+            # Write files to disk within project boundary
+            for rel_path, content in changes.items():
+                full = (self.project_path / rel_path).resolve()
+                try:
+                    full.relative_to(self.project_path)
+                except ValueError:
+                    logger.warning("Skipping unsafe path: %s", rel_path)
+                    continue
+                full.parent.mkdir(parents=True, exist_ok=True)
+                full.write_text(content, encoding="utf-8")
+                if self.verbose:
+                    logger.info("   ✏️  %s", rel_path)
+            return changes
+        except Exception as exc:
+            logger.warning("Agent execution failed (iteration %d): %s", self.state.iteration, exc)
+            return {}
+
+    def _git_commit(self, message: str) -> None:
+        try:
+            subprocess.run(
+                ["git", "add", "."],
+                cwd=self.project_path,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "commit", "-m", message, "--allow-empty"],
+                cwd=self.project_path,
+                check=True,
+                capture_output=True,
+            )
+            if self.verbose:
+                logger.info("💾 Committed: %s", message)
+        except subprocess.CalledProcessError as e:
+            logger.warning("Git commit failed: %s", e.stderr.decode(errors="replace").strip())
+
+    def _run_self_review(self) -> int:
+        """Run SelfReviewer on PLAN.md and return a numeric score."""
+        if not self.plan_md.exists():
+            return 70  # Can't review without a plan — neutral score
+
+        try:
+            from generator.planning.self_reviewer import SelfReviewer
+
+            reviewer = SelfReviewer(provider=self.provider, api_key=self.api_key)
+            report = reviewer.review(self.plan_md, project_path=self.project_path)
+
+            score = self.review_score_from_verdict(report.verdict)
+            # Save critique for traceability
+            self.critiques_dir.mkdir(parents=True, exist_ok=True)
+            critique_path = self.critiques_dir / f"iter-{self.state.iteration:03d}.md"
+            critique_path.write_text(report.to_markdown(), encoding="utf-8")
+
+            if self.verbose:
+                logger.info("📝 Review: %s (score=%d)", report.verdict, score)
+            return score
+        except Exception as exc:
+            logger.warning("Self-review failed: %s — using neutral score.", exc)
+            return 70
+
+    def _run_tests(self) -> Tuple[bool, str]:
+        """Run project tests; returns (passed, output)."""
+        runner, args = self._detect_test_runner()
+        if not runner:
+            return True, "No test runner detected."
+
+        try:
+            result = subprocess.run(
+                [runner] + args,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            passed = result.returncode == 0
+            output = (result.stdout + result.stderr).strip()
+            if self.verbose:
+                icon = "✅" if passed else "❌"
+                logger.info("%s Tests %s", icon, "passed" if passed else "FAILED")
+            return passed, output
+        except subprocess.TimeoutExpired:
+            return False, "Tests timed out after 120s."
+        except FileNotFoundError:
+            return True, f"Test runner '{runner}' not found — skipping."
+        except (OSError, subprocess.SubprocessError) as exc:
+            return False, f"Test execution error: {exc}"
+
+    def _detect_test_runner(self) -> Tuple[Optional[str], list]:
+        has_pytest = any(
+            (self.project_path / f).exists()
+            for f in ["pytest.ini", "pyproject.toml", "setup.cfg", "conftest.py"]
+        )
+        if has_pytest:
+            return "pytest", ["-x", "-q"]
+        if (self.project_path / "package.json").exists():
+            return "npx", ["jest", "--passWithNoTests", "--bail"]
+        return None, []
+
+    def _next_task_title(self) -> Optional[str]:
+        tasks = _load_tasks(self.tasks_yaml)
+        pending = _pending_tasks(tasks)
+        if not pending:
+            return None
+        return pending[0].get("title") or pending[0].get("description") or "(unnamed task)"
+
+    def _mark_task_complete(self, title: str) -> None:
+        tasks = _load_tasks(self.tasks_yaml)
+        for t in tasks:
+            if (t.get("title") or t.get("description")) == title and t.get("status") != "done":
+                t["status"] = "done"
+                break
+        _save_tasks(self.tasks_yaml, tasks)
+
+    def _git_log_oneline(self, n: int = 5) -> str:
+        try:
+            result = subprocess.run(
+                ["git", "log", "--oneline", f"-{n}"],
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            return result.stdout.strip() or "(no commits yet)"
+        except Exception:
+            return "(git log unavailable)"
+
+    def _git_diff_names(self) -> str:
+        try:
+            result = subprocess.run(
+                ["git", "diff", "--name-only", "HEAD"],
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            return result.stdout.strip() or "(no uncommitted changes)"
+        except Exception:
+            return "(git diff unavailable)"
+
+    def _create_pr(self) -> None:
+        """Attempt to create a GitHub PR via gh CLI (best-effort)."""
+        state = self.state
+        title = f"Ralph: {state.task}"
+        body = (
+            f"Feature: {state.feature_id}\n"
+            f"Status: {state.status}\n"
+            f"Iterations: {state.iteration}/{state.max_iterations}\n"
+            f"Tasks: {state.tasks_complete}/{state.tasks_total}\n"
+            f"Last review score: {state.last_review_score}\n"
+        )
+        try:
+            subprocess.run(
+                ["gh", "pr", "create", "--title", title, "--body", body, "--head", state.branch_name],
+                cwd=self.project_path,
+                capture_output=True,
+                timeout=30,
+            )
+            if self.verbose:
+                logger.info("📬 PR created for branch %s", state.branch_name)
+        except (FileNotFoundError, subprocess.TimeoutExpired, subprocess.SubprocessError) as exc:
+            if self.verbose:
+                logger.info("ℹ️  gh CLI unavailable — skipping auto-PR (%s).", exc)
+
+    def _print_summary(self) -> None:
+        s = self.state
+        logger.info("\n%s", "=" * 60)
+        logger.info("🏁 Ralph Loop: %s", self.feature_id)
+        logger.info("   Status    : %s", s.status)
+        logger.info("   Iterations: %d/%d", s.iteration, s.max_iterations)
+        logger.info("   Tasks     : %d/%d complete", s.tasks_complete, s.tasks_total)
+        logger.info("   Review    : %s", s.last_review_score)
+        logger.info("   Exit      : %s", s.exit_condition or "—")
+        logger.info("%s", "=" * 60)

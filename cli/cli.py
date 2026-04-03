@@ -70,11 +70,13 @@ from cli.agent import agent_command, design, plan, review, setup, start
 from cli.analyze_cmd import analyze
 from cli.autopilot_cmd import autopilot
 from cli.create_rules_cmd import create_rules
+from cli.feature_cmd import feature
 from cli.gaps_cmd import gaps, spec_cmd
 from cli.init_cmd import init
 from cli.jobs import exec_task, leaderboard, next_task, query_tasks, status
 from cli.manager_cmd import manager
 from cli.providers_cmd import providers_group
+from cli.ralph_cmd import ralph_group
 from cli.skills_cmd import skills_group
 from cli.tasks_cmd import tasks_cmd
 from cli.watch_cmd import watch
@@ -101,6 +103,8 @@ cli.add_command(leaderboard)
 cli.add_command(providers_group, name="providers")
 cli.add_command(skills_group, name="skills")
 cli.add_command(watch)
+cli.add_command(feature)
+cli.add_command(ralph_group, name="ralph")
 
 
 def _sanitize_env_from_dotenv() -> None:

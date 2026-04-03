@@ -1,6 +1,6 @@
 # Project Roadmap: Project Rules Generator
 
-> Last synced with codebase: 2026-03-28
+> Last synced with codebase: 2026-04-03
 
 ---
 
@@ -37,7 +37,7 @@
 
 - [ ] Task 1: Evolution System — **NOT IMPLEMENTED** (no feedback loop or usage scoring)
 - [x] Task 2: Context Awareness (full `EnhancedProjectParser`, 3-layer skill resolution)
-- [x] Task 3: Bug Fixes (Issues #17, #18, #27; 515 tests passing as of 2026-03-28)
+- [x] Task 3: Bug Fixes (Issues #17, #18, #27, #30+; 650 tests passing as of 2026-04-03)
 
 ---
 
@@ -49,12 +49,16 @@
 
 ---
 
-## Recent Work (2026-03-28 session)
+## Recent Work (2026-04-03 session)
 
 ### Completed
 
 | Item | Details |
 |---|---|
+| **CR #3 Clean Pass** | All issues from CR #2 resolved; 650/650 tests green. |
+| PRIORITY truncation fix | Two-stage fallback for codebase scanning. |
+| API Key robustness | Defensive normalization in `TaskDecomposer` and `prg review`. |
+| Logger migration | Removed raw `print()` from `design_generator.py`. |
 | Skill routing fixed | `--create-skill` → `skills/project/`; README flow → `skills/learned/` |
 | Quality checker auto-parse | `validate_quality()` now parses YAML frontmatter itself; all 22 skills score 90-100 |
 | Strategy chain improved | READMEStrategy: relevance check prevents README echoing; CoworkStrategy: returns None when `use_ai=False`; StubStrategy: full YAML frontmatter scaffold |
@@ -113,3 +117,21 @@
 | Unit tests for `SkillDiscovery`, `SkillPathManager`, `EnhancedSkillMatcher` | Medium |
 | `except Exception:` audit — replace broad catches with specific types | Medium |
 | Evolution / feedback loop (skills improve with usage) | Low |
+
+---
+
+## Future Strategy: Taking PRG to the Next Level 🚀
+
+A comprehensive strategy for the next phase of development has been established, focusing on distribution, live-mode automation, and ecosystem integration.
+
+**Detailed Strategy Guide:** [Next Level Strategy](file:///c:/Users/Dana/.gemini/antigravity/scratch/project-rules-generator/docs/NEXT-LEVEL-STRATEGY.md)
+
+### 🔝 Priority Tiers
+
+| Tier | Focus Area | Key Features |
+|---|---|---|
+| **Tier 1** | High Impact | **PyPI Publishing**, **`prg watch`** (live mode), Evolution System (Learning), IDE Extension |
+| **Tier 2** | Ecosystem | GitHub Actions, Multi-file Context (ADRs, Architecture), LiteLLM integration, MCP Server |
+| **Tier 3** | Debt/Cleanup | Specific Exception handling, God-object decomposition (`analyze_cmd.py`) |
+
+**Immediate Next Step:** Prepare for PyPI publishing and implement `prg watch`.

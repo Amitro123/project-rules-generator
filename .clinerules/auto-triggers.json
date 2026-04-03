@@ -1,4 +1,18 @@
 {
+  "agent-architecture-analyzer": [
+    "analyze agent",
+    "check architecture",
+    "review my agents",
+    "debugging agent loops or coordination failures",
+    "planning new agent capabilities or adding a new agent role"
+  ],
+  "analyze-code": [
+    "analyze code",
+    "check quality",
+    "lint the project",
+    "a pr or release cut",
+    "a large refactor"
+  ],
   "brainstorming": [
     "i want to add...",
     "let's build...",
@@ -15,8 +29,21 @@
   "writing-skills": [
     "create a skill for...",
     "we should formalize...",
-    "repetitive pattern identified",
+    "repetitive pattern identified (3+ times)",
     "project has unique workflow in readme"
+  ],
+  "prompt-improver": [
+    "agent is failing to follow instructions consistently",
+    "user sees hallucinations or unexpected formatting",
+    "improve this prompt",
+    "fix the agent instructions"
+  ],
+  "refactor-module": [
+    "refactor",
+    "clean up code",
+    "improve structure",
+    "module has grown beyond a single responsibility",
+    "code review identifies structural issues"
   ],
   "requesting-code-review": [
     "task/feature complete",
@@ -28,7 +55,8 @@
     "plan.md exists and user approves execution",
     "execute the plan",
     "let's go",
-    "start implementation"
+    "start implementation",
+    "`prg plan` generates a task list"
   ],
   "systematic-debugging": [
     "bug",
@@ -37,6 +65,13 @@
     "failing test",
     "ci/cd failure",
     "exception in logs"
+  ],
+  "test-coverage": [
+    "check coverage",
+    "run tests",
+    "show coverage report",
+    "merging a feature branch",
+    "adding new modules without tests"
   ],
   "test-driven-development": [
     "new feature implementation",

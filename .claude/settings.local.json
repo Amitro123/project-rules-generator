@@ -46,7 +46,9 @@
       "Bash(prg providers:*)",
       "Bash(pytest tests/test_provider_wiring.py --tb=short -q)",
       "Bash(pytest tests/test_task_decomposer.py --tb=short -q)",
-      "Bash(find C:UsersDana.geminiantigravityscratchproject-rules-generator.clinerules -name *.md)"
+      "Bash(find C:UsersDana.geminiantigravityscratchproject-rules-generator.clinerules -name *.md)",
+      "Bash(ruff check:*)",
+      "Bash(grep -v \"^Found\\\\|^$\")"
     ]
   }
 }
