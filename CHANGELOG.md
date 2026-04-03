@@ -38,9 +38,39 @@ prg watch [PATH] [--delay 2.0] [--ide cursor] [--quiet]
 
 `watchdog>=3.0.0` — installed automatically with the package.
 
+### Skill usage tracking
+
+Every `prg agent` skill match now silently increments a persistent usage counter. Two new sub-commands let users record feedback and surface chronically unhelpful skills.
+
+**Data file:** `~/.project-rules-generator/skill-usage.json` — accumulates across all projects and sessions.
+
+**New module:** `generator/skill_tracker.py`
+- Thread-safe `SkillTracker` class backed by `skill-usage.json`
+- Tracks `match_count`, `useful` / `not_useful` vote totals, composite `score` (0.0–1.0), and `last_used` timestamp
+- Auto-called on every `prg agent` match — no user action required
+- `get_low_scoring(threshold=0.3)` returns skills below threshold that have ≥ 3 feedback votes
+
+**New commands:**
+
+`prg skills feedback <skill-name> --useful` | `--not-useful`
+- Records a vote for the named skill
+- Prints the updated score and vote breakdown
+- Example: `Recorded: 'pytest-testing-workflow' marked as useful. Score: 75% (3 useful / 1 not useful / 8 matches)`
+
+`prg skills stale [--threshold 0.3]`
+- Lists skills scoring below the threshold (default 30%) with ≥ 3 feedback votes
+- Shows score, vote counts, and match count per skill
+- Suggests `prg analyze . --create-skill <name>` to regenerate each flagged skill
+
+**End-to-end flow:**
+1. `prg agent "fix the failing tests"` → skill matched → `match_count` incremented automatically
+2. After using the skill: `prg skills feedback pytest-testing-workflow --useful`
+3. Over time: `prg skills stale` shows which skills are consistently unhelpful
+4. Regenerate: `prg analyze . --create-skill pytest-testing-workflow`
+
 ### Tests
 
-**Total: 671 passing**
+**Total: 706 passing**
 
 ---
 

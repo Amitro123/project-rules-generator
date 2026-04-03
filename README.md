@@ -3,7 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/project-rules-generator)](https://pypi.org/project/project-rules-generator/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-671%2B%20Passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-706%2B%20Passing-brightgreen.svg)](tests/)
 
 ---
 
@@ -160,7 +160,13 @@ prg analyze . --create-skill "auth-flow" --ai             # Create a global lear
 prg analyze . --create-skill "mypy-types" --scope builtin # Create a universal builtin/ skill
 prg skills list --all                                     # List project + learned + builtin skills
 prg skills validate my-skill                              # Run quality checker (score must be ≥ 90)
+prg skills feedback my-skill --useful                     # Record a useful vote for a skill
+prg skills feedback my-skill --not-useful                 # Record a not-useful vote for a skill
+prg skills stale                                          # List skills scoring below 30% with ≥3 votes
+prg skills stale --threshold 0.5                          # Adjust the low-score threshold
 ```
+
+Every `prg agent` match silently increments the skill's match count — no user action required. Use `prg skills feedback` after working with a skill, and `prg skills stale` periodically to find skills worth regenerating.
 
 ### 👁 4. Watch Mode
 

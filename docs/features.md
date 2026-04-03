@@ -19,6 +19,7 @@ Project Rules Generator offers a suite of tools to analyze your codebase and gen
 | **`prg skills list/validate/show`** | Sub-commands for skill inspection and validation | Instant | No | ✅ |
 | **`prg watch`** | Watches project files and auto-runs `analyze --incremental` on change | Instant | No | ✅ |
 | **Spec Generation** | LLM-generated `spec.md` (Overview, Goals, User Stories, Acceptance Criteria) | Medium | Yes | ✅ |
+| **Skill Usage Tracking** | Auto-tracks match counts; `feedback` votes; `stale` detection | Instant | No | ✅ |
 
 ---
 
@@ -349,6 +350,49 @@ prg review DESIGN.md --output CRITIQUE.md --tasks
 **Fallback**: When the LLM is unavailable, a static hallucination check still runs — detecting invented `src/` paths and common placeholder patterns.
 
 **Use Case**: Quality-gate generated artifacts before committing them. Especially useful after `prg plan` or `prg design` to catch LLM hallucinations early.
+
+---
+
+### Feature 14: Skill Usage Tracking
+
+**What it does**: Builds a persistent feedback loop around skill quality. Every time `prg agent` matches a skill the match count is incremented silently. Developers vote on individual skills after using them, and `prg skills stale` surfaces skills that are consistently unhelpful so they can be regenerated.
+
+**Data file**: `~/.project-rules-generator/skill-usage.json` — accumulates across all projects and sessions.
+
+**Commands**:
+```bash
+# Record a vote after using a skill
+prg skills feedback pytest-testing-workflow --useful
+prg skills feedback pytest-testing-workflow --not-useful
+
+# Find skills that are consistently unhelpful
+prg skills stale
+prg skills stale --threshold 0.5   # stricter cutoff
+```
+
+**Example feedback output**:
+```
+Recorded: 'pytest-testing-workflow' marked as useful. Score: 75% (3 useful / 1 not useful / 8 matches)
+```
+
+**Example stale output**:
+```
+Low-scoring skills (score < 30%, >= 3 votes):
+  legacy-deploy-flow   score=20%  useful=1  not_useful=4  matches=12
+  old-lint-workflow    score=25%  useful=1  not_useful=3  matches=7
+
+Suggestion: prg analyze . --create-skill <name>  to regenerate each skill.
+```
+
+**End-to-end workflow**:
+1. `prg agent "fix the failing tests"` — skill matched, `match_count` incremented automatically
+2. After working with the skill: `prg skills feedback pytest-testing-workflow --useful`
+3. Periodically: `prg skills stale` to find candidates for regeneration
+4. Regenerate: `prg analyze . --create-skill pytest-testing-workflow`
+
+**Implementation**: `generator/skill_tracker.py` — thread-safe `SkillTracker` class. `get_low_scoring(threshold=0.3)` returns skills below the threshold that have accumulated at least 3 feedback votes, preventing premature flagging of new skills.
+
+**Use Case**: Continuous quality improvement of your skill library. Skills that helped you solve real problems rise; skills that misfire or produce irrelevant output are flagged automatically.
 
 ---
 
