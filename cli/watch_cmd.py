@@ -20,12 +20,19 @@ WATCH_FILES = {
     "setup.py",
     "setup.cfg",
     "package.json",
+    "package-lock.json",
     "Cargo.toml",
+    "Cargo.lock",
     "go.mod",
+    "go.sum",
+    "Pipfile",
+    "Pipfile.lock",
+    "poetry.lock",
     "requirements.txt",
     "requirements-dev.txt",
     "requirements-llm.txt",
     ".env",
+    ".gitignore",
     "docker-compose.yml",
     "docker-compose.yaml",
     "Dockerfile",
@@ -34,8 +41,37 @@ WATCH_FILES = {
 # Directory name prefixes that trigger on any new file inside them
 WATCH_DIRS = {"tests", "test", "spec"}
 
+# Paths to always ignore (gitignore-like noise filter)
+_IGNORE_DIRS = {
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "node_modules",
+    "dist",
+    "build",
+    ".clinerules",
+    ".claude",
+}
 
-def _should_trigger(path: str, project_path: Path) -> bool:
+
+def _load_gitignore_spec(project_path: Path):
+    """Load .gitignore patterns using pathspec (returns None if unavailable)."""
+    try:
+        import pathspec
+
+        gitignore = project_path / ".gitignore"
+        if gitignore.exists():
+            return pathspec.PathSpec.from_lines("gitignore", gitignore.read_text(encoding="utf-8").splitlines())
+    except Exception:
+        pass
+    return None
+
+
+def _should_trigger(path: str, project_path: Path, gitignore_spec=None) -> bool:
     """Return True if the changed file should trigger a re-analyze."""
     try:
         rel = Path(path).relative_to(project_path)
@@ -44,6 +80,14 @@ def _should_trigger(path: str, project_path: Path) -> bool:
 
     parts = rel.parts
     name = rel.name
+
+    # Always ignore known noise directories
+    if parts and parts[0] in _IGNORE_DIRS:
+        return False
+
+    # Filter via .gitignore patterns
+    if gitignore_spec and gitignore_spec.match_file(str(rel)):
+        return False
 
     # Top-level watched files
     if len(parts) == 1 and name in WATCH_FILES:
@@ -62,7 +106,16 @@ def _should_trigger(path: str, project_path: Path) -> bool:
 
 
 class _PRGHandler:
-    """Watchdog-style event handler with debounce and re-entry guard."""
+    """Watchdog event handler with debounce and dirty-bit re-run logic.
+
+    Bug fixes vs. v1:
+    - Issue #1 (race condition): replaced _running bool with dirty-bit system.
+      If a change arrives while an analysis is running, _needs_rerun is set so
+      one final run executes after the current one completes — no drops.
+    - Issue #2 (gitignore): gitignore_spec is loaded once and passed to _should_trigger.
+    - Issue #3 (lock files): handled in WATCH_FILES constant above.
+    - Issue #4 (moved/deleted): on_change() is called for all event types.
+    """
 
     def __init__(
         self,
@@ -70,23 +123,33 @@ class _PRGHandler:
         delay: float,
         extra_args: List[str],
         verbose: bool,
+        gitignore_spec=None,
     ):
         self._project_path = project_path
         self._delay = delay
         self._extra_args = extra_args
         self._verbose = verbose
+        self._gitignore_spec = gitignore_spec
         self._timer: Optional[threading.Timer] = None
         self._running = False
+        self._needs_rerun = False
         self._lock = threading.Lock()
 
     def on_change(self, path: str) -> None:
         """Called by the observer thread when a file change is detected."""
-        if not _should_trigger(path, self._project_path):
+        if not _should_trigger(path, self._project_path, self._gitignore_spec):
             return
         if self._verbose:
-            rel = Path(path).relative_to(self._project_path) if Path(path).is_relative_to(self._project_path) else path
+            try:
+                rel = Path(path).relative_to(self._project_path)
+            except ValueError:
+                rel = path  # type: ignore[assignment]
             click.echo(f"[watch] Changed: {rel}")
         with self._lock:
+            if self._running:
+                # Analysis in progress — set dirty bit so we re-run after it finishes
+                self._needs_rerun = True
+                return
             if self._timer:
                 self._timer.cancel()
             self._timer = threading.Timer(self._delay, self._trigger)
@@ -95,11 +158,9 @@ class _PRGHandler:
 
     def _trigger(self) -> None:
         with self._lock:
-            if self._running:
-                if self._verbose:
-                    click.echo("[watch] Already running, skipping.")
-                return
             self._running = True
+            self._needs_rerun = False
+
         try:
             click.echo("[watch] Running: prg analyze --incremental ...")
             cmd = [sys.executable, "-m", "cli.cli", "analyze", str(self._project_path), "--incremental"]
@@ -112,6 +173,14 @@ class _PRGHandler:
         finally:
             with self._lock:
                 self._running = False
+                needs_rerun = self._needs_rerun
+                self._needs_rerun = False
+
+            # If a change arrived during the run, execute one final pass
+            if needs_rerun:
+                if self._verbose:
+                    click.echo("[watch] Change detected during run — re-running...")
+                self._trigger()
 
     def cancel(self) -> None:
         with self._lock:
@@ -132,8 +201,8 @@ class _PRGHandler:
 def watch(project_path: str, delay: float, ide: Optional[str], quiet: bool) -> None:
     """Watch project files and auto-run 'prg analyze --incremental' on changes.
 
-    Monitors README, pyproject.toml, requirements files, and test directories.
-    Press Ctrl+C to stop.
+    Monitors README, pyproject.toml, lock files, requirements, Dockerfile,
+    and test directories. Respects .gitignore to skip noise. Press Ctrl+C to stop.
     """
     try:
         from watchdog.events import FileSystemEvent, FileSystemEventHandler
@@ -145,12 +214,13 @@ def watch(project_path: str, delay: float, ide: Optional[str], quiet: bool) -> N
 
     path = Path(project_path).resolve()
     verbose = not quiet
+    gitignore_spec = _load_gitignore_spec(path)
 
     extra_args: List[str] = []
     if ide:
         extra_args += ["--ide", ide]
 
-    handler_obj = _PRGHandler(path, delay, extra_args, verbose)
+    handler_obj = _PRGHandler(path, delay, extra_args, verbose, gitignore_spec)
 
     class _EventBridge(FileSystemEventHandler):
         def on_modified(self, event: FileSystemEvent) -> None:
@@ -161,11 +231,22 @@ def watch(project_path: str, delay: float, ide: Optional[str], quiet: bool) -> N
             if not event.is_directory:
                 handler_obj.on_change(event.src_path)
 
+        def on_deleted(self, event: FileSystemEvent) -> None:
+            if not event.is_directory:
+                handler_obj.on_change(event.src_path)
+
+        def on_moved(self, event: FileSystemEvent) -> None:
+            # Both source and destination may be relevant
+            if not event.is_directory:
+                handler_obj.on_change(event.src_path)
+                handler_obj.on_change(event.dest_path)
+
     observer = Observer()
     observer.schedule(_EventBridge(), str(path), recursive=True)
     observer.start()
 
-    click.echo(f"[watch] Watching {path}  (delay={delay}s, Ctrl+C to stop)")
+    gitignore_note = " (respecting .gitignore)" if gitignore_spec else ""
+    click.echo(f"[watch] Watching {path}{gitignore_note}  (delay={delay}s, Ctrl+C to stop)")
 
     try:
         while True:

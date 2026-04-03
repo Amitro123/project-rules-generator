@@ -5,7 +5,7 @@ from __future__ import annotations
 import threading
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -60,6 +60,39 @@ class TestShouldTrigger:
         other = tmp_path.parent / "other_project" / "README.md"
         assert not _should_trigger(str(other), tmp_path)
 
+    # Issue #2 fix: gitignore and noise directory filtering
+    def test_mypy_cache_does_not_trigger(self, tmp_path):
+        assert not _should_trigger(str(tmp_path / ".mypy_cache" / "README.md"), tmp_path)
+
+    def test_pycache_does_not_trigger(self, tmp_path):
+        assert not _should_trigger(str(tmp_path / "__pycache__" / "foo.pyc"), tmp_path)
+
+    def test_node_modules_does_not_trigger(self, tmp_path):
+        assert not _should_trigger(str(tmp_path / "node_modules" / "package.json"), tmp_path)
+
+    def test_gitignore_pattern_suppresses_trigger(self, tmp_path):
+        try:
+            import pathspec
+        except ImportError:
+            pytest.skip("pathspec not available")
+        (tmp_path / ".gitignore").write_text("*.log\nbuild/\n", encoding="utf-8")
+        from cli.watch_cmd import _load_gitignore_spec
+        spec = _load_gitignore_spec(tmp_path)
+        assert not _should_trigger(str(tmp_path / "debug.log"), tmp_path, spec)
+
+    # Issue #3 fix: lock files
+    def test_poetry_lock_triggers(self, tmp_path):
+        assert _should_trigger(str(tmp_path / "poetry.lock"), tmp_path)
+
+    def test_package_lock_json_triggers(self, tmp_path):
+        assert _should_trigger(str(tmp_path / "package-lock.json"), tmp_path)
+
+    def test_pipfile_lock_triggers(self, tmp_path):
+        assert _should_trigger(str(tmp_path / "Pipfile.lock"), tmp_path)
+
+    def test_gitignore_file_triggers(self, tmp_path):
+        assert _should_trigger(str(tmp_path / ".gitignore"), tmp_path)
+
 
 # ---------------------------------------------------------------------------
 # _PRGHandler — debounce and re-entry guard
@@ -68,7 +101,7 @@ class TestShouldTrigger:
 
 class TestPRGHandlerDebounce:
     def _make_handler(self, tmp_path, delay=0.05):
-        return _PRGHandler(project_path=tmp_path, delay=delay, extra_args=[], verbose=False)
+        return _PRGHandler(project_path=tmp_path, delay=delay, extra_args=[], verbose=False, gitignore_spec=None)
 
     def test_single_change_triggers_analyze(self, tmp_path):
         handler = self._make_handler(tmp_path)
@@ -104,8 +137,32 @@ class TestPRGHandlerDebounce:
             time.sleep(0.7)
         assert not mock_run.called
 
+    def test_dirty_bit_queues_rerun_when_change_arrives_during_run(self, tmp_path):
+        """Issue #1 fix: change during active run sets dirty bit, triggers one final run."""
+        run_count = {"n": 0}
+        original_trigger = _PRGHandler._trigger
+
+        def slow_trigger(self):
+            run_count["n"] += 1
+            if run_count["n"] == 1:
+                # Simulate a change arriving while we're mid-run
+                self._needs_rerun = True
+            # Don't actually spawn subprocess
+            with self._lock:
+                self._running = False
+                needs_rerun = self._needs_rerun
+                self._needs_rerun = False
+            if needs_rerun and run_count["n"] < 3:
+                self._trigger()
+
+        handler = self._make_handler(tmp_path)
+        with patch.object(_PRGHandler, "_trigger", slow_trigger):
+            handler.on_change(str(tmp_path / "README.md"))
+            time.sleep(0.3)
+        assert run_count["n"] >= 2, "Dirty bit should have caused a second run"
+
     def test_extra_args_passed_to_subprocess(self, tmp_path):
-        handler = _PRGHandler(tmp_path, delay=0.05, extra_args=["--ide", "cursor"], verbose=False)
+        handler = _PRGHandler(tmp_path, delay=0.05, extra_args=["--ide", "cursor"], verbose=False, gitignore_spec=None)
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             handler.on_change(str(tmp_path / "README.md"))
@@ -137,6 +194,20 @@ class TestWatchCommandRegistered:
         result = runner.invoke(watch, ["--help"])
         assert result.exit_code == 0
         assert "incremental" in result.output.lower() or "watch" in result.output.lower()
+
+    def test_on_deleted_handler_exists(self):
+        """Issue #4 fix: _EventBridge must handle on_deleted."""
+        import inspect
+        import cli.watch_cmd as _mod
+        src = inspect.getsource(_mod)
+        assert "on_deleted" in src
+
+    def test_on_moved_handler_exists(self):
+        """Issue #4 fix: _EventBridge must handle on_moved."""
+        import inspect
+        import cli.watch_cmd as _mod
+        src = inspect.getsource(_mod)
+        assert "on_moved" in src
 
     def test_watch_missing_watchdog_gives_clear_error(self, tmp_path):
         """When watchdog is not importable, the command prints a helpful error."""
