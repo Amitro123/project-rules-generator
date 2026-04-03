@@ -17,6 +17,7 @@ Project Rules Generator offers a suite of tools to analyze your codebase and gen
 | **Skill Management** (`--create-skill`, `--list-skills`) | Managing your learned/project skills library | Instant | No | ✅ |
 | **`prg init`** | First-run wizard — detect stack, generate rules, print next steps | Fast | No | ✅ |
 | **`prg skills list/validate/show`** | Sub-commands for skill inspection and validation | Instant | No | ✅ |
+| **`prg watch`** | Watches project files and auto-runs `analyze --incremental` on change | Instant | No | ✅ |
 | **Spec Generation** | LLM-generated `spec.md` (Overview, Goals, User Stories, Acceptance Criteria) | Medium | Yes | ✅ |
 
 ---
@@ -348,4 +349,31 @@ prg review DESIGN.md --output CRITIQUE.md --tasks
 **Fallback**: When the LLM is unavailable, a static hallucination check still runs — detecting invented `src/` paths and common placeholder patterns.
 
 **Use Case**: Quality-gate generated artifacts before committing them. Especially useful after `prg plan` or `prg design` to catch LLM hallucinations early.
+
+---
+
+### Feature 13: Watch Mode
+
+**What it does**: Monitors project files for changes and automatically re-runs `prg analyze --incremental` whenever a relevant file is saved. Keeps `.clinerules/` in sync with the codebase without manual intervention.
+
+**Command**:
+```bash
+prg watch .
+prg watch . --delay 5.0          # coalesce saves over 5 seconds instead of 2
+prg watch . --ide cursor --quiet # target a specific IDE, suppress non-error output
+```
+
+**Monitored files**:
+- `README.md`
+- `pyproject.toml`, `requirements*.txt`
+- `Dockerfile`, `docker-compose.yml`
+- `package.json`, `Cargo.toml`, `go.mod`
+- All files under `tests/` directories
+
+**Behaviour**:
+- 2-second debounce coalesces rapid saves into a single analysis run
+- Re-entry guard prevents overlapping runs if analysis takes longer than the debounce window
+- Graceful Ctrl+C shutdown with a clean exit message
+
+**Use Case**: Active development sessions where README, dependencies, or tests evolve frequently. Pair with `--quiet` for CI or background terminal use.
 

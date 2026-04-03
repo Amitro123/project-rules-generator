@@ -1,8 +1,9 @@
 # Project Rules Generator
 
+[![PyPI](https://img.shields.io/pypi/v/project-rules-generator)](https://pypi.org/project/project-rules-generator/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-580%2B%20Passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-671%2B%20Passing-brightgreen.svg)](tests/)
 
 ---
 
@@ -161,7 +162,17 @@ prg skills list --all                                     # List project + learn
 prg skills validate my-skill                              # Run quality checker (score must be ≥ 90)
 ```
 
-### 🤖 4. Autonomous Orchestration
+### 👁 4. Watch Mode
+
+```bash
+prg watch .                                   # Watch for changes and auto-run analyze --incremental
+prg watch . --delay 5.0                       # Set debounce delay in seconds (default: 2.0)
+prg watch . --ide cursor --quiet              # Specify IDE target, suppress non-error output
+```
+
+Monitors README.md, dependency manifests (pyproject.toml, package.json, Cargo.toml, go.mod, requirements*.txt), Dockerfile, docker-compose.yml, and all files under `tests/` directories. Uses a 2-second debounce to coalesce rapid saves and a re-entry guard to prevent overlapping runs. Stop with Ctrl+C.
+
+### 🤖 5. Autonomous Orchestration
 
 ```bash
 prg agent "fix a bug"                         # Smart Orchestration (Maps generic text to an exact skill)
@@ -205,6 +216,15 @@ Rules are **scored** before they're written. Generic filler never makes it throu
 ---
 
 ## Installation
+
+**From PyPI (recommended):**
+
+```bash
+pip install project-rules-generator
+prg --version
+```
+
+**From source (contributors):**
 
 ```bash
 git clone https://github.com/Amitro123/project-rules-generator

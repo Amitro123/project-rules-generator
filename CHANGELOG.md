@@ -4,12 +4,62 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v0.3.0] — 2026-04-03
+
+### Published to PyPI
+
+Package is now available on PyPI as `project-rules-generator`.
+
+```bash
+pip install project-rules-generator
+```
+
+Previously required cloning the repository and running `pip install -e .`. That workflow remains available for contributors.
+
+PyPI page: https://pypi.org/project/project-rules-generator/
+
+### New command: `prg watch`
+
+Watches project files and automatically runs `prg analyze --incremental` whenever they change.
+
+**Monitored files:** README.md, pyproject.toml, requirements*.txt, Dockerfile, docker-compose.yml, package.json, Cargo.toml, go.mod, and all files under `tests/` directories.
+
+**Behaviour:**
+- 2-second debounce coalesces rapid saves into a single run
+- Re-entry guard prevents overlapping analysis runs
+- Graceful Ctrl+C shutdown
+
+**Usage:**
+```bash
+prg watch [PATH] [--delay 2.0] [--ide cursor] [--quiet]
+```
+
+### New dependency
+
+`watchdog>=3.0.0` — installed automatically with the package.
+
+### Tests
+
+**Total: 671 passing**
+
+---
+
+## [Unreleased] — 2026-04-03
+
+### 🏁 CR #3 — Clean Pass
+Every issue from [CR #2](docs/CR-3-clean-pass.md#what-was-fixed-since-cr-2) is now resolved. This is the first fully green run across all three reviews.
+
+- **bugs_docs/**: Fully removed from git index and disk; added to `.gitignore`.
+- **PRIORITIES truncation**: Fixed with two-stage fallback (line-boundary snap → full content).
+- **API Key reliability**: `TaskDecomposer` and `prg review` now handle missing keys gracefully.
+- **Logger integration**: `design_generator.py` raw prints converted to logging.
+- **Test suite**: 650 passed, 0 failed.
+
+Detailed report: [CR-3-clean-pass.md](file:///c:/Users/Dana/.gemini/antigravity/scratch/project-rules-generator/docs/CR-3-clean-pass.md)
+
+---
+
 ## [Unreleased] — 2026-03-30
-
-### ♻️ Refactor — God-Module Decomposition (`skill_creator.py`, `rules_creator.py`)
-
-Addressed two of the four remaining god-modules flagged in `intructions.md`.
-All public APIs unchanged; no feature behaviour modified.
 
 #### `generator/skill_creator.py`: 1190 → 824 LOC (−31%)
 
