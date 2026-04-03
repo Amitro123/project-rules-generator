@@ -21,12 +21,6 @@ classifiers = [
     "Topic :: Software Development :: Code Generators",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-
-[project.urls]
-Homepage = "https://github.com/Amitro123/project-rules-generator"
-Repository = "https://github.com/Amitro123/project-rules-generator"
-Changelog = "https://github.com/Amitro123/project-rules-generator/blob/main/CHANGELOG.md"
-"Bug Tracker" = "https://github.com/Amitro123/project-rules-generator/issues"
 dependencies = [
     "click>=8.0.0",
     "pyyaml>=6.0",
@@ -39,6 +33,12 @@ dependencies = [
     "gitpython>=3.1.0",
     "watchdog>=3.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Amitro123/project-rules-generator"
+Repository = "https://github.com/Amitro123/project-rules-generator"
+Changelog = "https://github.com/Amitro123/project-rules-generator/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/Amitro123/project-rules-generator/issues"
 
 [project.optional-dependencies]
 gemini = ["google-generativeai>=0.8.6", "google-genai>=0.2.0"]
