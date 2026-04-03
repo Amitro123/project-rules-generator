@@ -77,6 +77,7 @@ from cli.manager_cmd import manager
 from cli.providers_cmd import providers_group
 from cli.skills_cmd import skills_group
 from cli.tasks_cmd import tasks_cmd
+from cli.watch_cmd import watch
 
 cli.add_command(analyze)
 cli.add_command(init)
@@ -99,6 +100,7 @@ cli.add_command(agent_command)
 cli.add_command(leaderboard)
 cli.add_command(providers_group, name="providers")
 cli.add_command(skills_group, name="skills")
+cli.add_command(watch)
 
 
 def _sanitize_env_from_dotenv() -> None:

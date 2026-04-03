@@ -48,3 +48,9 @@ jobs:
         GROQ_API_KEY: ""
       run: |
         pytest -q --maxfail=1 --disable-warnings --cov=.
+
+    - name: Verify package builds
+      run: |
+        pip install build twine
+        python -m build
+        twine check dist/*

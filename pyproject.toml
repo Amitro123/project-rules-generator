@@ -4,21 +4,29 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "project-rules-generator"
-version = "0.2.2"
+version = "0.3.0"
 description = "A standard for defining project rules and skills for AI agents."
 authors = [
-  { name = "Amitro123", email = "amitro123@example.com" },
+  { name = "Amitro123", email = "amitrosen4@gmail.com" },
 ]
 readme = "README.md"
 requires-python = ">=3.8"
-keywords = ["ai", "agents", "rules", "skills", "scaffolding"]
+keywords = ["ai", "agents", "rules", "skills", "scaffolding", "claude", "cursor", "windsurf"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Amitro123/project-rules-generator"
+Repository = "https://github.com/Amitro123/project-rules-generator"
+Changelog = "https://github.com/Amitro123/project-rules-generator/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/Amitro123/project-rules-generator/issues"
 dependencies = [
     "click>=8.0.0",
     "pyyaml>=6.0",
@@ -29,6 +37,7 @@ dependencies = [
     "rich>=13.0.0",
     "jinja2>=3.1.0",
     "gitpython>=3.1.0",
+    "watchdog>=3.0.0",
 ]
 
 [project.optional-dependencies]

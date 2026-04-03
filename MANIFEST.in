@@ -1,3 +1,9 @@
+# Include top-level package files
+include LICENSE
+include README.md
+include CHANGELOG.md
+include pyproject.toml
+
 # Exclude build artifacts and internal directories
 recursive-exclude * __pycache__
 recursive-exclude * *.pyc
