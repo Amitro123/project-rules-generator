@@ -107,6 +107,15 @@ def skills_list(path, show_all):
         click.echo("No project or learned skills found. Use --all to include builtins.")
         return
 
+    # Load usage stats once
+    try:
+        from generator.skill_tracker import SkillTracker
+
+        tracker = SkillTracker()
+        all_stats = tracker.all_stats()
+    except Exception:
+        all_stats = {}
+
     # Compute column widths
     rows = []
     for name, info in sorted(skills.items()):
@@ -134,19 +143,29 @@ def skills_list(path, show_all):
         except Exception as exc:
             logger.debug("Could not read skill file %s: %s", skill_path, exc)
 
-        fm_status = "✓" if has_frontmatter else "✗ no frontmatter"
-        rows.append((name, layer, trigger_count, tools_str or "(none)", fm_status))
+        stats = all_stats.get(name, {})
+        score_str = f"{stats['score']:.0%}" if "score" in stats else "-"
+        matches = stats.get("match_count", 0) or "-"
+
+        fm_status = "✓" if has_frontmatter else "✗"
+        rows.append((name, layer, trigger_count, tools_str or "(none)", fm_status, score_str, matches))
 
     # Print table
     col_name = max(len(r[0]) for r in rows)
     col_layer = max(len(r[1]) for r in rows)
 
-    header = f"{'Name':<{col_name}}  {'Layer':<{col_layer}}  {'Triggers':>8}  {'Tools':<30}  FM"
+    header = (
+        f"{'Name':<{col_name}}  {'Layer':<{col_layer}}  {'Trig':>4}  "
+        f"{'Tools':<28}  FM  {'Score':>5}  {'Hits':>4}"
+    )
     click.echo(header)
     click.echo("-" * len(header))
-    for name, layer, triggers, tools, fm in rows:
-        tools_display = tools[:28] + ".." if len(tools) > 30 else tools
-        click.echo(f"{name:<{col_name}}  {layer:<{col_layer}}  {triggers:>8}  {tools_display:<30}  {fm}")
+    for name, layer, triggers, tools, fm, score, hits in rows:
+        tools_display = tools[:26] + ".." if len(tools) > 28 else tools
+        click.echo(
+            f"{name:<{col_name}}  {layer:<{col_layer}}  {triggers:>4}  "
+            f"{tools_display:<28}  {fm:<2}  {score:>5}  {str(hits):>4}"
+        )
 
     click.echo()
     click.echo(f"{len(rows)} skill(s) shown. Use --all to include builtins.")
@@ -228,6 +247,25 @@ def skills_feedback(skill_name, vote):
     if not vote:
         click.echo("Specify --useful or --not-useful.", err=True)
         raise SystemExit(1)
+
+    # Warn if the skill name doesn't match any known skill (prevents zombie entries)
+    try:
+        from generator.skills_manager import SkillsManager
+
+        sm = SkillsManager(project_path=Path.cwd())
+        known = sm.list_skills()
+        if skill_name not in known:
+            click.echo(
+                f"Warning: '{skill_name}' not found in known skills. "
+                "Check spelling with: prg skills list --all",
+                err=True,
+            )
+            if not click.confirm("Record feedback anyway?", default=False):
+                raise SystemExit(0)
+    except SystemExit:
+        raise
+    except Exception:
+        pass  # Don't block feedback if SkillsManager lookup fails
 
     from generator.skill_tracker import SkillTracker
 

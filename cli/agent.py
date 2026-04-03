@@ -40,6 +40,17 @@ def start(task_description, project_path, provider, api_key, verbose):
     provider = _detect_provider(provider, api_key)
     _set_api_key(provider, api_key)
 
+    # Track skill usage for the matched skill (if any) before the full workflow runs
+    try:
+        from generator.planning.agent_executor import AgentExecutor
+        from generator.skill_tracker import SkillTracker
+
+        matched = AgentExecutor(Path(project_path).resolve()).match_skill(task_description)
+        if matched:
+            SkillTracker().record_match(matched)
+    except Exception:
+        pass  # Never block the workflow due to tracking failures
+
     from generator.planning.workflow import AgentWorkflow
 
     workflow = AgentWorkflow(
