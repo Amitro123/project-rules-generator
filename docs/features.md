@@ -10,8 +10,6 @@ Project Rules Generator generates structured memory artifacts — rules, skills,
 | **AI Skills** | Uses LLM to generate custom skills | Slow | Yes | ✅ |
 | **Incremental** | Updates only changed sections | Very Fast | No | ✅ |
 | **Task Breakdown** | Breaks large tasks into smaller steps | Medium | Yes | ✅ |
-| **Autopilot** | End-to-end discovery & execution loop (supervised) | Slow | Yes | ✅ |
-| **Project Manager** | Lifecycle orchestration (Setup→Verify→Exec→Report) | Slow | Yes | ✅ |
 | **Two-Stage Planning** | Design → Plan workflow for complex features | Slow | Yes | ✅ |
 | **Constitution** | Generates high-level principles | Fast | No | ✅ |
 | **Skill Management** (`--create-skill`, `--list-skills`) | Managing your learned/project skills library | Instant | No | ✅ |
@@ -231,49 +229,7 @@ prg agent "I need to fix a bug"
 
 **Use Case**: Building autonomous agents that know *exactly* which tool to use for a specific request, without hallucinating.
 
-### Feature 9: Autopilot 🤖
-**What it does**: A project-wide supervised loop that takes a project from zero to implemented features, asking for human approval at each task boundary.
-
-> **Tip**: For feature-scoped *autonomous* iteration (no per-task prompts, persistent state, self-review gate), see [Feature 15: Ralph Feature Loop](#feature-15-ralph-feature-loop-engine-).
-
-**Command**:
-```bash
-prg autopilot .
-```
-
-**Workflow**:
-1.  **Analyze**: Scans project context.
-2.  **Plan**: Generates a roadmap (`PLAN.md`) and task manifest (`TASKS.yaml`).
-3.  **Execute**:
-    -   Picks the next pending task.
-    -   Creates a git branch (`autopilot/task-001`).
-    -   Uses an AI agent to implement the changes.
-    -   Runs verification (tests/lint).
-4.  **Human Review**: Asks for your approval at every task.
-    -   **Yes**: Merges branch.
-    -   **No**: Rolls back changes.
-
-**Use Case**: "Supervised" development for well-defined projects with explicit human sign-off on each change.
-
-### Feature 10: Project Manager Agent 👨‍💼 NEW
-**What it does**: Acts as a verified project manager. It ensures your project is set up correctly (Plan, Spec, Architecture), validates readiness, and then manages the execution.
-
-**Command**:
-```bash
-prg manager .
-```
-
-**Phases**:
-1.  **Setup**: Checks/generates 9 critical artifacts (`rules.md`, `skills/`, `PLAN.md`, `tasks/`, `spec.md`, `tests/`, `pytest.ini`, `README.md`, `ARCHITECTURE.md`).
-2.  **Verify**: Runs `PreflightChecker`.
-3.  **Copilot**: Runs `Autopilot` loop.
-4.  **Summary**: Generates `PROJECT-COMPLETION.md`.
-
-**Use Case**: When you want a structured, professional workflow that guarantees documentation and process compliance.
-
----
-
-### Feature 11: Spec Generation 📋
+### Feature 9: Spec Generation 📋
 
 **What it does**: Uses an LLM to generate a structured `spec.md` — a complete project specification document covering Overview, Goals, User Personas, User Stories, Constraints, Acceptance Criteria, and Out of Scope sections.
 
@@ -315,7 +271,7 @@ As a developer, I want rules auto-generated so that every AI session starts with
 - Real-time collaboration features
 ```
 
-**Use Case**: Onboarding new contributors, aligning stakeholders on project scope, or feeding structured requirements into the autopilot/planning pipeline.
+**Use Case**: Onboarding new contributors, aligning stakeholders on project scope, or feeding structured requirements into the planning pipeline.
 
 ---
 
@@ -430,7 +386,7 @@ prg watch . --ide cursor --quiet # target a specific IDE, suppress non-error out
 
 > **Prerequisites**: Ralph requires existing PRG artifacts to operate. Run `prg analyze .` to generate `rules.md` and skills, then run `prg feature "<description>"` to generate `PLAN.md`, `TASKS.yaml`, and `STATE.json` for the target feature. Ralph reads these artifacts as its execution context on every iteration.
 
-**What it does**: A feature-scoped autonomous loop that runs iteratively on a single git branch until a feature is complete — or max iterations are reached. Unlike [Autopilot (Feature 9)](#feature-9-autopilot-), Ralph requires **no human input per iteration**: it self-reviews, runs tests, and keeps going until success criteria are met.
+**What it does**: A feature-scoped autonomous loop that runs iteratively on a single git branch until a feature is complete — or max iterations are reached. Ralph requires **no human input per iteration**: it self-reviews, runs tests, and keeps going until success criteria are met.
 
 Ralph is an optional execution layer. You can stop after generating artifacts and continue working manually — Ralph is only needed when you want fully autonomous iteration.
 
@@ -498,17 +454,6 @@ prg ralph run FEATURE-001   ← [RALPH LOOP]
 | Test failures 3× in a row | `status=stopped`, human intervention requested |
 | Review score < 60 | `status=stopped` (emergency stop) |
 | `prg ralph stop` | `status=stopped`, checkout main |
-
-**How it differs from Autopilot**:
-
-| | Autopilot `prg autopilot` | Ralph `prg ralph run` |
-|---|---|---|
-| **Scope** | Whole project | Single feature |
-| **Human gates** | Every task | Only at `prg ralph approve` |
-| **State persistence** | None | `STATE.json` (resumable) |
-| **Self-review** | No | Per-iteration (score gate) |
-| **Git strategy** | One branch per task | One branch per feature |
-| **Iteration limit** | Unlimited (until done) | Configurable (default 20) |
 
 **Integration with existing PRG**:
 - Reads `.clinerules/rules.md` as loop context on every iteration

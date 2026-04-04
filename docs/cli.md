@@ -200,24 +200,6 @@ Plan → Tasks → Preflight → Auto-Fix → Ready. Generates `PLAN.md` and
 
 ---
 
-## `prg autopilot` — Autonomous Agent
-
-```bash
-prg autopilot [PROJECT_PATH] [OPTIONS]
-```
-
-Full autonomous loop: Analyze → Plan → Tasks → Branch → Implement → Verify →
-Merge. Each task runs in its own git branch.
-
-| Flag | Description |
-|------|-------------|
-| `--discovery-only` | Stop after rule generation and task creation |
-| `--execute-only` | Skip discovery, run execution loop only |
-| `--provider` | `gemini`, `groq`, `anthropic`, or `openai`. Auto-detected if omitted. |
-| `--api-key` | Override env var key |
-
----
-
 ## `prg status` / `prg exec` / `prg next`
 
 | Command | Description |
@@ -237,23 +219,6 @@ prg agent "I need to fix a bug in the auth module"
 
 Simulates the auto-trigger engine to show which skill would activate for a
 given query. Useful for testing trigger phrases.
-
----
-
-## `prg manager` — Full Lifecycle
-
-```bash
-prg manager [PROJECT_PATH] [OPTIONS]
-```
-
-4-phase orchestration: Setup → Verify → Copilot → Summary. Generates all
-missing artifacts before starting the execution loop.
-
-| Flag | Description |
-|------|-------------|
-| `--provider` | `gemini`, `groq`, `anthropic`, or `openai`. Auto-detected if omitted. |
-| `--api-key` | Override env var key |
-| `--verbose/--quiet` | Verbose output (default: verbose) |
 
 ---
 

@@ -68,13 +68,11 @@ from cli.agent import agent_command, design, plan, review, setup, start
 
 # Import and register commands at module level
 from cli.analyze_cmd import analyze
-from cli.autopilot_cmd import autopilot
 from cli.create_rules_cmd import create_rules
 from cli.feature_cmd import feature
 from cli.gaps_cmd import gaps, spec_cmd
 from cli.init_cmd import init
 from cli.jobs import exec_task, leaderboard, next_task, query_tasks, status
-from cli.manager_cmd import manager
 from cli.providers_cmd import providers_group
 from cli.ralph_cmd import ralph_group
 from cli.skills_cmd import skills_group
@@ -93,8 +91,6 @@ cli.add_command(exec_task)
 cli.add_command(status)
 cli.add_command(next_task, name="next")
 cli.add_command(query_tasks, name="query")
-cli.add_command(autopilot)
-cli.add_command(manager)
 cli.add_command(gaps)
 cli.add_command(tasks_cmd)
 cli.add_command(spec_cmd, name="spec")

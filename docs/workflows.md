@@ -49,49 +49,29 @@ Here are the most common ways to use Project Rules Generator in your daily devel
     prg analyze . --incremental
     ```
 
-## 3. Autopilot (Full Automation) 🆕
+## 3. Ralph Feature Loop (Optional Autonomous Execution)
 
-**Goal**: Full "Hands-off" orchestration from project discovery to code implementation.
+**Goal**: Autonomous feature-scoped iteration using PRG-generated artifacts as context.
 
-1.  **Run Autopilot**:
+1.  **Generate artifacts first** (required):
     ```bash
-    prg autopilot .
+    prg analyze .
     ```
-    *   **Discovery**: Automatically runs `analyze`, `plan`, and `tasks`.
-    *   **Execution**: Starts a loop that implements each task.
-    *   **Safety**: Creates disposable git branches for each task.
-
-2.  **Supervised Review**:
-    For each task, the agent will:
-    *   Branch: `autopilot/task-{id}`
-    *   Implement changes using AI.
-    *   Prompt for your approval.
-    
-3.  **Approval / Rollback**:
-    - **Approve**: Merges the branch and proceeds to the next task.
-    - **Reject**: Rolls back changes and stops for safety.
-
-    - **Reject**: Rolls back changes and stops for safety.
-
-## 4. Project Manager Agent (Lifecycle Orchestration) 🆕
-
-**Goal**: Managed project execution with setup, verification, and reporting.
-
-1.  **Run Manager**:
+2.  **Run Ralph on a specific task**:
     ```bash
-    prg manager .
+    prg ralph "Add loading states to all forms"
     ```
-2.  **Phase 1: Setup**:
-    The agent checks for 9 critical documents (Plan, Spec, Architecture, Rules, etc.) and auto-generates any that are missing.
-    *   *Result*: `PROJECT-MANAGER.md` checklist.
-3.  **Phase 2: Verify**:
-    Runs pre-flight checks (dependency health, plan validity).
-4.  **Phase 3: Copilot**:
-    Enters the autonomous execution loop (implementing tasks one by one).
-5.  **Phase 4: Summary**:
-    Generates `PROJECT-COMPLETION.md` with success metrics.
+    *   Creates `features/FEATURE-XXX/` workspace with PLAN.md, TASKS.yaml, STATE.json
+    *   Loops: context → skill match → implement → git commit → self-review → tests
+    *   Stops automatically when done or on 3× test failures
+3.  **Merge when satisfied**:
+    ```bash
+    prg ralph approve FEATURE-001
+    ```
 
-## 5. Task-Driven Development (Semi-Auto)
+See [ralph.md](ralph.md) for the full reference.
+
+## 4. Task-Driven Development (Semi-Auto)
 
 **Goal**: Automate the "Plan → Execute → Verify" loop.
 

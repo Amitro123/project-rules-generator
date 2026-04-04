@@ -96,7 +96,7 @@ report. Accepts `--tech fastapi,pytest,docker` to override auto-detection.
 | Add README-based rules | `prg create-rules .` |
 | Full AI analysis + skills | `prg analyze . --mode ai` |
 | Plan a new feature | `prg plan "Add Redis cache"` |
-| Autonomous execution | `prg autopilot .` |
+| Autonomous feature loop | `prg ralph "your task"` |
 | See all commands | `prg --help` |
 
 See [cli.md](cli.md) for the full command reference.

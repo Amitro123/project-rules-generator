@@ -1,12 +1,10 @@
-"""Tests for provider wiring through design, plan, autopilot, and manager commands."""
+"""Tests for provider wiring through design and plan commands."""
 
 from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
 
-from cli.autopilot_cmd import autopilot
-from cli.manager_cmd import manager
 from generator.task_decomposer import TaskDecomposer
 
 # ---------------------------------------------------------------------------
@@ -127,49 +125,3 @@ class TestDesignProviderWiring:
             assert result.exit_code == 0, f"provider={prov} failed: {result.output}"
 
 
-# ---------------------------------------------------------------------------
-# autopilot / manager — all 4 providers accepted
-# ---------------------------------------------------------------------------
-
-
-class TestAutopilotManagerProviderChoices:
-    """autopilot and manager are deprecated — they print a redirect message and exit 1."""
-
-    def test_autopilot_shows_deprecation_message(self):
-        runner = CliRunner()
-        result = runner.invoke(autopilot, ["."])
-        assert result.exit_code != 0
-        assert "deprecated" in result.output.lower() or "deprecated" in (result.stderr or "").lower()
-
-    def test_autopilot_accepts_anthropic_option_without_crash(self):
-        runner = CliRunner()
-        result = runner.invoke(autopilot, [".", "--provider", "anthropic"])
-        # Must not raise "Invalid value for '--provider'" — the option is still declared
-        assert "Invalid value for '--provider'" not in result.output
-
-    def test_autopilot_accepts_openai_option_without_crash(self):
-        runner = CliRunner()
-        result = runner.invoke(autopilot, [".", "--provider", "openai"])
-        assert "Invalid value for '--provider'" not in result.output
-
-    def test_manager_shows_deprecation_message(self):
-        runner = CliRunner()
-        result = runner.invoke(manager, ["."])
-        assert result.exit_code != 0
-        assert "deprecated" in result.output.lower() or "deprecated" in (result.stderr or "").lower()
-
-    def test_manager_accepts_anthropic_option_without_crash(self):
-        runner = CliRunner()
-        result = runner.invoke(manager, [".", "--provider", "anthropic"])
-        assert "Invalid value for '--provider'" not in result.output
-
-    def test_manager_accepts_openai_option_without_crash(self):
-        runner = CliRunner()
-        result = runner.invoke(manager, [".", "--provider", "openai"])
-        assert "Invalid value for '--provider'" not in result.output
-
-    def test_autopilot_rejects_unknown_provider(self):
-        runner = CliRunner()
-        result = runner.invoke(autopilot, [".", "--provider", "unknown"])
-        assert result.exit_code != 0
-        assert "Invalid value" in result.output

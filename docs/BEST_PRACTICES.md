@@ -61,7 +61,7 @@ prg skills validate my-custom-skill
 
 ## 4. The Orchestrator: Safe Autonomous Execution
 
-PRG comes with a heavily capable Two-Stage Planner and Autopilot system. To prevent the AI from "running away with your code," stick to this paradigm:
+PRG comes with a heavily capable Two-Stage Planner and optional Ralph execution loop. To prevent the AI from "running away with your code," stick to this paradigm:
 
 ### Best Practice: Always Use Two-Stage Planning
 Don't jump straight into code generation on complex tasks. 
@@ -80,7 +80,7 @@ Don't jump straight into code generation on complex tasks.
 3. **Execute:** Have the agent run the tasks strictly matching the approved plan.
 
 ### Use Self-Review (`prg review`)
-Before letting the Autopilot execute a massive PR, funnel your `PLAN.md` through the AI evaluator:
+Before letting Ralph execute a feature, funnel your `PLAN.md` through the AI evaluator:
 ```bash
 prg review PLAN.md
 ```
@@ -90,6 +90,6 @@ This generates a `CRITIQUE.md` scorecard. It will explicitly call out if the pla
 
 ## 🚨 General Anti-Patterns
 
-* ❌ **Don't ignore the git state.** Never run `prg autopilot .` on a dirty working tree. Always make sure your git status is clean before letting autonomous orchestration run, so you can quickly `git status` and revert if it writes bad code.
+* ❌ **Don't ignore the git state.** Never run `prg ralph "..."` on a dirty working tree. Always make sure your git status is clean before letting autonomous orchestration run, so you can quickly `git status` and revert if it writes bad code.
 * ❌ **Don't write huge rule sets.** Keep `.clinerules/rules.md` to the point. If you have a massive block of boilerplate, turn it into a **Skill** instead of a Rule.
 * ❌ **Don't leave API Keys hardcoded.** PRG seamlessly reads `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, and `OPENAI_API_KEY` from your environment. Use `export` or a `.env` file instead of passing it in plain text.
