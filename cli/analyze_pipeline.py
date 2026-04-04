@@ -209,17 +209,6 @@ def _build_unified_content(
             unified_content += f"- **{skill}**: {', '.join(phrases)}\n"
         unified_content += "\n"
 
-        unified_content += "## Skill Definitions\n"
-        all_skills = skills_manager.get_all_skills_content()
-        for skill_name in triggers_dict:
-            found_content = None
-            for category in ["project", "learned", "builtin"]:
-                if category in all_skills and skill_name in all_skills[category]:
-                    found_content = all_skills[category][skill_name]["content"]
-                    break
-            if found_content:
-                unified_content += f"\n### Skill: {skill_name}\n{found_content}\n"
-
     if enhanced_selected_skills:
         lightweight_yaml = generate_clinerules(
             project_name,
