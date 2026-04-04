@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import subprocess
 from dataclasses import asdict, dataclass, field
@@ -54,9 +55,11 @@ class FeatureState:
         return cls(**filtered)
 
     def save(self, state_path: Path) -> None:
-        """Persist state to STATE.json."""
+        """Persist state to STATE.json atomically (write-to-tmp then os.replace)."""
         state_path.parent.mkdir(parents=True, exist_ok=True)
-        state_path.write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
+        tmp = state_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
+        os.replace(tmp, state_path)
 
 
 # ---------------------------------------------------------------------------
@@ -144,6 +147,7 @@ class RalphEngine:
         self.critiques_dir = self.feature_dir / "CRITIQUES"
 
         self.state = self.load_state()
+        self._last_tests_passed: Optional[bool] = None  # cached by execute_iteration()
 
     # ------------------------------------------------------------------
     # Public API
@@ -252,9 +256,10 @@ class RalphEngine:
                 logger.info("⚠️  Review score %d — fixing issues before next iteration.", review_score)
             # Fix pass: re-run agent with critique as context (best-effort, no second commit here)
 
-        # 6. TESTS
+        # 6. TESTS — result cached on state so verify_success() can reuse it
         tests_passed, _ = self._run_tests()
         self.state.test_pass_rate = 1.0 if tests_passed else 0.0
+        self._last_tests_passed = tests_passed  # cache for verify_success()
         if tests_passed:
             self.state.consecutive_test_failures = 0
         else:
@@ -320,12 +325,19 @@ class RalphEngine:
         return False
 
     def verify_success(self) -> bool:
-        """Return True when the feature is genuinely complete."""
+        """Return True when the feature is genuinely complete.
+
+        Reuses the test result cached by execute_iteration() to avoid running
+        the test suite twice per successful iteration.
+        """
         if (self.state.last_review_score or 0) < 85:
             return False
         tasks = _load_tasks(self.tasks_yaml)
         if tasks and len(_pending_tasks(tasks)) > 0:
             return False
+        # Use cached result from execute_iteration() if available; otherwise run tests.
+        if self._last_tests_passed is not None:
+            return self._last_tests_passed
         tests_passed, _ = self._run_tests()
         return tests_passed
 
@@ -359,7 +371,7 @@ class RalphEngine:
             return 100
         if "major" in v:
             return 40
-        return 70  # Needs Revision
+        return 65  # Needs Revision — below 70 threshold so fix-pass is triggered
 
     # ------------------------------------------------------------------
     # Private helpers
@@ -421,7 +433,7 @@ class RalphEngine:
                 capture_output=True,
             )
             subprocess.run(
-                ["git", "commit", "-m", message, "--allow-empty"],
+                ["git", "commit", "-m", message],
                 cwd=self.project_path,
                 check=True,
                 capture_output=True,

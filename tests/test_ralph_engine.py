@@ -182,11 +182,11 @@ def test_save_state_creates_file(tmp_path):
         ("Pass", 100),
         ("pass", 100),
         ("Pass — quality is great", 100),
-        ("Needs Revision", 70),
-        ("needs revision", 70),
+        ("Needs Revision", 65),
+        ("needs revision", 65),
         ("Major Issues", 40),
         ("major issues found", 40),
-        ("Something Else", 70),
+        ("Something Else", 65),
     ],
 )
 def test_review_score_from_verdict(verdict, expected):

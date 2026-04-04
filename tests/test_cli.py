@@ -72,13 +72,14 @@ class TestCLI:
         assert "Aborted" in result.output
 
     def test_cli_version_flag(self):
-        """Test --version flag."""
-        runner = CliRunner()
+        """Test --version flag outputs a version string."""
+        from cli._version import __version__
 
+        runner = CliRunner()
         result = runner.invoke(cli, ["--version"])
 
         assert result.exit_code == 0
-        assert "0.2.2" in result.output
+        assert __version__ in result.output
 
     def test_cli_help(self):
         """Test --help output for analyze command."""

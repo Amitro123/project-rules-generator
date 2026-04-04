@@ -142,7 +142,7 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
     try:
         import subprocess as _sp
 
-        _sp.run(["git", "checkout", "-b", branch_name], cwd=proj, check=True, capture_output=True)
+        _sp.run(["git", "checkout", "-b", branch_name], cwd=proj, check=True, capture_output=True, timeout=30)
         click.echo(f"[ralph] Branch: {branch_name}")
     except Exception as exc:
         logger.warning("Branch creation failed: %s", exc)
@@ -238,13 +238,19 @@ def ralph_discover(project_path, provider, api_key, auto_run, verbose):
             click.echo(f'  prg ralph "{f}"')
         return
 
-    # --run: execute each feature sequentially
+    # --run: execute each feature sequentially (2-hour per-feature timeout)
+    _FEATURE_TIMEOUT = 7200  # 20 iterations × 120s tests + overhead
     for f in features_found:
         click.echo(f"\n[discover] Starting: {f}")
-        result = _sp.run(
-            ["prg", "ralph", f],
-            cwd=proj,
-        )
+        try:
+            result = _sp.run(
+                ["prg", "ralph", f],
+                cwd=proj,
+                timeout=_FEATURE_TIMEOUT,
+            )
+        except _sp.TimeoutExpired:
+            click.echo(f"[discover] Feature timed out after {_FEATURE_TIMEOUT}s: {f} — stopping.", err=True)
+            break
         if result.returncode != 0:
             click.echo(f"[discover] Feature failed: {f} — stopping.", err=True)
             break
@@ -436,6 +442,23 @@ def ralph_stop(feature_id, project_path, reason):
     from generator.ralph_engine import FeatureState
 
     state = FeatureState.load(fdir / "STATE.json")
+
+    # Warn if the current branch doesn't match the feature branch
+    try:
+        import subprocess as _sub
+        current = _sub.run(
+            ["git", "branch", "--show-current"],
+            cwd=project_path, capture_output=True, text=True, timeout=10,
+        ).stdout.strip()
+        if current and current != state.branch_name:
+            click.echo(
+                f"⚠️  Current branch '{current}' doesn't match feature branch "
+                f"'{state.branch_name}' — state will be saved but branch checkout may be unexpected.",
+                err=True,
+            )
+    except Exception:
+        pass
+
     state.status = "stopped"
     state.exit_condition = reason
     state.save(fdir / "STATE.json")
@@ -510,7 +533,7 @@ def ralph_approve(feature_id, project_path, target_branch):
         state.save(fdir / "STATE.json")
 
         # Try PR creation
-        subprocess.run(
+        pr_result = subprocess.run(
             [
                 "gh", "pr", "create",
                 "--title", f"Ralph: {task}",
@@ -521,6 +544,11 @@ def ralph_approve(feature_id, project_path, target_branch):
             cwd=project_path,
             capture_output=True,
         )
-        click.echo("📬 PR created (if gh CLI is available).")
+        if pr_result.returncode == 0:
+            click.echo("📬 PR created.")
+        else:
+            err = pr_result.stderr.decode(errors="replace").strip()
+            click.echo(f"⚠️  PR creation failed (gh not installed or not authenticated): {err}", err=True)
+            click.echo("Branch has been merged locally. Create the PR manually if needed.")
     except Exception as exc:
         click.echo(f"❌ Approval failed: {exc}", err=True)
