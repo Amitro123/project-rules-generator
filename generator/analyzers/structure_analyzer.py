@@ -110,7 +110,9 @@ class StructureAnalyzer:
     TEST_PATTERNS = {
         "pytest": {
             "markers": ["pytest", "conftest.py"],
-            "files": ["conftest.py", "pytest.ini", "pyproject.toml"],
+            # pyproject.toml omitted here (too broad — Rust/Node projects use it too).
+            # Content-based detection via config_keys handles pyproject.toml correctly.
+            "files": ["conftest.py", "tests/conftest.py", "pytest.ini"],
             "imports": [r"import pytest", r"from pytest"],
             "config_keys": ["[tool.pytest", "[pytest"],
         },

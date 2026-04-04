@@ -165,7 +165,8 @@ def plan(
         subtasks = decomposer.decompose(task_description, project_context=enhanced_context, project_path=project_path)
         user_task_label = task_description
 
-    plan_md = decomposer.generate_plan_md(subtasks, user_task=user_task_label)
+    has_key = _has_api_key(provider, api_key) if provider else False
+    plan_md = decomposer.generate_plan_md(subtasks, user_task=user_task_label, is_template=not has_key)
 
     output_file = output or "PLAN.md"
     output_path = Path(output_file)

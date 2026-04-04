@@ -123,21 +123,22 @@ class PreflightChecker:
         )
 
     def _check_plan(self) -> CheckResult:
-        """Check that a PLAN.md exists."""
+        """Check whether a PLAN.md exists (optional — created by prg plan or prg ralph)."""
         plan_path = self._find_plan_file()
         if plan_path:
             return CheckResult(
-                name="PLAN.md",
+                name="PLAN.md (optional)",
                 passed=True,
                 path=str(plan_path),
                 detail="Plan file found.",
             )
         fix_cmd = f'prg plan "{self.task_description}"' if self.task_description else "prg plan <task>"
+        # Optional — Ralph creates this itself; don't block pre-Ralph verify
         return CheckResult(
-            name="PLAN.md",
-            passed=False,
+            name="PLAN.md (optional)",
+            passed=True,
             fix_command=fix_cmd,
-            detail="No plan file found.",
+            detail="No plan file yet — will be created by `prg plan` or `prg ralph`.",
         )
 
     def _check_task_files(self) -> CheckResult:
@@ -171,21 +172,22 @@ class PreflightChecker:
         )
 
     def _check_design(self) -> CheckResult:
-        """Check that a DESIGN.md exists."""
+        """Check whether a DESIGN.md exists (optional — created by prg design or prg ralph)."""
         design_path = self._find_design_file()
         if design_path:
             return CheckResult(
-                name="DESIGN.md",
+                name="DESIGN.md (optional)",
                 passed=True,
                 path=str(design_path),
                 detail="Design document found.",
             )
         fix_cmd = f'prg design "{self.task_description}"' if self.task_description else "prg design <task>"
+        # Optional — Ralph creates this itself; don't block pre-Ralph verify
         return CheckResult(
-            name="DESIGN.md",
-            passed=False,
+            name="DESIGN.md (optional)",
+            passed=True,
             fix_command=fix_cmd,
-            detail="No design document found.",
+            detail="No design file yet — will be created by `prg design` or `prg ralph`.",
         )
 
     # -- Helpers ----------------------------------------------------------

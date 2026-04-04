@@ -262,7 +262,7 @@ Generate the subtasks now:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def generate_plan_md(tasks: List[SubTask], user_task: str = "") -> str:
+    def generate_plan_md(tasks: List[SubTask], user_task: str = "", is_template: bool = False) -> str:
         """Render a list of SubTasks as a PLAN.md markdown document."""
         lines = [
             "# PLAN",
@@ -270,6 +270,12 @@ Generate the subtasks now:
         ]
         if user_task:
             lines += [f"> **Goal:** {user_task}", ""]
+        if is_template:
+            lines += [
+                "> **Note:** This is a generic template plan — configure an AI provider API key",
+                "> (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, etc.) for task-specific breakdown.",
+                "",
+            ]
 
         lines += [
             f"**Subtasks:** {len(tasks)}",

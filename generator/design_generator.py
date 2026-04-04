@@ -562,8 +562,12 @@ class CacheEntry(BaseModel):
         return age > self.ttl
 ```""")
         else:
+            # Build a meaningful class name from the first non-trivial words
+            _stop = {"add", "the", "a", "an", "with", "for", "to", "of", "in", "on", "and"}
+            _words = [w for w in user_request.split() if w.lower() not in _stop]
+            _class_name = "".join(w.title() for w in _words[:2]) if _words else "Feature"
             data_models.append(f"""```python
-class {user_request.split()[0].title()}Config(BaseModel):
+class {_class_name}Config(BaseModel):
     \"\"\"Configuration for {user_request}.\"\"\"
     enabled: bool = Field(default=True)
     timeout_seconds: int = Field(default=30, ge=1)
@@ -609,7 +613,10 @@ user = get_cached(f"user:{user_id}", lambda: fetch_user(user_id))
 count = invalidate_cache("user:*")
 ```""")
         else:
-            api_contracts.append(f"""### `execute_{user_request.split()[0].lower()}(params: dict) -> Result`
+            _stop = {"add", "the", "a", "an", "with", "for", "to", "of", "in", "on", "and"}
+            _words = [w for w in user_request.split() if w.lower() not in _stop]
+            _fn_name = "_".join(w.lower() for w in _words[:2]) if _words else "execute"
+            api_contracts.append(f"""### `{_fn_name}(params: dict) -> Result`
 
 **Purpose**: Execute the {user_request} operation
 
@@ -652,7 +659,11 @@ count = invalidate_cache("user:*")
 
         return Design(
             title=title,
-            problem_statement=f"{user_request}. This enhancement will improve system performance, reliability, and user experience by implementing a robust, well-tested solution following industry best practices.",
+            problem_statement=(
+                f"{user_request}.\n\n"
+                "> **Note:** This is a template design — configure an AI provider API key "
+                "(`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, etc.) for project-specific analysis."
+            ),
             architecture_decisions=decisions,
             api_contracts=api_contracts,
             data_models=data_models,

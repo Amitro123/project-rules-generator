@@ -1,9 +1,8 @@
 # Project Rules Generator
 
-[![PyPI](https://img.shields.io/pypi/v/project-rules-generator)](https://pypi.org/project/project-rules-generator/)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-706%2B%20Passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-745%2B%20Passing-brightgreen.svg)](tests/)
 
 ---
 

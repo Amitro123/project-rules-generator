@@ -123,11 +123,13 @@ class TestPreflightChecker:
         assert "Skills (3+)" in failed_names
 
     def test_no_plan(self, tmp_path):
+        """PLAN.md is optional — missing plan should not fail pre-Ralph verify."""
         proj = self._make_project(tmp_path, plan=False)
         checker = PreflightChecker(proj, task_description="Add cache")
         report = checker.run_checks()
-        failed_names = [c.name for c in report.failed_checks]
-        assert "PLAN.md" in failed_names
+        # PLAN.md is optional — absence is informational, not a failure
+        passed_names = [c.name for c in report.checks if c.passed]
+        assert "PLAN.md (optional)" in passed_names
 
     def test_no_tasks(self, tmp_path):
         proj = self._make_project(tmp_path, tasks=False)
@@ -157,11 +159,13 @@ class TestPreflightChecker:
         assert result.passed
 
     def test_no_design(self, tmp_path):
+        """DESIGN.md is optional — missing design should not fail pre-Ralph verify."""
         proj = self._make_project(tmp_path, design=False)
         checker = PreflightChecker(proj, task_description="Add cache")
         report = checker.run_checks()
-        failed_names = [c.name for c in report.failed_checks]
-        assert "DESIGN.md" in failed_names
+        # DESIGN.md is optional — absence is informational, not a failure
+        passed_names = [c.name for c in report.checks if c.passed]
+        assert "DESIGN.md (optional)" in passed_names
 
     def test_fix_commands_present(self, tmp_path):
         proj = self._make_project(tmp_path, rules=False, plan=False, design=False, tasks=False, skills=0)

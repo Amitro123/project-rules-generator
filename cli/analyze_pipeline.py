@@ -148,9 +148,18 @@ def run_generation_pipeline(
         if inc_analyzer and rules_path.exists():
             from generator.incremental_analyzer import IncrementalAnalyzer
 
+            all_sections = set(inc_analyzer.compute_project_hash().keys())
             existing_rules = rules_path.read_text(encoding="utf-8")
             changed_sections = inc_analyzer.detect_changes()
+            skipped_sections = all_sections - changed_sections
             unified_content = IncrementalAnalyzer.merge_rules(existing_rules, unified_content, changed_sections)
+            if verbose:
+                if changed_sections:
+                    click.echo(f"   Incremental: regenerated {', '.join(sorted(changed_sections))}")
+                else:
+                    click.echo("   Incremental: all sections up-to-date — nothing regenerated")
+                if skipped_sections:
+                    click.echo(f"   Incremental: skipped (cached) {', '.join(sorted(skipped_sections))}")
         save_markdown(rules_path, unified_content)
         generated_files.append(rules_path)
 
