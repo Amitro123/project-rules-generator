@@ -1,6 +1,6 @@
 # Features Overview
 
-Project Rules Generator offers a suite of tools to analyze your codebase and generate context-aware rules for AI agents.
+Project Rules Generator generates structured memory artifacts — rules, skills, plans, and specs — that any AI coding agent (Claude, Cursor, Windsurf, Copilot) can consume. Generate the artifacts with PRG, then let your agent of choice read them. Autonomous execution via Ralph is available but optional.
 
 ## Feature Breakdown
 
@@ -20,7 +20,7 @@ Project Rules Generator offers a suite of tools to analyze your codebase and gen
 | **`prg watch`** | Watches project files and auto-runs `analyze --incremental` on change | Instant | No | ✅ |
 | **Spec Generation** | LLM-generated `spec.md` (Overview, Goals, User Stories, Acceptance Criteria) | Medium | Yes | ✅ |
 | **Skill Usage Tracking** | Auto-tracks match counts; `feedback` votes; `stale` detection | Instant | No | ✅ |
-| **Ralph Feature Loop** 🔁 | Autonomous feature-scoped iteration loop with git commits & self-review gate | Slow | Yes | ✅ |
+| **Ralph Feature Loop** 🔁 _(optional)_ | Autonomous feature-scoped iteration loop with git commits & self-review gate. Requires existing PRG artifacts. Run `prg analyze` and `prg feature` first. | Slow | Yes | ✅ |
 
 ---
 
@@ -426,9 +426,13 @@ prg watch . --ide cursor --quiet # target a specific IDE, suppress non-error out
 
 ---
 
-### Feature 15: Ralph Feature Loop Engine 🔁
+### Feature 15: Ralph Feature Loop Engine 🔁 _(Optional)_
+
+> **Prerequisites**: Ralph requires existing PRG artifacts to operate. Run `prg analyze .` to generate `rules.md` and skills, then run `prg feature "<description>"` to generate `PLAN.md`, `TASKS.yaml`, and `STATE.json` for the target feature. Ralph reads these artifacts as its execution context on every iteration.
 
 **What it does**: A feature-scoped autonomous loop that runs iteratively on a single git branch until a feature is complete — or max iterations are reached. Unlike [Autopilot (Feature 9)](#feature-9-autopilot-), Ralph requires **no human input per iteration**: it self-reviews, runs tests, and keeps going until success criteria are met.
+
+Ralph is an optional execution layer. You can stop after generating artifacts and continue working manually — Ralph is only needed when you want fully autonomous iteration.
 
 **Commands**:
 ```bash
