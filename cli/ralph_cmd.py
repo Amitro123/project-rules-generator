@@ -30,18 +30,224 @@ def _feature_dir(project_path: Path, feature_id: str) -> Path:
 # ---------------------------------------------------------------------------
 
 
-@click.group(name="ralph")
+class _RalphGroup(click.Group):
+    """Click group that runs a full feature lifecycle when given a task string."""
+
+    def parse_args(self, ctx, args):
+        # If the first arg doesn't match a known subcommand and doesn't start
+        # with '-', treat it as a task description and route to `go`.
+        if args and args[0] not in self.commands and not args[0].startswith("-"):
+            args = ["go"] + list(args)
+        return super().parse_args(ctx, args)
+
+
+@click.group(name="ralph", cls=_RalphGroup)
 def ralph_group():
     """Ralph Feature Loop Engine — autonomous feature-scoped iteration.
 
     \b
-    Commands:
-      run     Start the Ralph loop for a feature
-      status  Show current loop progress
-      resume  Continue an interrupted loop
-      stop    Emergency stop
-      approve Merge the feature branch → main
+    Quickstart (one command, full lifecycle):
+      prg ralph "Add loading states to all forms"
+
+    \b
+    Sub-commands:
+      go        Create feature + run loop immediately (default)
+      discover  Scan project and queue multiple features
+      run       Start loop for an existing FEATURE-XXX
+      status    Show loop progress
+      resume    Continue an interrupted loop
+      stop      Emergency stop
+      approve   Merge the feature branch → main
     """
+
+
+# ---------------------------------------------------------------------------
+# go  (default: prg ralph "task description")
+# ---------------------------------------------------------------------------
+
+
+@ralph_group.command(name="go")
+@click.argument("task_description")
+@click.option(
+    "--project", "-p", "project_path",
+    type=click.Path(exists=True, file_okay=False), default=".",
+)
+@click.option("--max-iterations", default=20, show_default=True)
+@click.option("--provider", type=click.Choice(["gemini", "groq", "anthropic", "openai"]), default=None)
+@click.option("--api-key", default=None)
+@click.option("--verbose/--quiet", default=True)
+def ralph_go(task_description, project_path, max_iterations, provider, api_key, verbose):
+    """Create a feature and run its loop immediately — the one-command workflow.
+
+    \b
+    Example:
+      prg ralph "Add loading states to all forms"
+    """
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(message)s")
+
+    from pathlib import Path as _Path
+
+    from cli.feature_cmd import feature as _feature_cmd
+    from cli.utils import detect_provider as _dp
+    from cli.utils import set_api_key_env as _sk
+
+    _dp_val = _dp(provider, api_key)
+    _sk(_dp_val, api_key)
+
+    proj = _Path(project_path).resolve()
+    features_dir = proj / "features"
+
+    from generator.ralph_engine import FeatureState, RalphEngine, _save_tasks, next_feature_id, slugify
+
+    # 1. Create feature workspace (same logic as `prg feature`)
+    feature_id = next_feature_id(features_dir)
+    feature_dir = features_dir / feature_id
+    feature_dir.mkdir(parents=True, exist_ok=True)
+    (feature_dir / "CRITIQUES").mkdir(exist_ok=True)
+
+    click.echo(f"[ralph] Feature: {feature_id} — {task_description}")
+
+    plan_path = feature_dir / "PLAN.md"
+    tasks_path = feature_dir / "TASKS.yaml"
+    tasks_total = 0
+
+    try:
+        from generator.task_decomposer import TaskDecomposer
+
+        dec = TaskDecomposer(provider=_dp_val, api_key=api_key)
+        subtasks = dec.decompose(task_description, project_path=proj)
+        plan_path.write_text(dec.generate_plan_md(subtasks, user_task=task_description), encoding="utf-8")
+        tasks_total = len(subtasks)
+        _save_tasks(tasks_path, [
+            {"id": s.id, "title": s.title, "status": "pending", "estimated_minutes": s.estimated_minutes}
+            for s in subtasks
+        ])
+        click.echo(f"[ralph] Plan: {tasks_total} tasks")
+    except Exception as exc:
+        logger.warning("Plan generation failed: %s — placeholder written.", exc)
+        plan_path.write_text(f"# {task_description}\n\nPlan generation failed. Edit manually.\n", encoding="utf-8")
+        _save_tasks(tasks_path, [])
+
+    branch_name = f"ralph/{feature_id}-{slugify(task_description)}"
+    state = FeatureState(
+        feature_id=feature_id,
+        task=task_description,
+        branch_name=branch_name,
+        status="planning_complete",
+        tasks_total=tasks_total,
+        max_iterations=max_iterations,
+    )
+    state.save(feature_dir / "STATE.json")
+
+    try:
+        import subprocess as _sp
+
+        _sp.run(["git", "checkout", "-b", branch_name], cwd=proj, check=True, capture_output=True)
+        click.echo(f"[ralph] Branch: {branch_name}")
+    except Exception as exc:
+        logger.warning("Branch creation failed: %s", exc)
+
+    # 2. Run the loop
+    engine = RalphEngine(
+        feature_id=feature_id,
+        project_path=proj,
+        provider=_dp_val or "groq",
+        api_key=api_key,
+        verbose=verbose,
+    )
+    engine.run_loop(max_iterations=max_iterations)
+
+
+# ---------------------------------------------------------------------------
+# discover  (manager replacement: prg ralph discover)
+# ---------------------------------------------------------------------------
+
+
+@ralph_group.command(name="discover")
+@click.option(
+    "--project", "-p", "project_path",
+    type=click.Path(exists=True, file_okay=False), default=".",
+)
+@click.option("--provider", type=click.Choice(["gemini", "groq", "anthropic", "openai"]), default=None)
+@click.option("--api-key", default=None)
+@click.option(
+    "--run/--no-run", "auto_run", default=False, show_default=True,
+    help="Automatically start the Ralph loop for each discovered feature.",
+)
+@click.option("--verbose/--quiet", default=True)
+def ralph_discover(project_path, provider, api_key, auto_run, verbose):
+    """Scan the project and queue multiple Ralph features.
+
+    Reads README.md and any spec files to extract a list of pending features,
+    then calls 'prg feature' for each one. Pass --run to execute them in sequence.
+
+    \b
+    Replaces: prg manager
+    Example:
+      prg ralph discover
+      prg ralph discover --run
+    """
+    import subprocess as _sp
+    from pathlib import Path as _Path
+
+    from cli.utils import detect_provider as _dp
+    from cli.utils import set_api_key_env as _sk
+
+    proj = _Path(project_path).resolve()
+    _dp_val = _dp(provider, api_key)
+    _sk(_dp_val, api_key)
+
+    # Read project context
+    readme = proj / "README.md"
+    spec = proj / "spec.md"
+    context = ""
+    for p in (readme, spec):
+        if p.exists():
+            context += p.read_text(encoding="utf-8", errors="replace")[:3000] + "\n\n"
+
+    if not context.strip():
+        click.echo("No README.md or spec.md found — nothing to discover.", err=True)
+        raise SystemExit(1)
+
+    # Use TaskDecomposer to extract feature tasks from the README/spec
+    features_found = []
+    try:
+        from generator.task_decomposer import TaskDecomposer
+
+        dec = TaskDecomposer(provider=_dp_val, api_key=api_key)
+        subtasks = dec.decompose(
+            "Extract the list of pending features or improvements from this project context",
+            project_path=proj,
+        )
+        features_found = [s.title for s in subtasks if s.title]
+        click.echo(f"[discover] Found {len(features_found)} feature(s):")
+        for f in features_found:
+            click.echo(f"  • {f}")
+    except Exception as exc:
+        click.echo(f"[discover] AI extraction failed: {exc}", err=True)
+        click.echo("[discover] Try: prg ralph \"<specific task>\" instead.")
+        raise SystemExit(1)
+
+    if not features_found:
+        click.echo("[discover] No features identified.")
+        return
+
+    if not auto_run:
+        click.echo("\nRun each feature with:")
+        for f in features_found:
+            click.echo(f'  prg ralph "{f}"')
+        return
+
+    # --run: execute each feature sequentially
+    for f in features_found:
+        click.echo(f"\n[discover] Starting: {f}")
+        result = _sp.run(
+            ["prg", "ralph", f],
+            cwd=proj,
+        )
+        if result.returncode != 0:
+            click.echo(f"[discover] Feature failed: {f} — stopping.", err=True)
+            break
 
 
 # ---------------------------------------------------------------------------
@@ -238,9 +444,9 @@ def ralph_stop(feature_id, project_path, reason):
     # Checkout main/master
     try:
         import subprocess
+
         from prg_utils import git_ops
 
-        main = git_ops.get_current_branch(project_path)  # likely already on feature branch
         for candidate in ("main", "master"):
             try:
                 subprocess.run(
@@ -287,6 +493,7 @@ def ralph_approve(feature_id, project_path, target_branch):
 
     try:
         import subprocess
+
         from prg_utils import git_ops
 
         git_ops.checkout(target_branch, project_path)

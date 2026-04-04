@@ -68,7 +68,7 @@ prg = "cli.cli:main"
 
 [tool.setuptools]
 py-modules = ["main"]
-packages = ["generator", "prg_utils", "cli"]
+packages = ["generator", "prg_utils", "cli", "core"]
 
 [tool.setuptools.package-data]
 generator = ["skills/**/*", "templates/**/*"]

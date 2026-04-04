@@ -133,33 +133,40 @@ class TestDesignProviderWiring:
 
 
 class TestAutopilotManagerProviderChoices:
-    def test_autopilot_accepts_anthropic(self):
-        runner = CliRunner()
-        with patch("cli.autopilot_cmd.AutopilotOrchestrator") as MockOrch:
-            MockOrch.return_value.run.return_value = None
-            result = runner.invoke(autopilot, [".", "--provider", "anthropic"])
-        assert "Error: Invalid value for '--provider'" not in result.output
+    """autopilot and manager are deprecated — they print a redirect message and exit 1."""
 
-    def test_autopilot_accepts_openai(self):
+    def test_autopilot_shows_deprecation_message(self):
         runner = CliRunner()
-        with patch("cli.autopilot_cmd.AutopilotOrchestrator") as MockOrch:
-            MockOrch.return_value.run.return_value = None
-            result = runner.invoke(autopilot, [".", "--provider", "openai"])
-        assert "Error: Invalid value for '--provider'" not in result.output
+        result = runner.invoke(autopilot, ["."])
+        assert result.exit_code != 0
+        assert "deprecated" in result.output.lower() or "deprecated" in (result.stderr or "").lower()
 
-    def test_manager_accepts_anthropic(self):
+    def test_autopilot_accepts_anthropic_option_without_crash(self):
         runner = CliRunner()
-        with patch("cli.manager_cmd.ProjectManager") as MockPM:
-            MockPM.return_value.run.return_value = None
-            result = runner.invoke(manager, [".", "--provider", "anthropic"])
-        assert "Error: Invalid value for '--provider'" not in result.output
+        result = runner.invoke(autopilot, [".", "--provider", "anthropic"])
+        # Must not raise "Invalid value for '--provider'" — the option is still declared
+        assert "Invalid value for '--provider'" not in result.output
 
-    def test_manager_accepts_openai(self):
+    def test_autopilot_accepts_openai_option_without_crash(self):
         runner = CliRunner()
-        with patch("cli.manager_cmd.ProjectManager") as MockPM:
-            MockPM.return_value.run.return_value = None
-            result = runner.invoke(manager, [".", "--provider", "openai"])
-        assert "Error: Invalid value for '--provider'" not in result.output
+        result = runner.invoke(autopilot, [".", "--provider", "openai"])
+        assert "Invalid value for '--provider'" not in result.output
+
+    def test_manager_shows_deprecation_message(self):
+        runner = CliRunner()
+        result = runner.invoke(manager, ["."])
+        assert result.exit_code != 0
+        assert "deprecated" in result.output.lower() or "deprecated" in (result.stderr or "").lower()
+
+    def test_manager_accepts_anthropic_option_without_crash(self):
+        runner = CliRunner()
+        result = runner.invoke(manager, [".", "--provider", "anthropic"])
+        assert "Invalid value for '--provider'" not in result.output
+
+    def test_manager_accepts_openai_option_without_crash(self):
+        runner = CliRunner()
+        result = runner.invoke(manager, [".", "--provider", "openai"])
+        assert "Invalid value for '--provider'" not in result.output
 
     def test_autopilot_rejects_unknown_provider(self):
         runner = CliRunner()
