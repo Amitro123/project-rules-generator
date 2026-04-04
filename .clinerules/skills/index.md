@@ -10,7 +10,7 @@ version: 1.0
 ## PROJECT CONTEXT
 - **Type**: Agent
 - **Tech Stack**: python, claude, gemini, gpt, groq, click, pydantic, gitpython
-- **Domain**: ![Python 3.8+](https://python.org)...
+- **Domain**: ![PyPI](https://pypi.org/project/project-rules-generator/)...
 
 ## CORE SKILLS
 

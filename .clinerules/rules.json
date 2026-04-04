@@ -41,7 +41,7 @@
   ],
   "testing": [
     "**Framework**: pytest",
-    "**Test files**: 59 (605 test cases)",
+    "**Test files**: 66 (739 test cases)",
     "**Test types**: unit, integration",
     "**Fixtures**: shared via `conftest.py`",
     "**Test data**: `tests/fixtures/` directory"
@@ -61,12 +61,17 @@
     "NEVER generate placeholder comments like 'Implement logic here' - write the full code."
   ],
   "active_skill_triggers": [
+    "**agent-architecture-analyzer**: analyze agent, check architecture, review my agents, debugging agent loops or coordination failures, planning new agent capabilities or adding a new agent role",
+    "**analyze-code**: analyze code, check quality, lint the project, a pr or release cut, a large refactor",
     "**brainstorming**: i want to add..., let's build..., i'm thinking about..., any code is written, requirements are unclear",
     "**ci-lint-failures**: ci lint failure, github actions lint error, fix linting in ci, pipeline lint error",
-    "**writing-skills**: create a skill for..., we should formalize..., repetitive pattern identified, project has unique workflow in readme",
-    "**requesting-code-review**: request code review, open pr, make a pr, create a pull request, submit for review, ready for review, push for review, i'm done with my changes, all tests pass, what's next?",
-    "**subagent-driven-development**: plan.md exists and user approves execution, execute the plan, let's go, start implementation",
+    "**writing-skills**: create a skill for..., we should formalize..., repetitive pattern identified (3+ times), project has unique workflow in readme",
+    "**prompt-improver**: agent is failing to follow instructions consistently, user sees hallucinations or unexpected formatting, improve this prompt, fix the agent instructions",
+    "**refactor-module**: refactor, clean up code, improve structure, module has grown beyond a single responsibility, code review identifies structural issues",
+    "**requesting-code-review**: task/feature complete, ready for review, can you review?, creating pr/merge request",
+    "**subagent-driven-development**: plan.md exists and user approves execution, execute the plan, let's go, start implementation, `prg plan` generates a task list",
     "**systematic-debugging**: bug, error, not working, failing test, ci/cd failure, exception in logs",
+    "**test-coverage**: check coverage, run tests, show coverage report, merging a feature branch, adding new modules without tests",
     "**test-driven-development**: new feature implementation, bug fix, refactoring",
     "**writing-plans**: design approval (design.md exists), let's implement this, create a plan, starting implementation",
     "**api-client-patterns**: api client, llm provider, model integration, credentials, api key, new command with llm",
@@ -98,6 +103,10 @@
     "**readme-improver**: improve readme, readme checklist, document project",
     "**type-checking**: type checking, `has_docs`, `has_tests` — test suite available, `has_api` — api endpoints present, `has_ci`"
   ],
+  "skill_definitions": [
+    "read",
+    "search"
+  ],
   "auto-trigger": [
     "**\"type checking\"**",
     "`has_docs`",
@@ -124,20 +133,11 @@
     "Never generate or reference file paths that don't exist in the project.",
     "Never skip tests or suppress coverage with `--no-cov` / `--no-cover`."
   ],
-  "what_changed": [
-    "Bullet point summary of the key changes"
-  ],
-  "test_plan": [
-    "[ ] Unit tests added/updated",
-    "[ ] Manually tested with: <describe scenario>"
-  ],
-  "5-phase_process": [
-    "**Binary Search**: Comment out half the code",
-    "**Trace Backwards**: From error to source",
-    "**Instrumentation**: Log state before/after suspected lines",
-    "Check assumptions",
-    "Verify data types",
-    "Review recent changes"
+  "code_review_self-assessment": [
+    "[✓] All tests pass",
+    "[✓] No debug code",
+    "[✓] Documentation updated",
+    "src/auth.py (+45, -12)"
   ],
   "guidelines": [
     "Follow project patterns for click usage",
