@@ -84,9 +84,170 @@
     "create a plan",
     "starting implementation"
   ],
-  "dup-skill": [
-    "dup skill",
-    "dup",
+  "api-client-patterns": [
+    "api client",
+    "llm provider",
+    "model integration",
+    "credentials",
+    "api key",
+    "new command with llm"
+  ],
+  "response-parsing": [
+    "parse ai response",
+    "llm output processing",
+    "handle api response",
+    "structured output from llm"
+  ],
+  "click-cli": [
+    "working with click integration code",
+    "editing files that import or configure click"
+  ],
+  "failed-ai-skill": [
+    "failed ai skill",
+    "failed",
     "skill"
+  ],
+  "gemini-api": [
+    "gemini api",
+    "gemini",
+    "api"
+  ],
+  "gitpython-ops": [
+    "gitpython ops",
+    "gitpython",
+    "ops"
+  ],
+  "repo-operations": [
+    "git status prg",
+    "repo clean check",
+    "prg git issue",
+    "is this a git repo"
+  ],
+  "groq-api": [
+    "groq api",
+    "groq",
+    "api"
+  ],
+  "jinja2-template-workflow": [
+    "jinja2",
+    "template",
+    "workflow",
+    "working in backend code: *.py",
+    "working with *.j2 files"
+  ],
+  "missing-dep-skill": [
+    "missing dep skill",
+    "missing",
+    "dep"
+  ],
+  "pydantic-validation": [
+    "pydantic validation",
+    "pydantic",
+    "validation"
+  ],
+  "fixture-patterns": [
+    "pytest fixture",
+    "test setup",
+    "shared test data",
+    "test environment",
+    "conftest.py"
+  ],
+  "argparse-patterns": [
+    "how to add a new cli command",
+    "argparse example",
+    "command line arguments",
+    "define a new cli",
+    "cli patterns"
+  ],
+  "click-commands": [
+    "add new cli command",
+    "create a command line tool",
+    "how to organize commands",
+    "test my command line script"
+  ],
+  "config-management": [
+    "manage config",
+    "update configuration",
+    "config settings"
+  ],
+  "test-ai-skill": [
+    "how to test ai components",
+    "testing llm integrations",
+    "validate ai model output",
+    "pytest for pydantic and ai"
+  ],
+  "test-skill-2": [
+    "test skill 2",
+    "test",
+    "skill"
+  ],
+  "test-skill": [
+    "test skill",
+    "test",
+    "skill"
+  ],
+  "ai-provider-integration": [
+    "integrate gemini",
+    "add ai capabilities",
+    "connect to ai provider",
+    "setup ai client"
+  ],
+  "claude-cowork-workflow": [
+    "create a cowork skill",
+    "generate skill with claude",
+    "run prg with anthropic",
+    "skill creation flow",
+    "cowork skill pipeline",
+    "prg analyze --ai --provider anthropic",
+    "has_tests (tests/ directory with 56 test files)",
+    "has_docs (docs/ directory with 14 docs)",
+    "has_api (generator/skills_manager.py as primary entry point)"
+  ],
+  "debugger": [
+    "debug python",
+    "pdb",
+    "breakpoint"
+  ],
+  "mypy-type-errors": [
+    "mypy errors",
+    "type checking failed",
+    "fix type hints"
+  ],
+  "pytest-debugger": [
+    "debug pytest",
+    "breakpoint in test",
+    "step through tests"
+  ],
+  "pytest-testing-workflow": [
+    "how to run tests",
+    "pytest workflow",
+    "debug a test",
+    "my tests are failing",
+    "setup testing"
+  ],
+  "python-cli-development": [
+    "add new cli command",
+    "develop command line interface",
+    "how to use click",
+    "create a new script with arguments"
+  ],
+  "readme-improvement": [
+    "improve readme",
+    "update readme",
+    "fix readme",
+    "readme needs work",
+    "readme is outdated"
+  ],
+  "readme-improver": [
+    "improve readme",
+    "readme checklist",
+    "document project"
+  ],
+  "type-checking": [
+    "type checking",
+    "`has_docs`",
+    "`has_tests` \u2014 test suite available",
+    "`has_api` \u2014 api endpoints present",
+    "`has_ci`"
   ]
 }
