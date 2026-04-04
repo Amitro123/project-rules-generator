@@ -112,9 +112,9 @@ def checkout(name: str, repo_path: Union[str, Path] = ".") -> None:
 
 
 def merge_branch(name: str, repo_path: Union[str, Path] = ".") -> None:
-    """Merge a branch into the current one."""
+    """Merge a branch into the current one (always creates a merge commit)."""
     subprocess.run(
-        ["git", "-C", _posix(repo_path), "merge", name],
+        ["git", "-C", _posix(repo_path), "merge", "--no-ff", name],
         capture_output=True,
         check=True,
         text=True,

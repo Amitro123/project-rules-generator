@@ -13,6 +13,7 @@ from typing import Optional, Tuple
 
 import yaml
 
+from generator.exceptions import SecurityError
 from prg_utils import git_ops
 
 logger = logging.getLogger(__name__)
@@ -225,7 +226,18 @@ class RalphEngine:
             logger.info("🧩 Matched skill: %s", skill)
 
         # 3. AGENT EXECUTION  (delegated — writes files, does work)
-        changes = self._agent_execute(context, skill, next_task_title)
+        try:
+            changes = self._agent_execute(context, skill, next_task_title)
+        except SecurityError as sec_exc:
+            logger.error(
+                "🚨 Security violation — LLM attempted path traversal: %s. "
+                "Stopping loop for manual review.",
+                sec_exc,
+            )
+            self.state.status = "stopped"
+            self.state.exit_condition = f"security_violation:{sec_exc}"
+            self.save_state()
+            return
 
         # 4. GIT COMMIT
         if changes:
@@ -420,6 +432,11 @@ class RalphEngine:
                 if self.verbose:
                     logger.info("   ✏️  %s", rel_path)
             return changes
+        except SecurityError:
+            # Path traversal attempt from LLM — must not be silently swallowed.
+            # Re-raise so execute_iteration() can stop the loop rather than
+            # continuing as if nothing happened.
+            raise
         except Exception as exc:
             logger.warning("Agent execution failed (iteration %d): %s", self.state.iteration, exc)
             return {}

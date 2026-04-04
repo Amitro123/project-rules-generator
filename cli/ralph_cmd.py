@@ -36,7 +36,17 @@ class _RalphGroup(click.Group):
     def parse_args(self, ctx, args):
         # If the first arg doesn't match a known subcommand and doesn't start
         # with '-', treat it as a task description and route to `go`.
+        # Exception: if it looks like a typo of a known subcommand, raise a
+        # helpful error instead of silently creating a feature named "staus".
         if args and args[0] not in self.commands and not args[0].startswith("-"):
+            import difflib
+
+            close = difflib.get_close_matches(args[0], self.commands.keys(), n=1, cutoff=0.6)
+            if close:
+                raise click.UsageError(
+                    f"Unknown subcommand {args[0]!r}. Did you mean '{close[0]}'?\n"
+                    f"  To create a feature with this name, use: prg ralph \"{args[0]}\""
+                )
             args = ["go"] + list(args)
         return super().parse_args(ctx, args)
 
@@ -95,14 +105,34 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
     _sk(_dp_val, api_key)
 
     proj = _Path(project_path).resolve()
+
+    from prg_utils.git_ops import is_git_repo
+
+    if not is_git_repo(proj):
+        raise click.ClickException(
+            f"{proj} is not a git repository.\n"
+            "Ralph requires git for branch isolation and PR creation.\n"
+            "Run `git init` first, or point --project at a git repo."
+        )
+
     features_dir = proj / "features"
 
     from generator.ralph_engine import FeatureState, RalphEngine, _save_tasks, next_feature_id, slugify
 
     # 1. Create feature workspace (same logic as `prg feature`)
-    feature_id = next_feature_id(features_dir)
-    feature_dir = features_dir / feature_id
-    feature_dir.mkdir(parents=True, exist_ok=True)
+    # Retry loop guards against the race where two concurrent `ralph go` calls
+    # both call next_feature_id() before either creates the directory.
+    features_dir.mkdir(parents=True, exist_ok=True)
+    for _attempt in range(5):
+        feature_id = next_feature_id(features_dir)
+        feature_dir = features_dir / feature_id
+        try:
+            feature_dir.mkdir()  # no exist_ok — atomic; raises if another process won
+            break
+        except FileExistsError:
+            continue
+    else:
+        raise click.ClickException("Could not allocate a unique feature directory after 5 retries.")
     (feature_dir / "CRITIQUES").mkdir(exist_ok=True)
 
     click.echo(f"[ralph] Feature: {feature_id} — {task_description}")
@@ -128,7 +158,12 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
         plan_path.write_text(f"# {task_description}\n\nPlan generation failed. Edit manually.\n", encoding="utf-8")
         _save_tasks(tasks_path, [])
 
-    branch_name = f"ralph/{feature_id}-{slugify(task_description)}"
+    slug = slugify(task_description)
+    if not slug:
+        raise click.UsageError(
+            "Task description must contain at least one alphanumeric character."
+        )
+    branch_name = f"ralph/{feature_id}-{slug}"
     state = FeatureState(
         feature_id=feature_id,
         task=task_description,
