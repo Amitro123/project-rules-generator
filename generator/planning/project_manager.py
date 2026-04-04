@@ -1,15 +1,15 @@
-"""Project Memory Manager — bootstraps and verifies PRG memory artifacts before Ralph executes.
+"""Project Memory Manager — bootstraps PRG memory artifacts before Ralph executes.
 
-Responsibilities:
-  Phase 1 (Setup)  — generate any missing memory artifacts (rules, skills, spec, tests)
-  Phase 2 (Verify) — run PreflightChecker to confirm the project is Ralph-ready
+Responsibility:
+  phase1_setup() — generate any missing memory artifacts (rules, skills, spec, tests)
 
-This class intentionally does NOT run tasks, execute code, or invoke Ralph.
-Its contract is: "hand off a fully-populated memory layer to whoever runs next."
+Verification is intentionally separate (`prg verify` / PreflightChecker).
+This class does NOT run tasks, execute code, or invoke Ralph.
 
 Typical workflow:
-    prg manager          # Phase 1+2: bootstrap + verify
-    prg ralph "task"     # Phase 3: consume the memory and iterate
+    prg manager          # bootstrap memory artifacts
+    prg verify           # validate project is Ralph-ready
+    prg ralph "task"     # consume the memory and iterate
 """
 
 from __future__ import annotations
@@ -63,11 +63,10 @@ class ProjectManager:
     # ------------------------------------------------------------------
 
     def run(self) -> None:
-        """Bootstrap memory artifacts (Phase 1) then verify readiness (Phase 2)."""
-        logger.info("🗂️  Project Memory Manager �� preparing PRG memory layer")
+        """Bootstrap missing memory artifacts."""
+        logger.info("Project Memory Manager - preparing PRG memory layer")
         self.phase1_setup()
-        self.phase2_verify()
-        logger.info("\n✅ Project memory is Ralph-ready. Run: prg ralph \"<feature description>\"")
+        logger.info("Memory bootstrap complete. Run prg verify then prg ralph")
 
     # ------------------------------------------------------------------
     # Phase 1: Setup — generate missing memory artifacts
