@@ -76,6 +76,16 @@ def commit_changes(
     return result.stdout.strip()
 
 
+def has_staged_changes(repo_path: Union[str, Path] = ".") -> bool:
+    """Return True when the index has staged changes ready to commit."""
+    result = subprocess.run(
+        ["git", "-C", _posix(repo_path), "diff", "--cached", "--quiet"],
+        capture_output=True,
+    )
+    # exit 0 = nothing staged, exit 1 = changes staged
+    return result.returncode != 0
+
+
 def commit_files(
     paths: List[Union[str, Path]],
     message: str,
@@ -88,6 +98,10 @@ def commit_files(
         raise RuntimeError(f"Not a git repository: {repo_path}")
 
     stage_files(paths, repo_path)
+
+    if not has_staged_changes(repo_path):
+        return "Nothing to commit"
+
     return commit_changes(message, repo_path, user_name, user_email)
 
 

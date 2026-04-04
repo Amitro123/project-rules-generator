@@ -1,40 +1,50 @@
 CR #5 — Comprehensive Review
 Test Suite
-745 passed, 0 failed. ✅
+745 passed, 0 failed ✅
 
-README Flows — Run Results
-FlowCommandResultInitprg init .✅ WorksAnalyzeprg analyze .✅ WorksIncrementalprg analyze . --incremental⚠️ No-op — says "Done!" but doesn't report what it skipped vs regeneratedConstitutionprg analyze . --constitution⚠️ Bug — says "No test framework detected" even when pytest is in the stackDesignprg design "..."⚠️ Offline fallback output is generic and useless — see belowPlanprg plan "..."⚠️ Offline fallback is generic — all 5 tasks are "Research", "Implement", "Write tests", "Review", "Deploy" regardless of inputReviewprg review PLAN.md (no key)✅ Clean error messageSkills listprg skills list --all✅ Works, new Score/Hits columns visibleAgentprg agent "fix bug"✅ Works, synonym expansion worksProvidersprg providers list✅ WorksVerifyprg verify .⚠️ Fails on PLAN.md, DESIGN.md, tasks/ — but these aren't needed for basic ralph usage. The README says "run verify before ralph" but verify demands artifacts that ralph itself creates. Chicken-and-egg.
+All README Flows — Status
+FlowResultNotesprg init .✅Cleanprg analyze .⚠️Tech detection weak — reads fastapi, react, typescript, redis, sqlalchemy from README but outputs "This project uses: python" onlyprg analyze . --incremental⚠️"Git commit failed" warning on second run — no-op commit attempt after nothing changedprg analyze . --constitution✅Fixed — now correctly detects pytestprg design "..." (offline)✅ improvedNow shows "template design" note. Still generic but honestprg plan "..." (offline)✅ improvedNow shows "generic template plan" note. Honestprg review PLAN.md (no key)✅Clean errorprg skills list --all✅Score/Hits columns workingprg skills validate✅100/100 passprg skills feedback✅Records useful votesprg skills stale✅Worksprg agent "..."⚠️"let's build a checkout page" → No match. README example shows prg agent "fix a bug" works but design/brainstorming triggers don't fire on natural languageprg providers list✅Cleanprg manager .⚠️Scaffolds tests/ and pytest.ini but says "Missing: spec.md" every run even when not neededprg verify .⚠️Still fails on "Task files" — requires tasks/ dir which no normal flow createsprg feature "..."✅Clean, branch createdprg ralph status✅Rich table outputprg ralph stop✅State persisted, branch checkout works
 
 Bugs Found
-B1 — Constitution says "No test framework detected" when pytest is in the stack
-The constitution generator doesn't use the same tech detection as the rules generator. conftest.py exists in the project, pytest is listed in the README stack — constitution still outputs "No test framework detected — adopt one before adding features." Misleading for a project that clearly uses pytest.
-B2 — Offline DESIGN.md is project-agnostic filler
-Without an API key, prg design "Add OAuth2 login with Google" produces:
+B1 — Tech stack detection is broken in prg analyze
+The README clearly lists fastapi, react, typescript, redis, sqlalchemy — prg init detects them correctly, but prg analyze outputs "This project uses: python" and the ARCHITECTURE section shows python-cli with no frontend/backend detected. The two commands use different detection paths and analyze loses most of the stack. A user running prg analyze after prg init gets a weaker result than init produced.
+B2 — prg analyze --incremental emits a git error on unchanged projects
+WARNING: Git commit failed: Git commit failed:
+   Files were generated, you can commit manually
+When nothing changed, the incremental run still tries to commit and fails on "nothing to commit." Should check git diff --cached --quiet before attempting a commit.
+B3 — prg agent doesn't match natural brainstorming/design inputs
+prg agent "let's build a checkout page" → "No matching skill found."
+prg agent "can you review this?" → "No matching skill found."
+The synonym table in agent_executor.py has "let's build" mapped, but the triggers JSON only has phrases that must substring-match. The skill brainstorming has triggers like "i want to add..." and requesting-code-review has "can you review?" — but neither fires. The auto-triggers.json in the project's .clinerules/ is either absent or missing these entries after prg analyze.
+B4 — prg verify still fails on "Task files" with no clear path forward
+After running prg manager + prg feature (the documented Ralph workflow), verify still fails:
+[FAIL] Task files — No tasks/ directory found. Fix: prg setup <task>
+prg setup is not documented in the README. The README flow is prg manager → prg verify → prg ralph but verify fails at this step with no way to pass using the documented commands.
+B5 — prg init tech detection ≠ prg analyze tech detection
+Init correctly reads the README and detects the full stack. Analyze misses it. This is a consistency gap — both should use the same detection pipeline.
+B6 — prg manager says "Missing: spec.md" on every run
+Even after running manager once, re-running it complains spec.md is missing and suggests prg spec --generate. For a project that doesn't want a spec, this is noise on every invocation.
 
-Problem statement: "This enhancement will improve system performance, reliability, and user experience..." — boilerplate with no mention of OAuth2, Google, or login
-API contract: execute_add(params: dict) -> Result — completely wrong
-Data model: AddConfig(BaseModel) — meaningless name
+What Was Fixed vs CR#5
+CR#5 issueFixed?Constitution "no test framework"✅ FixedDesign offline filler — no disclaimer✅ Fixed — now says "template design"Plan offline filler — no disclaimer✅ Fixed — now says "generic template plan"Verify chicken-and-egg trap⚠️ Partially — PLAN.md/DESIGN.md now optional, but Task files still blocksBadge "706+ Passing" stale✅ FixedPyPI badge broken❌ Still present and erroring
 
-The README says "No templates. No hand-holding. Generated from your actual project." — the offline fallback directly contradicts this. Either the offline mode should produce nothing and say "API key required for design generation", or it should at least include the task description in the output.
-B3 — Offline PLAN.md is identical for any input
-Every prg plan without an API key produces the same 5 tasks: Research → Implement → Write tests → Review → Deploy. The task description appears in the heading but nowhere in the task content. A user running this gets a false sense of progress.
-B4 — prg verify is a chicken-and-egg trap
-The README workflow says:
-prg manager     # bootstrap memory
-prg verify      # validate  
-prg ralph "..."  # run loop
-But prg verify fails if PLAN.md and DESIGN.md don't exist — and those are created by prg plan / prg design / prg ralph. So you can't verify until after you've already started the Ralph workflow. The fix is either: remove PLAN.md/DESIGN.md from the verify checklist (they're optional pre-conditions, not requirements), or split verify into prg verify --pre-ralph vs prg verify --pre-analyze.
-B5 — README badge: "706+ Passing" — actually 745
-The badge is hardcoded and stale. Should either be removed or automated via CI.
-B6 — PyPI badge links to a package that doesn't exist yet
-[![PyPI](https://img.shields.io/pypi/v/project-rules-generator)] — the package isn't on PyPI. The badge shows an error. Either remove it until published or replace with the GitHub release badge.
-B7 — prg analyze . --incremental gives no feedback on what was cached
-It says "Generated files:" and lists everything — same output as non-incremental. There's no indication of what was skipped or why it's "3-5x faster". A user can't tell if incremental mode is working at all.
+Rating: 7.8/10
+CategoryScoreΔCore flows (init/analyze/plan/design)7/10→ (tech detection regression)Error handling9/10↑Offline UX7/10↑ (honest disclaimers added)Ralph flow8.5/10↑Test suite9.5/10→First-run experience7/10→Overall7.8/10↑ from 7.5
+The codebase is in genuinely good shape. The two issues worth fixing before going open source: tech detection inconsistency between init and analyze, and the prg verify task files block that stops the documented Ralph workflow from completing.
 
-Structural Issues
-The offline experience is the first experience for most users — and it's the weakest part. A developer who clones and runs prg design "..." without an API key gets generic garbage. This is the first thing they'll see. The README should be honest: "Design and Plan require an API key for meaningful output."
-prg skills list shows Score: 50% for systematic-debugging with 12 hits — but the score/hits columns are empty dashes for everything else. The feedback system exists but there's no explanation in the README or help text of how scores accumulate or what they mean.
 
-Overall Rating: 7.5/10
-CategoryScoreNotesCore functionality8.5/10All flows run without crashesError handling9/10Clean messages across the boardOutput quality (with API key)N/ANot testable without keyOutput quality (offline)4/10Generic filler for design/planTest suite9.5/10745 green, well structuredUX / first-run experience6/10Verify trap, stale badges, offline gapProduction readiness8/10Ralph fixes solid
-The engineering quality is genuinely high. The main risk going open source is the offline experience — users without API keys will think the tool is bad when the issue is just the fallback templates.
+
+CR #5 Deep Dive — Root Cause Analysis
+B1 — Tech detection gap: CONFIRMED & ROOT CAUSE FOUND
+_validate_tech_with_deps in readme_parser.py strips the entire stack when a sparse pyproject.toml exists.
+The logic is: if any dependency file exists → validate each README tech against it. A minimal pyproject.toml containing only [tool.pytest.ini_options] passes the "has deps" check, but contains none of fastapi/react/redis/sqlalchemy — so they all get stripped. Only python survives (detected from .py files on disk).
+Fix: change the fallback logic. If dep content is present but contains fewer than N known frameworks, trust the README instead. Or simply union README-detected tech with dep-confirmed tech rather than intersecting.
+B2 — Doubled error message: CONFIRMED & ROOT CAUSE FOUND
+commit_changes() raises RuntimeError("Git commit failed: <stderr>"). analyze_cmd catches it and prints WARNING: Git commit failed: {e} — producing "Git commit failed: Git commit failed: ". Two fixes needed: strip the prefix from the RuntimeError message, or just print {e} not f"Git commit failed: {e}".
+B3 — Agent doesn't match brainstorming/review triggers
+prg analyze doesn't write auto-triggers.json in offline mode, so the triggers file either doesn't exist or is empty. The skill trigger matching has no fallback to the builtin trigger definitions — it only reads the project-level JSON file.
+B4 — prg verify Task files check is wrong
+The "Task files" check looks for tasks/ directory. The Ralph workflow creates features/FEATURE-001/PLAN.md and TASKS.yaml — not a tasks/ directory. The check is testing for an artifact from the old Autopilot workflow that no longer exists. Should be removed or updated to check features/ instead.
+
+Summary of actionable fixes:
+#FileFixB1generator/analyzers/readme_parser.pyUnion README tech + dep tech, don't intersectB2cli/analyze_cmd.pyChange f"Git commit failed: {e}" → f"{e}"B3generator/planning/agent_executor.pyFall back to builtin trigger definitions when auto-triggers.json is absentB4generator/planning/preflight.pyRemove or fix "Task files" check — tasks/ dir no longer used

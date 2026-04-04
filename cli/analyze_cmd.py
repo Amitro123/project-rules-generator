@@ -343,7 +343,7 @@ def analyze(
                     if "nothing to commit" in result.lower():
                         click.echo("   (or files already tracked)")
                 except Exception as e:
-                    click.echo(f"\nWARNING: Git commit failed: {e}")
+                    click.echo(f"\nWARNING: {e}")
                     click.echo("   Files were generated, you can commit manually")
 
         if inc_analyzer:

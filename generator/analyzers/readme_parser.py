@@ -227,13 +227,17 @@ def _extract_project_name(content: str, path: Path) -> str:
 
 
 def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List[str]:
-    """Cross-reference README-detected tech with actual project dependencies.
+    """Enrich README-detected tech with confirmation from actual dependency files.
 
-    Keeps tech that is:
-    - Found in requirements.txt / pyproject.toml / package.json / setup.py
-    - Found as actual imports in source files
-    - A language marker ('python', 'javascript', 'typescript') confirmed by file existence
-    - Infrastructure confirmed by file existence (docker, kubernetes)
+    Strategy: UNION, not intersection.
+    - README tech is always kept (it is the author's declared intent).
+    - Additional tech found in dep files (requirements.txt, package.json, etc.)
+      is added if not already present.
+
+    The old intersect-only approach silently stripped the entire stack when a
+    sparse pyproject.toml (e.g. containing only [tool.pytest.ini_options]) existed
+    but listed none of the framework dependencies yet — common for projects that
+    haven't written their deps file yet.
 
     If no dependency files exist at all, returns readme_tech unchanged.
     """
@@ -370,7 +374,16 @@ def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List
             validated.append(tech_name)
             confirmed.add(tech_name)
 
-    return validated
+    # Union: always preserve all README-declared tech.
+    # Dep-confirmed tech enriches the result; it never strips README entries.
+    all_tech = list(readme_tech)  # start with README as ground truth
+    seen = set(readme_tech)
+    for tech in validated:
+        if tech not in seen:
+            all_tech.append(tech)
+            seen.add(tech)
+
+    return all_tech
 
 
 def _extract_features(content: str, max_features: int = 10) -> List[str]:
@@ -456,4 +469,3 @@ from generator.analyzers.readme_skill_extractor import (  # noqa: F401, E402
     extract_process_steps,
     extract_purpose,
 )
-

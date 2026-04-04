@@ -52,6 +52,37 @@ def _expand_input(user_input: str) -> str:
 class AgentExecutor:
     """Handles agent-related tasks like auto-triggering skills."""
 
+    # Fallback trigger map used when auto-triggers.json doesn't exist or is empty.
+    # Derived from the Auto-Trigger sections of the bundled builtin SKILL.md files.
+    # Keeps prg agent functional on fresh projects that haven't run prg analyze yet.
+    _BUILTIN_FALLBACK_TRIGGERS: Dict[str, List[str]] = {
+        "systematic-debugging": [
+            "bug", "error", "not working", "failing test",
+            "ci/cd failure", "exception in logs",
+        ],
+        "brainstorming": [
+            "i want to add", "let's build", "i'm thinking about",
+            "before any code is written", "requirements are unclear",
+        ],
+        "requesting-code-review": [
+            "ready for review", "can you review?",
+            "task/feature complete", "creating pr/merge request",
+        ],
+        "test-driven-development": [
+            "new feature implementation", "bug fix", "refactoring",
+        ],
+        "writing-plans": [
+            "let's implement this", "create a plan", "design.md exists",
+        ],
+        "writing-skills": [
+            "create a skill for", "we should formalize",
+            "repetitive pattern identified",
+        ],
+        "subagent-driven-development": [
+            "execute the plan", "plan.md exists",
+        ],
+    }
+
     def __init__(self, project_path: Path):
         self.project_path = project_path
         self.triggers_path = project_path / ".clinerules" / "auto-triggers.json"
@@ -59,13 +90,28 @@ class AgentExecutor:
         self._load_triggers()
 
     def _load_triggers(self):
-        """Load triggers from JSON if available."""
+        """Load triggers from JSON, always merging builtin defaults underneath.
+
+        Builtins are the floor: file content overrides them per-skill, but skills
+        absent from the file (e.g. when prg analyze ran offline) still fire.
+        """
+        # Start with builtins as the baseline
+        merged: Dict[str, List[str]] = dict(self._BUILTIN_FALLBACK_TRIGGERS)
+
         if self.triggers_path.exists():
             try:
                 content = self.triggers_path.read_text(encoding="utf-8")
-                self._triggers = json.loads(content)
+                loaded = json.loads(content)
+                if loaded:
+                    # File content overrides builtins for matching skill names
+                    merged.update(loaded)
+                    logger.debug("Loaded %d trigger groups from %s.", len(loaded), self.triggers_path)
             except Exception as e:
                 logger.warning("Failed to load auto-triggers: %s", e)
+        else:
+            logger.debug("auto-triggers.json absent — using builtin fallback triggers only.")
+
+        self._triggers = merged
 
     def match_skill(self, user_input: str) -> Optional[str]:
         """
@@ -112,4 +158,3 @@ class AgentExecutor:
 
         logger.debug("No match found.")
         return None
-

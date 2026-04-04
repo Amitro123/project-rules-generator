@@ -142,33 +142,49 @@ class PreflightChecker:
         )
 
     def _check_task_files(self) -> CheckResult:
-        """Check that a tasks/ directory contains at least one task .md file.
+        """Check that task files exist — either legacy tasks/ dir or Ralph's features/ dir.
 
-        Accepts both legacy ``001-*.md`` naming and the current ``task001-*.md``
-        naming produced by TaskCreator.
+        Accepts:
+        - Legacy ``tasks/001-*.md`` / ``tasks/task001-*.md`` layout (prg setup)
+        - Ralph layout: ``features/FEATURE-XXX/TASKS.yaml`` (prg feature / prg ralph)
+
+        Both are valid; passing either satisfies this check.
         """
+        # Ralph layout: features/FEATURE-XXX/TASKS.yaml
+        features_dir = self.project_path / "features"
+        if features_dir.is_dir():
+            ralph_tasks = list(features_dir.glob("FEATURE-*/TASKS.yaml"))
+            if ralph_tasks:
+                return CheckResult(
+                    name="Task files",
+                    passed=True,
+                    path=str(features_dir),
+                    detail=f"{len(ralph_tasks)} Ralph feature workspace(s) found.",
+                )
+
+        # Legacy layout: tasks/*.md
         tasks_dir = self.project_path / "tasks"
-        if not tasks_dir.is_dir():
+        if tasks_dir.is_dir():
+            task_files = sorted(tasks_dir.glob("0*.md")) + sorted(tasks_dir.glob("task[0-9]*.md"))
+            if task_files:
+                return CheckResult(
+                    name="Task files",
+                    passed=True,
+                    path=str(tasks_dir),
+                    detail=f"{len(task_files)} task file(s) found.",
+                )
             return CheckResult(
                 name="Task files",
                 passed=False,
-                fix_command="prg setup <task>",
-                detail="No tasks/ directory found.",
+                fix_command="prg feature \"<task description>\"",
+                detail="No task files in tasks/ directory.",
             )
-        # Match both legacy "001-first.md" and current "task001-slug.md" layouts.
-        task_files = sorted(tasks_dir.glob("0*.md")) + sorted(tasks_dir.glob("task[0-9]*.md"))
-        if task_files:
-            return CheckResult(
-                name="Task files",
-                passed=True,
-                path=str(tasks_dir),
-                detail=f"{len(task_files)} task file(s) found.",
-            )
+
         return CheckResult(
             name="Task files",
             passed=False,
-            fix_command="prg setup <task>",
-            detail="No task files in tasks/ directory.",
+            fix_command="prg feature \"<task description>\"",
+            detail="No task files found. Run `prg feature \"<task>\"` to create a Ralph workspace.",
         )
 
     def _check_design(self) -> CheckResult:
