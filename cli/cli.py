@@ -114,6 +114,10 @@ def _sanitize_env_from_dotenv() -> None:
     (colon delimiter, optional quotes) are silently ignored, leaving API keys
     unset. This function handles those lines so the user gets a working key
     instead of a silent fallback to a lower-priority env var.
+
+    Quote handling: only matching outer quotes are stripped (e.g. 'val' → val,
+    "val" → val). Mismatched or embedded quotes are left in the value as-is
+    rather than silently truncating.
     """
     import os
     import re
@@ -122,15 +126,22 @@ def _sanitize_env_from_dotenv() -> None:
     if not env_path.exists():
         return
 
-    line_re = re.compile(r"""^\s*([\w]+)\s*[:=]\s*['"]?(.*?)['"]?\s*$""")
+    # Capture KEY then the entire raw value — handle quoting explicitly below
+    line_re = re.compile(r"""^\s*([\w]+)\s*[:=]\s*(.+?)\s*$""")
     for raw in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
         if raw.startswith("#") or not raw.strip():
             continue
         m = line_re.match(raw)
-        if m:
-            key, value = m.group(1), m.group(2)
-            if key not in os.environ and value:
-                os.environ[key] = value
+        if not m:
+            continue
+        key, raw_val = m.group(1), m.group(2)
+        # Strip matching outer quotes only — never truncate on embedded quotes
+        if len(raw_val) >= 2 and raw_val[0] == raw_val[-1] and raw_val[0] in ('"', "'"):
+            value = raw_val[1:-1]
+        else:
+            value = raw_val
+        if key not in os.environ and value:
+            os.environ[key] = value
 
 
 def main():
