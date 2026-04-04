@@ -324,6 +324,15 @@ def ralph_run(feature_id, project_path, max_iterations, provider, api_key, verbo
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(message)s")
 
     project_path = Path(project_path).resolve()
+
+    from prg_utils.git_ops import is_git_repo
+
+    if not is_git_repo(project_path):
+        raise click.ClickException(
+            f"{project_path} is not a git repository.\n"
+            "Ralph requires git for branch isolation and PR creation."
+        )
+
     fdir = _feature_dir(project_path, feature_id)
     state_dict = _load_state_dict(fdir)
 
@@ -420,6 +429,15 @@ def ralph_resume(feature_id, project_path, max_iterations, provider, api_key, ve
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(message)s")
 
     project_path = Path(project_path).resolve()
+
+    from prg_utils.git_ops import is_git_repo
+
+    if not is_git_repo(project_path):
+        raise click.ClickException(
+            f"{project_path} is not a git repository.\n"
+            "Ralph requires git for branch isolation and PR creation."
+        )
+
     fdir = _feature_dir(project_path, feature_id)
     state_dict = _load_state_dict(fdir)
 

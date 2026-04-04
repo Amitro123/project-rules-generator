@@ -102,7 +102,9 @@ def _load_tasks(tasks_yaml: Path) -> list[dict]:
 
 def _save_tasks(tasks_yaml: Path, tasks: list[dict]) -> None:
     tasks_yaml.parent.mkdir(parents=True, exist_ok=True)
-    tasks_yaml.write_text(yaml.dump({"tasks": tasks}, default_flow_style=False), encoding="utf-8")
+    tmp = tasks_yaml.with_suffix(".tmp")
+    tmp.write_text(yaml.dump({"tasks": tasks}, default_flow_style=False), encoding="utf-8")
+    os.replace(tmp, tasks_yaml)
 
 
 def _pending_tasks(tasks: list[dict]) -> list[dict]:
@@ -179,7 +181,19 @@ class RalphEngine:
                     self.state.max_iterations,
                     "=" * 60,
                 )
-            self.execute_iteration()
+            try:
+                self.execute_iteration()
+            except Exception as exc:
+                logger.error("💥 Unhandled exception in iteration %d: %s", self.state.iteration, exc)
+                self.state.status = "stopped"
+                self.state.exit_condition = "unhandled_exception"
+                self.save_state()
+                raise
+
+            # Skip verify_success() when execute_iteration() triggered an emergency stop
+            # — avoids a redundant full test suite run after the loop is already halted.
+            if self.state.status in ("stopped",):
+                continue
 
             if self.verify_success():
                 self.state.status = "success"
@@ -512,10 +526,19 @@ class RalphEngine:
             return False, f"Test execution error: {exc}"
 
     def _detect_test_runner(self) -> Tuple[Optional[str], list]:
-        has_pytest = any(
-            (self.project_path / f).exists()
-            for f in ["pytest.ini", "pyproject.toml", "setup.cfg", "conftest.py"]
-        )
+        # Strong indicators: presence of these files always means pytest
+        strong_indicators = ["pytest.ini", "setup.cfg", "conftest.py"]
+        has_pytest = any((self.project_path / f).exists() for f in strong_indicators)
+        # pyproject.toml alone is not sufficient (Rust/Node projects use it too);
+        # only count it if it actually references pytest
+        if not has_pytest:
+            pyproject = self.project_path / "pyproject.toml"
+            if pyproject.exists():
+                try:
+                    content = pyproject.read_text(encoding="utf-8", errors="replace")
+                    has_pytest = "pytest" in content
+                except OSError:
+                    pass
         if has_pytest:
             return "pytest", ["-x", "-q"]
         if (self.project_path / "package.json").exists():

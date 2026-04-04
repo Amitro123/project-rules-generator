@@ -10,6 +10,7 @@ import click
 from cli.utils import detect_provider as _detect_provider
 from cli.utils import set_api_key_env as _set_api_key
 from generator.ralph_engine import FeatureState, _save_tasks, next_feature_id, slugify
+from prg_utils.git_ops import is_git_repo
 
 logger = logging.getLogger(__name__)
 
@@ -48,12 +49,29 @@ def feature(task_description, project_path, max_iterations, provider, api_key, v
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(message)s")
 
     project_path = Path(project_path).resolve()
+
+    if not is_git_repo(project_path):
+        raise click.ClickException(
+            f"{project_path} is not a git repository.\n"
+            "Ralph requires git for branch isolation and PR creation.\n"
+            "Run `git init` first, or point --project at a git repo."
+        )
+
     features_dir = project_path / "features"
 
-    # 1. Assign feature ID
-    feature_id = next_feature_id(features_dir)
-    feature_dir = features_dir / feature_id
-    feature_dir.mkdir(parents=True, exist_ok=True)
+    # 1. Assign feature ID (retry loop guards against concurrent calls)
+    features_dir.mkdir(parents=True, exist_ok=True)
+    for _attempt in range(5):
+        feature_id = next_feature_id(features_dir)
+        feature_dir = features_dir / feature_id
+        try:
+            feature_dir.mkdir()  # atomic — no exist_ok
+            break
+        except FileExistsError:
+            continue
+    else:
+        raise click.ClickException("Could not allocate a unique feature directory after 5 retries.")
+
     (feature_dir / "CRITIQUES").mkdir(exist_ok=True)
 
     click.echo(f"🆕 Feature ID: {feature_id}")
@@ -112,6 +130,7 @@ def feature(task_description, project_path, max_iterations, provider, api_key, v
             cwd=project_path,
             check=True,
             capture_output=True,
+            timeout=30,
         )
         click.echo(f"   ✅ Branch: {branch_name}")
     except Exception as exc:

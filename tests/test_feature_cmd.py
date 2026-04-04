@@ -40,7 +40,9 @@ def _invoke_feature(runner, project, task="Add loading states", extra_args=None)
     args = [task, "--project", str(project)] + (extra_args or [])
     with patch("generator.task_decomposer.TaskDecomposer") as MockDecomp, patch(
         "cli.feature_cmd._detect_provider", return_value="groq"
-    ), patch("cli.feature_cmd._set_api_key"), patch("subprocess.run") as mock_git:
+    ), patch("cli.feature_cmd._set_api_key"), patch(
+        "cli.feature_cmd.is_git_repo", return_value=True
+    ), patch("subprocess.run") as mock_git:
         mock_git.return_value = MagicMock(returncode=0)
         MockDecomp.return_value.decompose.return_value = []
         MockDecomp.return_value.generate_plan_md.return_value = "# Plan\n"
@@ -94,7 +96,9 @@ def test_feature_creates_git_branch(runner, project):
     args = ["Add loading states", "--project", str(project)]
     with patch("generator.task_decomposer.TaskDecomposer") as MockDecomp, patch(
         "cli.feature_cmd._detect_provider", return_value="groq"
-    ), patch("cli.feature_cmd._set_api_key"), patch("subprocess.run") as mock_git:
+    ), patch("cli.feature_cmd._set_api_key"), patch(
+        "cli.feature_cmd.is_git_repo", return_value=True
+    ), patch("subprocess.run") as mock_git:
         mock_git.return_value = MagicMock(returncode=0)
         MockDecomp.return_value.decompose.return_value = []
         MockDecomp.return_value.generate_plan_md.return_value = "# Plan\n"
@@ -113,6 +117,8 @@ def test_feature_git_fail_does_not_crash(runner, project):
     with patch("generator.task_decomposer.TaskDecomposer") as MockDecomp, patch(
         "cli.feature_cmd._detect_provider", return_value="groq"
     ), patch("cli.feature_cmd._set_api_key"), patch(
+        "cli.feature_cmd.is_git_repo", return_value=True
+    ), patch(
         "subprocess.run", side_effect=subprocess.CalledProcessError(1, "git")
     ):
         MockDecomp.return_value.decompose.return_value = []
@@ -128,7 +134,9 @@ def test_feature_plan_generation_failure_handled(runner, project):
     args = ["Add loading states", "--project", str(project)]
     with patch("generator.task_decomposer.TaskDecomposer", side_effect=Exception("AI down")), patch(
         "cli.feature_cmd._detect_provider", return_value=None
-    ), patch("cli.feature_cmd._set_api_key"), patch("subprocess.run"):
+    ), patch("cli.feature_cmd._set_api_key"), patch(
+        "cli.feature_cmd.is_git_repo", return_value=True
+    ), patch("subprocess.run"):
         result = runner.invoke(feature, args)
 
     plan = project / "features" / "FEATURE-001" / "PLAN.md"
@@ -147,7 +155,9 @@ def test_feature_tasks_yaml_populated(runner, project):
     args = ["Add loading states", "--project", str(project)]
     with patch("generator.task_decomposer.TaskDecomposer") as MockDecomp, patch(
         "cli.feature_cmd._detect_provider", return_value="groq"
-    ), patch("cli.feature_cmd._set_api_key"), patch("subprocess.run"):
+    ), patch("cli.feature_cmd._set_api_key"), patch(
+        "cli.feature_cmd.is_git_repo", return_value=True
+    ), patch("subprocess.run"):
         MockDecomp.return_value.decompose.return_value = fake_subtasks
         MockDecomp.return_value.generate_plan_md.return_value = "# Plan\n"
 

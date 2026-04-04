@@ -66,7 +66,7 @@ def design(description, project_path, output, api_key, provider, verbose):
 
     from generator.design_generator import DesignGenerator
 
-    generator = DesignGenerator(provider=provider)
+    generator = DesignGenerator(provider=provider or "groq")
 
     if verbose:
         click.echo("Generating design...")
