@@ -116,3 +116,6 @@ tests/test_samples/sample-project/.clinerules/
 
 # Internal developer notes — not for end users
 bugs_docs/
+
+# Ralph feature workspaces (local only — created by prg ralph)
+features/
