@@ -25,9 +25,9 @@ from generator.ralph_engine import (
 # ---------------------------------------------------------------------------
 
 
-def _make_state(feature_dir: Path, **overrides) -> FeatureState:
+def _make_state(feature_dir: Path, **overrides: object) -> FeatureState:
     """Write a STATE.json and return the FeatureState."""
-    defaults = dict(
+    defaults: dict = dict(
         feature_id="FEATURE-001",
         task="Add loading states",
         branch_name="ralph/FEATURE-001-add-loading-states",

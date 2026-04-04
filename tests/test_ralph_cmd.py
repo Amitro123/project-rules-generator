@@ -23,12 +23,12 @@ def runner():
     return CliRunner()
 
 
-def _setup_feature(tmp_path: Path, feature_id: str = "FEATURE-001", **state_overrides) -> Path:
+def _setup_feature(tmp_path: Path, feature_id: str = "FEATURE-001", **state_overrides: object) -> Path:
     """Create a minimal feature directory with STATE.json."""
     feature_dir = tmp_path / "features" / feature_id
     feature_dir.mkdir(parents=True)
 
-    defaults = dict(
+    defaults: dict = dict(
         feature_id=feature_id,
         task="Add loading states",
         branch_name=f"ralph/{feature_id}-add-loading-states",
