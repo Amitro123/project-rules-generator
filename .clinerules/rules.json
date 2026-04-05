@@ -10,6 +10,7 @@
       "Use type hints on all public function signatures",
       "Use Pydantic models for data validation (not raw dicts)",
       "Use Click decorators for CLI arguments — don't parse sys.argv manually",
+      "Use multi-stage Docker builds; keep final image minimal",
       "Store API keys in `.env` or environment variables — never hardcode (gemini, groq)",
       "Add retry logic with exponential backoff for external API calls",
       "Validate and type-check API responses before using them",
@@ -20,6 +21,7 @@
       "Don't use `print()` for logging — use the `logging` module",
       "Don't catch bare `Exception` — catch specific exceptions",
       "Don't use `sys.exit()` in library code — raise exceptions, let Click handle exit",
+      "Don't include dev dependencies in production Docker image",
       "Don't log or print full API responses in production (may contain PII)",
       "Don't ignore rate-limit headers from API providers",
       "Don't commit secrets, API keys, or `.env` files",
@@ -27,7 +29,7 @@
     ]
   },
   "priorities": [],
-  "rules_count": 16,
+  "rules_count": 18,
   "architecture": [
     "**Project type**: python-cli",
     "**Entry points**: main.py",
@@ -41,7 +43,7 @@
   ],
   "testing": [
     "**Framework**: pytest",
-    "**Test files**: 66 (739 test cases)",
+    "**Test files**: 65 (734 test cases)",
     "**Test types**: unit, integration",
     "**Fixtures**: shared via `conftest.py`",
     "**Test data**: `tests/fixtures/` directory"
@@ -61,19 +63,6 @@
     "NEVER generate placeholder comments like 'Implement logic here' - write the full code."
   ],
   "active_skill_triggers": [
-    "**agent-architecture-analyzer**: analyze agent, check architecture, review my agents, debugging agent loops or coordination failures, planning new agent capabilities or adding a new agent role",
-    "**analyze-code**: analyze code, check quality, lint the project, a pr or release cut, a large refactor",
-    "**brainstorming**: i want to add..., let's build..., i'm thinking about..., any code is written, requirements are unclear",
-    "**ci-lint-failures**: ci lint failure, github actions lint error, fix linting in ci, pipeline lint error",
-    "**writing-skills**: create a skill for..., we should formalize..., repetitive pattern identified (3+ times), project has unique workflow in readme",
-    "**prompt-improver**: agent is failing to follow instructions consistently, user sees hallucinations or unexpected formatting, improve this prompt, fix the agent instructions",
-    "**refactor-module**: refactor, clean up code, improve structure, module has grown beyond a single responsibility, code review identifies structural issues",
-    "**requesting-code-review**: task/feature complete, ready for review, can you review?, creating pr/merge request",
-    "**subagent-driven-development**: plan.md exists and user approves execution, execute the plan, let's go, start implementation, `prg plan` generates a task list",
-    "**systematic-debugging**: bug, error, not working, failing test, ci/cd failure, exception in logs",
-    "**test-coverage**: check coverage, run tests, show coverage report, merging a feature branch, adding new modules without tests",
-    "**test-driven-development**: new feature implementation, bug fix, refactoring",
-    "**writing-plans**: design approval (design.md exists), let's implement this, create a plan, starting implementation",
     "**api-client-patterns**: api client, llm provider, model integration, credentials, api key, new command with llm",
     "**response-parsing**: parse ai response, llm output processing, handle api response, structured output from llm",
     "**click-cli**: working with click integration code, editing files that import or configure click",

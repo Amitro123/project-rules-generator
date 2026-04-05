@@ -9,8 +9,8 @@ version: 1.0
 
 ## PROJECT CONTEXT
 - **Type**: Agent
-- **Tech Stack**: python, claude, gemini, gpt, groq, click, pydantic, gitpython
-- **Domain**: ![PyPI](https://pypi.org/project/project-rules-generator/)...
+- **Tech Stack**: python, fastapi, docker, claude, gemini, gpt, groq, click, pydantic, gitpython
+- **Domain**: ![Python 3.8+](https://python.org)...
 
 ## CORE SKILLS
 
@@ -62,6 +62,36 @@ Run tests and generate coverage.
 pytest --cov=src --cov-report=term
 
 ```
+
+## TECH SKILLS
+
+### fastapi-security-auditor
+Check FastAPI endpoints for common security issues.
+
+> *Source: builtin*
+
+**Triggers:**
+- audit api
+- check security
+
+**When to use:**
+- Adding new authenticated endpoints
+- Reviewing dependency injection
+- Pydantic model validation
+
+### docker-optimizer
+Optimize Dockerfile and compose configurations.
+
+> *Source: builtin*
+
+**Triggers:**
+- optimize docker
+- check container
+
+**When to use:**
+- Slow build times
+- Large image sizes
+- Container security scanning
 
 ## AGENT SKILLS
 
