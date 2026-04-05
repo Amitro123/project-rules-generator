@@ -11,7 +11,6 @@ import pytest
 
 from cli.watch_cmd import _PRGHandler, _should_trigger
 
-
 # ---------------------------------------------------------------------------
 # _should_trigger — pattern matching
 # ---------------------------------------------------------------------------
@@ -77,6 +76,7 @@ class TestShouldTrigger:
             pytest.skip("pathspec not available")
         (tmp_path / ".gitignore").write_text("*.log\nbuild/\n", encoding="utf-8")
         from cli.watch_cmd import _load_gitignore_spec
+
         spec = _load_gitignore_spec(tmp_path)
         assert not _should_trigger(str(tmp_path / "debug.log"), tmp_path, spec)
 
@@ -158,7 +158,7 @@ class TestPRGHandlerDebounce:
         with patch("subprocess.run", side_effect=mock_run):
             # Kick off first trigger
             handler._trigger()
-            
+
         # Expect 2 calls: one for the initial trigger, and one for the dirty bit
         assert call_count["n"] == 2, f"Expected 2 runs, got {call_count['n']}"
 
@@ -200,6 +200,7 @@ class TestWatchCommandRegistered:
         """Issue #4 fix: _EventBridge must handle on_deleted."""
         import inspect
         import cli.watch_cmd as _mod
+
         src = inspect.getsource(_mod)
         assert "on_deleted" in src
 
@@ -207,6 +208,7 @@ class TestWatchCommandRegistered:
         """Issue #4 fix: _EventBridge must handle on_moved."""
         import inspect
         import cli.watch_cmd as _mod
+
         src = inspect.getsource(_mod)
         assert "on_moved" in src
 

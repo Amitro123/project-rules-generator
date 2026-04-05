@@ -41,7 +41,8 @@ class ProjectManager:
         "README.md",
         ".clinerules/rules.md",
         ".clinerules/skills/index.md",
-        "spec.md",
+        # spec.md intentionally excluded — it's optional and LLM-generated on demand
+        # via `prg spec --generate`. Checking for it every run produces noise.
         "tests/",
         "pytest.ini",
     ]
@@ -119,9 +120,7 @@ class ProjectManager:
             (self.project_path / "tests" / "__init__.py").touch()
             logger.info("   Scaffolded tests/")
         if "pytest.ini" in missing:
-            (self.project_path / "pytest.ini").write_text(
-                "[pytest]\ntestpaths = tests\n", encoding="utf-8"
-            )
+            (self.project_path / "pytest.ini").write_text("[pytest]\ntestpaths = tests\n", encoding="utf-8")
             logger.info("   Scaffolded pytest.ini")
 
         # README.md — cannot be auto-generated; must exist before continuing
@@ -140,15 +139,14 @@ class ProjectManager:
         enhanced_context = None
         try:
             from generator.parsers.enhanced_parser import EnhancedProjectParser
+
             enhanced_context = EnhancedProjectParser(self.project_path).extract_full_context()
         except Exception as exc:
             logger.debug("Enhanced analysis unavailable: %s", exc)
 
         readme_path = find_readme(self.project_path)
         readme_text = (
-            readme_path.read_text(encoding="utf-8", errors="replace")
-            if readme_path
-            else f"# {self.project_path.name}"
+            readme_path.read_text(encoding="utf-8", errors="replace") if readme_path else f"# {self.project_path.name}"
         )
 
         creator = CoworkRulesCreator(self.project_path)
@@ -175,7 +173,9 @@ class ProjectManager:
         try:
             result = subprocess.run(
                 ["git", "-C", str(self.project_path), "log", "--oneline", "-20"],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             if result.returncode == 0 and result.stdout.strip():
                 context_parts.append(f"## Recent Git Commits\n{result.stdout.strip()}")

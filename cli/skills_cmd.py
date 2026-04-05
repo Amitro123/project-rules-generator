@@ -155,8 +155,7 @@ def skills_list(path, show_all):
     col_layer = max(len(r[1]) for r in rows)
 
     header = (
-        f"{'Name':<{col_name}}  {'Layer':<{col_layer}}  {'Trig':>4}  "
-        f"{'Tools':<28}  FM  {'Score':>5}  {'Hits':>4}"
+        f"{'Name':<{col_name}}  {'Layer':<{col_layer}}  {'Trig':>4}  " f"{'Tools':<28}  FM  {'Score':>5}  {'Hits':>4}"
     )
     click.echo(header)
     click.echo("-" * len(header))
@@ -256,8 +255,7 @@ def skills_feedback(skill_name, vote):
         known = sm.list_skills()
         if skill_name not in known:
             click.echo(
-                f"Warning: '{skill_name}' not found in known skills. "
-                "Check spelling with: prg skills list --all",
+                f"Warning: '{skill_name}' not found in known skills. " "Check spelling with: prg skills list --all",
                 err=True,
             )
             if not click.confirm("Record feedback anyway?", default=False):

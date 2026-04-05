@@ -192,7 +192,6 @@ def run_generation_pipeline(
     return generated_files
 
 
-
 def _build_unified_content(
     rules_content: str,
     triggers_dict: Dict[str, Any],

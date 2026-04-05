@@ -169,10 +169,9 @@ class CoworkRulesCreator(ArtifactGenerator):
         # Enhanced context is always trusted (from EnhancedProjectParser).
         # EnhancedProjectParser stores tech under "metadata", not "project_data".
         if enhanced_context:
-            context_tech = (
-                enhanced_context.get("metadata", {}).get("tech_stack", [])
-                or enhanced_context.get("project_data", {}).get("tech_stack", [])
-            )
+            context_tech = enhanced_context.get("metadata", {}).get("tech_stack", []) or enhanced_context.get(
+                "project_data", {}
+            ).get("tech_stack", [])
             detected.update(t.lower() for t in context_tech)
 
         return list(sorted(detected))

@@ -12,7 +12,6 @@ from click.testing import CliRunner
 from cli.ralph_cmd import ralph_group
 from generator.ralph_engine import FeatureState, _save_tasks
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -70,9 +69,9 @@ def test_ralph_run_missing_state_raises(runner, tmp_path):
     (tmp_path / "features" / "FEATURE-001").mkdir(parents=True)
     # No STATE.json
 
-    with patch("cli.ralph_cmd._detect_provider", return_value="groq"), patch(
-        "cli.ralph_cmd._set_api_key"
-    ), patch("prg_utils.git_ops.is_git_repo", return_value=True):
+    with patch("cli.ralph_cmd._detect_provider", return_value="groq"), patch("cli.ralph_cmd._set_api_key"), patch(
+        "prg_utils.git_ops.is_git_repo", return_value=True
+    ):
         result = runner.invoke(ralph_group, ["run", "FEATURE-001", "--project", str(tmp_path)])
 
     assert result.exit_code != 0
@@ -85,9 +84,9 @@ def test_ralph_run_passes_max_iterations(runner, tmp_path):
 
     with patch("generator.ralph_engine.RalphEngine") as MockEngine, patch(
         "cli.ralph_cmd._detect_provider", return_value="groq"
-    ), patch("cli.ralph_cmd._set_api_key"), patch(
-        "prg_utils.git_ops.is_git_repo", return_value=True
-    ), patch("subprocess.run"):
+    ), patch("cli.ralph_cmd._set_api_key"), patch("prg_utils.git_ops.is_git_repo", return_value=True), patch(
+        "subprocess.run"
+    ):
         runner.invoke(ralph_group, ["run", "FEATURE-001", "--project", str(tmp_path), "--max-iterations", "5"])
 
     MockEngine.return_value.run_loop.assert_called_with(max_iterations=5)
@@ -145,9 +144,7 @@ def test_ralph_stop_default_reason(runner, tmp_path):
     """prg ralph stop uses 'user_requested' as default reason."""
     _setup_feature(tmp_path, status="running")
 
-    with patch("prg_utils.git_ops.get_current_branch", return_value="ralph/FEATURE-001"), patch(
-        "subprocess.run"
-    ):
+    with patch("prg_utils.git_ops.get_current_branch", return_value="ralph/FEATURE-001"), patch("subprocess.run"):
         result = runner.invoke(ralph_group, ["stop", "FEATURE-001", "--project", str(tmp_path)])
 
     state = FeatureState.load(tmp_path / "features" / "FEATURE-001" / "STATE.json")
@@ -178,9 +175,7 @@ def test_ralph_resume_clears_stopped_status(runner, tmp_path):
 
     with patch("generator.ralph_engine.RalphEngine") as MockEngine, patch(
         "cli.ralph_cmd._detect_provider", return_value="groq"
-    ), patch("cli.ralph_cmd._set_api_key"), patch(
-        "prg_utils.git_ops.is_git_repo", return_value=True
-    ):
+    ), patch("cli.ralph_cmd._set_api_key"), patch("prg_utils.git_ops.is_git_repo", return_value=True):
         MockEngine.return_value.run_loop = MagicMock()
         result = runner.invoke(ralph_group, ["resume", "FEATURE-001", "--project", str(tmp_path)])
 
@@ -195,9 +190,7 @@ def test_ralph_resume_non_stopped_still_runs(runner, tmp_path):
 
     with patch("generator.ralph_engine.RalphEngine") as MockEngine, patch(
         "cli.ralph_cmd._detect_provider", return_value="groq"
-    ), patch("cli.ralph_cmd._set_api_key"), patch(
-        "prg_utils.git_ops.is_git_repo", return_value=True
-    ):
+    ), patch("cli.ralph_cmd._set_api_key"), patch("prg_utils.git_ops.is_git_repo", return_value=True):
         MockEngine.return_value.run_loop = MagicMock()
         runner.invoke(ralph_group, ["resume", "FEATURE-001", "--project", str(tmp_path)])
 
@@ -239,9 +232,7 @@ def test_ralph_approve_graceful_on_git_error(runner, tmp_path):
     _setup_feature(tmp_path, status="running")
 
     with patch("prg_utils.git_ops.checkout", side_effect=Exception("git failed")):
-        result = runner.invoke(
-            ralph_group, ["approve", "FEATURE-001", "--project", str(tmp_path)]
-        )
+        result = runner.invoke(ralph_group, ["approve", "FEATURE-001", "--project", str(tmp_path)])
 
     # Should show the error in output but exit 0 (exception is caught and printed)
     assert "failed" in result.output.lower() or result.exit_code == 0

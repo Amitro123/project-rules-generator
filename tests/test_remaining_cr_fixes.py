@@ -12,7 +12,6 @@ import pytest
 
 from generator.planning.agent_executor import AgentExecutor, _expand_input
 
-
 # ---------------------------------------------------------------------------
 # Issue 7 — Builtin skills must have YAML frontmatter
 # ---------------------------------------------------------------------------
@@ -33,7 +32,9 @@ def _collect_builtin_skills():
     return paths
 
 
-@pytest.mark.parametrize("skill_path", _collect_builtin_skills(), ids=lambda p: p.name if p.name != "SKILL.md" else p.parent.name)
+@pytest.mark.parametrize(
+    "skill_path", _collect_builtin_skills(), ids=lambda p: p.name if p.name != "SKILL.md" else p.parent.name
+)
 def test_builtin_skill_has_yaml_frontmatter(skill_path):
     """Every builtin skill must start with --- YAML frontmatter block."""
     content = skill_path.read_text(encoding="utf-8")
@@ -46,7 +47,9 @@ def test_builtin_skill_has_yaml_frontmatter(skill_path):
     assert close_pos != -1, f"{skill_path.relative_to(BUILTIN_SKILLS_DIR)} has unclosed frontmatter block."
 
 
-@pytest.mark.parametrize("skill_path", _collect_builtin_skills(), ids=lambda p: p.name if p.name != "SKILL.md" else p.parent.name)
+@pytest.mark.parametrize(
+    "skill_path", _collect_builtin_skills(), ids=lambda p: p.name if p.name != "SKILL.md" else p.parent.name
+)
 def test_builtin_skill_frontmatter_has_when_trigger(skill_path):
     """Builtin skill description field must contain at least one 'When ...' line."""
     import yaml

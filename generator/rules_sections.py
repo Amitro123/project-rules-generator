@@ -361,9 +361,7 @@ def _build_context_strategy(structure: Dict, entry_points: List[str], project_ty
     lines.append("|------|-----------|-----------|")
 
     bug_first = "relevant module source"
-    bug_then = (
-        "corresponding `test_*.py` file" if test_info.get("framework") == "pytest" else "corresponding test file"
-    )
+    bug_then = "corresponding `test_*.py` file" if test_info.get("framework") == "pytest" else "corresponding test file"
     lines.append(f"| Bug fix | {bug_first} | {bug_then} |")
 
     feat_first = f"`{entry_points[0]}`" if entry_points else "architecture overview"

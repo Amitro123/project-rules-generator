@@ -9,7 +9,6 @@ import pytest
 
 from generator.skill_tracker import MIN_FEEDBACK_FOR_FLAG, SkillTracker
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -176,15 +176,15 @@ class PreflightChecker:
             return CheckResult(
                 name="Task files",
                 passed=False,
-                fix_command="prg feature \"<task description>\"",
+                fix_command='prg feature "<task description>"',
                 detail="No task files in tasks/ directory.",
             )
 
         return CheckResult(
             name="Task files",
             passed=False,
-            fix_command="prg feature \"<task description>\"",
-            detail="No task files found. Run `prg feature \"<task>\"` to create a Ralph workspace.",
+            fix_command='prg feature "<task description>"',
+            detail='No task files found. Run `prg feature "<task>"` to create a Ralph workspace.',
         )
 
     def _check_design(self) -> CheckResult:

@@ -49,4 +49,4 @@ def verify(project_path, verbose):
         click.echo("Fix the issues above, then re-run `prg verify` before `prg ralph`.", err=True)
         sys.exit(1)
 
-    click.echo("\n✅ Project is Ralph-ready. Run: prg ralph \"<feature description>\"")
+    click.echo('\n✅ Project is Ralph-ready. Run: prg ralph "<feature description>"')

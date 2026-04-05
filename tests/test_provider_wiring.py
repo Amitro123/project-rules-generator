@@ -123,5 +123,3 @@ class TestDesignProviderWiring:
                     ],
                 )
             assert result.exit_code == 0, f"provider={prov} failed: {result.output}"
-
-

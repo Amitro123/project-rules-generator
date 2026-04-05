@@ -123,8 +123,7 @@ def plan(
 
     if provider and not _has_api_key(provider, api_key) and verbose:
         click.echo(
-            f"Warning: provider '{provider}' selected but no API key found — "
-            "using template-based generation.",
+            f"Warning: provider '{provider}' selected but no API key found — " "using template-based generation.",
             err=True,
         )
 

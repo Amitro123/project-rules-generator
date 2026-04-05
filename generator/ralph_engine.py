@@ -244,8 +244,7 @@ class RalphEngine:
             changes = self._agent_execute(context, skill, next_task_title)
         except SecurityError as sec_exc:
             logger.error(
-                "🚨 Security violation — LLM attempted path traversal: %s. "
-                "Stopping loop for manual review.",
+                "🚨 Security violation — LLM attempted path traversal: %s. " "Stopping loop for manual review.",
                 sec_exc,
             )
             self.state.status = "stopped"
@@ -409,9 +408,7 @@ class RalphEngine:
         executor = AgentExecutor(self.project_path)
         return executor.match_skill(context)
 
-    def _agent_execute(
-        self, context: str, skill: Optional[str], task_title: str
-    ) -> dict:
+    def _agent_execute(self, context: str, skill: Optional[str], task_title: str) -> dict:
         """Delegate to the AI implementation agent.
 
         Returns a dict of {relative_path: content} for files to write.

@@ -54,7 +54,9 @@
       "Bash(pytest tests/test_ralph_engine.py tests/test_ralph_cmd.py tests/test_cli.py -q)",
       "Bash(pytest tests/test_entry_point.py -q)",
       "Bash(grep -rn \"offline\\\\|fallback\\\\|execute_add\\\\|AddConfig\\\\|Research.*Implement.*Write\" C:UsersDana.geminiantigravityscratchproject-rules-generatorgenerator --include=*.py -l)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(black .)",
+      "Bash(isort .)"
     ]
   }
 }

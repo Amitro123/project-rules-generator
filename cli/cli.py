@@ -75,10 +75,10 @@ from cli.init_cmd import init
 from cli.jobs import exec_task, leaderboard, next_task, query_tasks, status
 from cli.manager_cmd import manager
 from cli.providers_cmd import providers_group
-from cli.verify_cmd import verify
 from cli.ralph_cmd import ralph_group
 from cli.skills_cmd import skills_group
 from cli.tasks_cmd import tasks_cmd
+from cli.verify_cmd import verify
 from cli.watch_cmd import watch
 
 cli.add_command(analyze)

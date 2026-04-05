@@ -43,9 +43,7 @@ class ProjectContextScanner:
         from generator.skill_generator import SkillGenerator
 
         readme_path = project_path / "README.md"
-        readme_content = (
-            readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
-        )
+        readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
 
         tech_stack = self._detect_tech_stack(readme_content)
         skill_names = []

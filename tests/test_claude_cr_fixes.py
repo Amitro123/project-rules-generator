@@ -19,7 +19,6 @@ from cli.utils import detect_provider
 from generator.analyzers.readme_parser import _extract_features
 from generator.planning.agent_executor import AgentExecutor
 
-
 # ---------------------------------------------------------------------------
 # Fix 1 & 2 — detect_provider() correctness
 # ---------------------------------------------------------------------------
@@ -148,8 +147,7 @@ class TestExtractFeaturesTruncation:
         content = (
             "# Project\n\n"
             "A description.\n\n"
-            "- Feature A\n- Feature B\n- Feature C\n\n"
-            + "End section.\n" * 20  # push midpoint after the list
+            "- Feature A\n- Feature B\n- Feature C\n\n" + "End section.\n" * 20  # push midpoint after the list
         )
         features = _extract_features(content)
         assert len(features) > 0
@@ -162,14 +160,19 @@ class TestExtractFeaturesTruncation:
 
 class TestAgentExecutorNoPrints:
     def test_match_skill_no_debug_prints_when_no_triggers(self, tmp_path):
-        """match_skill() must not call print() — debug output should use logger.debug()."""
+        """match_skill() must not call print() — debug output should use logger.debug().
+
+        Even without auto-triggers.json, builtin fallback triggers are always loaded,
+        so a matching input returns a skill rather than None.
+        """
         executor = AgentExecutor(project_path=tmp_path)
 
         with patch("builtins.print") as mock_print:
             result = executor.match_skill("fix a bug in auth module")
 
         mock_print.assert_not_called()
-        assert result is None  # no triggers loaded
+        # Builtins always load — "bug" matches systematic-debugging
+        assert result == "systematic-debugging"
 
     def test_match_skill_no_debug_prints_with_triggers(self, tmp_path):
         """Even when triggers ARE loaded and matching runs, no print() calls occur."""

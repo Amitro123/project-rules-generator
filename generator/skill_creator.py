@@ -184,7 +184,9 @@ class CoworkSkillCreator:
         metadata = self._build_metadata(skill_name, readme_content, tech_stack)
 
         # 2. Generate skill content (WITH actual project context)
-        content = self._renderer.generate_content(skill_name, readme_content, metadata, custom_context, use_ai, provider)
+        content = self._renderer.generate_content(
+            skill_name, readme_content, metadata, custom_context, use_ai, provider
+        )
 
         # 3. Quality validation (will catch hallucinated paths)
         quality = self._quality.validate(content, metadata)

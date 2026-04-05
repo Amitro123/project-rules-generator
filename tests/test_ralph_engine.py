@@ -19,7 +19,6 @@ from generator.ralph_engine import (
     slugify,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers & fixtures
 # ---------------------------------------------------------------------------
@@ -307,10 +306,13 @@ def test_test_fail_3x_triggers_stop(tmp_path):
 
 def test_mark_task_complete(tmp_path):
     engine = _make_engine(tmp_path)
-    _make_tasks(engine.tasks_yaml, [
-        {"title": "Task A", "status": "pending"},
-        {"title": "Task B", "status": "pending"},
-    ])
+    _make_tasks(
+        engine.tasks_yaml,
+        [
+            {"title": "Task A", "status": "pending"},
+            {"title": "Task B", "status": "pending"},
+        ],
+    )
     engine._mark_task_complete("Task A")
     tasks = _load_tasks(engine.tasks_yaml)
     statuses = {t["title"]: t["status"] for t in tasks}
@@ -320,10 +322,13 @@ def test_mark_task_complete(tmp_path):
 
 def test_next_task_title_returns_first_pending(tmp_path):
     engine = _make_engine(tmp_path)
-    _make_tasks(engine.tasks_yaml, [
-        {"title": "Done Task", "status": "done"},
-        {"title": "Next Task", "status": "pending"},
-    ])
+    _make_tasks(
+        engine.tasks_yaml,
+        [
+            {"title": "Done Task", "status": "done"},
+            {"title": "Next Task", "status": "pending"},
+        ],
+    )
     assert engine._next_task_title() == "Next Task"
 
 

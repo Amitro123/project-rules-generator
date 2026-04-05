@@ -3,7 +3,9 @@
 from click.testing import CliRunner
 
 from cli.analyze_cmd import load_config
-from cli.cli import cli; main = cli
+from cli.cli import cli
+
+main = cli
 
 
 class TestCLI:

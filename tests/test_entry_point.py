@@ -39,10 +39,7 @@ def test_sanitize_env_strips_matching_outer_quotes(tmp_path, monkeypatch):
 
     env_file = tmp_path / ".env"
     env_file.write_text(
-        "SINGLE_QUOTED='myvalue'\n"
-        "DOUBLE_QUOTED=\"myvalue\"\n"
-        "NO_QUOTES=myvalue\n"
-        "COLON_SYNTAX: myvalue\n",
+        "SINGLE_QUOTED='myvalue'\n" 'DOUBLE_QUOTED="myvalue"\n' "NO_QUOTES=myvalue\n" "COLON_SYNTAX: myvalue\n",
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
@@ -80,7 +77,7 @@ def test_sanitize_env_mismatched_quotes_kept_as_is(tmp_path, monkeypatch):
     from cli.cli import _sanitize_env_from_dotenv
 
     env_file = tmp_path / ".env"
-    env_file.write_text('MISMATCH_KEY=\'value"\n', encoding="utf-8")
+    env_file.write_text("MISMATCH_KEY='value\"\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("MISMATCH_KEY", raising=False)
 

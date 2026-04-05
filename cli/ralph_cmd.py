@@ -45,7 +45,7 @@ class _RalphGroup(click.Group):
             if close:
                 raise click.UsageError(
                     f"Unknown subcommand {args[0]!r}. Did you mean '{close[0]}'?\n"
-                    f"  To create a feature with this name, use: prg ralph \"{args[0]}\""
+                    f'  To create a feature with this name, use: prg ralph "{args[0]}"'
                 )
             args = ["go"] + list(args)
         return super().parse_args(ctx, args)
@@ -79,8 +79,11 @@ def ralph_group():
 @ralph_group.command(name="go")
 @click.argument("task_description")
 @click.option(
-    "--project", "-p", "project_path",
-    type=click.Path(exists=True, file_okay=False), default=".",
+    "--project",
+    "-p",
+    "project_path",
+    type=click.Path(exists=True, file_okay=False),
+    default=".",
 )
 @click.option("--max-iterations", default=20, show_default=True)
 @click.option("--provider", type=click.Choice(["gemini", "groq", "anthropic", "openai"]), default=None)
@@ -148,10 +151,13 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
         subtasks = dec.decompose(task_description, project_path=proj)
         plan_path.write_text(dec.generate_plan_md(subtasks, user_task=task_description), encoding="utf-8")
         tasks_total = len(subtasks)
-        _save_tasks(tasks_path, [
-            {"id": s.id, "title": s.title, "status": "pending", "estimated_minutes": s.estimated_minutes}
-            for s in subtasks
-        ])
+        _save_tasks(
+            tasks_path,
+            [
+                {"id": s.id, "title": s.title, "status": "pending", "estimated_minutes": s.estimated_minutes}
+                for s in subtasks
+            ],
+        )
         click.echo(f"[ralph] Plan: {tasks_total} tasks")
     except Exception as exc:
         logger.warning("Plan generation failed: %s — placeholder written.", exc)
@@ -160,9 +166,7 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
 
     slug = slugify(task_description)
     if not slug:
-        raise click.UsageError(
-            "Task description must contain at least one alphanumeric character."
-        )
+        raise click.UsageError("Task description must contain at least one alphanumeric character.")
     branch_name = f"ralph/{feature_id}-{slug}"
     state = FeatureState(
         feature_id=feature_id,
@@ -200,13 +204,19 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
 
 @ralph_group.command(name="discover")
 @click.option(
-    "--project", "-p", "project_path",
-    type=click.Path(exists=True, file_okay=False), default=".",
+    "--project",
+    "-p",
+    "project_path",
+    type=click.Path(exists=True, file_okay=False),
+    default=".",
 )
 @click.option("--provider", type=click.Choice(["gemini", "groq", "anthropic", "openai"]), default=None)
 @click.option("--api-key", default=None)
 @click.option(
-    "--run/--no-run", "auto_run", default=False, show_default=True,
+    "--run/--no-run",
+    "auto_run",
+    default=False,
+    show_default=True,
     help="Automatically start the Ralph loop for each discovered feature.",
 )
 @click.option("--verbose/--quiet", default=True)
@@ -260,7 +270,7 @@ def ralph_discover(project_path, provider, api_key, auto_run, verbose):
             click.echo(f"  • {f}")
     except Exception as exc:
         click.echo(f"[discover] AI extraction failed: {exc}", err=True)
-        click.echo("[discover] Try: prg ralph \"<specific task>\" instead.")
+        click.echo('[discover] Try: prg ralph "<specific task>" instead.')
         raise SystemExit(1)
 
     if not features_found:
@@ -329,8 +339,7 @@ def ralph_run(feature_id, project_path, max_iterations, provider, api_key, verbo
 
     if not is_git_repo(project_path):
         raise click.ClickException(
-            f"{project_path} is not a git repository.\n"
-            "Ralph requires git for branch isolation and PR creation."
+            f"{project_path} is not a git repository.\n" "Ralph requires git for branch isolation and PR creation."
         )
 
     fdir = _feature_dir(project_path, feature_id)
@@ -434,8 +443,7 @@ def ralph_resume(feature_id, project_path, max_iterations, provider, api_key, ve
 
     if not is_git_repo(project_path):
         raise click.ClickException(
-            f"{project_path} is not a git repository.\n"
-            "Ralph requires git for branch isolation and PR creation."
+            f"{project_path} is not a git repository.\n" "Ralph requires git for branch isolation and PR creation."
         )
 
     fdir = _feature_dir(project_path, feature_id)
@@ -499,9 +507,13 @@ def ralph_stop(feature_id, project_path, reason):
     # Warn if the current branch doesn't match the feature branch
     try:
         import subprocess as _sub
+
         current = _sub.run(
             ["git", "branch", "--show-current"],
-            cwd=project_path, capture_output=True, text=True, timeout=10,
+            cwd=project_path,
+            capture_output=True,
+            text=True,
+            timeout=10,
         ).stdout.strip()
         if current and current != state.branch_name:
             click.echo(
@@ -588,11 +600,17 @@ def ralph_approve(feature_id, project_path, target_branch):
         # Try PR creation
         pr_result = subprocess.run(
             [
-                "gh", "pr", "create",
-                "--title", f"Ralph: {task}",
-                "--body", f"Approved by human. Feature: {feature_id}",
-                "--head", branch,
-                "--base", target_branch,
+                "gh",
+                "pr",
+                "create",
+                "--title",
+                f"Ralph: {task}",
+                "--body",
+                f"Approved by human. Feature: {feature_id}",
+                "--head",
+                branch,
+                "--base",
+                target_branch,
             ],
             cwd=project_path,
             capture_output=True,
