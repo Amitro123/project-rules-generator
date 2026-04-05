@@ -89,9 +89,9 @@ def feature(task_description, project_path, max_iterations, provider, api_key, v
         from generator.task_decomposer import TaskDecomposer
 
         has_key = _has_api_key(provider, api_key)
-        if not has_key and verbose:
+        if not has_key:
             click.echo(
-                "   ⚠️  No API key found — PLAN.md will be a template scaffold.\n"
+                "   ⚠️  No API key found — PLAN.md will be a generic template scaffold.\n"
                 "   Set GEMINI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY for\n"
                 "   a project-specific plan.",
             )

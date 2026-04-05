@@ -190,29 +190,20 @@ class CoworkRulesCreator(ArtifactGenerator):
         return list(sorted(detected))
 
     def _detect_project_type(self, tech_stack: List[str], enhanced_context: Optional[Dict]) -> str:
-        """Detect project type (python-cli, fastapi-api, react-app, etc.)."""
+        """Detect project type using the canonical detector for consistency with `prg analyze`."""
+        from generator.analyzers.project_type_detector import detect_project_type
 
-        # Inference from tech stack (authoritative — checked first)
-        if "fastapi" in tech_stack or "flask" in tech_stack:
-            return "python-api"
-        elif "react" in tech_stack or "vue" in tech_stack:
-            return "frontend-app"
-        elif "langchain" in tech_stack or "openai" in tech_stack:
-            return "ai-agent"
-        elif "click" in tech_stack or "typer" in tech_stack or "argparse" in tech_stack:
-            return "python-cli"
-        elif "pytest" in tech_stack:
-            return "python-library"
-        elif "docker" in tech_stack:
-            return "containerized-app"
-
-        # Fall back to enhanced_context only when tech stack gives no signal
+        raw_readme = ""
         if enhanced_context:
-            proj_type = enhanced_context.get("metadata", {}).get("project_type", "")
-            if proj_type and proj_type not in ("unknown", ""):
-                return proj_type
+            raw_readme = enhanced_context.get("readme", {}).get("content", "") or enhanced_context.get("raw_readme", "")
 
-        return "python-library"
+        metadata = {
+            "name": self.project_path.name,
+            "tech_stack": tech_stack,
+            "raw_readme": raw_readme,
+        }
+        result = detect_project_type(metadata, str(self.project_path))
+        return result.get("primary_type", "python-library")
 
     def _identify_priority_areas(self, tech_stack: List[str], project_type: str) -> List[str]:
         """Identify high-priority areas for this project."""
