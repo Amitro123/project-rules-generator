@@ -94,31 +94,6 @@ class SkillDocLoader:
         candidates.sort(key=lambda p: (-self._score_doc(p, ""), p.name))
         return candidates
 
-    # Map skill name fragments → import keyword to search for in .py files
-    _TECH_IMPORT_MAP = {
-        "gitpython": "git",
-        "git": "git",
-        "fastapi": "fastapi",
-        "flask": "flask",
-        "django": "django",
-        "click": "click",
-        "sqlalchemy": "sqlalchemy",
-        "celery": "celery",
-        "redis": "redis",
-        "anthropic": "anthropic",
-        "openai": "openai",
-        "gemini": "google",
-        "groq": "groq",
-        "pydantic": "pydantic",
-        "httpx": "httpx",
-        "requests": "requests",
-        "asyncio": "asyncio",
-        "aiohttp": "aiohttp",
-        "pytest": "pytest",
-        "argparse": "argparse",
-        "typer": "typer",
-    }
-
     _USAGE_SKIP_DIRS = {".venv", "venv", "site-packages", "__pycache__", ".git", "node_modules"}
 
     def load_key_files(self, skill_name: str) -> Dict[str, str]:
@@ -180,10 +155,23 @@ class SkillDocLoader:
         return key_files
 
     def _skill_tech_import(self, skill_lower: str) -> str:
-        """Return the Python import keyword to search for, given a skill name."""
-        for fragment, keyword in self._TECH_IMPORT_MAP.items():
-            if fragment in skill_lower:
-                return keyword
+        """Return the Python import keyword to search for, given a skill name.
+
+        Uses SKILL_IMPORT_NAMES from tech_registry as the source of truth so
+        this mapping stays in sync with TechProfile definitions (including the
+        import_name override for e.g. gitpython → git).
+        """
+        from generator.tech_registry import SKILL_IMPORT_NAMES
+
+        # Try exact skill name match first (e.g. "gitpython-ops" → "git")
+        if skill_lower in SKILL_IMPORT_NAMES:
+            return SKILL_IMPORT_NAMES[skill_lower]
+
+        # Fallback: substring match against skill_name keys
+        for skill_name, import_kw in SKILL_IMPORT_NAMES.items():
+            if skill_name in skill_lower or skill_lower in skill_name:
+                return import_kw
+
         return ""
 
     def _find_usage_files(self, import_keyword: str, key_files: Dict[str, str], max_files: int = 3) -> None:

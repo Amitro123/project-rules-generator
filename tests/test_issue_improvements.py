@@ -279,9 +279,13 @@ def test_skill_doc_loader_tech_import_mapping():
     from generator.skill_doc_loader import SkillDocLoader
 
     loader = SkillDocLoader(Path("."))
+    # gitpython has import_name="git" (package is gitpython, import is git)
     assert loader._skill_tech_import("gitpython-ops") == "git"
+    # fastapi package == import name
     assert loader._skill_tech_import("fastapi-endpoints") == "fastapi"
-    assert loader._skill_tech_import("click-commands") == "click"
+    # click-cli is the registry skill name for click
+    assert loader._skill_tech_import("click-cli") == "click"
+    # unknown skill returns empty string
     assert loader._skill_tech_import("unknown-skill") == ""
 
 

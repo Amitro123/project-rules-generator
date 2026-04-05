@@ -45,6 +45,12 @@ class TechProfile:
     rules: Dict[str, List[str]] = field(default_factory=dict)
     """Coding rules keyed by priority: {'high': [...], 'medium': [...], 'low': [...]}."""
 
+    import_name: str = ""
+    """Python import keyword when it differs from the pip package name.
+    E.g. gitpython is installed as 'gitpython' but imported as 'git'.
+    Leave empty to derive from packages[0] (stripping hyphens, taking first segment).
+    """
+
 
 # ---------------------------------------------------------------------------
 # Registry
@@ -304,6 +310,7 @@ _PROFILES: List[TechProfile] = [
         skill_name="gemini-api",
         packages=["google-generativeai", "google-genai"],
         readme_keywords=["gemini", "google ai"],
+        import_name="google",  # pip install google-generativeai → import google.generativeai
         tools=["pytest", "ruff", "mypy"],
         rules={
             "high": [
@@ -452,6 +459,7 @@ _PROFILES: List[TechProfile] = [
         skill_name="gitpython-ops",
         packages=["gitpython"],
         readme_keywords=["gitpython", "git diff", "git operations"],
+        import_name="git",  # pip install gitpython → import git
     ),
     # -- Specialised / canvas / DXF -------------------------------------------
     TechProfile(
@@ -575,3 +583,16 @@ PKG_MAP: Dict[str, str] = {}
 for _p in _PROFILES:
     for _pkg in _p.packages:
         PKG_MAP[_pkg] = _p.name
+
+# skill_name → Python import keyword (for code-usage file search)
+# Derived from import_name if set, otherwise from the first package name
+# (stripping hyphens and taking the first dot-segment, e.g. google-generativeai → google).
+SKILL_IMPORT_NAMES: Dict[str, str] = {}
+for _p in _PROFILES:
+    if not _p.skill_name:
+        continue
+    if _p.import_name:
+        SKILL_IMPORT_NAMES[_p.skill_name] = _p.import_name
+    elif _p.packages:
+        _kw = _p.packages[0].replace("-", "_").split(".")[0]
+        SKILL_IMPORT_NAMES[_p.skill_name] = _kw
