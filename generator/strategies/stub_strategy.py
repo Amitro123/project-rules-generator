@@ -26,6 +26,30 @@ class StubStrategy:
         parts = [p for p in skill_name.split("-") if len(p) > 2]
         trigger_str = ", ".join(f'"{t}"' for t in ([skill_label] + parts)[:3])
 
+        # Derive human-readable content from the skill name
+        tech = parts[0].title() if parts else title
+        action = " ".join(parts[1:]).replace("-", " ") if len(parts) > 1 else skill_label
+
+        # Use README for a purpose hint if available
+        purpose = f"Inconsistent {action} patterns slow down {tech} development. Apply this skill to enforce the correct {action} approach every time."
+        if from_readme:
+            for line in from_readme.split("\n"):
+                stripped = line.strip()
+                if not stripped or stripped.startswith(("#", "-", "*", ">", "|", "!", "`")):
+                    continue
+                skill_words = skill_label.split()
+                if any(w in stripped.lower() for w in skill_words) and len(stripped) > 20:
+                    purpose = stripped[:200]
+                    break
+
+        step1 = f"Analyze the existing {tech} setup"
+        step1_cmd = f"# Review {tech.lower()} configuration\ngrep -r '{parts[0]}' . --include='*.py' -l"
+        step2 = f"Apply {action} correctly"
+        step2_desc = f"Follow established {tech} conventions for {action} in this project."
+        output_desc = f"Updated {tech} implementation with consistent {action} patterns applied."
+        anti_dont = f"Use generic {tech} patterns without checking what this project already does"
+        anti_do = f"Read existing {tech} code first, then apply the same {action} conventions"
+
         content = (
             f"---\n"
             f"name: {skill_name}\n"
@@ -44,23 +68,23 @@ class StubStrategy:
             f"---\n\n"
             f"# Skill: {title}\n\n"
             f"## Purpose\n\n"
-            f"[One sentence: what problem does this solve and for whom.]\n\n"
+            f"{purpose}\n\n"
             f"## Auto-Trigger\n\n"
             f"Activate when user requests:\n"
             + "".join(f'- **"{t}"**\n' for t in ([skill_label] + parts)[:3])
-            + "\nDo NOT activate for: [list false-positive phrases]\n\n"
+            + f"\nDo NOT activate for: general {tech.lower()} questions unrelated to {action}.\n\n"
             "## Process\n\n"
-            "### 1. [First step]\n\n"
-            "```bash\n# command\n```\n\n"
-            "### 2. [Second step]\n\n"
-            "[description]\n\n"
+            f"### 1. {step1}\n\n"
+            f"```bash\n{step1_cmd}\n```\n\n"
+            f"### 2. {step2}\n\n"
+            f"{step2_desc}\n\n"
             "### 3. Validate\n\n"
             "Verify the output is correct and tests still pass.\n\n"
             "## Output\n\n"
-            "[What artifact or state results from applying this skill.]\n\n"
+            f"{output_desc}\n\n"
             "## Anti-Patterns\n\n"
-            "❌ [What NOT to do]\n"
-            "✅ [What to do instead]\n"
+            f"❌ {anti_dont}\n"
+            f"✅ {anti_do}\n"
         )
 
         return content

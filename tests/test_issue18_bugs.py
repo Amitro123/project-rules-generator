@@ -406,8 +406,8 @@ class TestBracketPlaceholderDetection:
             "unfilled bracket" in i for i in report.issues
         ), "[One sentence: ...] bracket placeholder should be flagged"
 
-    def test_stub_strategy_output_fails_quality_gate(self):
-        """Full StubStrategy output must score below 70 (quality gate fails)."""
+    def test_stub_strategy_output_passes_quality_gate(self):
+        """StubStrategy now generates real content (no bracket placeholders) and must pass quality."""
         from generator.strategies.stub_strategy import StubStrategy
 
         stub_content = StubStrategy().generate(
@@ -417,13 +417,12 @@ class TestBracketPlaceholderDetection:
             provider="gemini",
         )
         report = validate_quality(stub_content)
-        assert not report.passed, (
-            f"StubStrategy output passed quality gate with score={report.score:.0f}; "
-            "unfilled placeholders should push it below 70"
+        assert report.passed, (
+            f"StubStrategy output failed quality gate with score={report.score:.0f}; "
+            f"stub should no longer contain bracket placeholders. Issues: {report.issues}"
         )
-        assert any(
-            "unfilled bracket" in i for i in report.issues
-        ), "No bracket-placeholder issue reported for StubStrategy output"
+        bracket_issues = [i for i in report.issues if "unfilled bracket" in i]
+        assert not bracket_issues, f"StubStrategy still generates bracket placeholders: {bracket_issues}"
 
     def test_bracket_in_code_block_not_flagged(self):
         """Bracket patterns inside code blocks must NOT be penalised."""

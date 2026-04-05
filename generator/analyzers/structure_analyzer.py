@@ -115,6 +115,8 @@ class StructureAnalyzer:
             "files": ["conftest.py", "tests/conftest.py", "pytest.ini"],
             "imports": [r"import pytest", r"from pytest"],
             "config_keys": ["[tool.pytest", "[pytest"],
+            # Also match pytest listed as a dep name (e.g. Poetry dev-dependencies)
+            "dep_patterns": [r"^\s*pytest\s*[=<>\^\~!\[]"],
         },
         "unittest": {
             "markers": ["unittest"],
@@ -234,12 +236,15 @@ class StructureAnalyzer:
                     if re.search(pattern, content):
                         return framework
 
-            # Check pyproject.toml for config keys
+            # Check pyproject.toml for config keys and dep name patterns
             pyproject = self.project_path / "pyproject.toml"
             if pyproject.exists():
                 content = self._read_file_cached(pyproject)
                 for key in definition.get("config_keys", []):
                     if key in content:
+                        return framework
+                for pattern in definition.get("dep_patterns", []):
+                    if re.search(pattern, content, re.MULTILINE):
                         return framework
 
         return None

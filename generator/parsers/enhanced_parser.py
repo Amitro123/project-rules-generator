@@ -322,10 +322,27 @@ class EnhancedProjectParser:
         # Determine project name
         project_name = readme_data.get("name", "") or self.path.name
 
+        # Use structure analyzer type as baseline, then override with the newer
+        # project_type_detector for API projects (it scores on deps, not just file patterns,
+        # so it correctly returns python-api when fastapi is in dependencies even without CLI
+        # entry points — the old detector was falsely winning on main.py presence).
+        project_type = structure.get("type", "unknown")
+        try:
+            from generator.analyzers.project_type_detector import detect_project_type as _detect_pt
+
+            _readme_content = readme_data.get("raw_readme", "")
+            _pt_meta = {"name": self.path.name, "tech_stack": list(tech_stack), "raw_readme": _readme_content}
+            _newer = _detect_pt(_pt_meta, str(self.path))
+            _newer_type = _newer.get("primary_type", "")
+            if _newer_type in ("python-api", "fastapi-api", "django-api", "flask-api"):
+                project_type = _newer_type
+        except Exception:  # noqa: BLE001 — type override is best-effort; old detector result is still valid
+            pass
+
         return {
             "project_name": project_name,
             "tech_stack": sorted(tech_stack),
-            "project_type": structure.get("type", "unknown"),
+            "project_type": project_type,
             "languages": sorted(languages),
             "frameworks": sorted(tech_stack - languages - {"docker", "pytest", "jest", "unittest"}),
             "has_tests": tests.get("test_files", 0) > 0,

@@ -44,6 +44,15 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
     installation = readme_data.get("installation", "")
     usage = readme_data.get("usage", "")
     troubleshooting = readme_data.get("troubleshooting", "")
+    raw_readme = readme_data.get("raw_readme", "")
+    _readme_conventions: list = []
+    if raw_readme:
+        try:
+            from generator.analyzers.readme_parser import extract_conventions
+
+            _readme_conventions = extract_conventions(raw_readme)
+        except Exception:  # noqa: BLE001 — conventions extraction is optional enrichment
+            pass
 
     arch_lines = []
     if project_type != "unknown":
@@ -57,6 +66,9 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
     arch_section = "\n".join(arch_lines) if arch_lines else "- Standard project layout"
 
     do_rules = _build_do_rules(tech_stack, python_deps, node_deps, project_type, test_framework, structure)
+    if _readme_conventions:
+        conv_md = "\n".join(f"- {c}" for c in _readme_conventions[:10])
+        do_rules += f"\n\n**README Conventions:**\n{conv_md}"
     dont_rules = _build_dont_rules(tech_stack, python_deps, project_type, structure)
 
     features = project_data.get("features", [])
