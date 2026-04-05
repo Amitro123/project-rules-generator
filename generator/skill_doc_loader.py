@@ -94,6 +94,33 @@ class SkillDocLoader:
         candidates.sort(key=lambda p: (-self._score_doc(p, ""), p.name))
         return candidates
 
+    # Map skill name fragments → import keyword to search for in .py files
+    _TECH_IMPORT_MAP = {
+        "gitpython": "git",
+        "git": "git",
+        "fastapi": "fastapi",
+        "flask": "flask",
+        "django": "django",
+        "click": "click",
+        "sqlalchemy": "sqlalchemy",
+        "celery": "celery",
+        "redis": "redis",
+        "anthropic": "anthropic",
+        "openai": "openai",
+        "gemini": "google",
+        "groq": "groq",
+        "pydantic": "pydantic",
+        "httpx": "httpx",
+        "requests": "requests",
+        "asyncio": "asyncio",
+        "aiohttp": "aiohttp",
+        "pytest": "pytest",
+        "argparse": "argparse",
+        "typer": "typer",
+    }
+
+    _USAGE_SKIP_DIRS = {".venv", "venv", "site-packages", "__pycache__", ".git", "node_modules"}
+
     def load_key_files(self, skill_name: str) -> Dict[str, str]:
         """Load actual key project files to ground the LLM in real project content.
 
@@ -124,6 +151,12 @@ class SkillDocLoader:
                 except OSError:
                     pass
 
+        # Smart tech-usage search: find .py files that actually import the tech.
+        # This grounds the AI in real code rather than generic templates.
+        import_keyword = self._skill_tech_import(skill_lower)
+        if import_keyword:
+            self._find_usage_files(import_keyword, key_files, max_files=3)
+
         tree = build_project_tree(self.project_path, max_depth=3, max_items=60)
         key_files["project_tree"] = tree[:800]
 
@@ -145,3 +178,38 @@ class SkillDocLoader:
                 pass
 
         return key_files
+
+    def _skill_tech_import(self, skill_lower: str) -> str:
+        """Return the Python import keyword to search for, given a skill name."""
+        for fragment, keyword in self._TECH_IMPORT_MAP.items():
+            if fragment in skill_lower:
+                return keyword
+        return ""
+
+    def _find_usage_files(self, import_keyword: str, key_files: Dict[str, str], max_files: int = 3) -> None:
+        """Search project .py files for actual usage of import_keyword.
+
+        Adds matching files to key_files in-place, skipping files already loaded.
+        Each file is capped at 600 chars so the token budget stays reasonable.
+        """
+        import_patterns = (f"import {import_keyword}", f"from {import_keyword}")
+        count = 0
+        try:
+            for py_file in sorted(self.project_path.rglob("*.py")):
+                rel = str(py_file.relative_to(self.project_path))
+                # Skip virtual envs, caches, and already-loaded files
+                if any(skip in rel for skip in self._USAGE_SKIP_DIRS):
+                    continue
+                if rel in key_files:
+                    continue
+                try:
+                    content = py_file.read_text(encoding="utf-8", errors="ignore")
+                    if any(pat in content for pat in import_patterns):
+                        key_files[rel] = content[:600]
+                        count += 1
+                        if count >= max_files:
+                            break
+                except OSError:
+                    continue
+        except OSError:
+            pass

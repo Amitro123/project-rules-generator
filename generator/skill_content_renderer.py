@@ -67,6 +67,7 @@ class SkillContentRenderer:
                 signals = set(metadata.project_signals)
                 context = {
                     "readme": readme_content,
+                    "project_name": self.project_path.name,
                     "tech_stack": {
                         "backend": [t for t in tech_list if t.lower() in _backend],
                         "frontend": [t for t in tech_list if t.lower() in _frontend],

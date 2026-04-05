@@ -1,9 +1,55 @@
 """Generate skills using LLM with project context."""
 
 import os
-from typing import Dict, Optional, Tuple
+import re
+from typing import Dict, List, Optional, Tuple
 
 from .ai.factory import create_ai_client
+
+
+def _parse_python_deps_from_files(key_files: Dict[str, str]) -> List[str]:
+    """Extract package names from requirements.txt or pyproject.toml content in key_files."""
+    deps: List[str] = []
+    seen: set = set()
+
+    req_content = key_files.get("requirements.txt", "")
+    for line in req_content.splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            name = re.split(r"[>=<![\s]", line)[0].strip().lower()
+            if name and name not in seen:
+                seen.add(name)
+                deps.append(name)
+
+    pyproject_content = key_files.get("pyproject.toml", "")
+    for line in pyproject_content.splitlines():
+        m = re.match(r'^\s*"?([a-zA-Z0-9_-]+)"?\s*[=<>]', line)
+        if m:
+            name = m.group(1).lower()
+            if name not in ("python", "pip") and name not in seen:
+                seen.add(name)
+                deps.append(name)
+
+    return deps[:20]
+
+
+def _detect_test_framework_from_files(key_files: Dict[str, str]) -> str:
+    """Detect test framework from any key_files content."""
+    combined = " ".join(key_files.values()).lower()
+    if "pytest" in combined:
+        return "pytest"
+    if "jest" in combined or "vitest" in combined:
+        return "jest"
+    return ""
+
+
+def _extract_readme_description(readme_text: str) -> str:
+    """Return the first non-heading, non-badge, non-empty line of the README."""
+    for line in readme_text.splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and not stripped.startswith("!") and not stripped.startswith("[!"):
+            return stripped[:200]
+    return ""
 
 
 class LLMSkillGenerator:
@@ -61,7 +107,7 @@ class LLMSkillGenerator:
         """
         from generator.prompts.skill_generation import build_skill_prompt
 
-        # Adapt simple context dict to EnhancedProjectParser format
+        # Flatten tech_stack dict → list
         tech = context.get("tech_stack", {})
         flat_tech: list = []
         for vals in tech.values():
@@ -70,23 +116,42 @@ class LLMSkillGenerator:
             elif isinstance(vals, str):
                 flat_tech.append(vals)
 
+        readme_text = context.get("readme", "")
+        key_files = context.get("key_files", {})
+
+        # Fix 1 (readme.description key): extract first prose line so _format_context
+        # can populate the "Description:" line in the prompt.
+        description = _extract_readme_description(readme_text)
+
+        # Fix 3 (always-empty deps/tests): parse from key_files content.
+        python_deps = _parse_python_deps_from_files(key_files)
+        test_framework = _detect_test_framework_from_files(key_files)
+
         adapted_context: Dict = {
-            "metadata": {"tech_stack": flat_tech},
-            "readme": {"content": context.get("readme", "")},
+            "metadata": {
+                "tech_stack": flat_tech,
+                "project_name": context.get("project_name", ""),
+            },
+            "readme": {
+                "description": description,
+                "content": readme_text,
+            },
             "structure": context.get("structure", {}),
-            "dependencies": {},
-            "test_patterns": {},
+            "dependencies": {"python": [{"name": d} for d in python_deps]},
+            "test_patterns": {"framework": test_framework} if test_framework else {},
         }
 
-        key_files = context.get("key_files", {})
         code_examples = [{"file": fname, "content": content[:400]} for fname, content in key_files.items()]
 
         structure = context.get("structure", {})
         detected_patterns = [k for k, v in structure.items() if v]
 
+        # Fix 2 (project_name=""): read from context dict populated by the renderer.
+        project_name = context.get("project_name", "")
+
         prompt = build_skill_prompt(
             skill_topic=skill_name,
-            project_name="",
+            project_name=project_name,
             context=adapted_context,
             code_examples=code_examples,
             detected_patterns=detected_patterns,

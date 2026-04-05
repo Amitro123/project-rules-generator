@@ -225,6 +225,66 @@ def test_test_coverage_skill_mentions_all_frameworks():
     assert "vitest" in content.lower()
 
 
+def test_extract_readme_description_skips_headings():
+    """_extract_readme_description returns first prose line, not the H1."""
+    from generator.llm_skill_generator import _extract_readme_description
+
+    readme = "# My Project\nA Python CLI tool that generates rules.\n## Usage\npip install x"
+    assert _extract_readme_description(readme) == "A Python CLI tool that generates rules."
+
+
+def test_extract_readme_description_empty():
+    from generator.llm_skill_generator import _extract_readme_description
+
+    assert _extract_readme_description("") == ""
+    assert _extract_readme_description("# Only a heading") == ""
+
+
+def test_parse_python_deps_from_requirements():
+    from generator.llm_skill_generator import _parse_python_deps_from_files
+
+    key_files = {"requirements.txt": "click>=8.0\npytest>=7\nrequests\n# comment\n"}
+    deps = _parse_python_deps_from_files(key_files)
+    assert "click" in deps
+    assert "pytest" in deps
+    assert "requests" in deps
+
+
+def test_detect_test_framework_from_files():
+    from generator.llm_skill_generator import _detect_test_framework_from_files
+
+    assert _detect_test_framework_from_files({"pyproject.toml": "[tool.pytest.ini_options]"}) == "pytest"
+    assert _detect_test_framework_from_files({"package.json": '{"devDependencies": {"jest": "^29"}}'}) == "jest"
+    assert _detect_test_framework_from_files({}) == ""
+
+
+def test_skill_doc_loader_finds_usage_files(tmp_path):
+    """_find_usage_files should locate .py files that import the tech keyword."""
+    from generator.skill_doc_loader import SkillDocLoader
+
+    # Create a file that imports git
+    (tmp_path / "git_ops.py").write_text("import git\nrepo = git.Repo('.')\n", encoding="utf-8")
+    # Create a file that doesn't
+    (tmp_path / "utils.py").write_text("import os\n", encoding="utf-8")
+
+    loader = SkillDocLoader(tmp_path)
+    key_files: dict = {}
+    loader._find_usage_files("git", key_files, max_files=3)
+
+    assert "git_ops.py" in key_files
+    assert "utils.py" not in key_files
+
+
+def test_skill_doc_loader_tech_import_mapping():
+    from generator.skill_doc_loader import SkillDocLoader
+
+    loader = SkillDocLoader(Path("."))
+    assert loader._skill_tech_import("gitpython-ops") == "git"
+    assert loader._skill_tech_import("fastapi-endpoints") == "fastapi"
+    assert loader._skill_tech_import("click-commands") == "click"
+    assert loader._skill_tech_import("unknown-skill") == ""
+
+
 def test_skill_frontmatter_when_phrases():
     """render_frontmatter should include 'When the user mentions' phrases."""
     from pathlib import Path
