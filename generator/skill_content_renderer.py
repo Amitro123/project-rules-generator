@@ -59,7 +59,7 @@ class SkillContentRenderer:
 
                 generator = LLMSkillGenerator(provider=provider)
 
-                tech_list = self._scanner._detect_tech_stack(readme_content)
+                tech_list = self._scanner.detect_tech_stack(readme_content)
                 _backend = {"fastapi", "flask", "django", "python", "express", "node", "fastapi"}
                 _frontend = {"react", "vue", "angular", "typescript", "javascript", "nextjs"}
                 _database = {"postgresql", "mysql", "mongodb", "redis", "sqlalchemy", "sqlite"}
@@ -126,7 +126,7 @@ class SkillContentRenderer:
         desc_with_triggers = desc_with_triggers[:1024]
 
         tags = metadata.tags if metadata.tags else [metadata.category]
-        tech_stack = self._scanner._detect_tech_stack(readme_content)
+        tech_stack = self._scanner.detect_tech_stack(readme_content)
         critical_rules = self._meta_builder.generate_critical_rules(skill_name, tech_stack)
 
         context = {
@@ -166,7 +166,7 @@ class SkillContentRenderer:
         """Fallback inline generation (no Jinja2)."""
         title = skill_name.replace("-", " ").title()
 
-        tech_stack_inline = self._scanner._detect_tech_stack(readme_content)
+        tech_stack_inline = self._scanner.detect_tech_stack(readme_content)
         critical_rules = self._meta_builder.generate_critical_rules(skill_name, tech_stack_inline)
         critical_block = ""
         if critical_rules:
@@ -236,7 +236,7 @@ This skill generates:
 
 ## Tech Stack Notes
 
-**Detected Technologies:** {", ".join(self._scanner._detect_tech_stack(readme_content))}
+**Detected Technologies:** {", ".join(self._scanner.detect_tech_stack(readme_content))}
 
 **Compatible Tools:** {", ".join(metadata.tools)}
 

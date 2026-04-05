@@ -239,7 +239,7 @@ except ValueError:
 **Issue:** `Path.walk()` requires Python 3.12+. Fallback via `except AttributeError` is fragile and omits the `venv` exclusion from the primary path.
 **Fix:** Use `os.walk()` unconditionally with consistent directory exclusions.
 
-### [ROOT-HIGH-6] Private method cross-boundary access — `skill_creator.py` + `rules_creator.py`
+### [ROOT-HIGH-6] Private method cross-boundary access — `skill_creator.py` + `rules_creator.py` ✅ 2026-04-05
 **Files:** `skill_creator.py:266,276`, `rules_creator.py:599,612`
 **Issue:** Calls to `self._scanner._detect_tech_stack()`, `self._scanner._detect_project_signals()`, `self._renderer._generate_with_jinja2()`, `self._quality_validator._detect_rule_conflicts()`.
 **Fix:** Promote these to public methods on their respective classes.
@@ -331,5 +331,5 @@ except ValueError:
 6. **ROOT-HIGH-1** — replace `assert` in `skill_discovery.py` ✅ 2026-04-05
 7. **ROOT-HIGH-4** — f-strings in `skill_paths.py` → `%s` format ✅ 2026-04-05
 8. **ROOT-HIGH-2** — annotate/narrow 15+ bare `except Exception` ✅ 2026-04-05
-9. **ROOT-HIGH-6** — promote private methods to public in `skill_creator.py` / `rules_creator.py` (20 min)
+9. **ROOT-HIGH-6** — promote private methods to public in `skill_creator.py` / `rules_creator.py` ✅ 2026-04-05
 10. **ROOT-MED-2** — add timeouts to AI provider clients (15 min)

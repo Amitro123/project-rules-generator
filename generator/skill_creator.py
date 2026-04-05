@@ -263,17 +263,17 @@ class CoworkSkillCreator:
     ) -> SkillMetadata:
         """Build smart metadata — delegates to SkillMetadataBuilder."""
         if tech_stack is None:
-            tech_stack = self._scanner._detect_tech_stack(readme_content)
-        signals = list(self._scanner._detect_project_signals())
+            tech_stack = self._scanner.detect_tech_stack(readme_content)
+        signals = list(self._scanner.detect_project_signals())
         return self._meta_builder.build(skill_name, readme_content, tech_stack, signals)
 
     def _detect_tech_stack(self, readme_content: str) -> List[str]:
         """Delegate to ProjectContextScanner (cached)."""
-        return self._scanner._detect_tech_stack(readme_content)
+        return self._scanner.detect_tech_stack(readme_content)
 
     def _detect_project_signals(self) -> Set[str]:
         """Delegate to ProjectContextScanner (cached)."""
-        return self._scanner._detect_project_signals()
+        return self._scanner.detect_project_signals()
 
     # -- Test-facing delegates (keep to avoid changing test files) ------
 

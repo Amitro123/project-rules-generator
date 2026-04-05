@@ -45,7 +45,7 @@ class ProjectContextScanner:
         readme_path = project_path / "README.md"
         readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
 
-        tech_stack = self._detect_tech_stack(readme_content)
+        tech_stack = self.detect_tech_stack(readme_content)
         skill_names = []
 
         if not tech_stack:
@@ -129,7 +129,7 @@ class ProjectContextScanner:
 
         return analysis
 
-    def _detect_tech_stack(self, readme_content: str) -> List[str]:
+    def detect_tech_stack(self, readme_content: str) -> List[str]:
         """Auto-detect tech stack from README AND actual project files.
 
         Delegates to generator.utils.tech_detector.detect_tech_stack().
@@ -141,7 +141,7 @@ class ProjectContextScanner:
         self._tech_stack = detected
         return list(detected)
 
-    def _detect_project_signals(self) -> Set[str]:
+    def detect_project_signals(self) -> Set[str]:
         """Detect project structure signals (has_docker, has_tests, etc.)."""
         if self._detected_signals:
             return self._detected_signals

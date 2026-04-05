@@ -132,7 +132,7 @@ class RulesQualityValidator:
             warnings.append("Few high-priority rules (recommend 3+)")
             score -= 5
 
-        conflicts = self._detect_rule_conflicts(rules_by_category)
+        conflicts = self.detect_rule_conflicts(rules_by_category)
         if conflicts:
             issues.extend(conflicts)
             score -= len(conflicts) * 10
@@ -152,7 +152,7 @@ class RulesQualityValidator:
             conflicts=conflicts,
         )
 
-    def _detect_rule_conflicts(self, rules_by_category: Dict[str, List["Rule"]]) -> List[str]:
+    def detect_rule_conflicts(self, rules_by_category: Dict[str, List["Rule"]]) -> List[str]:
         """Detect genuinely contradictory rules (same topic, opposite direction)."""
         conflicts: List[str] = []
         all_rules = [rule.content.lower() for rules in rules_by_category.values() for rule in rules]

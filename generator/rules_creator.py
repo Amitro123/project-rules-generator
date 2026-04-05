@@ -596,7 +596,7 @@ class CoworkRulesCreator(ArtifactGenerator):
 
     def _format_priority_areas(self, areas: List[str]) -> str:
         """Delegate to RulesContentRenderer."""
-        return self._renderer._format_priority_areas(areas)
+        return self._renderer.format_priority_areas(areas)
 
     def _validate_quality(
         self,
@@ -609,7 +609,7 @@ class CoworkRulesCreator(ArtifactGenerator):
 
     def _detect_rule_conflicts(self, rules_by_category: Dict[str, List[Rule]]) -> List[str]:
         """Delegate to RulesQualityValidator."""
-        return self._quality_validator._detect_rule_conflicts(rules_by_category)
+        return self._quality_validator.detect_rule_conflicts(rules_by_category)
 
     def _check_git_available(self) -> bool:
         """Delegate to RulesGitMiner."""
