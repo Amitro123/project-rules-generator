@@ -186,8 +186,30 @@ class TestDesignCLI:
         result = runner.invoke(cli, ["--help"])
         assert "design" in result.output
 
+    def test_design_requires_api_key(self, tmp_path):
+        """prg design must exit 1 with a clear error when no API key is set."""
+        (tmp_path / "README.md").write_text("# Test Project\n\nA project.")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "design",
+                "Add authentication to API",
+                "--project-path",
+                str(tmp_path),
+                "--output",
+                "DESIGN.md",
+            ],
+            env={"GEMINI_API_KEY": "", "GOOGLE_API_KEY": "", "ANTHROPIC_API_KEY": "", "GROQ_API_KEY": "", "OPENAI_API_KEY": ""},
+        )
+
+        assert result.exit_code == 1
+        assert "API key" in result.output
+
+    @patch("cli.cmd_design._has_api_key", return_value=True)
     @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
-    def test_design_generates_file(self, mock_llm, tmp_path):
+    def test_design_generates_file(self, mock_llm, mock_key, tmp_path):
         (tmp_path / "README.md").write_text("# Test Project\n\nA project.")
 
         runner = CliRunner()
@@ -210,8 +232,9 @@ class TestDesignCLI:
         content = design_path.read_text(encoding="utf-8")
         assert "# Design:" in content
 
+    @patch("cli.cmd_design._has_api_key", return_value=True)
     @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
-    def test_design_custom_output(self, mock_llm, tmp_path):
+    def test_design_custom_output(self, mock_llm, mock_key, tmp_path):
         (tmp_path / "README.md").write_text("# Test\n\nDesc.")
 
         runner = CliRunner()

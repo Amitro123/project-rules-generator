@@ -57,7 +57,9 @@
       "Bash(echo \"EXIT:$?\")",
       "Bash(black .)",
       "Bash(isort .)",
-      "Bash(black . --quiet)"
+      "Bash(black . --quiet)",
+      "Bash(grep -E \"\\\\.\\(md|json|txt\\)$\")",
+      "Bash(black cli/cmd_design.py cli/cmd_plan.py cli/agent_plan_helpers.py cli/skills_cmd.py --check)"
     ]
   }
 }

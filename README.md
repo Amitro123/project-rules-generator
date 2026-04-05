@@ -2,7 +2,7 @@
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-745%2B%20Passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-passing-brightgreen.svg)](tests/)
 
 ---
 
@@ -68,27 +68,30 @@ No templates. No hand-holding. Generated from *your actual project.*
 
 ## Quick Start
 
-**No API key needed** — PRG works offline from your README and file structure:
+**No API key needed** — `prg init` and `prg analyze` work fully offline from your README and file structure:
 
 ```bash
 pip install -e .
 prg init .
+prg analyze .
 ```
 
-**With a free API key** — LLM-generated skills and richer analysis:
+**With a free API key** — LLM-generated skills, richer analysis, and the planning commands:
 
 ```bash
 export GROQ_API_KEY=gsk_...   # free at console.groq.com
 prg analyze . --ai
+prg design "Add OAuth2 login"   # requires API key
+prg plan "Add OAuth2 login"     # requires API key
 ```
 
-**Artifact-first workflow** — generate memory, then continue manually or with an agent:
-
-```bash
-prg analyze . --incremental            # 3-5x faster subsequent runs
-prg design "Add OAuth2 login"          # Two-Stage Planning: generates DESIGN.md
-prg plan "Add OAuth2 login"            # Generates PLAN.md + TASKS.yaml
-```
+| Command | Offline | Requires API key |
+|---------|:-------:|:----------------:|
+| `prg init` / `prg analyze` | ✓ | — |
+| `prg watch` | ✓ | — |
+| `prg design` / `prg plan` | — | ✓ |
+| `prg review` | — | ✓ |
+| `prg analyze --ai` | — | ✓ |
 
 **Optionally, run Ralph** — an autonomous execution loop that reads your generated artifacts and iterates until the feature is done:
 
@@ -130,7 +133,7 @@ PRG auto-detects the best available provider from your environment. Set one key,
 | **Gemini** | Gemini 2.0 Flash | Fast + high quality | `GEMINI_API_KEY` |
 | **Groq** | Llama 3.1 8b | Free tier, fastest | `GROQ_API_KEY` |
 
-No provider? PRG still works — README + file structure analysis is free and surprisingly smart.
+No provider? `prg init` and `prg analyze` still work offline — README + file structure analysis is free and surprisingly smart. `prg design`, `prg plan`, and `prg review` require a key.
 
 ```bash
 prg providers list       # See what's configured
@@ -154,10 +157,11 @@ prg analyze . --constitution                  # Also generate constitution.md
 
 ### 🧠 2. Two-Stage Planning & Specs
 
+> Requires an AI provider API key (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY`).
+
 ```bash
 prg design "Add OAuth2 login"                 # Stage 1: Generates DESIGN.md architecture document
 prg plan   "Add OAuth2 login"                 # Stage 2: Generates PLAN.md + TASKS.json implementation plan
-        # Note: spec.md is auto-generated if absent during planning
 ```
 
 ### 🛠️ 3. Skill Management
@@ -255,18 +259,14 @@ prg --version
 
 ## Contributing
 
-```bash
-# Run tests
-pytest
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full guide: dev setup, how to add a command, how the skill system works, and testing rules.
 
-# Format (required before commit)
-black . && ruff check . && isort .
+```bash
+pytest                              # run tests
+black . && ruff check . && isort .  # format (required before commit)
 ```
 
-1. Fork → feature branch → `pytest` → `black .` → PR
-2. Follow conventional commits: `feat:`, `fix:`, `refactor:`
-
-See [`CLAUDE.md`](CLAUDE.md) for architecture notes and [`docs/architecture.md`](docs/architecture.md) for full diagrams.
+See [`docs/index.md`](docs/index.md) for all documentation.
 
 ---
 

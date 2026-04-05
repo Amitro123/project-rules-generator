@@ -102,8 +102,40 @@ def handle_plan_from_readme(
     sys.exit(0)
 
 
-def write_tasks_manifest(output_path: Path, user_task_label: str, subtasks: List[Any]) -> Path:
+def _heuristic_files_for_task(title: str, project_path: Optional[Path]) -> List[str]:
+    """Return candidate source files matching keywords from *title*.
+
+    Scans *project_path* for Python source files whose stem contains a word
+    from the task title.  Returns at most 3 matches so the list stays useful.
+    Returns an empty list when *project_path* is None or no matches are found.
+    """
+    if not project_path or not project_path.is_dir():
+        return []
+    keywords = {w.lower() for w in title.split() if len(w) > 3}
+    candidates: List[str] = []
+    for src in project_path.rglob("*.py"):
+        if "__pycache__" in src.parts or src.name.startswith("test_"):
+            continue
+        if any(kw in src.stem.lower() for kw in keywords):
+            try:
+                candidates.append(str(src.relative_to(project_path)))
+            except ValueError:
+                candidates.append(src.name)
+        if len(candidates) >= 3:
+            break
+    return candidates
+
+
+def write_tasks_manifest(
+    output_path: Path,
+    user_task_label: str,
+    subtasks: List[Any],
+    project_path: Optional[Path] = None,
+) -> Path:
     """Serialise *subtasks* to TASKS.json next to *output_path*.
+
+    When *project_path* is supplied, tasks with an empty *files* list are
+    enriched with heuristic file candidates derived from the project structure.
 
     Returns the path of the written manifest file.
     """
@@ -117,7 +149,7 @@ def write_tasks_manifest(output_path: Path, user_task_label: str, subtasks: List
                 "id": t.id,
                 "title": t.title,
                 "goal": t.goal,
-                "files": t.files,
+                "files": t.files or _heuristic_files_for_task(t.title, project_path),
                 "dependencies": t.dependencies,
                 "estimated_minutes": t.estimated_minutes,
                 "status": "pending",

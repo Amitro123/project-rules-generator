@@ -123,7 +123,7 @@ def run_generation_pipeline(
         # Extract triggers
         triggers_dict: Dict[str, Any] = {}
         if with_skills:
-            triggers_dict = skills_manager.extract_all_triggers()
+            triggers_dict = skills_manager.extract_project_triggers()
             skills_manager.save_triggers_json(output_dir)
         pbar.update(1)
 

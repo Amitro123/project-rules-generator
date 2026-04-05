@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "project-rules-generator"
 version = "0.3.0"
-description = "A standard for defining project rules and skills for AI agents."
+description = "Generate coding rules and skills for AI agents from your codebase. Core features (init, analyze) work offline; design and planning commands require an AI provider API key."
 authors = [
   { name = "Amitro123", email = "amitrosen4@gmail.com" },
 ]

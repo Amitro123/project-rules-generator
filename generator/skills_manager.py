@@ -111,6 +111,17 @@ class SkillsManager:
         all_skills = self.discovery.get_all_skills_content()
         return SkillParser.extract_all_triggers(all_skills)
 
+    def extract_project_triggers(self) -> Dict[str, List[str]]:
+        """Extract triggers from project and learned skills only.
+
+        Excludes builtins — their triggers are generic and appear in rules.md
+        even when unrelated to the actual project, which misleads users into
+        thinking PRG generated project-specific skills when it didn't.
+        """
+        all_skills = self.discovery.get_all_skills_content()
+        project_only = {k: v for k, v in all_skills.items() if k in ("project", "learned")}
+        return SkillParser.extract_all_triggers(project_only)
+
     def save_triggers_json(self, output_dir: Path):
         """Save extracted triggers to .clinerules/auto-triggers.json"""
         triggers = self.extract_all_triggers()

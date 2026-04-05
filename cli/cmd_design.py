@@ -39,11 +39,14 @@ def design(description, project_path, output, api_key, provider, verbose):
     provider = _detect_provider(provider, api_key)
     _set_api_key(provider, api_key)
 
-    if provider and not _has_api_key(provider, api_key) and verbose:
+    if not _has_api_key(provider, api_key):
         click.echo(
-            f"Warning: provider '{provider}' selected but no API key found — " "using template-based generation.",
+            "Error: prg design requires an AI provider API key.\n"
+            "Set GEMINI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY,\n"
+            "or pass --api-key to provide one directly.",
             err=True,
         )
+        raise SystemExit(1)
 
     if verbose:
         click.echo(f"Project Rules Generator v{__version__} — Design Generator")

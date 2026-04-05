@@ -1,5 +1,7 @@
 """Integration tests for the two-stage planning workflow (design -> plan)."""
 
+from unittest.mock import patch
+
 from click.testing import CliRunner
 
 from cli.cli import cli
@@ -10,7 +12,11 @@ from generator.task_decomposer import TaskDecomposer
 class TestTwoStageWorkflow:
     """Test the full design -> plan -> verify workflow."""
 
-    def test_design_then_plan(self, tmp_path):
+    @patch("cli.cmd_plan._has_api_key", return_value=True)
+    @patch("cli.cmd_design._has_api_key", return_value=True)
+    @patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="")
+    @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
+    def test_design_then_plan(self, mock_design_llm, mock_plan_llm, mock_design_key, mock_plan_key, tmp_path):
         """Stage 1: design, Stage 2: plan from design."""
         (tmp_path / "README.md").write_text("# My API\n\nA FastAPI project.")
 
@@ -175,7 +181,11 @@ class TestDesignGeneratorIntegration:
         assert "Authentication" in d.title
         assert "authentication" in d.problem_statement.lower()
 
-    def test_full_cli_workflow(self, tmp_path):
+    @patch("cli.cmd_plan._has_api_key", return_value=True)
+    @patch("cli.cmd_design._has_api_key", return_value=True)
+    @patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="")
+    @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
+    def test_full_cli_workflow(self, mock_design_llm, mock_plan_llm, mock_design_key, mock_plan_key, tmp_path):
         """End-to-end CLI: design -> plan from design."""
         (tmp_path / "README.md").write_text("# Project\n\nDescription.")
 

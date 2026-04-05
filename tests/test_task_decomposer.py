@@ -343,7 +343,23 @@ class TestPlanCLI:
         assert "--from-design" in result.output
         assert "--output" in result.output
 
-    def test_plan_generates_file(self, tmp_path):
+    def test_plan_requires_api_key(self, tmp_path):
+        """prg plan must exit 1 with a clear error when no API key is set."""
+        (tmp_path / "README.md").write_text("# Test Project\n\nA project.")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            ["plan", "Add user authentication", "--project-path", str(tmp_path)],
+            env={"GEMINI_API_KEY": "", "GOOGLE_API_KEY": "", "ANTHROPIC_API_KEY": "", "GROQ_API_KEY": "", "OPENAI_API_KEY": ""},
+        )
+
+        assert result.exit_code == 1
+        assert "API key" in result.output
+
+    @patch("cli.cmd_plan._has_api_key", return_value=True)
+    @patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="")
+    def test_plan_generates_file(self, mock_llm, mock_key, tmp_path):
         """Plan command should create a PLAN.md file."""
         (tmp_path / "README.md").write_text("# Test Project\n\nA project.")
 
@@ -368,7 +384,9 @@ class TestPlanCLI:
         assert "# PLAN" in content
         assert "authentication" in content.lower()
 
-    def test_plan_custom_output(self, tmp_path):
+    @patch("cli.cmd_plan._has_api_key", return_value=True)
+    @patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="")
+    def test_plan_custom_output(self, mock_llm, mock_key, tmp_path):
         (tmp_path / "README.md").write_text("# Test\n\nDesc.")
 
         runner = CliRunner()
@@ -387,7 +405,9 @@ class TestPlanCLI:
         assert result.exit_code == 0
         assert (tmp_path / "docs" / "PLAN.md").exists()
 
-    def test_plan_from_design_flag(self, tmp_path):
+    @patch("cli.cmd_plan._has_api_key", return_value=True)
+    @patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="")
+    def test_plan_from_design_flag(self, mock_llm, mock_key, tmp_path):
         """Plan from a DESIGN.md file."""
         (tmp_path / "README.md").write_text("# Test\n\nDesc.")
         design_md = (

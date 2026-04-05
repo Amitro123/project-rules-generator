@@ -134,6 +134,11 @@ def skills_list(path, show_all):
             triggers = meta.get("triggers") or meta.get("auto_triggers") or []
             if isinstance(triggers, list):
                 trigger_count = len(triggers)
+            if not trigger_count:
+                # Builtins store triggers as "When …" lines in the description field
+                desc = meta.get("description", "")
+                if isinstance(desc, str):
+                    trigger_count = sum(1 for ln in desc.splitlines() if ln.strip().lower().startswith("when"))
 
             tools = meta.get("allowed-tools") or meta.get("tools") or ""
             if isinstance(tools, list):

@@ -100,6 +100,14 @@ def plan(
     if from_readme:
         provider = _detect_provider(provider, api_key)
         _set_api_key(provider, api_key)
+        if not _has_api_key(provider, api_key):
+            click.echo(
+                "Error: prg plan --from-readme requires an AI provider API key.\n"
+                "Set GEMINI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY,\n"
+                "or pass --api-key to provide one directly.",
+                err=True,
+            )
+            raise SystemExit(1)
         handle_plan_from_readme(
             from_readme=from_readme,
             project_path=project_path,
@@ -121,11 +129,14 @@ def plan(
     provider = _detect_provider(provider, api_key)
     _set_api_key(provider, api_key)
 
-    if provider and not _has_api_key(provider, api_key) and verbose:
+    if not _has_api_key(provider, api_key):
         click.echo(
-            f"Warning: provider '{provider}' selected but no API key found — " "using template-based generation.",
+            "Error: prg plan requires an AI provider API key.\n"
+            "Set GEMINI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY,\n"
+            "or pass --api-key to provide one directly.",
             err=True,
         )
+        raise SystemExit(1)
 
     if verbose:
         click.echo(f"Project Rules Generator v{__version__} — Task Planner")
@@ -174,7 +185,7 @@ def plan(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(plan_md, encoding="utf-8")
 
-    tasks_path = write_tasks_manifest(output_path, user_task_label, subtasks)
+    tasks_path = write_tasks_manifest(output_path, user_task_label, subtasks, project_path=project_path)
 
     click.echo(f"\nGenerated {len(subtasks)} subtasks")
     click.echo(f"Plan written to: {output_path}")
