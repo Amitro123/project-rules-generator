@@ -156,7 +156,7 @@ class ProjectManager:
 
         skills_mgr = SkillsManager(project_path=self.project_path)
         skills_mgr.save_triggers_json(output_dir)
-        skills_mgr.generate_perfect_index()
+        skills_mgr.generate_perfect_index(project_type=metadata.project_type)
         logger.info("   Generated .clinerules/skills/index.md")
 
     def _generate_spec_md(self) -> None:

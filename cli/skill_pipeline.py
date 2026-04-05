@@ -280,10 +280,18 @@ def _run_skill_orchestration(
             for skill in skills:
                 learned_source.save_skill(skill)
 
+    from generator.skill_generator import SkillGenerator
+
     type_info = detect_project_type_from_data(project_data, str(project_path))
+    primary_type = type_info["primary_type"]
+
+    excluded = SkillGenerator.PROJECT_TYPE_SKILL_EXCLUSIONS.get(primary_type, frozenset())
+    if excluded:
+        skills = [s for s in skills if s.name not in excluded]
+
     skill_file = SkillFile(
         project_name=project_name,
-        project_type=type_info["primary_type"],
+        project_type=primary_type,
         skills=skills,
         confidence=type_info["confidence"],
         tech_stack=project_data.get("tech_stack", []),

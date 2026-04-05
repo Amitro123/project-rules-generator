@@ -24,6 +24,40 @@ class SkillGenerator(ArtifactGenerator):
     # Tech name → preferred skill filename (single source of truth: tech_registry.py)
     TECH_SKILL_NAMES = _TECH_SKILL_NAMES
 
+    # Skills that are irrelevant for a given project type and should be excluded
+    # from skills/index.md.  Both canonical names (from rules_creator) and score-bucket
+    # names (from project_type_detector) are listed so callers don't need to normalise.
+    #
+    # Values are frozensets so the map itself is immutable.
+    _FRONTEND_SKILLS: frozenset = frozenset(
+        {"react-components", "vue-components", "jest-testing"}
+    )
+    _PYTHON_BACKEND_SKILLS: frozenset = frozenset(
+        {"fastapi-endpoints", "flask-routes", "django-views", "pytest-testing"}
+    )
+
+    PROJECT_TYPE_SKILL_EXCLUSIONS: Dict[str, frozenset] = {
+        # Python backend / API
+        "python-api": _FRONTEND_SKILLS,
+        "python_api": _FRONTEND_SKILLS,
+        # Python CLI tools
+        "python-cli": _FRONTEND_SKILLS,
+        "cli_tool": _FRONTEND_SKILLS,
+        # Python libraries
+        "python-library": _FRONTEND_SKILLS,
+        "library": _FRONTEND_SKILLS,
+        # ML / data pipelines
+        "ml-pipeline": _FRONTEND_SKILLS,
+        "ml_pipeline": _FRONTEND_SKILLS,
+        # Agent projects
+        "agent": _FRONTEND_SKILLS,
+        "ai-agent": _FRONTEND_SKILLS,
+        # Frontend / React / Vue
+        "react-app": _PYTHON_BACKEND_SKILLS,
+        "frontend-app": _PYTHON_BACKEND_SKILLS,
+        "web_app": _PYTHON_BACKEND_SKILLS,
+    }
+
     def _build_prompt(
         self,
         skill_name: str,

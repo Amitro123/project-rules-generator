@@ -22,9 +22,23 @@ Without coverage measurement, it is easy to ship code that is untested in the pa
 
 ### 1. Run Tests with Coverage
 Always run coverage on the full suite, not just changed files — new code can expose gaps in existing tests.
+
+**Python / pytest projects:**
 ```bash
 pytest --cov=. --cov-report=term-missing --tb=short
 ```
+
+**JavaScript / Jest projects:**
+```bash
+npx jest --coverage
+```
+
+**JavaScript / Vitest projects:**
+```bash
+npx vitest run --coverage
+```
+
+Use whichever matches the project's test framework (check `package.json` or `pyproject.toml`).
 
 ### 2. Review the Report
 Focus on lines and branches missed in core logic — 100% coverage on utilities matters less than 80% on business logic.
@@ -37,9 +51,7 @@ Prioritize uncovered paths by risk: untested error handlers and conditional bran
 
 ### 4. Add Missing Tests
 Write targeted tests for each uncovered gap — do not pad coverage with trivial assertions.
-```bash
-pytest --cov=. --cov-report=term-missing --tb=short  # re-run to confirm improvement
-```
+Re-run the appropriate coverage command from step 1 to confirm improvement.
 
 ## Output
 Coverage report showing:

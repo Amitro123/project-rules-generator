@@ -151,6 +151,80 @@ def test_skill_minimum_three_triggers():
     assert len(triggers) >= 3, f"Expected ≥3 triggers, got: {triggers}"
 
 
+def test_project_type_skill_exclusions_defined():
+    """PROJECT_TYPE_SKILL_EXCLUSIONS should cover all main project types."""
+    from generator.skill_generator import SkillGenerator
+
+    exclusions = SkillGenerator.PROJECT_TYPE_SKILL_EXCLUSIONS
+    # Python projects should exclude frontend skills
+    assert "react-components" in exclusions["python-api"]
+    assert "jest-testing" in exclusions["python-cli"]
+    # Frontend projects should exclude Python backend skills
+    assert "fastapi-endpoints" in exclusions["react-app"]
+    assert "pytest-testing" in exclusions["frontend-app"]
+
+
+def test_generate_perfect_index_filters_by_project_type(tmp_path):
+    """generate_perfect_index should omit skills excluded for the given project type."""
+    from unittest.mock import MagicMock, patch
+
+    from generator.skills_manager import SkillsManager
+
+    mgr = SkillsManager(project_path=tmp_path)
+
+    # Fake skill list that includes a frontend skill in a Python project
+    fake_skills = {
+        "pytest-testing": {"type": "learned", "content": "# Pytest"},
+        "react-components": {"type": "learned", "content": "# React"},
+        "systematic-debugging": {"type": "builtin", "content": "# Debug"},
+    }
+
+    with patch.object(mgr.discovery, "list_skills", return_value=fake_skills):
+        with patch.object(mgr.discovery, "project_skills_root", tmp_path / ".clinerules" / "skills"):
+            mgr.discovery.project_skills_root.mkdir(parents=True, exist_ok=True)
+            # Python CLI project → react-components should be excluded
+            index_path = mgr.generate_perfect_index(project_type="python-cli")
+            content = index_path.read_text(encoding="utf-8")
+
+    assert "pytest-testing" in content
+    assert "systematic-debugging" in content
+    assert "react-components" not in content, "Frontend skill should be filtered for python-cli"
+
+
+def test_generate_perfect_index_no_filter_when_no_type(tmp_path):
+    """Without project_type, generate_perfect_index includes all skills."""
+    from unittest.mock import patch
+
+    from generator.skills_manager import SkillsManager
+
+    mgr = SkillsManager(project_path=tmp_path)
+
+    fake_skills = {
+        "react-components": {"type": "learned", "content": "# React"},
+        "pytest-testing": {"type": "learned", "content": "# Pytest"},
+    }
+
+    with patch.object(mgr.discovery, "list_skills", return_value=fake_skills):
+        with patch.object(mgr.discovery, "project_skills_root", tmp_path / ".clinerules" / "skills"):
+            mgr.discovery.project_skills_root.mkdir(parents=True, exist_ok=True)
+            index_path = mgr.generate_perfect_index()  # no project_type
+            content = index_path.read_text(encoding="utf-8")
+
+    assert "react-components" in content
+    assert "pytest-testing" in content
+
+
+def test_test_coverage_skill_mentions_all_frameworks():
+    """test-coverage.md should mention pytest, jest, and vitest."""
+    from pathlib import Path
+
+    skill_path = Path(__file__).parent.parent / "generator" / "skills" / "builtin" / "test-coverage.md"
+    content = skill_path.read_text(encoding="utf-8")
+    assert "pytest" in content
+    assert "jest" in content.lower()
+    assert "vitest" in content.lower()
+
+
 def test_skill_frontmatter_when_phrases():
     """render_frontmatter should include 'When the user mentions' phrases."""
     from pathlib import Path
