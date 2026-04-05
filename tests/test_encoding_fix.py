@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from generator.ai.providers.gemini_client import GeminiClient
 from generator.ai.providers.groq_client import GroqClient

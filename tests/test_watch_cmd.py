@@ -199,6 +199,7 @@ class TestWatchCommandRegistered:
     def test_on_deleted_handler_exists(self):
         """Issue #4 fix: _EventBridge must handle on_deleted."""
         import inspect
+
         import cli.watch_cmd as _mod
 
         src = inspect.getsource(_mod)
@@ -207,6 +208,7 @@ class TestWatchCommandRegistered:
     def test_on_moved_handler_exists(self):
         """Issue #4 fix: _EventBridge must handle on_moved."""
         import inspect
+
         import cli.watch_cmd as _mod
 
         src = inspect.getsource(_mod)

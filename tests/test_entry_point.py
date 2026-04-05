@@ -35,6 +35,7 @@ def test_main_calls_load_dotenv_before_cli():
 def test_sanitize_env_strips_matching_outer_quotes(tmp_path, monkeypatch):
     """Matching outer quotes are stripped; value content is never truncated."""
     import os
+
     from cli.cli import _sanitize_env_from_dotenv
 
     env_file = tmp_path / ".env"
@@ -57,6 +58,7 @@ def test_sanitize_env_strips_matching_outer_quotes(tmp_path, monkeypatch):
 def test_sanitize_env_embedded_quote_not_truncated(tmp_path, monkeypatch):
     """Embedded quotes in a value are preserved, not silently dropped."""
     import os
+
     from cli.cli import _sanitize_env_from_dotenv
 
     env_file = tmp_path / ".env"
@@ -74,6 +76,7 @@ def test_sanitize_env_embedded_quote_not_truncated(tmp_path, monkeypatch):
 def test_sanitize_env_mismatched_quotes_kept_as_is(tmp_path, monkeypatch):
     """Mismatched quotes are not stripped — value is taken verbatim."""
     import os
+
     from cli.cli import _sanitize_env_from_dotenv
 
     env_file = tmp_path / ".env"
@@ -89,6 +92,7 @@ def test_sanitize_env_mismatched_quotes_kept_as_is(tmp_path, monkeypatch):
 def test_sanitize_env_does_not_overwrite_existing(tmp_path, monkeypatch):
     """Keys already in os.environ are not overwritten."""
     import os
+
     from cli.cli import _sanitize_env_from_dotenv
 
     env_file = tmp_path / ".env"

@@ -7,11 +7,11 @@ from unittest.mock import patch
 import yaml
 from click.testing import CliRunner
 
+from cli.cli import cli as main
 from generator.extractors.code_extractor import CodeExampleExtractor
 from generator.outputs.clinerules_generator import generate_clinerules
 from generator.parsers.enhanced_parser import EnhancedProjectParser
 from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
-from cli.cli import cli as main
 
 
 class TestEndToEndEnhancedPipeline:

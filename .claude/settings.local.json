@@ -56,7 +56,8 @@
       "Bash(grep -rn \"offline\\\\|fallback\\\\|execute_add\\\\|AddConfig\\\\|Research.*Implement.*Write\" C:UsersDana.geminiantigravityscratchproject-rules-generatorgenerator --include=*.py -l)",
       "Bash(echo \"EXIT:$?\")",
       "Bash(black .)",
-      "Bash(isort .)"
+      "Bash(isort .)",
+      "Bash(black . --quiet)"
     ]
   }
 }

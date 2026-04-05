@@ -2,9 +2,9 @@
 
 from click.testing import CliRunner
 
+from cli.cli import cli
 from generator.design_generator import ArchitectureDecision, Design, DesignGenerator
 from generator.task_decomposer import TaskDecomposer
-from cli.cli import cli
 
 
 class TestTwoStageWorkflow:

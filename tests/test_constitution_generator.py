@@ -2,8 +2,8 @@
 
 from click.testing import CliRunner
 
-from generator.constitution_generator import generate_constitution
 from cli.cli import cli as main
+from generator.constitution_generator import generate_constitution
 
 
 def _make_enhanced_context(

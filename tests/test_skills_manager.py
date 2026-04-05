@@ -3,8 +3,8 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from generator.skills_manager import SkillsManager
 from cli.cli import cli as main
+from generator.skills_manager import SkillsManager
 
 
 @pytest.fixture

@@ -5,8 +5,8 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from generator.task_decomposer import SubTask, TaskDecomposer
 from cli.cli import cli
+from generator.task_decomposer import SubTask, TaskDecomposer
 
 
 class TestSubTaskModel:

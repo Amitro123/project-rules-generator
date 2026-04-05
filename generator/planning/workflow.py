@@ -1,5 +1,6 @@
 """Agent workflow orchestrator — ties plan, tasks, preflight, and execution together."""
 
+import json
 import logging
 import os
 from pathlib import Path
@@ -197,17 +198,13 @@ class AgentWorkflow:
             output_dir = self.project_path / ".clinerules"
             output_dir.mkdir(parents=True, exist_ok=True)
 
-            # Write rules.json
-            import json
-
             rules_path = output_dir / "rules.json"
             rules_path.write_text(json.dumps(rules, indent=2), encoding="utf-8")
 
             if self.verbose:
                 logger.info("  Generated rules.json")
         except Exception as exc:
-            if self.verbose:
-                logger.info(f"  Analyze auto-fix failed: {exc}")
+            logger.warning("  Analyze auto-fix failed: %s", exc)
 
     def _fix_design(self) -> None:
         """Generate a DESIGN.md for the task."""
@@ -235,8 +232,7 @@ class AgentWorkflow:
             if self.verbose:
                 logger.info(f"  Generated DESIGN.md: {design_obj.title}")
         except Exception as exc:
-            if self.verbose:
-                logger.info(f"  Design auto-fix failed: {exc}")
+            logger.warning("  Design auto-fix failed: %s", exc)
 
     # -- Shared helpers ---------------------------------------------------
 
