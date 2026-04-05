@@ -141,7 +141,9 @@ class ProjectManager:
             from generator.parsers.enhanced_parser import EnhancedProjectParser
 
             enhanced_context = EnhancedProjectParser(self.project_path).extract_full_context()
-        except Exception as exc:  # noqa: BLE001 — optional enrichment layer; graceful degradation if parser is missing or fails
+        except (
+            Exception
+        ) as exc:  # noqa: BLE001 — optional enrichment layer; graceful degradation if parser is missing or fails
             logger.debug("Enhanced analysis unavailable: %s", exc)
 
         readme_path = find_readme(self.project_path)

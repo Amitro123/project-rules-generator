@@ -191,5 +191,7 @@ class AgentExecutor:
             from generator.skill_tracker import SkillTracker
 
             SkillTracker().record_match(skill)
-        except Exception as _te:  # noqa: BLE001 — tracking is non-critical; ImportError or any runtime error must not break routing
+        except (
+            Exception
+        ) as _te:  # noqa: BLE001 — tracking is non-critical; ImportError or any runtime error must not break routing
             logger.debug("SkillTracker.record_match failed: %s", _te)

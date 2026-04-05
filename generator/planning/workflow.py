@@ -65,7 +65,7 @@ class AgentWorkflow:
         if self.verbose:
             executor = TaskExecutor(manifest)
             summary = executor.get_progress_summary()
-            logger.info("\nReady: %s tasks, ~%s min estimated", summary['total'], summary['est_remaining_minutes'])
+            logger.info("\nReady: %s tasks, ~%s min estimated", summary["total"], summary["est_remaining_minutes"])
             nxt = executor.get_next_task()
             if nxt:
                 logger.info("Next task: #%s %s", nxt.id, nxt.title)

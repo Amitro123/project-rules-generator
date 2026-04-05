@@ -260,8 +260,7 @@ def _calculate_final_scores(scores: Dict[str, float]) -> Dict[str, Any]:
     secondary_types = [
         k
         for k, v in sorted_scores[1:3]
-        if v > 0.3
-        and k != "generator"  # Don't leak generator to other projects
+        if v > 0.3 and k != "generator"  # Don't leak generator to other projects
         # Suppress the other of web_app/python_api when one is primary — they're too similar
         and not (primary in ("web_app", "python_api") and k in ("web_app", "python_api"))
     ]

@@ -29,9 +29,7 @@ class SkillGenerator(ArtifactGenerator):
     # names (from project_type_detector) are listed so callers don't need to normalise.
     #
     # Values are frozensets so the map itself is immutable.
-    _FRONTEND_SKILLS: frozenset = frozenset(
-        {"react-components", "vue-components", "jest-testing"}
-    )
+    _FRONTEND_SKILLS: frozenset = frozenset({"react-components", "vue-components", "jest-testing"})
     _PYTHON_BACKEND_SKILLS: frozenset = frozenset(
         {"fastapi-endpoints", "flask-routes", "django-views", "pytest-testing"}
     )

@@ -10,7 +10,7 @@ Import directly for new code:
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from generator.rules_creator import append_mandatory_anti_patterns
 
@@ -247,7 +247,11 @@ def _build_dont_rules(tech_stack: List[str], python_deps: List[str], project_typ
 
 
 def _build_test_section(
-    test_framework: str, test_files: int, test_info: Dict, python_deps: List[str] = None, node_deps: List[str] = None
+    test_framework: str,
+    test_files: int,
+    test_info: Dict,
+    python_deps: Optional[List[str]] = None,
+    node_deps: Optional[List[str]] = None,
 ) -> str:
     """Build testing section from actual test analysis."""
     lines = []

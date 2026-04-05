@@ -151,9 +151,7 @@ class SkillsManager:
         """
         from generator.skill_generator import SkillGenerator
 
-        excluded: frozenset = SkillGenerator.PROJECT_TYPE_SKILL_EXCLUSIONS.get(
-            project_type or "", frozenset()
-        )
+        excluded: frozenset = SkillGenerator.PROJECT_TYPE_SKILL_EXCLUSIONS.get(project_type or "", frozenset())
 
         # 1. Get all skills
         all_skills = self.discovery.list_skills()
@@ -222,6 +220,8 @@ class SkillsManager:
             index_content.extend([line for line in skill_block if line is not None])
 
         # 5. Write to .clinerules/skills/index.md
+        if self.discovery.project_skills_root is None:
+            return None
         output_path = self.discovery.project_skills_root / "index.md"
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text("\n".join(index_content), encoding="utf-8")

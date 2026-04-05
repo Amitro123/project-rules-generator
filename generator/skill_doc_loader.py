@@ -107,7 +107,6 @@ class SkillDocLoader:
         from generator.utils.readme_bridge import build_project_tree
 
         key_files: Dict[str, str] = {}
-        skill_lower = skill_name.lower()
 
         candidates = ["main.py", "app.py", "pyproject.toml", "requirements.txt"]
 

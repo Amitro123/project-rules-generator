@@ -103,9 +103,7 @@ class SkillMetadataBuilder:
         base_desc = metadata.description.rstrip(".")
         # Use "When the user mentions..." format so the validator's trigger-phrase check passes
         when_phrases = [f'When the user mentions "{t}".' for t in metadata.auto_triggers[:3]]
-        when_phrases.append(
-            f"When the user needs help with {metadata.name.replace('-', ' ')}."
-        )
+        when_phrases.append(f"When the user needs help with {metadata.name.replace('-', ' ')}.")
         desc = base_desc + " " + " ".join(when_phrases)
         if metadata.negative_triggers:
             neg_str = ", ".join(f'"{t}"' for t in metadata.negative_triggers[:3])
@@ -192,19 +190,14 @@ class SkillMetadataBuilder:
 
         # Filter out single-word generic triggers
         filtered = [
-            t for t in sorted(expanded)
-            if not (len(t.split()) == 1 and t.lower() in self.GENERIC_TRIGGER_BLOCKLIST)
+            t for t in sorted(expanded) if not (len(t.split()) == 1 and t.lower() in self.GENERIC_TRIGGER_BLOCKLIST)
         ]
 
         # Ensure minimum 3 triggers by deriving from skill name parts (respecting blocklist)
         if len(filtered) < 3:
             name_parts = skill_name.replace("-", " ").split()
             for part in name_parts:
-                if (
-                    len(part) > 3
-                    and part not in filtered
-                    and part.lower() not in self.GENERIC_TRIGGER_BLOCKLIST
-                ):
+                if len(part) > 3 and part not in filtered and part.lower() not in self.GENERIC_TRIGGER_BLOCKLIST:
                     filtered.append(part)
                 if len(filtered) >= 3:
                     break

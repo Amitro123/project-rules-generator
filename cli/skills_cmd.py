@@ -452,9 +452,7 @@ def _find_stub_skills(learned_dir: Path) -> List[Tuple[Path, str]]:
 @skills_group.command(name="purge")
 @click.option("--stubs", "mode", flag_value="stubs", default=True, help="Remove stub learned skills (default).")
 @click.option("--yes", "-y", is_flag=True, default=False, help="Skip confirmation prompt.")
-@click.option(
-    "--dry-run", is_flag=True, default=False, help="List candidates without deleting anything."
-)
+@click.option("--dry-run", is_flag=True, default=False, help="List candidates without deleting anything.")
 def skills_purge(mode, yes, dry_run):
     """Remove low-quality stub skills from the global learned store.
 

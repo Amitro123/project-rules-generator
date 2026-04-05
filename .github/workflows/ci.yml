@@ -54,3 +54,8 @@ jobs:
         pip install build twine
         python -m build
         twine check dist/*
+
+    - name: Smoke-test installed wheel
+      run: |
+        pip install --force-reinstall dist/*.whl
+        prg --help

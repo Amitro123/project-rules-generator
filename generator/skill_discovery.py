@@ -152,7 +152,9 @@ class SkillDiscovery:
                         shutil.copytree(source, target)
                     else:
                         shutil.copy2(source, target)
-                except Exception as copy_err:  # noqa: BLE001 — link/copy failure is non-fatal; skill just won't be available
+                except (
+                    Exception
+                ) as copy_err:  # noqa: BLE001 — link/copy failure is non-fatal; skill just won't be available
                     logger.warning("Failed to link or copy %s to %s: %s", source, target, copy_err)
 
     def list_skills(self) -> Dict[str, Dict[str, Any]]:
@@ -206,6 +208,8 @@ class SkillDiscovery:
         if not root or not root.exists():
             return {}
 
+        if self._skills_cache is None:
+            return {}
         idx = self._skills_cache[layer]
         skills: Dict[str, Path] = {}
         skills_prio: Dict[str, int] = {}
@@ -254,6 +258,8 @@ class SkillDiscovery:
         """Find the active skill file based on priority."""
         if self._skills_cache is None:
             self._build_cache()
+        if self._skills_cache is None:
+            return None
 
         # 1. Check Project
         if self.project_local_dir:

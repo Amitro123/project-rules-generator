@@ -140,6 +140,7 @@ def default_branch(repo_path: Union[str, Path] = ".") -> str:
         result = subprocess.run(
             ["git", "-C", _posix(repo_path), "rev-parse", "--verify", candidate],
             capture_output=True,
+            text=True,
         )
         if result.returncode == 0:
             return candidate

@@ -201,7 +201,13 @@ class TestDesignCLI:
                 "--output",
                 "DESIGN.md",
             ],
-            env={"GEMINI_API_KEY": "", "GOOGLE_API_KEY": "", "ANTHROPIC_API_KEY": "", "GROQ_API_KEY": "", "OPENAI_API_KEY": ""},
+            env={
+                "GEMINI_API_KEY": "",
+                "GOOGLE_API_KEY": "",
+                "ANTHROPIC_API_KEY": "",
+                "GROQ_API_KEY": "",
+                "OPENAI_API_KEY": "",
+            },
         )
 
         assert result.exit_code == 1
