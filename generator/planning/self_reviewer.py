@@ -96,7 +96,7 @@ class SelfReviewer:
                 system_message=REVIEW_SYSTEM_PROMPT,
             )
             report = self._parse_review(response)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — LLM call can fail for any network/auth reason; static review is the safe fallback
             logger.debug("LLM review failed, falling back to static review: %s", exc)
             report = self._static_review(content, readme_excerpt)
 

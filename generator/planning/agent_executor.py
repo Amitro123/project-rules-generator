@@ -123,7 +123,7 @@ class AgentExecutor:
                 if parsed:
                     self._file_triggers = parsed
                     logger.debug("Loaded %d trigger groups from %s.", len(parsed), self.triggers_path)
-            except Exception as e:
+            except (OSError, json.JSONDecodeError, ValueError) as e:
                 logger.warning("Failed to load auto-triggers: %s", e)
         else:
             logger.debug("auto-triggers.json absent — will use builtin fallback triggers only.")
@@ -191,5 +191,5 @@ class AgentExecutor:
             from generator.skill_tracker import SkillTracker
 
             SkillTracker().record_match(skill)
-        except Exception as _te:
+        except Exception as _te:  # noqa: BLE001 — tracking is non-critical; ImportError or any runtime error must not break routing
             logger.debug("SkillTracker.record_match failed: %s", _te)

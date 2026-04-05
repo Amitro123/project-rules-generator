@@ -189,7 +189,8 @@ class PlanParser:
                     tasks.append(current_task)
 
                 match = re.match(r"^-\s+\[([ x])\]\s+(.+)$", stripped)
-                assert match is not None
+                if match is None:
+                    continue
                 completed = match.group(1) == "x"
                 description = match.group(2).strip()
                 current_task = TaskStatus(
@@ -202,7 +203,8 @@ class PlanParser:
             # Subtask (indented - [ ] or - [x])
             elif current_task and line.startswith(" ") and re.match(r"^-\s+\[([ x])\]\s+(.+)$", stripped):
                 match = re.match(r"^-\s+\[([ x])\]\s+(.+)$", stripped)
-                assert match is not None
+                if match is None:
+                    continue
                 current_task.subtasks_total += 1
                 if match.group(1) == "x":
                     current_task.subtasks_completed += 1

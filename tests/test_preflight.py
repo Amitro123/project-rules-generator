@@ -182,7 +182,7 @@ class TestPreflightChecker:
         proj = self._make_project(tmp_path, plan=False)
         (tmp_path / "add-redis-PLAN.md").write_text("# Plan", encoding="utf-8")
         checker = PreflightChecker(proj, task_description="Add Redis")
-        path = checker._find_plan_file()
+        path = checker.find_plan_file()
         assert path is not None
         assert "add-redis" in path.name
 

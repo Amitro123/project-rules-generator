@@ -124,7 +124,7 @@ class PreflightChecker:
 
     def _check_plan(self) -> CheckResult:
         """Check whether a PLAN.md exists (optional — created by prg plan or prg ralph)."""
-        plan_path = self._find_plan_file()
+        plan_path = self.find_plan_file()
         if plan_path:
             return CheckResult(
                 name="PLAN.md (optional)",
@@ -208,7 +208,7 @@ class PreflightChecker:
 
     # -- Helpers ----------------------------------------------------------
 
-    def _find_plan_file(self) -> Optional[Path]:
+    def find_plan_file(self) -> Optional[Path]:
         """Find a PLAN.md file, trying slug-based name first."""
         if self.task_description:
             slug = self._slugify(self.task_description)

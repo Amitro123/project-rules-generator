@@ -65,11 +65,11 @@ class AgentWorkflow:
         if self.verbose:
             executor = TaskExecutor(manifest)
             summary = executor.get_progress_summary()
-            logger.info(f"\nReady: {summary['total']} tasks, ~{summary['est_remaining_minutes']} min estimated")
+            logger.info("\nReady: %s tasks, ~%s min estimated", summary['total'], summary['est_remaining_minutes'])
             nxt = executor.get_next_task()
             if nxt:
-                logger.info(f"Next task: #{nxt.id} {nxt.title}")
-                logger.info(f"  Run: prg exec tasks/{nxt.file}")
+                logger.info("Next task: #%s %s", nxt.id, nxt.title)
+                logger.info("  Run: prg exec tasks/%s", nxt.file)
         return manifest
 
     # -- Internal steps ---------------------------------------------------
@@ -101,11 +101,11 @@ class AgentWorkflow:
     def _find_or_create_plan(self) -> Path:
         """Find an existing PLAN.md or generate a new one."""
         checker = PreflightChecker(self.project_path, self.task_description)
-        plan_path = checker._find_plan_file()
+        plan_path = checker.find_plan_file()
 
         if plan_path and plan_path.exists():
             if self.verbose:
-                logger.info(f"Using existing plan: {plan_path.name}")
+                logger.info("Using existing plan: %s", plan_path.name)
             return plan_path
 
         if self.verbose:
@@ -134,7 +134,7 @@ class AgentWorkflow:
         plan_path.write_text(plan_md, encoding="utf-8")
 
         if self.verbose:
-            logger.info(f"Plan generated: {len(subtasks)} subtasks -> {plan_path.name}")
+            logger.info("Plan generated: %s subtasks -> %s", len(subtasks), plan_path.name)
 
         return plan_path
 
@@ -145,7 +145,7 @@ class AgentWorkflow:
         # Idempotent: reuse existing manifest
         if tasks_yaml.exists():
             if self.verbose:
-                logger.info(f"Using existing task manifest: {tasks_yaml}")
+                logger.info("Using existing task manifest: %s", tasks_yaml)
             return TaskManifest.from_yaml(tasks_yaml)
 
         # Parse subtasks from the plan
@@ -160,7 +160,7 @@ class AgentWorkflow:
         )
 
         if self.verbose:
-            logger.info(f"Created {len(manifest.tasks)} task files in tasks/")
+            logger.info("Created %s task files in tasks/", len(manifest.tasks))
 
         return manifest
 
@@ -169,10 +169,7 @@ class AgentWorkflow:
         from generator.task_decomposer import TaskDecomposer
 
         content = plan_path.read_text(encoding="utf-8")
-        # Reuse the decomposer's parser
-        decomposer = TaskDecomposer(api_key="dummy")  # no AI call needed
-        subtasks = decomposer._parse_response(content, self.task_description)
-        return subtasks
+        return TaskDecomposer.parse_response(content, self.task_description)
 
     # -- Auto-fix helpers -------------------------------------------------
 
@@ -203,7 +200,7 @@ class AgentWorkflow:
 
             if self.verbose:
                 logger.info("  Generated rules.json")
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — auto-fix is best-effort; any failure is non-fatal
             logger.warning("  Analyze auto-fix failed: %s", exc)
 
     def _fix_design(self) -> None:
@@ -230,8 +227,8 @@ class AgentWorkflow:
             design_path.write_text(design_obj.to_markdown(), encoding="utf-8")
 
             if self.verbose:
-                logger.info(f"  Generated DESIGN.md: {design_obj.title}")
-        except Exception as exc:
+                logger.info("  Generated DESIGN.md: %s", design_obj.title)
+        except Exception as exc:  # noqa: BLE001 — auto-fix is best-effort; any failure is non-fatal
             logger.warning("  Design auto-fix failed: %s", exc)
 
     # -- Shared helpers ---------------------------------------------------
@@ -243,6 +240,6 @@ class AgentWorkflow:
 
             parser = EnhancedProjectParser(self.project_path)
             return parser.extract_full_context()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — optional enrichment; graceful degradation on any parse failure
             logger.warning("Could not extract project context: %s", exc)
             return None

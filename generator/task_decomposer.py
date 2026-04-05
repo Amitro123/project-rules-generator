@@ -398,7 +398,17 @@ Generate the subtasks now:
             logger.debug("LLM call failed in TaskDecomposer: %s", exc)
             return ""
 
+    @classmethod
+    def parse_response(cls, raw: str, user_task: str) -> List[SubTask]:
+        """Parse an LLM response string into SubTask objects (no AI call needed)."""
+        return cls._parse_response_impl(raw, user_task)
+
     def _parse_response(self, raw: str, user_task: str) -> List[SubTask]:
+        """Instance wrapper — delegates to the classmethod implementation."""
+        return self.parse_response(raw, user_task)
+
+    @classmethod
+    def _parse_response_impl(cls, raw: str, user_task: str) -> List[SubTask]:
         """Parse the LLM response into SubTask objects.
 
         If parsing fails or raw is empty, returns a single fallback subtask.
@@ -432,16 +442,16 @@ Generate the subtasks now:
                 content = blocks[i + 1]
 
                 title = content.split("\n", 1)[0].strip()
-                goal = self._extract_field(content, "Goal")
-                skip_consequence = self._extract_field(content, "SkipConsequence")
-                files = [f.strip().strip("`") for f in self._extract_field(content, "Files").split(",") if f.strip()]
-                changes = self._extract_list(content, "Changes")
-                tests = self._extract_list(content, "Tests")
-                deps_str = self._extract_field(content, "Dependencies")
+                goal = cls._extract_field(content, "Goal")
+                skip_consequence = cls._extract_field(content, "SkipConsequence")
+                files = [f.strip().strip("`") for f in cls._extract_field(content, "Files").split(",") if f.strip()]
+                changes = cls._extract_list(content, "Changes")
+                tests = cls._extract_list(content, "Tests")
+                deps_str = cls._extract_field(content, "Dependencies")
                 deps = [
                     int(d.strip().strip("#")) for d in deps_str.split(",") if d.strip() and d.strip().lower() != "none"
                 ]
-                est = self._extract_field(content, "Estimated")
+                est = cls._extract_field(content, "Estimated")
                 _est_m = re.search(r"\d+", est)
                 est_min = int(_est_m.group()) if _est_m else 5
                 est_min = max(1, min(est_min, 10))
