@@ -75,7 +75,7 @@ def review(filepath, project_path, output, provider, api_key, tasks, verbose):
     click.echo(f"\nCritique written to: {output_path}")
 
     if tasks:
-        _generate_tasks_from_review(filepath, project_path, api_key, verbose)
+        _generate_tasks_from_review(report, output_path, project_path, verbose)
 
 
 def _display_review_report(report: Any, verbose: bool) -> None:
@@ -136,30 +136,53 @@ def _resolve_output_path(filepath: Path, output: Optional[str]) -> Path:
 
 
 def _generate_tasks_from_review(
-    filepath: Path,
+    report: Any,
+    critique_path: Path,
     project_path: Path,
-    api_key: Optional[str],
     verbose: bool,
 ) -> None:
-    """Generate executable tasks from a review report."""
+    """Generate executable tasks from a completed review report.
+
+    Builds SubTask objects from the report's action_plan items so that the
+    tasks reflect the critique output, not the original reviewed file.
+    """
     from generator.planning.task_creator import TaskCreator
-    from generator.task_decomposer import TaskDecomposer
+    from generator.task_decomposer import SubTask
 
     if verbose:
         click.echo("Generating executable tasks from review...")
 
+    action_items = getattr(report, "action_plan", []) or []
+    issues = getattr(report, "issues", []) or []
+
+    # Fall back to issues when there is no action plan
+    if not action_items and issues:
+        action_items = [f"Fix: {i}" for i in issues]
+
+    if not action_items:
+        click.echo("No action items found in review — skipping task generation.", err=True)
+        return
+
     try:
-        decomposer = TaskDecomposer(api_key=api_key)
-        subtasks = decomposer.from_plan(filepath)
+        subtasks = [
+            SubTask(
+                id=idx + 1,
+                title=item[:80],
+                goal=item,
+                skip_consequence="Review issue remains unresolved",
+                dependencies=[idx] if idx > 0 else [],
+            )
+            for idx, item in enumerate(action_items)
+        ]
 
         creator = TaskCreator()
         output_dir = project_path / ".clinerules" / "tasks"
         creator.create_from_subtasks(
             subtasks,
-            plan_file=filepath.name,
-            task_description=f"Generated from {filepath.name}",
+            plan_file=critique_path.name,
+            task_description=f"Review actions from {critique_path.name}",
             output_dir=output_dir,
         )
-        click.echo(f"✅ Created {len(subtasks)} tasks in {output_dir}")
+        click.echo(f"Created {len(subtasks)} tasks in {output_dir}")
     except Exception as e:
-        click.echo(f"❌ Failed to generate tasks: {e}", err=True)
+        click.echo(f"Failed to generate tasks: {e}", err=True)
