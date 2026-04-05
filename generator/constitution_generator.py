@@ -141,6 +141,13 @@ def _build_testing_standards_section(test_info: Dict[str, Any], python_deps: Lis
 
     test_cases = test_info.get("test_cases", 0)
 
+    # Dep-fallback: if analyzer missed the framework, infer from deps
+    if not framework:
+        if any("pytest" in d for d in python_deps):
+            framework = "pytest"
+        elif any("jest" in d or "vitest" in d for d in tech_stack):
+            framework = "jest"
+
     if framework:
         counts = f"{test_files} test files"
         if test_cases:

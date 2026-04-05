@@ -8,6 +8,7 @@ from pathlib import Path
 import click
 
 from cli.utils import detect_provider as _detect_provider
+from cli.utils import has_api_key as _has_api_key
 from cli.utils import set_api_key_env as _set_api_key
 from generator.ralph_engine import FeatureState, _save_tasks, next_feature_id, slugify
 from prg_utils.git_ops import is_git_repo
@@ -46,7 +47,7 @@ def feature(task_description, project_path, max_iterations, provider, api_key, v
 
         prg feature "Add loading states to forms"
     """
-    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(message)s")
+    logging.basicConfig(level=logging.INFO if verbose else logging.WARNING, format="%(message)s")
 
     project_path = Path(project_path).resolve()
 
@@ -87,11 +88,18 @@ def feature(task_description, project_path, max_iterations, provider, api_key, v
     try:
         from generator.task_decomposer import TaskDecomposer
 
+        has_key = _has_api_key(provider, api_key)
+        if not has_key and verbose:
+            click.echo(
+                "   ⚠️  No API key found — PLAN.md will be a template scaffold.\n"
+                "   Set GEMINI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY for\n"
+                "   a project-specific plan.",
+            )
         if verbose:
             click.echo("📝 Generating plan…")
         decomposer = TaskDecomposer(provider=provider, api_key=api_key)
         subtasks = decomposer.decompose(task_description, project_path=project_path)
-        plan_md = decomposer.generate_plan_md(subtasks, user_task=task_description)
+        plan_md = decomposer.generate_plan_md(subtasks, user_task=task_description, is_template=not has_key)
         plan_path.write_text(plan_md, encoding="utf-8")
         tasks_total = len(subtasks)
 

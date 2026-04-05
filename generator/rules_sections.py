@@ -65,7 +65,7 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
         defaults = ["Code quality", "Test coverage", "Documentation clarity"]
         priorities.append(defaults[len(priorities)])
 
-    test_section = _build_test_section(test_framework, test_files, test_info)
+    test_section = _build_test_section(test_framework, test_files, test_info, python_deps, node_deps)
     dep_section = _build_dep_section(python_deps, node_deps)
     file_structure = _build_file_structure(structure, entry_points, patterns)
     workflow_section = _build_workflow_section(installation, usage, troubleshooting, test_framework, tech_stack)
@@ -234,10 +234,21 @@ def _build_dont_rules(tech_stack: List[str], python_deps: List[str], project_typ
     return "\n".join(rules)
 
 
-def _build_test_section(test_framework: str, test_files: int, test_info: Dict) -> str:
+def _build_test_section(
+    test_framework: str, test_files: int, test_info: Dict, python_deps: List[str] = None, node_deps: List[str] = None
+) -> str:
     """Build testing section from actual test analysis."""
     lines = []
     test_cases = test_info.get("test_cases", 0)
+
+    # Dep-fallback: if analyzer missed the framework, infer from deps
+    if not test_framework:
+        all_deps = list(python_deps or []) + list(node_deps or [])
+        if any("pytest" in d for d in all_deps):
+            test_framework = "pytest"
+        elif any("jest" in d or "vitest" in d for d in all_deps):
+            test_framework = "jest"
+
     if test_framework:
         lines.append(f"- **Framework**: {test_framework}")
         counts = str(test_files)

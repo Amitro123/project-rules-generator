@@ -21,6 +21,7 @@ def _detect_project_type_cached(
     _detect_agent_signals(scores, tech_stack, readme_content)
     _detect_ml_pipeline_signals(scores, tech_stack, readme_content)
     _detect_web_app_signals(scores, tech_stack, project_path, readme_content)
+    _detect_python_api_signals(scores, tech_stack, project_path, readme_content)
     _detect_cli_tool_signals(scores, tech_stack, readme_content, project_path)
     _detect_library_signals(scores, project_path, readme_content)
     _detect_generator_signals(scores, project_name, readme_content, project_path)
@@ -54,6 +55,7 @@ def _initialize_scores() -> Dict[str, float]:
         "agent": 0.0,
         "ml_pipeline": 0.0,
         "web_app": 0.0,
+        "python_api": 0.0,
         "cli_tool": 0.0,
         "library": 0.0,
         "generator": 0.0,
@@ -155,6 +157,33 @@ def _detect_web_app_signals(
         scores["web_app"] += 0.2
 
 
+def _detect_python_api_signals(
+    scores: Dict[str, float],
+    tech_stack: Tuple[str, ...],
+    project_path: str,
+    readme: str,
+) -> None:
+    """Detect Python API server signals (FastAPI, Flask REST, Django REST)."""
+    api_frameworks = {"fastapi", "flask", "django"}
+    api_keywords = {"endpoint", "router", "pydantic", "openapi", "swagger", "rest api", "api server"}
+
+    # API framework without frontend stack → python_api not web_app
+    has_api_framework = any(fw in tech_stack for fw in api_frameworks)
+    has_frontend = any(fw in tech_stack for fw in {"react", "vue", "angular", "nextjs", "svelte"})
+
+    if has_api_framework and not has_frontend:
+        scores["python_api"] += 0.6
+
+    # routers/ or api/ directory structure
+    path = Path(project_path)
+    if any(path.glob("**/routers/**")) or any(path.glob("**/routes/**")):
+        scores["python_api"] += 0.3
+
+    readme_lower = readme.lower()
+    keyword_count = sum(1 for kw in api_keywords if kw in readme_lower)
+    scores["python_api"] += min(keyword_count * 0.1, 0.3)
+
+
 def _detect_cli_tool_signals(
     scores: Dict[str, float],
     tech_stack: Tuple[str, ...],
@@ -214,9 +243,12 @@ def _detect_generator_signals(scores: Dict[str, float], project_name: str, readm
 
 
 def _apply_hybrid_penalties(scores: Dict[str, float]) -> None:
-    """Penalize web_app if strong AI/ML signals present."""
+    """Penalize overlapping types when a more specific signal is stronger."""
     if scores["agent"] > 0.6 or scores["ml_pipeline"] > 0.6:
         scores["web_app"] *= 0.6
+    # python_api is more specific than web_app — suppress generic web_app when API signals dominate
+    if scores["python_api"] > scores["web_app"]:
+        scores["web_app"] *= 0.5
 
 
 def _calculate_final_scores(scores: Dict[str, float]) -> Dict[str, Any]:
@@ -224,9 +256,22 @@ def _calculate_final_scores(scores: Dict[str, float]) -> Dict[str, Any]:
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
     primary_type, primary_score = sorted_scores[0]
+    primary = primary_type
     secondary_types = [
-        k for k, v in sorted_scores[1:3] if v > 0.3 and k != "generator"  # Don't leak generator to other projects
+        k
+        for k, v in sorted_scores[1:3]
+        if v > 0.3
+        and k != "generator"  # Don't leak generator to other projects
+        # Suppress the other of web_app/python_api when one is primary — they're too similar
+        and not (primary in ("web_app", "python_api") and k in ("web_app", "python_api"))
     ]
+
+    # Map internal score key → canonical type string
+    _TYPE_LABELS = {
+        "python_api": "python-api",
+    }
+    primary_type = _TYPE_LABELS.get(primary_type, primary_type)
+    secondary_types = [_TYPE_LABELS.get(t, t) for t in secondary_types]
 
     return {
         "primary_type": primary_type,

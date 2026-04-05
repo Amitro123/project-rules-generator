@@ -122,9 +122,16 @@ class RequirementsInferrer:
         return requirements
 
     def _synthesize(self, requirements: List[Requirement]) -> List[Requirement]:
-        """Use AI to de-duplicate and refine the requirement list."""
+        """Use AI to de-duplicate and refine the requirement list.
+
+        Returns the raw list unchanged when no AI provider is configured so
+        that offline callers (prg gaps, prg spec without --provider) still get
+        useful output instead of crashing.
+        """
         if not requirements:
             return []
+        if not self._provider:
+            return requirements
 
         req_list = "\n".join([f"- [{r.source}] {r.description}" for r in requirements])
 

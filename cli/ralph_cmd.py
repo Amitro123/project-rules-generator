@@ -96,7 +96,7 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
     Example:
       prg ralph "Add loading states to all forms"
     """
-    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(message)s")
+    logging.basicConfig(level=logging.INFO if verbose else logging.WARNING, format="%(message)s")
 
     from pathlib import Path as _Path
 
@@ -331,7 +331,7 @@ def ralph_run(feature_id, project_path, max_iterations, provider, api_key, verbo
 
         prg ralph run FEATURE-001
     """
-    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(message)s")
+    logging.basicConfig(level=logging.INFO if verbose else logging.WARNING, format="%(message)s")
 
     project_path = Path(project_path).resolve()
 
@@ -435,7 +435,7 @@ def ralph_status(feature_id, project_path):
 @click.option("--verbose/--quiet", default=True)
 def ralph_resume(feature_id, project_path, max_iterations, provider, api_key, verbose):
     """Continue an interrupted Ralph loop for FEATURE_ID."""
-    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(message)s")
+    logging.basicConfig(level=logging.INFO if verbose else logging.WARNING, format="%(message)s")
 
     project_path = Path(project_path).resolve()
 
@@ -565,7 +565,7 @@ def ralph_stop(feature_id, project_path, reason):
     type=click.Path(exists=True, file_okay=False),
     default=".",
 )
-@click.option("--target-branch", default="main", show_default=True, help="Branch to merge into")
+@click.option("--target-branch", default=None, show_default=True, help="Branch to merge into (default: auto-detected)")
 def ralph_approve(feature_id, project_path, target_branch):
     """Merge the feature branch into TARGET_BRANCH and create a PR.
 
@@ -573,17 +573,22 @@ def ralph_approve(feature_id, project_path, target_branch):
 
         prg ralph approve FEATURE-001
     """
+    import shutil
+    import subprocess
+
+    from prg_utils import git_ops
+
     project_path = Path(project_path).resolve()
     fdir = _feature_dir(project_path, feature_id)
     state_dict = _load_state_dict(fdir)
     branch = state_dict.get("branch_name", f"ralph/{feature_id}")
     task = state_dict.get("task", feature_id)
 
+    # Auto-detect default branch if not explicitly supplied
+    if not target_branch:
+        target_branch = git_ops.default_branch(project_path)
+
     try:
-        import subprocess
-
-        from prg_utils import git_ops
-
         git_ops.checkout(target_branch, project_path)
         git_ops.merge_branch(branch, project_path)
         click.echo(f"✅ Merged {branch} → {target_branch}")
@@ -597,29 +602,32 @@ def ralph_approve(feature_id, project_path, target_branch):
         state.human_feedback = "approved"
         state.save(fdir / "STATE.json")
 
-        # Try PR creation
-        pr_result = subprocess.run(
-            [
-                "gh",
-                "pr",
-                "create",
-                "--title",
-                f"Ralph: {task}",
-                "--body",
-                f"Approved by human. Feature: {feature_id}",
-                "--head",
-                branch,
-                "--base",
-                target_branch,
-            ],
-            cwd=project_path,
-            capture_output=True,
-        )
-        if pr_result.returncode == 0:
-            click.echo("📬 PR created.")
+        # Try PR creation — only when gh CLI is available
+        if not shutil.which("gh"):
+            click.echo("⚠️  gh CLI not found — skipping PR creation. Create the PR manually.", err=True)
         else:
-            err = pr_result.stderr.decode(errors="replace").strip()
-            click.echo(f"⚠️  PR creation failed (gh not installed or not authenticated): {err}", err=True)
-            click.echo("Branch has been merged locally. Create the PR manually if needed.")
+            pr_result = subprocess.run(
+                [
+                    "gh",
+                    "pr",
+                    "create",
+                    "--title",
+                    f"Ralph: {task}",
+                    "--body",
+                    f"Approved by human. Feature: {feature_id}",
+                    "--head",
+                    branch,
+                    "--base",
+                    target_branch,
+                ],
+                cwd=project_path,
+                capture_output=True,
+            )
+            if pr_result.returncode == 0:
+                click.echo("📬 PR created.")
+            else:
+                err = pr_result.stderr.decode(errors="replace").strip()
+                click.echo(f"⚠️  PR creation failed (not authenticated?): {err}", err=True)
+                click.echo("Branch has been merged locally. Create the PR manually if needed.")
     except Exception as exc:
         click.echo(f"❌ Approval failed: {exc}", err=True)

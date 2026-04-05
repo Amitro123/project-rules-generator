@@ -115,6 +115,37 @@ def create_branch(name: str, repo_path: Union[str, Path] = ".") -> None:
     )
 
 
+def default_branch(repo_path: Union[str, Path] = ".") -> str:
+    """Return the default branch name (main or master) for the given repo.
+
+    Tries the remote HEAD pointer first, then falls back to checking whether
+    'main' or 'master' exist as local refs.  Returns 'main' if neither is found.
+    """
+    # Prefer the remote's HEAD pointer (most reliable)
+    try:
+        result = subprocess.run(
+            ["git", "-C", _posix(repo_path), "rev-parse", "--abbrev-ref", "origin/HEAD"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            ref = result.stdout.strip()  # e.g. "origin/main"
+            if "/" in ref:
+                return ref.split("/", 1)[1]
+    except FileNotFoundError:
+        pass
+
+    # Fall back to checking local branch refs
+    for candidate in ("main", "master"):
+        result = subprocess.run(
+            ["git", "-C", _posix(repo_path), "rev-parse", "--verify", candidate],
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return candidate
+    return "main"
+
+
 def checkout(name: str, repo_path: Union[str, Path] = ".") -> None:
     """Checkout a branch."""
     subprocess.run(

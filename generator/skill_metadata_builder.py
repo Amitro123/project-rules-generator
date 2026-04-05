@@ -24,6 +24,28 @@ class SkillMetadataBuilder:
 
     TECH_TOOLS = _TECH_TOOLS
 
+    # Single-word triggers too generic to be useful (cause false-positive routing).
+    GENERIC_TRIGGER_BLOCKLIST: Set = {
+        "skill",
+        "failed",
+        "missing",
+        "dep",
+        "error",
+        "fix",
+        "help",
+        "run",
+        "use",
+        "add",
+        "new",
+        "my",
+        "the",
+        "a",
+        "an",
+        "do",
+        "get",
+        "set",
+    }
+
     TRIGGER_SYNONYMS = {
         "test": ["test", "testing", "unit test", "integration test", "verify"],
         "deploy": ["deploy", "deployment", "ship", "release", "publish"],
@@ -78,9 +100,13 @@ class SkillMetadataBuilder:
 
     def render_frontmatter(self, metadata: "SkillMetadata") -> str:
         """Emit Anthropic-spec-compliant YAML frontmatter (GAP 1 + GAP 4 + GAP 5)."""
-        trigger_str = ", ".join(f'"{t}"' for t in metadata.auto_triggers[:5])
         base_desc = metadata.description.rstrip(".")
-        desc = f"{base_desc}. Use when user mentions {trigger_str}."
+        # Use "When the user mentions..." format so the validator's trigger-phrase check passes
+        when_phrases = [f'When the user mentions "{t}".' for t in metadata.auto_triggers[:3]]
+        when_phrases.append(
+            f"When the user needs help with {metadata.name.replace('-', ' ')}."
+        )
+        desc = base_desc + " " + " ".join(when_phrases)
         if metadata.negative_triggers:
             neg_str = ", ".join(f'"{t}"' for t in metadata.negative_triggers[:3])
             desc += f" Do NOT activate for {neg_str}."
@@ -164,7 +190,26 @@ class SkillMetadataBuilder:
         action_triggers = self._extract_action_triggers(readme_content, base)
         expanded.update(action_triggers)
 
-        return list(sorted(expanded))[:8]
+        # Filter out single-word generic triggers
+        filtered = [
+            t for t in sorted(expanded)
+            if not (len(t.split()) == 1 and t.lower() in self.GENERIC_TRIGGER_BLOCKLIST)
+        ]
+
+        # Ensure minimum 3 triggers by deriving from skill name parts (respecting blocklist)
+        if len(filtered) < 3:
+            name_parts = skill_name.replace("-", " ").split()
+            for part in name_parts:
+                if (
+                    len(part) > 3
+                    and part not in filtered
+                    and part.lower() not in self.GENERIC_TRIGGER_BLOCKLIST
+                ):
+                    filtered.append(part)
+                if len(filtered) >= 3:
+                    break
+
+        return filtered[:8]
 
     def _extract_action_triggers(self, readme_content: str, skill_base: str) -> Set[str]:
         """Extract action-based triggers from README."""

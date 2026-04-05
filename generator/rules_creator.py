@@ -111,6 +111,19 @@ class CoworkRulesCreator(ArtifactGenerator):
         # 2. Generate rules by category
         rules_by_category = self._generate_rules(metadata, enhanced_context)
 
+        # 2a. Inject README-derived conventions as High-priority rules
+        from generator.analyzers.readme_parser import extract_conventions
+
+        readme_conventions = extract_conventions(readme_content)
+        if readme_conventions:
+            convention_rules = [
+                Rule(content=r, priority="High", category="Project Conventions", source="readme")
+                for r in readme_conventions
+            ]
+            # Prepend so README rules appear first in their category
+            existing = rules_by_category.get("Project Conventions", [])
+            rules_by_category["Project Conventions"] = convention_rules + existing
+
         # 3. Extract anti-patterns from git history
         git_antipatterns = self._git_miner.extract_antipatterns()
         if git_antipatterns:

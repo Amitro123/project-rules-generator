@@ -5,6 +5,7 @@ from pathlib import Path
 import click
 
 from cli.agent import _detect_provider, _set_api_key
+from cli.utils import has_api_key as _has_api_key
 from generator.planning.task_creator import TaskManifest
 from generator.requirements import Requirement, RequirementsInferrer
 from generator.tasks import TraceabilityMatrix
@@ -21,6 +22,15 @@ def gaps(project_path, spec, infer, provider, api_key):
     project_path = Path(project_path).resolve()
     provider = _detect_provider(provider, api_key)
     _set_api_key(provider, api_key)
+
+    if not _has_api_key(provider, api_key):
+        click.echo(
+            "Error: prg gaps requires an AI provider API key.\n"
+            "Set GEMINI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY,\n"
+            "or pass --api-key / --provider.",
+            err=True,
+        )
+        raise SystemExit(1)
 
     inferrer = RequirementsInferrer(provider=provider, api_key=api_key)
     requirements = []
@@ -85,6 +95,15 @@ def spec_cmd(project_path, generate, provider, api_key):
     project_path = Path(project_path).resolve()
     provider = _detect_provider(provider, api_key)
     _set_api_key(provider, api_key)
+
+    if not _has_api_key(provider, api_key):
+        click.echo(
+            "Error: prg spec --generate requires an AI provider API key.\n"
+            "Set GEMINI_API_KEY, ANTHROPIC_API_KEY, GROQ_API_KEY, or OPENAI_API_KEY,\n"
+            "or pass --api-key / --provider.",
+            err=True,
+        )
+        raise SystemExit(1)
 
     if provider:
         _generate_spec_with_llm(project_path, provider, api_key)

@@ -178,6 +178,41 @@ def extract_tech_stack(content: str, project_path: Optional[Path] = None) -> Lis
     return list(dict.fromkeys(found))
 
 
+def extract_conventions(content: str) -> List[str]:
+    """Extract explicit conventions/rules stated in the README.
+
+    Looks for sections headed with: Conventions, Architecture, Rules,
+    Guidelines, Standards, How we work, Our approach, Patterns,
+    Coding Style, Style Guide, Decisions.
+    Converts bullet points in those sections to rule strings.
+    Returns up to 20 items.
+    """
+    convention_headers = [
+        "conventions",
+        "architecture",
+        "rules",
+        "guidelines",
+        "standards",
+        "how we work",
+        "our approach",
+        "patterns",
+        "coding style",
+        "style guide",
+        "decisions",
+    ]
+    rules: List[str] = []
+    seen: set = set()
+    for header in convention_headers:
+        section = _extract_section(content, [header])
+        if section:
+            for item in _parse_list_items(section):
+                normalized = item.strip()
+                if normalized and normalized.lower() not in seen:
+                    seen.add(normalized.lower())
+                    rules.append(normalized)
+    return rules[:20]
+
+
 # ==========================
 # Private helpers
 # ==========================

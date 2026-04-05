@@ -48,14 +48,7 @@ tasks/
 # Cache files
 .clinerules/.prg-cache.json
 tests/test_autopilot_flow.py
-tests/test_cli.py
-tests/test_duplicate_prevention.py
-tests/test_integration.py
-tests/test_pack_integration.py
 tests/test_project_manager.py
-tests/test_skill_matcher_unit.py
-tests/test_skills_architecture.py
-tests/test_skills_manager.py
 tests/test_samples/sample-project/.clinerules/auto-triggers.json
 tests/test_samples/sample-project/.clinerules/rules.md
 tests/test_samples/sample-project/.clinerules/auto-triggers.json
@@ -120,6 +113,8 @@ tests/test_samples/sample-project/.clinerules/
 
 # Internal developer notes — not for end users
 bugs_docs/
+constitution.md
+docs/AMIT_CODING_PREFERENCES.md
 docs/CR-*.md
 docs/DESIGN-*.md
 docs/PLAN-*.md
