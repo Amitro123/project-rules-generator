@@ -258,7 +258,7 @@ except ValueError:
 
 ## MEDIUM
 
-### [ROOT-MED-1] Path traversal risk — `SkillPathManager.get_skill_path()`
+### [ROOT-MED-1] Path traversal risk — `SkillPathManager.get_skill_path()` ✅ 2026-04-05
 **File:** `storage/skill_paths.py`, lines 99–161
 **Issue:** `skill_ref` containing `..` segments (e.g. `builtin/../../etc/passwd`) could escape the intended directory. CLI-only tool, but violates defense in depth.
 **Fix:** After resolving, verify `resolved.is_relative_to(base)`.

@@ -95,6 +95,15 @@ class SkillPathManager:
         logger.info("Saved learned skill: %s", skill_path)
         return skill_path
 
+    @staticmethod
+    def _within_base(candidate: Path, base: Path) -> bool:
+        """Return True only if candidate resolves to a path inside base."""
+        try:
+            candidate.resolve().relative_to(base.resolve())
+            return True
+        except ValueError:
+            return False
+
     @classmethod
     def get_skill_path(cls, skill_ref: str) -> Optional[Path]:
         """
@@ -111,6 +120,10 @@ class SkillPathManager:
         if len(parts) < 2:
             return None
 
+        # Reject any part that could escape the base directory
+        if any(".." in p or "\\" in p for p in parts):
+            return None
+
         source_type = parts[0]
 
         if source_type == "builtin":
@@ -118,12 +131,12 @@ class SkillPathManager:
             base = cls.GLOBAL_BUILTIN
             # Prefer subfolder layout (name/SKILL.md) — matches the canonical export format
             dir_path = base / name / "SKILL.md"
-            if dir_path.exists():
+            if cls._within_base(dir_path, base) and dir_path.exists():
                 return dir_path
             # Fallback: flat file layout (legacy)
             for ext in (".md", ".yaml", ".yml"):
                 path = base / f"{name}{ext}"
-                if path.exists():
+                if cls._within_base(path, base) and path.exists():
                     return path
 
         elif source_type == "learned":
@@ -138,12 +151,12 @@ class SkillPathManager:
             if category:
                 # Prefer subfolder layout (category/name/SKILL.md) — matches save_learned_skill output
                 subfolder = base / category / name / "SKILL.md"
-                if subfolder.exists():
+                if cls._within_base(subfolder, base) and subfolder.exists():
                     return subfolder
                 # Fallback: flat file layout (category/name.md)
                 for ext in (".md", ".yaml", ".yml"):
                     path = base / category / f"{name}{ext}"
-                    if path.exists():
+                    if cls._within_base(path, base) and path.exists():
                         return path
             else:
                 # Search all categories
@@ -151,11 +164,11 @@ class SkillPathManager:
                     if cat_dir.is_dir():
                         # Prefer subfolder layout first
                         subfolder = cat_dir / name / "SKILL.md"
-                        if subfolder.exists():
+                        if cls._within_base(subfolder, base) and subfolder.exists():
                             return subfolder
                         for ext in (".md", ".yaml", ".yml"):
                             path = cat_dir / f"{name}{ext}"
-                            if path.exists():
+                            if cls._within_base(path, base) and path.exists():
                                 return path
 
         return None
