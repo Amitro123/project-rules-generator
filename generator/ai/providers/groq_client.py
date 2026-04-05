@@ -18,6 +18,7 @@ class GroqClient(AIClient):
     """Groq API client."""
 
     DEFAULT_MODEL = "llama-3.1-8b-instant"
+    DEFAULT_TIMEOUT = 60.0  # seconds
 
     def __init__(self, api_key: Optional[str] = None):
         if not GROQ_AVAILABLE:
@@ -27,7 +28,7 @@ class GroqClient(AIClient):
         if not self.api_key:
             raise ValueError("GROQ_API_KEY not found.")
 
-        self.client = Groq(api_key=self.api_key)
+        self.client = Groq(api_key=self.api_key, timeout=self.DEFAULT_TIMEOUT)
 
     def generate(
         self,

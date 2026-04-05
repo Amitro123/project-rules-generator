@@ -23,6 +23,7 @@ class GeminiClient(AIClient):
     """Google Gemini API client."""
 
     DEFAULT_MODEL = "gemini-2.5-flash"
+    DEFAULT_TIMEOUT = 60  # seconds (Gemini http_options accepts int seconds)
 
     def __init__(self, api_key: Optional[str] = None):
         if getattr(genai, "Client", None) is None:
@@ -32,7 +33,7 @@ class GeminiClient(AIClient):
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found.")
 
-        self.client = genai.Client(api_key=self.api_key)
+        self.client = genai.Client(api_key=self.api_key, http_options={"timeout": self.DEFAULT_TIMEOUT})
 
     def generate(
         self,

@@ -263,7 +263,7 @@ except ValueError:
 **Issue:** `skill_ref` containing `..` segments (e.g. `builtin/../../etc/passwd`) could escape the intended directory. CLI-only tool, but violates defense in depth.
 **Fix:** After resolving, verify `resolved.is_relative_to(base)`.
 
-### [ROOT-MED-2] No timeout on external API calls in all 4 AI provider clients
+### [ROOT-MED-2] No timeout on external API calls in all 4 AI provider clients ✅ 2026-04-05
 **Files:** `ai/providers/*.py` (all four clients)
 **Issue:** No `timeout` parameter set. A hung provider causes the CLI to hang indefinitely. `AIStrategy` has a timeout for project analysis but not for LLM generation.
 **Fix:** Pass timeout to each SDK constructor: e.g. `anthropic.Anthropic(api_key=..., timeout=30.0)`.
@@ -332,4 +332,4 @@ except ValueError:
 7. **ROOT-HIGH-4** — f-strings in `skill_paths.py` → `%s` format ✅ 2026-04-05
 8. **ROOT-HIGH-2** — annotate/narrow 15+ bare `except Exception` ✅ 2026-04-05
 9. **ROOT-HIGH-6** — promote private methods to public in `skill_creator.py` / `rules_creator.py` ✅ 2026-04-05
-10. **ROOT-MED-2** — add timeouts to AI provider clients (15 min)
+10. **ROOT-MED-2** — add timeouts to AI provider clients ✅ 2026-04-05

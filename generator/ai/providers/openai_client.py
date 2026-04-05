@@ -19,6 +19,7 @@ class OpenAIClient(AIClient):
     """OpenAI API client (GPT-4o / GPT-4o-mini)."""
 
     DEFAULT_MODEL = "gpt-4o-mini"
+    DEFAULT_TIMEOUT = 60.0  # seconds
 
     def __init__(self, api_key: Optional[str] = None):
         if _OpenAI is None:
@@ -28,7 +29,7 @@ class OpenAIClient(AIClient):
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY not found.")
 
-        self.client = _OpenAI(api_key=self.api_key)
+        self.client = _OpenAI(api_key=self.api_key, timeout=self.DEFAULT_TIMEOUT)
 
     def generate(
         self,

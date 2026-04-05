@@ -19,6 +19,7 @@ class AnthropicClient(AIClient):
     """Anthropic Claude API client."""
 
     DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
+    DEFAULT_TIMEOUT = 60.0  # seconds
 
     def __init__(self, api_key: Optional[str] = None):
         if _anthropic is None:
@@ -28,7 +29,7 @@ class AnthropicClient(AIClient):
         if not self.api_key:
             raise ValueError("ANTHROPIC_API_KEY not found.")
 
-        self.client = _anthropic.Anthropic(api_key=self.api_key)
+        self.client = _anthropic.Anthropic(api_key=self.api_key, timeout=self.DEFAULT_TIMEOUT)
 
     def generate(
         self,
