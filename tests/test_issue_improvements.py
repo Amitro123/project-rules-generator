@@ -258,35 +258,39 @@ def test_detect_test_framework_from_files():
     assert _detect_test_framework_from_files({}) == ""
 
 
-def test_skill_doc_loader_finds_usage_files(tmp_path):
-    """_find_usage_files should locate .py files that import the tech keyword."""
+def test_skill_doc_loader_finds_relevant_files(tmp_path):
+    """_find_relevant_files should score .py files by token overlap with skill name."""
     from generator.skill_doc_loader import SkillDocLoader
 
-    # Create a file that imports git
+    # High-relevance: imports the token AND mentions it in body
     (tmp_path / "git_ops.py").write_text("import git\nrepo = git.Repo('.')\n", encoding="utf-8")
-    # Create a file that doesn't
+    # No relevance: generic utils
     (tmp_path / "utils.py").write_text("import os\n", encoding="utf-8")
 
     loader = SkillDocLoader(tmp_path)
     key_files: dict = {}
-    loader._find_usage_files("git", key_files, max_files=3)
+    # "git-workflow" → tokens ["git", "workflow"]; "git" matches the import statement
+    loader._find_relevant_files("git-workflow", key_files, max_files=3)
 
     assert "git_ops.py" in key_files
     assert "utils.py" not in key_files
 
 
-def test_skill_doc_loader_tech_import_mapping():
+def test_skill_doc_loader_relevant_files_body_signal(tmp_path):
+    """_find_relevant_files picks up files that mention the skill tokens in body (no import)."""
     from generator.skill_doc_loader import SkillDocLoader
 
-    loader = SkillDocLoader(Path("."))
-    # gitpython has import_name="git" (package is gitpython, import is git)
-    assert loader._skill_tech_import("gitpython-ops") == "git"
-    # fastapi package == import name
-    assert loader._skill_tech_import("fastapi-endpoints") == "fastapi"
-    # click-cli is the registry skill name for click
-    assert loader._skill_tech_import("click-cli") == "click"
-    # unknown skill returns empty string
-    assert loader._skill_tech_import("unknown-skill") == ""
+    (tmp_path / "fastapi_routes.py").write_text(
+        "from fastapi import APIRouter\nrouter = APIRouter()\n", encoding="utf-8"
+    )
+    (tmp_path / "unrelated.py").write_text("x = 1\n", encoding="utf-8")
+
+    loader = SkillDocLoader(tmp_path)
+    key_files: dict = {}
+    loader._find_relevant_files("fastapi-endpoints", key_files, max_files=3)
+
+    assert "fastapi_routes.py" in key_files
+    assert "unrelated.py" not in key_files
 
 
 def test_skill_frontmatter_when_phrases():

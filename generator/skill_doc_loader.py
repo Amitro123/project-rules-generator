@@ -7,8 +7,9 @@ LLM-based skill generation in real project content.
 Extracted from CoworkSkillCreator to keep each module focused.
 """
 
+import re
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 
 class SkillDocLoader:
@@ -110,13 +111,6 @@ class SkillDocLoader:
 
         candidates = ["main.py", "app.py", "pyproject.toml", "requirements.txt"]
 
-        if any(w in skill_lower for w in ["backend", "api", "developer"]):
-            candidates += ["project_rules_generator.py", "generator/__init__.py"]
-        if "test" in skill_lower:
-            candidates += ["pytest.ini", "tests/conftest.py"]
-        if "cli" in skill_lower or "command" in skill_lower:
-            candidates += ["main.py"]
-
         for candidate in candidates:
             path = self.project_path / candidate
             if path.exists() and path.is_file():
@@ -126,11 +120,9 @@ class SkillDocLoader:
                 except OSError:
                     pass
 
-        # Smart tech-usage search: find .py files that actually import the tech.
-        # This grounds the AI in real code rather than generic templates.
-        import_keyword = self._skill_tech_import(skill_lower)
-        if import_keyword:
-            self._find_usage_files(import_keyword, key_files, max_files=3)
+        # Content-based search: score .py files by token overlap with skill name.
+        # Works for ANY technology — no registry or hardcoded lists needed.
+        self._find_relevant_files(skill_name, key_files, max_files=3)
 
         tree = build_project_tree(self.project_path, max_depth=3, max_items=60)
         key_files["project_tree"] = tree[:800]
@@ -154,50 +146,45 @@ class SkillDocLoader:
 
         return key_files
 
-    def _skill_tech_import(self, skill_lower: str) -> str:
-        """Return the Python import keyword to search for, given a skill name.
+    def _find_relevant_files(self, skill_name: str, key_files: Dict[str, str], max_files: int = 3) -> None:
+        """Score project .py files by relevance to the skill name.
 
-        Uses SKILL_IMPORT_NAMES from tech_registry as the source of truth so
-        this mapping stays in sync with TechProfile definitions (including the
-        import_name override for e.g. gitpython → git).
+        Splits skill_name into tokens and scores each file by how many tokens
+        appear in import statements (high signal, weight 1.0) or file body
+        (medium signal, weight 0.3).  Works for ANY technology — no registry
+        or hardcoded lists needed.
         """
-        from generator.tech_registry import SKILL_IMPORT_NAMES
+        tokens = [t for t in re.split(r"[-_\s]", skill_name.lower()) if len(t) > 2]
+        if not tokens:
+            return
 
-        # Try exact skill name match first (e.g. "gitpython-ops" → "git")
-        if skill_lower in SKILL_IMPORT_NAMES:
-            return SKILL_IMPORT_NAMES[skill_lower]
-
-        # Fallback: substring match against skill_name keys
-        for skill_name, import_kw in SKILL_IMPORT_NAMES.items():
-            if skill_name in skill_lower or skill_lower in skill_name:
-                return import_kw
-
-        return ""
-
-    def _find_usage_files(self, import_keyword: str, key_files: Dict[str, str], max_files: int = 3) -> None:
-        """Search project .py files for actual usage of import_keyword.
-
-        Adds matching files to key_files in-place, skipping files already loaded.
-        Each file is capped at 600 chars so the token budget stays reasonable.
-        """
-        import_patterns = (f"import {import_keyword}", f"from {import_keyword}")
-        count = 0
+        scored: List[Tuple[float, Path]] = []
         try:
-            for py_file in sorted(self.project_path.rglob("*.py")):
+            for py_file in self.project_path.rglob("*.py"):
                 rel = str(py_file.relative_to(self.project_path))
-                # Skip virtual envs, caches, and already-loaded files
                 if any(skip in rel for skip in self._USAGE_SKIP_DIRS):
                     continue
                 if rel in key_files:
                     continue
                 try:
                     content = py_file.read_text(encoding="utf-8", errors="ignore")
-                    if any(pat in content for pat in import_patterns):
-                        key_files[rel] = content[:600]
-                        count += 1
-                        if count >= max_files:
-                            break
+                    imports = set(re.findall(r"^(?:import|from)\s+(\w+)", content, re.MULTILINE))
+                    import_score = sum(1.0 for t in tokens if t in imports)
+                    body_score = sum(0.3 for t in tokens if t in content.lower())
+                    total = import_score + body_score
+                    if total > 0:
+                        scored.append((total, py_file))
                 except OSError:
                     continue
         except OSError:
-            pass
+            return
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        for _, py_file in scored[:max_files]:
+            rel = str(py_file.relative_to(self.project_path))
+            if rel in key_files:
+                continue
+            try:
+                key_files[rel] = py_file.read_text(encoding="utf-8", errors="ignore")[:600]
+            except OSError:
+                pass
