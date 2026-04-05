@@ -88,7 +88,7 @@ def ralph_group():
 @click.option("--max-iterations", default=20, show_default=True)
 @click.option("--provider", type=click.Choice(["gemini", "groq", "anthropic", "openai"]), default=None)
 @click.option("--api-key", default=None)
-@click.option("--verbose/--quiet", default=True)
+@click.option("--verbose/--quiet", default=False)
 def ralph_go(task_description, project_path, max_iterations, provider, api_key, verbose):
     """Create a feature and run its loop immediately — the one-command workflow.
 
@@ -97,6 +97,7 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
       prg ralph "Add loading states to all forms"
     """
     logging.basicConfig(level=logging.INFO if verbose else logging.WARNING, format="%(message)s")
+    logging.getLogger("generator.planning.agent_executor").setLevel(logging.WARNING)
 
     from pathlib import Path as _Path
 
@@ -219,7 +220,7 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
     show_default=True,
     help="Automatically start the Ralph loop for each discovered feature.",
 )
-@click.option("--verbose/--quiet", default=True)
+@click.option("--verbose/--quiet", default=False)
 def ralph_discover(project_path, provider, api_key, auto_run, verbose):
     """Scan the project and queue multiple Ralph features.
 
@@ -323,7 +324,7 @@ def ralph_discover(project_path, provider, api_key, auto_run, verbose):
     default=None,
 )
 @click.option("--api-key", default=None)
-@click.option("--verbose/--quiet", default=True)
+@click.option("--verbose/--quiet", default=False)
 def ralph_run(feature_id, project_path, max_iterations, provider, api_key, verbose):
     """Start the Ralph loop for FEATURE_ID.
 
@@ -332,6 +333,7 @@ def ralph_run(feature_id, project_path, max_iterations, provider, api_key, verbo
         prg ralph run FEATURE-001
     """
     logging.basicConfig(level=logging.INFO if verbose else logging.WARNING, format="%(message)s")
+    logging.getLogger("generator.planning.agent_executor").setLevel(logging.WARNING)
 
     project_path = Path(project_path).resolve()
 
@@ -432,10 +434,11 @@ def ralph_status(feature_id, project_path):
     default=None,
 )
 @click.option("--api-key", default=None)
-@click.option("--verbose/--quiet", default=True)
+@click.option("--verbose/--quiet", default=False)
 def ralph_resume(feature_id, project_path, max_iterations, provider, api_key, verbose):
     """Continue an interrupted Ralph loop for FEATURE_ID."""
     logging.basicConfig(level=logging.INFO if verbose else logging.WARNING, format="%(message)s")
+    logging.getLogger("generator.planning.agent_executor").setLevel(logging.WARNING)
 
     project_path = Path(project_path).resolve()
 
