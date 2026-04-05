@@ -246,7 +246,7 @@ class CoworkSkillCreator:
                 if quality.score >= quality_threshold or auto_fix:
                     path = self.export_to_file(content, metadata, output_dir)
                     generated_files.append(path)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — one skill failure must not abort the whole batch
                 logger.warning("Failed to generate %s: %s", skill_name, e)
 
         return generated_files

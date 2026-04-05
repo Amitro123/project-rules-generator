@@ -394,7 +394,7 @@ Generate the subtasks now:
 
             client = create_ai_client(self.provider, api_key=self.api_key)
             return client.generate(prompt, max_tokens=5000) or ""
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — LLM failures fall back to empty string; caller uses template
             logger.debug("LLM call failed in TaskDecomposer: %s", exc)
             return ""
 

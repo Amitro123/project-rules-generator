@@ -253,7 +253,7 @@ class SkillGenerator(ArtifactGenerator):
                             err=True,
                         )
                     return content
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — strategy chain: one failure falls through to next strategy
                 logger.warning(
                     "Strategy %s failed, trying next: %s",
                     strategy_obj.__class__.__name__,

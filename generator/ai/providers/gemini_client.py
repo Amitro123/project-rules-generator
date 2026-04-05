@@ -56,4 +56,4 @@ class GeminiClient(AIClient):
             # Clean encoding artifacts per AMIT_CODING_PREFERENCES.md
             return normalize_mojibake(response.text or "")
         except Exception as e:
-            raise RuntimeError(f"Gemini generation failed: {e}")
+            raise RuntimeError(f"Gemini generation failed: {e}") from e

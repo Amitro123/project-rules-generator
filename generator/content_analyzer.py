@@ -122,7 +122,7 @@ class ContentAnalyzer:
                     proposal = self.client.generate("Improve document quality with examples and clear sections.")
                     if isinstance(proposal, str) and len(proposal.strip()) > 0:
                         patch = proposal
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — LLM patch generation is optional; fallback handles it
                 logger.debug("LLM improvement call failed, using fallback: %s", exc)
                 patch = None
             if patch is None:
@@ -176,7 +176,7 @@ class ContentAnalyzer:
                     metrics=metrics,
                     output_props=output_props,
                 )
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — Opik tracing is observability-only; never block analysis
                 logger.debug("Opik trace logging skipped: %s", exc)
 
         return QualityReport(
@@ -338,8 +338,7 @@ class ContentAnalyzer:
         try:
             filepath.relative_to(self.allowed_base_path)
         except ValueError:
-            if filepath != self.allowed_base_path:
-                pass
+            raise FileOperationError(f"Path {filepath} is outside allowed base {self.allowed_base_path}")
         try:
             filepath.write_text(patch, encoding="utf-8")
         except Exception as e:

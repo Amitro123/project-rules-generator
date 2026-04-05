@@ -20,28 +20,10 @@ class SkillTriggerDetector:
 
     def _load_file_list(self):
         """Cache list of files for pattern matching."""
-        # Walk project, respect gitignore if possible (simple walk for now)
-        # Limit depth to avoid massive scan
+        _SKIP_DIRS = {".git", "node_modules", "venv", "__pycache__", ".venv"}
         try:
-            for root, dirs, files in self.project_path.walk():  # python 3.12+
-                # Skip common ignored
-                if ".git" in dirs:
-                    dirs.remove(".git")
-                if "node_modules" in dirs:
-                    dirs.remove("node_modules")
-                if "venv" in dirs:
-                    dirs.remove("venv")
-
-                rel_root = root.relative_to(self.project_path)
-                for file in files:
-                    self._cache_file_list.append(str(rel_root / file).replace("\\", "/"))
-        except AttributeError:
-            # Fallback for older python
             for root, dirs, files in os.walk(self.project_path):
-                if ".git" in dirs:
-                    dirs.remove(".git")
-                if "node_modules" in dirs:
-                    dirs.remove("node_modules")
+                dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
                 rel_root = Path(root).relative_to(self.project_path)
                 for file in files:
                     self._cache_file_list.append(str(rel_root / file).replace("\\", "/"))

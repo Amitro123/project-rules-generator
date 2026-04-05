@@ -167,7 +167,7 @@ class SkillParser:
 
         try:
             output_file.write_text(json.dumps(triggers, indent=2), encoding="utf-8")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — triggers file write failure is non-fatal; tool still works
             logger.warning("Failed to save auto-triggers.json: %s", e)
 
     @staticmethod

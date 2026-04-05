@@ -9,7 +9,7 @@ import re
 import subprocess
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import yaml
 
@@ -70,7 +70,7 @@ class FeatureState:
 
 def next_feature_id(features_dir: Path) -> str:
     """Return the next available FEATURE-XXX identifier."""
-    existing: list[int] = []
+    existing: List[int] = []
     if features_dir.exists():
         for entry in features_dir.iterdir():
             if entry.is_dir():
@@ -92,7 +92,7 @@ def slugify(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _load_tasks(tasks_yaml: Path) -> list[dict]:
+def _load_tasks(tasks_yaml: Path) -> List[dict]:
     """Load tasks list from TASKS.yaml.  Returns [] if file absent."""
     if not tasks_yaml.exists():
         return []
@@ -100,14 +100,14 @@ def _load_tasks(tasks_yaml: Path) -> list[dict]:
     return raw.get("tasks", [])
 
 
-def _save_tasks(tasks_yaml: Path, tasks: list[dict]) -> None:
+def _save_tasks(tasks_yaml: Path, tasks: List[dict]) -> None:
     tasks_yaml.parent.mkdir(parents=True, exist_ok=True)
     tmp = tasks_yaml.with_suffix(".tmp")
     tmp.write_text(yaml.dump({"tasks": tasks}, default_flow_style=False), encoding="utf-8")
     os.replace(tmp, tasks_yaml)
 
 
-def _pending_tasks(tasks: list[dict]) -> list[dict]:
+def _pending_tasks(tasks: List[dict]) -> List[dict]:
     return [t for t in tasks if t.get("status", "pending") == "pending"]
 
 
@@ -183,7 +183,7 @@ class RalphEngine:
                 )
             try:
                 self.execute_iteration()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — top-level loop guard; logs and re-raises
                 logger.error("💥 Unhandled exception in iteration %d: %s", self.state.iteration, exc)
                 self.state.status = "stopped"
                 self.state.exit_condition = "unhandled_exception"
@@ -254,7 +254,10 @@ class RalphEngine:
 
         # 4. GIT COMMIT
         if changes:
-            self._git_commit(f"ralph iter {self.state.iteration}: {next_task_title[:60]}")
+            self._git_commit(
+                f"ralph iter {self.state.iteration}: {next_task_title[:60]}",
+                files=list(changes.keys()),
+            )
         else:
             if self.verbose:
                 logger.info("⚠️  No changes produced by agent this iteration.")
@@ -371,7 +374,7 @@ class RalphEngine:
         if self.state_path.exists():
             try:
                 return FeatureState.load(self.state_path)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — STATE.json may have unknown keys or corrupt data
                 logger.warning("Could not load STATE.json: %s — using defaults.", exc)
         return FeatureState(
             feature_id=self.feature_id,
@@ -448,18 +451,26 @@ class RalphEngine:
             # Re-raise so execute_iteration() can stop the loop rather than
             # continuing as if nothing happened.
             raise
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — agent failures must not crash the loop
             logger.warning("Agent execution failed (iteration %d): %s", self.state.iteration, exc)
             return {}
 
-    def _git_commit(self, message: str) -> None:
+    def _git_commit(self, message: str, files: Optional[List[str]] = None) -> None:
         try:
-            subprocess.run(
-                ["git", "add", "."],
-                cwd=self.project_path,
-                check=True,
-                capture_output=True,
-            )
+            if files:
+                subprocess.run(
+                    ["git", "add", "--"] + files,
+                    cwd=self.project_path,
+                    check=True,
+                    capture_output=True,
+                )
+            else:
+                subprocess.run(
+                    ["git", "add", "."],
+                    cwd=self.project_path,
+                    check=True,
+                    capture_output=True,
+                )
             subprocess.run(
                 ["git", "commit", "-m", message],
                 cwd=self.project_path,
@@ -491,7 +502,7 @@ class RalphEngine:
             if self.verbose:
                 logger.info("📝 Review: %s (score=%d)", report.verdict, score)
             return score
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — self-review is best-effort; neutral fallback keeps loop running
             logger.warning("Self-review failed: %s — using neutral score.", exc)
             return 70
 
@@ -567,7 +578,7 @@ class RalphEngine:
                 timeout=10,
             )
             return result.stdout.strip() or "(no commits yet)"
-        except Exception:
+        except Exception:  # noqa: BLE001 — git may not be available; informational only
             return "(git log unavailable)"
 
     def _git_diff_names(self) -> str:

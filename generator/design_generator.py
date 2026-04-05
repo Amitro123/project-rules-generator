@@ -207,7 +207,7 @@ class DesignGenerator:
                 logger.debug("Design generator using: %s", self.provider)
             else:
                 self.client = None
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — client init failure falls back to None (template mode)
             self.client = None
             logger.warning("Design AI client init failed: %s", e)
 
@@ -434,7 +434,7 @@ NOW generate the complete design following this structure. Be specific, detailed
             if not result or len(result.strip()) < 100:
                 logger.warning("LLM returned short/empty response (%d chars)", len(result))
             return result
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — LLM call failures return empty string for caller to handle
             logger.error("Error calling LLM: %s", e)
             return ""
 
@@ -443,7 +443,7 @@ NOW generate the complete design following this structure. Be specific, detailed
         if raw.strip():
             try:
                 return Design.from_markdown(raw)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — malformed LLM output falls back to template
                 logger.debug("Could not parse LLM output as Design markdown, using template fallback: %s", exc)
 
         # Fallback: Generate comprehensive template-based design

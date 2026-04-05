@@ -52,4 +52,4 @@ class GroqClient(AIClient):
             # Clean encoding artifacts per AMIT_CODING_PREFERENCES.md
             return normalize_mojibake(completion.choices[0].message.content or "")
         except Exception as e:
-            raise RuntimeError(f"Groq generation failed: {e}")
+            raise RuntimeError(f"Groq generation failed: {e}") from e

@@ -54,4 +54,4 @@ class OpenAIClient(AIClient):
             raw = resp.choices[0].message.content or ""
             return normalize_mojibake(raw)
         except Exception as e:
-            raise RuntimeError(f"OpenAI generation failed: {e}")
+            raise RuntimeError(f"OpenAI generation failed: {e}") from e

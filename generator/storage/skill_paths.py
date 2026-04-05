@@ -37,7 +37,7 @@ class SkillPathManager:
     def sync_builtin_skills(cls):
         """Copy builtin skills from project to global if newer."""
         if not cls.BUILTIN_SOURCE.exists():
-            logger.debug(f"Builtin source not found: {cls.BUILTIN_SOURCE}")
+            logger.debug("Builtin source not found: %s", cls.BUILTIN_SOURCE)
             return
 
         synced_count = 0
@@ -47,7 +47,7 @@ class SkillPathManager:
                 if not target.exists() or skill_item.stat().st_mtime > target.stat().st_mtime:
                     shutil.copy2(skill_item, target)
                     synced_count += 1
-                    logger.info(f"Synced builtin: {skill_item.name}")
+                    logger.info("Synced builtin: %s", skill_item.name)
 
             elif skill_item.is_dir():
                 # Sync entire skill directory (e.g., builtin/code-review/)
@@ -64,7 +64,7 @@ class SkillPathManager:
                             synced_count += 1
 
         if synced_count > 0:
-            logger.info(f"Synced {synced_count} builtin skill files to {cls.GLOBAL_BUILTIN}")
+            logger.info("Synced %d builtin skill files to %s", synced_count, cls.GLOBAL_BUILTIN)
 
     @classmethod
     def save_learned_skill(cls, skill: Dict, category: str) -> Path:
@@ -92,7 +92,7 @@ class SkillPathManager:
         skill_path = skill_dir / "SKILL.md"
         skill_path.write_text(skill_content, encoding="utf-8")
 
-        logger.info(f"Saved learned skill: {skill_path}")
+        logger.info("Saved learned skill: %s", skill_path)
         return skill_path
 
     @classmethod
