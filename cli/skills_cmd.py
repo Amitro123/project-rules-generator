@@ -1,8 +1,9 @@
 """prg skills — skill inspection and validation sub-commands."""
 
 import logging
+import shutil
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import click
 
@@ -382,3 +383,130 @@ def skills_show(name_or_path, path):
         click.echo(body.strip())
     else:
         click.echo("(empty body)")
+
+
+# ---------------------------------------------------------------------------
+# prg skills purge
+# ---------------------------------------------------------------------------
+
+
+def _find_stub_skills(learned_dir: Path) -> List[Tuple[Path, str]]:
+    """Return list of (skill_path, reason) for stubs found in learned_dir.
+
+    A skill is considered a stub if its content:
+    - Has no YAML frontmatter, OR
+    - Contains bracket placeholder text, OR
+    - Has zero triggers declared
+    """
+    from generator.utils.quality_checker import is_stub_content
+
+    candidates: List[Tuple[Path, str]] = []
+
+    if not learned_dir.exists():
+        return candidates
+
+    # Collect all SKILL.md files (directory layout) and flat *.md files
+    skill_files: List[Tuple[Path, bool]] = []  # (file_path, is_dir_layout)
+    for item in sorted(learned_dir.iterdir()):
+        if item.is_dir():
+            skill_md = item / "SKILL.md"
+            if skill_md.exists():
+                skill_files.append((skill_md, True))
+        elif item.is_file() and item.suffix == ".md":
+            skill_files.append((item, False))
+
+    for skill_file, is_dir_layout in skill_files:
+        try:
+            content = skill_file.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+
+        reasons = []
+
+        # Check for bracket placeholders
+        if is_stub_content(content):
+            reasons.append("contains placeholder text")
+
+        # Check for missing frontmatter
+        meta, _ = _parse_frontmatter(content)
+        if not meta:
+            reasons.append("no YAML frontmatter")
+        else:
+            # Check for zero triggers
+            triggers = meta.get("triggers") or meta.get("auto_triggers") or []
+            desc = meta.get("description", "")
+            trigger_count = len(triggers) if isinstance(triggers, list) else 0
+            if not trigger_count and isinstance(desc, str):
+                trigger_count = sum(1 for ln in desc.splitlines() if ln.strip().lower().startswith("when"))
+            if trigger_count == 0:
+                reasons.append("Trig: 0 (no triggers declared)")
+
+        if reasons:
+            # Report the directory for dir-layout skills, file for flat skills
+            target = skill_file.parent if is_dir_layout else skill_file
+            candidates.append((target, "; ".join(reasons)))
+
+    return candidates
+
+
+@skills_group.command(name="purge")
+@click.option("--stubs", "mode", flag_value="stubs", default=True, help="Remove stub learned skills (default).")
+@click.option("--yes", "-y", is_flag=True, default=False, help="Skip confirmation prompt.")
+@click.option(
+    "--dry-run", is_flag=True, default=False, help="List candidates without deleting anything."
+)
+def skills_purge(mode, yes, dry_run):
+    """Remove low-quality stub skills from the global learned store.
+
+    Scans ~/.project-rules-generator/learned/ for skills that have no
+    YAML frontmatter, contain bracket placeholder text, or declare zero
+    triggers — signs of an auto-generated stub that was never filled in.
+
+    Use --dry-run to preview what would be removed without deleting.
+
+    Example:
+      prg skills purge --stubs --dry-run
+      prg skills purge --stubs --yes
+    """
+    from generator.storage.skill_paths import SkillPathManager
+
+    learned_dir = SkillPathManager.GLOBAL_LEARNED
+
+    click.echo(f"Scanning: {learned_dir}")
+    candidates = _find_stub_skills(learned_dir)
+
+    if not candidates:
+        click.echo("No stub skills found.")
+        return
+
+    click.echo(f"\nFound {len(candidates)} stub skill(s):\n")
+    for target, reason in candidates:
+        name = target.name
+        click.echo(f"  {name}")
+        click.echo(f"    reason: {reason}")
+    click.echo()
+
+    if dry_run:
+        click.echo("[dry-run] No files deleted.")
+        return
+
+    if not yes:
+        if not click.confirm(f"Delete {len(candidates)} stub skill(s)?", default=False):
+            click.echo("Aborted.")
+            raise SystemExit(0)
+
+    removed = 0
+    failed = 0
+    for target, _ in candidates:
+        try:
+            if target.is_dir():
+                shutil.rmtree(target)
+            else:
+                target.unlink()
+            removed += 1
+            logger.debug("Purged stub skill: %s", target)
+        except OSError as exc:
+            click.echo(f"  Error removing {target.name}: {exc}", err=True)
+            failed += 1
+
+    click.echo(f"Removed {removed} stub skill(s)." + (f" ({failed} failed)" if failed else ""))
