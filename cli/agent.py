@@ -48,8 +48,8 @@ def start(task_description, project_path, provider, api_key, verbose):
         matched = AgentExecutor(Path(project_path).resolve()).match_skill(task_description)
         if matched:
             SkillTracker().record_match(matched)
-    except Exception:
-        pass  # Never block the workflow due to tracking failures
+    except Exception:  # noqa: BLE001 — skill tracking is best-effort; never block the user workflow
+        pass
 
     from generator.planning.workflow import AgentWorkflow
 

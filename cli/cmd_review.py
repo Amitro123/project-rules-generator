@@ -12,7 +12,7 @@ from cli.utils import set_api_key_env as _set_api_key
 
 
 @click.command(name="review")
-@click.argument("filepath", type=click.Path(exists=True, dir_okay=False))
+@click.argument("filepath", type=click.Path(exists=False, dir_okay=False))
 @click.option(
     "--project-path",
     type=click.Path(exists=True, file_okay=False),
@@ -37,8 +37,8 @@ from cli.utils import set_api_key_env as _set_api_key
 @click.option("--verbose/--quiet", default=True, help="Verbose output")
 def review(filepath, project_path, output, provider, api_key, tasks, verbose):
     """Review a generated artifact for quality and hallucinations."""
-    filepath = Path(filepath).resolve()
     project_path = Path(project_path).resolve()
+    filepath = _resolve_input_path(Path(filepath), project_path)
 
     provider = _detect_provider(provider, api_key)
 
@@ -123,6 +123,43 @@ def _display_review_report(report: Any, verbose: bool) -> None:
             click.echo(f"  - {i}")
         for h in report.hallucinations:
             click.echo(f"  ! {h}")
+
+
+def _resolve_input_path(filepath: Path, project_path: Path) -> Path:
+    """Resolve the review input path, searching feature dirs when not in CWD.
+
+    Supports three forms:
+    - Absolute path          → used as-is
+    - Relative path that exists in CWD → resolved relative to CWD
+    - Bare filename (e.g. PLAN.md) not in CWD → searched inside features/*/
+    """
+    # Absolute path
+    if filepath.is_absolute():
+        if not filepath.exists():
+            raise click.BadParameter(f"File not found: {filepath}", param_hint="filepath")
+        return filepath
+
+    # Try relative to CWD first
+    cwd_path = Path.cwd() / filepath
+    if cwd_path.exists():
+        return cwd_path.resolve()
+
+    # Only bare filenames (no directory component) get the feature-dir search
+    if filepath.parent != Path("."):
+        raise click.BadParameter(f"File not found: {cwd_path}", param_hint="filepath")
+
+    name = filepath.name
+    features_dir = project_path / "features"
+    if features_dir.is_dir():
+        candidates = sorted(features_dir.glob(f"*/{name}"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if candidates:
+            click.echo(f"ℹ️  '{name}' not in CWD — using {candidates[0].relative_to(project_path)}")
+            return candidates[0].resolve()
+
+    raise click.BadParameter(
+        f"File not found: '{name}' — checked CWD and {features_dir}",
+        param_hint="filepath",
+    )
 
 
 def _resolve_output_path(filepath: Path, output: Optional[str]) -> Path:

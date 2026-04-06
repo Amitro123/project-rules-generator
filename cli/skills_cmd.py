@@ -64,7 +64,7 @@ def _parse_frontmatter(content: str):
         import yaml
 
         meta = yaml.safe_load(yaml_block) or {}
-    except Exception:
+    except (ValueError, TypeError):  # malformed YAML — treat as no frontmatter
         meta = {}
     return meta if isinstance(meta, dict) else {}, body
 
@@ -114,7 +114,7 @@ def skills_list(path, show_all):
 
         tracker = SkillTracker()
         all_stats = tracker.all_stats()
-    except Exception:
+    except (OSError, ValueError):  # tracker unavailable — degrade gracefully
         all_stats = {}
 
     # Compute column widths
@@ -268,8 +268,8 @@ def skills_feedback(skill_name, vote):
                 raise SystemExit(0)
     except SystemExit:
         raise
-    except Exception:
-        pass  # Don't block feedback if SkillsManager lookup fails
+    except Exception:  # noqa: BLE001 — SkillsManager lookup is optional; never block feedback recording
+        pass
 
     from generator.skill_tracker import SkillTracker
 

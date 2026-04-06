@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from pathlib import Path
 
 import click
@@ -12,6 +13,23 @@ from cli.utils import detect_provider as _detect_provider
 from cli.utils import set_api_key_env as _set_api_key
 
 logger = logging.getLogger(__name__)
+
+_FAILURE_STATUSES = {"stopped", "max_iterations"}
+
+
+def _exit_on_loop_failure(engine) -> None:  # type: ignore[type-arg]
+    """Exit with code 1 when Ralph finished without success.
+
+    Callers (ralph go / run / resume) must call this after run_loop() so that
+    CI systems and scripts get a non-zero exit code on any non-success outcome.
+    """
+    if engine.state.status != "success":
+        click.echo(
+            f"[ralph] Loop ended with status '{engine.state.status}' "
+            f"(exit_condition: {engine.state.exit_condition}) — exiting 1",
+            err=True,
+        )
+        sys.exit(1)
 
 
 def _load_state_dict(feature_dir: Path) -> dict:
@@ -106,6 +124,12 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
     from cli.utils import set_api_key_env as _sk
 
     _dp_val = _dp(provider, api_key)
+    if not _dp_val:
+        raise click.ClickException(
+            "No AI provider detected. Set an API key env var "
+            "(ANTHROPIC_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, GEMINI_API_KEY) "
+            "or pass --provider."
+        )
     _sk(_dp_val, api_key)
 
     proj = _Path(project_path).resolve()
@@ -191,11 +215,12 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
     engine = RalphEngine(
         feature_id=feature_id,
         project_path=proj,
-        provider=_dp_val or "groq",
+        provider=_dp_val,
         api_key=api_key,
         verbose=verbose,
     )
     engine.run_loop(max_iterations=max_iterations)
+    _exit_on_loop_failure(engine)
 
 
 # ---------------------------------------------------------------------------
@@ -357,11 +382,18 @@ def ralph_run(feature_id, project_path, max_iterations, provider, api_key, verbo
             cwd=project_path,
             check=True,
             capture_output=True,
+            timeout=30,
         )
     except Exception as exc:
         click.echo(f"⚠️  Could not checkout branch {branch}: {exc}")
 
     provider = _detect_provider(provider, api_key)
+    if not provider:
+        raise click.ClickException(
+            "No AI provider detected. Set an API key env var "
+            "(ANTHROPIC_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, GEMINI_API_KEY) "
+            "or pass --provider."
+        )
     _set_api_key(provider, api_key)
 
     from generator.ralph_engine import RalphEngine
@@ -369,11 +401,12 @@ def ralph_run(feature_id, project_path, max_iterations, provider, api_key, verbo
     engine = RalphEngine(
         feature_id=feature_id,
         project_path=project_path,
-        provider=provider or "groq",
+        provider=provider,
         api_key=api_key,
         verbose=verbose,
     )
     engine.run_loop(max_iterations=max_iterations)
+    _exit_on_loop_failure(engine)
 
 
 # ---------------------------------------------------------------------------
@@ -464,6 +497,12 @@ def ralph_resume(feature_id, project_path, max_iterations, provider, api_key, ve
         click.echo(f"🔄 Cleared 'stopped' status for {feature_id} — resuming.")
 
     provider = _detect_provider(provider, api_key)
+    if not provider:
+        raise click.ClickException(
+            "No AI provider detected. Set an API key env var "
+            "(ANTHROPIC_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, GEMINI_API_KEY) "
+            "or pass --provider."
+        )
     _set_api_key(provider, api_key)
 
     from generator.ralph_engine import RalphEngine
@@ -471,11 +510,12 @@ def ralph_resume(feature_id, project_path, max_iterations, provider, api_key, ve
     engine = RalphEngine(
         feature_id=feature_id,
         project_path=project_path,
-        provider=provider or "groq",
+        provider=provider,
         api_key=api_key,
         verbose=verbose,
     )
     engine.run_loop(max_iterations=max_iterations)
+    _exit_on_loop_failure(engine)
 
 
 # ---------------------------------------------------------------------------
@@ -545,6 +585,7 @@ def ralph_stop(feature_id, project_path, reason):
                     cwd=project_path,
                     check=True,
                     capture_output=True,
+                    timeout=30,
                 )
                 click.echo(f"🌿 Checked out {candidate}")
                 break

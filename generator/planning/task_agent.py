@@ -48,7 +48,9 @@ class TaskImplementationAgent:
     def _build_prompt(self, subtask: SubTask, project_context: Optional[Dict]) -> str:
         ctx_str = ""
         if project_context:
-            ctx_str = f"\nProject Context: {project_context.get('metadata', {})}"
+            rules = project_context.get("rules_context") or project_context.get("metadata") or ""
+            if rules:
+                ctx_str = f"\nProject Rules & Context:\n{rules}"
 
         files_str = ", ".join(subtask.files) if subtask.files else "N/A"
         changes_str = "\n".join(f"- {c}" for c in subtask.changes) if subtask.changes else "N/A"

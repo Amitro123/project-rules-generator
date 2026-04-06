@@ -57,6 +57,7 @@ def test_ralph_run_invokes_engine(runner, tmp_path):
     ), patch("cli.ralph_cmd._set_api_key"), patch("subprocess.run") as mock_git:
         mock_git.return_value = MagicMock(returncode=0)
         instance = MockEngine.return_value
+        instance.state.status = "success"
 
         result = runner.invoke(ralph_group, ["run", "FEATURE-001", "--project", str(tmp_path)], catch_exceptions=False)
 
@@ -87,6 +88,7 @@ def test_ralph_run_passes_max_iterations(runner, tmp_path):
     ), patch("cli.ralph_cmd._set_api_key"), patch("prg_utils.git_ops.is_git_repo", return_value=True), patch(
         "subprocess.run"
     ):
+        MockEngine.return_value.state.status = "success"
         runner.invoke(ralph_group, ["run", "FEATURE-001", "--project", str(tmp_path), "--max-iterations", "5"])
 
     MockEngine.return_value.run_loop.assert_called_with(max_iterations=5)
@@ -177,6 +179,7 @@ def test_ralph_resume_clears_stopped_status(runner, tmp_path):
         "cli.ralph_cmd._detect_provider", return_value="groq"
     ), patch("cli.ralph_cmd._set_api_key"), patch("prg_utils.git_ops.is_git_repo", return_value=True):
         MockEngine.return_value.run_loop = MagicMock()
+        MockEngine.return_value.state.status = "success"
         result = runner.invoke(ralph_group, ["resume", "FEATURE-001", "--project", str(tmp_path)])
 
     # The engine should have been called
@@ -192,6 +195,7 @@ def test_ralph_resume_non_stopped_still_runs(runner, tmp_path):
         "cli.ralph_cmd._detect_provider", return_value="groq"
     ), patch("cli.ralph_cmd._set_api_key"), patch("prg_utils.git_ops.is_git_repo", return_value=True):
         MockEngine.return_value.run_loop = MagicMock()
+        MockEngine.return_value.state.status = "success"
         runner.invoke(ralph_group, ["resume", "FEATURE-001", "--project", str(tmp_path)])
 
     MockEngine.return_value.run_loop.assert_called_once()

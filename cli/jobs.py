@@ -357,5 +357,5 @@ def leaderboard():
         import webbrowser
 
         webbrowser.open(url)
-    except Exception:
+    except Exception:  # noqa: BLE001 — webbrowser.open failure is harmless; URL already printed
         pass

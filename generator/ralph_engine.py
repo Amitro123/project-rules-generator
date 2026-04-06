@@ -41,6 +41,7 @@ class FeatureState:
     exit_condition: Optional[str] = None
     human_feedback: Optional[str] = None
     consecutive_test_failures: int = 0
+    consecutive_agent_failures: int = 0
 
     # ------------------------------------------------------------------
     # Persistence
@@ -252,15 +253,28 @@ class RalphEngine:
             self.save_state()
             return
 
-        # 4. GIT COMMIT
+        # 4. GIT COMMIT (also tracks consecutive agent failures)
         if changes:
+            self.state.consecutive_agent_failures = 0
             self._git_commit(
                 f"ralph iter {self.state.iteration}: {next_task_title[:60]}",
                 files=list(changes.keys()),
             )
         else:
+            self.state.consecutive_agent_failures += 1
             if self.verbose:
                 logger.info("⚠️  No changes produced by agent this iteration.")
+            if self.state.consecutive_agent_failures >= 3:
+                self.state.status = "stopped"
+                self.state.exit_condition = "agent_fail_3x"
+                self.save_state()
+                logger.error(
+                    "🚨 Agent produced no changes 3× in a row — stopping for human intervention. "
+                    "Check your provider/API key configuration. "
+                    "Run `prg ralph resume %s` after fixing.",
+                    self.feature_id,
+                )
+                return
 
         # 5. SELF-REVIEW
         review_score = self._run_self_review()
@@ -463,6 +477,7 @@ class RalphEngine:
                     cwd=self.project_path,
                     check=True,
                     capture_output=True,
+                    timeout=30,
                 )
             else:
                 subprocess.run(
@@ -470,12 +485,14 @@ class RalphEngine:
                     cwd=self.project_path,
                     check=True,
                     capture_output=True,
+                    timeout=30,
                 )
             subprocess.run(
                 ["git", "commit", "-m", message],
                 cwd=self.project_path,
                 check=True,
                 capture_output=True,
+                timeout=30,
             )
             if self.verbose:
                 logger.info("💾 Committed: %s", message)
