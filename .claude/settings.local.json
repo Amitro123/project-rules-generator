@@ -59,7 +59,31 @@
       "Bash(isort .)",
       "Bash(black . --quiet)",
       "Bash(grep -E \"\\\\.\\(md|json|txt\\)$\")",
-      "Bash(black cli/cmd_design.py cli/cmd_plan.py cli/agent_plan_helpers.py cli/skills_cmd.py --check)"
+      "Bash(black cli/cmd_design.py cli/cmd_plan.py cli/agent_plan_helpers.py cli/skills_cmd.py --check)",
+      "Read(//c/Users/Dana/.project-rules-generator/learned/gitpython-ops/**)",
+      "Read(//c/Users/Dana/.project-rules-generator/learned/fastapi-endpoints/**)",
+      "Bash(wc -c \"/c/Users/Dana/.project-rules-generator/learned/gitpython-ops/SKILL.md\")",
+      "Bash(wc -c /c/Users/Dana/.project-rules-generator/learned/gitpython-ops/SKILL.md)",
+      "Bash(while read:*)",
+      "Bash(do git:*)",
+      "Bash(echo \"CONFLICT: $f\")",
+      "Bash(chmod +x .git/hooks/commit-msg)",
+      "Bash(wc -l C:/Users/Dana/.gemini/antigravity/scratch/project-rules-generator/generator/planning/*.py)",
+      "Bash(black --check .)",
+      "Bash(mypy generator:*)",
+      "Bash(unzip -l dist/project_rules_generator-*.whl)",
+      "Bash(pytest -x -q --tb=short)",
+      "Bash(pytest --co -q tests/)",
+      "Bash(coverage run:*)",
+      "Bash(coverage report:*)",
+      "Bash(pytest tests/test_review_tasks.py -v --tb=short)",
+      "Bash(pytest tests/test_cov_pure_logic.py tests/test_cov_git_requirements.py tests/test_cov_rules_creator.py -x -q --tb=short)",
+      "Bash(pytest tests/test_cov_pure_logic.py tests/test_cov_git_requirements.py tests/test_cov_rules_creator.py -q --tb=short)",
+      "Bash(sort -t'%' -k1 -n)",
+      "Bash(prg tasks:*)",
+      "Bash(black . --check --quiet)",
+      "Bash(black tests/test_cov_cowork_strategy.py tests/test_cov_git_ops.py tests/test_review_tasks.py tests/test_cov_skill_parser.py tests/test_cov_rules_creator.py tests/test_cov_git_requirements.py tests/test_cov_project_planner.py tests/test_cov_skill_metadata.py tests/test_cov_pure_logic.py)",
+      "Bash(grep -n \"run_generation_pipeline\\\\|PipelineConfig\" tests/*.py)"
     ]
   }
 }

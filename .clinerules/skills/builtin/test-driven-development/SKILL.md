@@ -1,42 +1,55 @@
+---
+name: test-driven-development
+description: |-
+  When the user is implementing a new feature or fixing a bug.
+  When the user wants to write tests first before writing code.
+  When the user is refactoring and needs to verify behaviour is preserved.
+tools:
+  - read
+  - exec
+---
+
 # Skill: Test-Driven Development
 
 ## Purpose
-Enforce RED-GREEN-REFACTOR cycle for all new code.
+Without writing tests first, it is easy to write code that passes in the happy path but misses edge cases — and tests added after the fact often test the implementation rather than the requirement. This skill enforces the RED-GREEN-REFACTOR cycle so tests drive design rather than rubber-stamp it.
 
 ## Auto-Trigger
 - New feature implementation
 - Bug fix
 - Refactoring
 
-## RED-GREEN-REFACTOR Cycle
+## Process
 
-### 🔴 RED: Write Failing Test
-1. Write test for desired behavior
-2. Run test → verify it FAILS
-3. Commit: `git commit -m "RED: test for [feature]"`
+### 1. RED — Write Failing Test
+Write the test for desired behavior before writing any implementation — verifying it fails confirms the test actually exercises the right thing.
+```bash
+pytest tests/test_feature.py -v  # must FAIL here
+```
+Commit: `git commit -m "RED: test for feature-name"`
 
-### 🟢 GREEN: Make It Pass
-1. Write minimal code to pass test
-2. Run test → verify it PASSES
-3. All other tests still pass
-4. Commit: `git commit -m "GREEN: implement [feature]"`
+### 2. GREEN — Make It Pass
+Write the minimal code needed to pass the test — no more. Over-engineering at this stage hides design feedback.
+```bash
+pytest tests/test_feature.py -v  # must PASS here
+pytest  # all other tests must still pass
+```
+Commit: `git commit -m "GREEN: implement feature-name"`
 
-### 🔵 REFACTOR: Clean Up
-1. Improve code quality (no behavior change)
-2. Run all tests → verify they PASS
-3. Commit: `git commit -m "REFACTOR: clean up [feature]"`
+### 3. REFACTOR — Clean Up
+Improve code quality without changing behavior; the passing tests act as a safety net.
+```bash
+pytest  # must still pass after refactor
+```
+Commit: `git commit -m "REFACTOR: clean up feature-name"`
 
-## Rules
-✅ ALWAYS write test first
-✅ Run test and see it fail before writing code
-✅ Write minimal code to pass
-✅ Commit after each phase
-❌ NEVER write code before test
-❌ NEVER skip the RED phase
-❌ NEVER refactor without passing tests
+## Output
+- Passing test suite with new test covering the feature
+- Committed code in three phases (RED, GREEN, REFACTOR)
+- Test that will catch future regressions
 
 ## Anti-Patterns
-❌ Writing code then adding tests
-❌ Not verifying test fails first
-❌ Writing too much code at once
-❌ Skipping refactor phase
+❌ Writing code before writing the test
+❌ Not verifying the test fails first (RED phase)
+❌ Writing too much implementation code at once
+❌ Skipping the REFACTOR phase

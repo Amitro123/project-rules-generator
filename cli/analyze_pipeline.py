@@ -11,6 +11,15 @@ from typing import Any, Dict, List, Optional, Set
 
 import click
 
+from generator.constitution_generator import generate_constitution
+from generator.incremental_analyzer import IncrementalAnalyzer
+from generator.outputs.clinerules_generator import generate_clinerules
+from generator.parsers.enhanced_parser import EnhancedProjectParser
+from generator.rules_generator import generate_rules, rules_to_json
+from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
+from generator.storage.skill_paths import SkillPathManager
+from prg_utils.file_ops import save_markdown
+
 try:
     from tqdm import tqdm
 except ImportError:
@@ -61,16 +70,6 @@ def run_generation_pipeline(
     Returns:
         List of generated file paths.
     """
-    from generator.constitution_generator import generate_constitution
-    from generator.extractors.code_extractor import CodeExampleExtractor
-    from generator.outputs.clinerules_generator import generate_clinerules
-    from generator.parsers.enhanced_parser import EnhancedProjectParser
-    from generator.prompts.skill_generation import build_skill_prompt
-    from generator.rules_generator import generate_rules, rules_to_json
-    from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
-    from generator.storage.skill_paths import SkillPathManager
-    from prg_utils.file_ops import save_markdown
-
     if verbose:
         click.echo("\nGenerating files...")
 
@@ -182,8 +181,6 @@ def run_generation_pipeline(
         # --- Phase 6: Write rules.md ---
         rules_path = output_dir / "rules.md"
         if inc_analyzer and rules_path.exists():
-            from generator.incremental_analyzer import IncrementalAnalyzer
-
             changed_sections = inc_analyzer.detect_changes()  # cached — no re-read
             existing_rules = rules_path.read_text(encoding="utf-8")
             unified_content = IncrementalAnalyzer.merge_rules(existing_rules, unified_content, changed_sections)
@@ -235,9 +232,6 @@ def _build_unified_content(
     generated_files: List[Path],
 ) -> str:
     """Assemble the unified rules + skills content string."""
-    from generator.outputs.clinerules_generator import generate_clinerules
-    from generator.storage.skill_paths import SkillPathManager
-
     unified_content = rules_content + "\n\n# 🧠 Agent Skills\n\n"
 
     if triggers_dict:

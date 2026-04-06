@@ -222,38 +222,89 @@ class RalphEngine:
             self._print_summary()
 
     def execute_iteration(self) -> None:
-        """Run a single Ralph iteration: context → skill → agent → commit → review → fix."""
-        # 1. CONTEXT
+        """Orchestrate one Ralph iteration: context → skill → agent → commit → review → tests."""
+        result = self._step_context()
+        if result is None:
+            return
+        context, next_task_title = result
+
+        skill = self._step_skill(context)
+
+        changes = self._step_agent(context, skill, next_task_title)
+        if changes is None:
+            return
+
+        if not self._step_commit(changes, next_task_title):
+            return
+
+        review_score = self._step_review()
+        if review_score is None:
+            return
+
+        tests_passed = self._step_tests(next_task_title, review_score)
+        if tests_passed is None:
+            return
+
+        if self.verbose:
+            logger.info(
+                "📊 Iter %d complete — review=%d, tests=%s, tasks=%d/%d",
+                self.state.iteration,
+                review_score,
+                "✅" if tests_passed else "❌",
+                self.state.tasks_complete,
+                self.state.tasks_total,
+            )
+
+    # ------------------------------------------------------------------
+    # execute_iteration() step methods — one responsibility each
+    # ------------------------------------------------------------------
+
+    def _step_context(self) -> Optional[Tuple[str, str]]:
+        """Step 1: build context and find next task.
+
+        Returns (context, next_task_title), or None when no pending tasks
+        remain (marks complete + saves state before returning None).
+        """
         context = self.build_context()
         next_task_title = self._next_task_title()
         if not next_task_title:
             logger.info("No pending tasks found — marking all complete.")
             self.state.tasks_complete = self.state.tasks_total
             self.save_state()
-            return
-
+            return None
         if self.verbose:
             logger.info("🎯 Next task: %s", next_task_title)
+        return context, next_task_title
 
-        # 2. SKILL MATCHING
+    def _step_skill(self, context: str) -> Optional[str]:
+        """Step 2: match a skill from the context string."""
         skill = self._match_skill(context)
         if self.verbose and skill:
             logger.info("🧩 Matched skill: %s", skill)
+        return skill
 
-        # 3. AGENT EXECUTION  (delegated — writes files, does work)
+    def _step_agent(self, context: str, skill: Optional[str], next_task_title: str) -> Optional[dict]:
+        """Step 3: run the agent and return its changes dict.
+
+        Returns None on SecurityError (state is set to stopped before returning).
+        """
         try:
-            changes = self._agent_execute(context, skill, next_task_title)
+            return self._agent_execute(context, skill, next_task_title)
         except SecurityError as sec_exc:
             logger.error(
-                "🚨 Security violation — LLM attempted path traversal: %s. " "Stopping loop for manual review.",
+                "🚨 Security violation — LLM attempted path traversal: %s. Stopping loop for manual review.",
                 sec_exc,
             )
             self.state.status = "stopped"
             self.state.exit_condition = f"security_violation:{sec_exc}"
             self.save_state()
-            return
+            return None
 
-        # 4. GIT COMMIT (also tracks consecutive agent failures)
+    def _step_commit(self, changes: dict, next_task_title: str) -> bool:
+        """Step 4: commit changes and track consecutive agent failures.
+
+        Returns False when the loop should stop (agent_fail_3x), True otherwise.
+        """
         if changes:
             self.state.consecutive_agent_failures = 0
             self._git_commit(
@@ -274,9 +325,14 @@ class RalphEngine:
                     "Run `prg ralph resume %s` after fixing.",
                     self.feature_id,
                 )
-                return
+                return False
+        return True
 
-        # 5. SELF-REVIEW
+    def _step_review(self) -> Optional[int]:
+        """Step 5: run self-review and enforce score thresholds.
+
+        Returns the review score, or None when the loop should stop (score < 60).
+        """
         review_score = self._run_self_review()
         self.state.last_review_score = review_score
         self.save_state()
@@ -291,17 +347,21 @@ class RalphEngine:
                 review_score,
                 self.feature_id,
             )
-            return
+            return None
 
-        if review_score < 70:
-            if self.verbose:
-                logger.info("⚠️  Review score %d — fixing issues before next iteration.", review_score)
-            # Fix pass: re-run agent with critique as context (best-effort, no second commit here)
+        if review_score < 70 and self.verbose:
+            logger.info("⚠️  Review score %d — fixing issues before next iteration.", review_score)
+        return review_score
 
-        # 6. TESTS — result cached on state so verify_success() can reuse it
+    def _step_tests(self, next_task_title: str, review_score: int) -> Optional[bool]:
+        """Step 6: run tests, cache result, track failures, mark task complete.
+
+        Returns the tests_passed bool, or None when the loop should stop (test_fail_3x).
+        """
         tests_passed, _ = self._run_tests()
         self.state.test_pass_rate = 1.0 if tests_passed else 0.0
-        self._last_tests_passed = tests_passed  # cache for verify_success()
+        self._last_tests_passed = tests_passed
+
         if tests_passed:
             self.state.consecutive_test_failures = 0
         else:
@@ -315,9 +375,8 @@ class RalphEngine:
                     "Run `prg ralph resume %s` after fixes.",
                     self.feature_id,
                 )
-                return
+                return None
 
-        # Mark task complete if tests pass and score >= 70
         if tests_passed and review_score >= 70:
             self._mark_task_complete(next_task_title)
             self.state.tasks_complete = max(
@@ -325,15 +384,7 @@ class RalphEngine:
             )
             self.save_state()
 
-        if self.verbose:
-            logger.info(
-                "📊 Iter %d complete — review=%d, tests=%s, tasks=%d/%d",
-                self.state.iteration,
-                review_score,
-                "✅" if tests_passed else "❌",
-                self.state.tasks_complete,
-                self.state.tasks_total,
-            )
+        return tests_passed
 
     def build_context(self) -> str:
         """Assemble loop context from project rules, feature plan, and git history."""

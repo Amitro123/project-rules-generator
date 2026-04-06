@@ -395,3 +395,144 @@ def test_run_loop_exits_on_verify_success(tmp_path):
 
     assert engine.state.status == "success"
     engine._create_pr.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Characterization tests — execute_iteration() step coverage
+# (These lock down each step's contract so refactoring stays safe.)
+# ---------------------------------------------------------------------------
+
+
+def test_step1_no_pending_tasks_marks_complete_and_returns(tmp_path):
+    """Step 1: when no pending tasks exist, tasks_complete is updated and
+    execute_iteration returns without calling agent or commit."""
+    engine = _make_engine(tmp_path, tasks_total=1, tasks_complete=0)
+    _make_tasks(engine.tasks_yaml, [{"title": "T1", "status": "done"}])
+
+    engine._agent_execute = MagicMock()
+    engine._git_commit = MagicMock()
+    engine.state.iteration = 1
+
+    engine.execute_iteration()
+
+    engine._agent_execute.assert_not_called()
+    engine._git_commit.assert_not_called()
+    assert engine.state.tasks_complete == 1
+
+
+def test_step3_security_error_stops_loop(tmp_path):
+    """Step 3: SecurityError from _agent_execute sets status=stopped with
+    security_violation exit_condition and returns without committing."""
+    from generator.exceptions import SecurityError
+
+    engine = _make_engine(tmp_path)
+    _make_tasks(engine.tasks_yaml, [{"title": "Malicious task", "status": "pending"}])
+
+    engine._match_skill = MagicMock(return_value=None)
+    engine._agent_execute = MagicMock(side_effect=SecurityError("path traversal"))
+    engine._git_commit = MagicMock()
+    engine.state.iteration = 1
+
+    engine.execute_iteration()
+
+    assert engine.state.status == "stopped"
+    assert "security_violation" in (engine.state.exit_condition or "")
+    engine._git_commit.assert_not_called()
+
+
+def test_step4_agent_fail_1x_increments_counter(tmp_path):
+    """Step 4: one empty agent response increments consecutive_agent_failures
+    but does NOT stop the loop."""
+    engine = _make_engine(tmp_path, consecutive_agent_failures=0)
+    _make_tasks(engine.tasks_yaml, [{"title": "T1", "status": "pending"}])
+
+    engine._match_skill = MagicMock(return_value=None)
+    engine._agent_execute = MagicMock(return_value={})
+    engine._git_commit = MagicMock()
+    engine._run_self_review = MagicMock(return_value=80)
+    engine._run_tests = MagicMock(return_value=(True, ""))
+    engine.state.iteration = 1
+
+    engine.execute_iteration()
+
+    assert engine.state.consecutive_agent_failures == 1
+    assert engine.state.status != "stopped"
+
+
+def test_step4_agent_fail_3x_stops_loop(tmp_path):
+    """Step 4: three consecutive empty agent responses sets status=stopped
+    with agent_fail_3x exit_condition."""
+    engine = _make_engine(tmp_path, consecutive_agent_failures=2)
+    _make_tasks(engine.tasks_yaml, [{"title": "T1", "status": "pending"}])
+
+    engine._match_skill = MagicMock(return_value=None)
+    engine._agent_execute = MagicMock(return_value={})
+    engine._git_commit = MagicMock()
+    engine.state.iteration = 3
+
+    engine.execute_iteration()
+
+    assert engine.state.status == "stopped"
+    assert engine.state.exit_condition == "agent_fail_3x"
+    engine._git_commit.assert_not_called()
+
+
+def test_step4_successful_changes_resets_failure_counter(tmp_path):
+    """Step 4: a non-empty changes dict resets consecutive_agent_failures to 0."""
+    engine = _make_engine(tmp_path, consecutive_agent_failures=2)
+    _make_tasks(engine.tasks_yaml, [{"title": "T1", "status": "pending"}])
+
+    engine._match_skill = MagicMock(return_value=None)
+    engine._agent_execute = MagicMock(return_value={"app.py": "content"})
+    engine._git_commit = MagicMock()
+    engine._run_self_review = MagicMock(return_value=80)
+    engine._run_tests = MagicMock(return_value=(True, ""))
+    engine.state.iteration = 1
+
+    engine.execute_iteration()
+
+    assert engine.state.consecutive_agent_failures == 0
+
+
+def test_step5_review_score_below_60_emergency_stop(tmp_path):
+    """Step 5 (existing): review score < 60 → emergency stop. Characterization
+    copy to confirm behavior survives the refactor."""
+    engine = _make_engine(tmp_path)
+    _make_tasks(engine.tasks_yaml, [{"title": "T1", "status": "pending"}])
+
+    engine._match_skill = MagicMock(return_value=None)
+    engine._agent_execute = MagicMock(return_value={"f.py": "x"})
+    engine._git_commit = MagicMock()
+    engine._run_self_review = MagicMock(return_value=55)
+    engine._run_tests = MagicMock(return_value=(True, ""))
+    engine.state.iteration = 1
+
+    engine.execute_iteration()
+
+    assert engine.state.status == "stopped"
+    assert "55" in (engine.state.exit_condition or "")
+
+
+def test_step6_task_marked_complete_when_tests_pass_and_score_ok(tmp_path):
+    """Step 6: when tests pass and review score >= 70, current task is marked done."""
+    engine = _make_engine(tmp_path, tasks_total=2, tasks_complete=0)
+    _make_tasks(
+        engine.tasks_yaml,
+        [{"title": "T1", "status": "pending"}, {"title": "T2", "status": "pending"}],
+    )
+
+    engine._match_skill = MagicMock(return_value=None)
+    engine._agent_execute = MagicMock(return_value={"f.py": "x"})
+    engine._git_commit = MagicMock()
+    engine._run_self_review = MagicMock(return_value=80)
+    engine._run_tests = MagicMock(return_value=(True, ""))
+    engine.state.iteration = 1
+
+    engine.execute_iteration()
+
+    from generator.ralph_engine import _load_tasks
+
+    tasks = _load_tasks(engine.tasks_yaml)
+    statuses = {t["title"]: t["status"] for t in tasks}
+    assert statuses["T1"] == "done"
+    assert statuses["T2"] == "pending"
