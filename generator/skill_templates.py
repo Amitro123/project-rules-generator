@@ -47,7 +47,7 @@ def load_skill_template(project_type: str) -> List[Skill]:
             for s_data in content["skills"]:
                 skills.append(Skill(**s_data))
         return skills
-    except Exception as e:
+    except (OSError, ValueError, TypeError) as e:
         logger.error("Error loading template %s: %s", project_type, e)
         return []
 
@@ -68,6 +68,6 @@ def load_skill_from_yaml(file_path: Path) -> List[Skill]:
             for s_data in content["skills"]:
                 skills.append(Skill(**s_data))
         return skills
-    except Exception as e:
+    except (OSError, ValueError, TypeError) as e:
         logger.error("Error loading skills from %s: %s", file_path, e)
         return []

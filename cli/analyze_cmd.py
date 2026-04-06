@@ -11,19 +11,19 @@ from cli._version import __version__
 from cli.analyze_helpers import (  # noqa: E402
     _handle_skill_management,
     _run_create_rules,
+    commit_generated_files,
     normalize_analyze_options,
+    setup_incremental,
+    setup_logging_and_provider,
     setup_orchestrator,
 )
 from cli.analyze_pipeline import run_generation_pipeline
 from cli.analyze_quality import run_quality_check
 from cli.analyze_readme import resolve_readme
-from cli.utils import detect_provider, set_api_key_env
 from generator.pack_manager import load_external_packs
 from generator.skills_manager import SkillsManager
 from prg_utils.config_schema import validate_config
 from prg_utils.exceptions import InvalidREADMEError, ProjectRulesGeneratorError, READMENotFoundError
-from prg_utils.git_ops import commit_files, is_git_repo
-from prg_utils.logger import setup_logging
 
 
 def load_config():
@@ -213,31 +213,15 @@ def analyze(
         if verbose:
             click.echo(f"⚠️  Skills structure setup warning: {e}")
 
-    # Incremental mode: check for changes before heavy work
-    from generator.incremental_analyzer import IncrementalAnalyzer
-
-    inc_analyzer = IncrementalAnalyzer(project_path, output_dir) if incremental else None
-    if inc_analyzer:
+    # Incremental mode: check for changes before heavy work (exits if nothing changed)
+    inc_analyzer = setup_incremental(incremental, project_path, output_dir)
+    if inc_analyzer and verbose:
         changed_sections = inc_analyzer.detect_changes()
-        if not changed_sections:
-            click.echo("No changes detected. Skipping regeneration. (use without --incremental to force)")
-            sys.exit(0)
-        if verbose:
-            click.echo(f"Incremental: changed sections: {', '.join(sorted(changed_sections))}")
+        click.echo(f"Incremental: changed sections: {', '.join(sorted(changed_sections))}")
 
     if verbose:
-        setup_logging(verbose=True)
-        click.echo(f"Project Rules Generator v{__version__}")
         click.echo(f"Target: {project_path}")
-    else:
-        setup_logging(verbose=False)
-
-    provider = detect_provider(provider, api_key)
-    if verbose:
-        click.echo(f"Auto-detected provider: {provider}")
-    set_api_key_env(provider, api_key)
-    if api_key and verbose:
-        click.echo(f"Using API key from --api-key flag for {provider}")
+    provider = setup_logging_and_provider(verbose, provider, api_key, __version__)
 
     try:
         config = load_config()
@@ -329,22 +313,7 @@ def analyze(
                 click.echo(f"   {f}")
 
         # Git commit
-        if commit:
-            if not is_git_repo(project_path):
-                if not interactive:
-                    click.echo("\nWARNING: Not a git repository, skipping commit")
-            else:
-                commit_msg = config.get("git", {}).get("commit_message", "Auto-generated rules and skills")
-                user_name = config.get("git", {}).get("commit_user_name")
-                user_email = config.get("git", {}).get("commit_user_email")
-                try:
-                    result = commit_files(generated_files, commit_msg, project_path, user_name, user_email)
-                    click.echo("\nCommitted to git")
-                    if "nothing to commit" in result.lower():
-                        click.echo("   (or files already tracked)")
-                except Exception as e:
-                    click.echo(f"\nWARNING: Git commit failed: {e}")
-                    click.echo("   Files were generated, you can commit manually")
+        commit_generated_files(commit, config, generated_files, project_path, interactive)
 
         if inc_analyzer:
             inc_analyzer.save_hash(inc_analyzer.compute_project_hash())

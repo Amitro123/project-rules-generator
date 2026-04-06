@@ -54,5 +54,5 @@ class OpenAIClient(AIClient):
             )
             raw = resp.choices[0].message.content or ""
             return normalize_mojibake(raw)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — OpenAI SDK raises diverse provider errors
             raise RuntimeError(f"OpenAI generation failed: {e}") from e

@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from generator.types import SKILL_REQUIRED_SECTIONS
+
 # Markers that indicate a skill is a generic stub (not project-specific)
 STUB_MARKERS = [
     "Follow project conventions",
@@ -97,7 +99,7 @@ def _parse_frontmatter(content: str):
         import yaml
 
         meta = yaml.safe_load(yaml_block) or {}
-    except Exception:
+    except (ValueError, TypeError):
         meta = {}
     return meta if isinstance(meta, dict) else {}, body
 
@@ -263,8 +265,7 @@ def validate_quality(
             metadata_tools = raw_tools if isinstance(raw_tools, list) else []
 
     # Check required sections
-    required_sections = ["## Purpose", "## Auto-Trigger", "## Process", "## Output"]
-    for section in required_sections:
+    for section in SKILL_REQUIRED_SECTIONS:
         if section not in content:
             score -= 15
             issues.append(f"Missing section: {section}")

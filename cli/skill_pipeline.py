@@ -216,6 +216,7 @@ def _write_skill_stub(
     if stub_context_lines:
         purpose = skills_manager._summarize_purpose(category, stub_context_lines, project_name)
         guidelines = skills_manager._build_guidelines(category, stub_context_lines)
+        context_block = "".join(f"> {line}\n" for line in stub_context_lines[:5])
         stub = (
             f"# {title}\n\n"
             f"**Project:** {project_name}\n"
@@ -224,11 +225,12 @@ def _write_skill_stub(
             f"## Auto-Trigger\n\n"
             f"- Working with {category} integration code\n"
             f"- Editing files that import or configure {category}\n\n"
-            f"## Guidelines\n\n{guidelines}\n\n"
+            f"## Process\n\n{guidelines}\n\n"
+            f"## Output\n\n"
+            f"Updated {category} implementation following project conventions.\n\n"
             f"## Project Context (from README)\n\n"
+            f"{context_block}"
         )
-        for ctx_line in stub_context_lines[:5]:
-            stub += f"> {ctx_line}\n"
     else:
         stub = (
             f"# {title}\n\n"
@@ -238,9 +240,11 @@ def _write_skill_stub(
             f"Integration patterns for {ref_name.replace('-', ' ')} in {project_name}.\n\n"
             f"## Auto-Trigger\n\n"
             f"- Working with {category} code\n\n"
-            f"## Guidelines\n\n"
+            f"## Process\n\n"
             f"- Refer to project README for {category} usage patterns\n"
-            f"- Handle errors with proper retries and fallbacks\n"
+            f"- Handle errors with proper retries and fallbacks\n\n"
+            f"## Output\n\n"
+            f"Updated {category} implementation following project conventions.\n"
         )
 
     dest.write_text(stub, encoding="utf-8")

@@ -52,5 +52,5 @@ class GroqClient(AIClient):
             )
             # Clean encoding artifacts per AMIT_CODING_PREFERENCES.md
             return normalize_mojibake(completion.choices[0].message.content or "")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — Groq SDK raises diverse provider errors
             raise RuntimeError(f"Groq generation failed: {e}") from e

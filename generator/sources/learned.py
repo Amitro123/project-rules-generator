@@ -28,7 +28,7 @@ class LearnedSkillsSource(SkillSource):
         if self.enabled and not self.learned_path.exists():
             try:
                 self.learned_path.mkdir(parents=True, exist_ok=True)
-            except Exception as e:
+            except OSError as e:
                 logger.warning(f"Could not create learned skills dir: {e}")
 
     @property
@@ -54,7 +54,7 @@ class LearnedSkillsSource(SkillSource):
                 for s in skills:
                     s.source = "learned"
                     all_skills.append(s)
-            except Exception as e:
+            except (OSError, ValueError, TypeError) as e:
                 logger.warning(f"Failed to load learned skill {yaml_file}: {e}")
         return all_skills
 
@@ -110,5 +110,5 @@ class LearnedSkillsSource(SkillSource):
             with open(file_path, "w", encoding="utf-8") as f:
                 yaml.dump([data], f, sort_keys=False)
 
-        except Exception as e:
+        except (OSError, ValueError, TypeError) as e:
             logger.error(f"Failed to save skill {skill.name}: {e}")

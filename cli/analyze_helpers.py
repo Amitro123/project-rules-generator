@@ -1,7 +1,8 @@
 """Extracted helper functions for analyze_cmd.py to reduce module complexity."""
 
+import sys
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import click
 
@@ -184,3 +185,75 @@ def setup_orchestrator(config):
     orchestrator.register_source(BuiltinSkillsSource(config))
     orchestrator.register_source(LearnedSkillsSource(config))
     return orchestrator
+
+
+def setup_logging_and_provider(verbose: bool, provider: Optional[str], api_key: Optional[str], version: str) -> str:
+    """Configure logging, print version banner, detect and configure provider.
+
+    Returns the resolved provider name.
+    """
+    from cli.utils import detect_provider, set_api_key_env
+    from prg_utils.logger import setup_logging
+
+    if verbose:
+        setup_logging(verbose=True)
+        click.echo(f"Project Rules Generator v{version}")
+    else:
+        setup_logging(verbose=False)
+
+    resolved = detect_provider(provider, api_key)
+    if verbose:
+        click.echo(f"Auto-detected provider: {resolved}")
+    set_api_key_env(resolved, api_key)
+    if api_key and verbose:
+        click.echo(f"Using API key from --api-key flag for {resolved}")
+    return resolved
+
+
+def setup_incremental(incremental: bool, project_path: Path, output_dir: Path) -> Any:
+    """Create IncrementalAnalyzer and perform early-exit if nothing changed.
+
+    Returns the analyzer instance (or None when --incremental is not set).
+    Calls sys.exit(0) when no changes are detected.
+    """
+    from generator.incremental_analyzer import IncrementalAnalyzer
+
+    if not incremental:
+        return None
+
+    inc_analyzer = IncrementalAnalyzer(project_path, output_dir)
+    changed_sections = inc_analyzer.detect_changes()
+    if not changed_sections:
+        click.echo("No changes detected. Skipping regeneration. (use without --incremental to force)")
+        sys.exit(0)
+    return inc_analyzer
+
+
+def commit_generated_files(
+    commit: bool,
+    config: Dict[str, Any],
+    generated_files: List[str],
+    project_path: Path,
+    interactive: bool,
+) -> None:
+    """Commit generated files to git when --commit is set and repo exists."""
+    from prg_utils.git_ops import commit_files, is_git_repo
+
+    if not commit:
+        return
+    if not is_git_repo(project_path):
+        if not interactive:
+            click.echo("\nWARNING: Not a git repository, skipping commit")
+        return
+
+    commit_msg = config.get("git", {}).get("commit_message", "Auto-generated rules and skills")
+    user_name = config.get("git", {}).get("commit_user_name")
+    user_email = config.get("git", {}).get("commit_user_email")
+    try:
+        result = commit_files(generated_files, commit_msg, project_path, user_name, user_email)
+        click.echo("\nCommitted to git")
+        if "nothing to commit" in result.lower():
+            click.echo("   (or files already tracked)")
+    except Exception as e:
+        click.echo(f"\nWARNING: Git commit failed: {e}")
+        click.echo("   Files were generated, you can commit manually")

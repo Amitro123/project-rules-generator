@@ -50,5 +50,5 @@ class AnthropicClient(AIClient):
             )
             raw = next((b.text for b in msg.content if hasattr(b, "text")), "") if msg.content else ""
             return normalize_mojibake(raw)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — Anthropic SDK raises diverse provider errors
             raise RuntimeError(f"Anthropic generation failed: {e}") from e

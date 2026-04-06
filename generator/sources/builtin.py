@@ -57,7 +57,7 @@ class BuiltinSkillsSource(SkillSource):
                 for s in skills:
                     s.source = "builtin"  # tag source
                     all_skills.append(s)
-            except Exception as e:
+            except (OSError, ValueError, TypeError) as e:
                 logger.warning(f"Failed to load builtin skill {yaml_file}: {e}")
         return all_skills
 

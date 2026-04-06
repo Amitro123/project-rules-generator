@@ -1,6 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+# Canonical required sections for a valid skill document.
+# This is the single source of truth — generators AND validators must import this.
+SKILL_REQUIRED_SECTIONS = ["## Purpose", "## Auto-Trigger", "## Process", "## Output"]
+
 
 @dataclass
 class SkillNeed:
