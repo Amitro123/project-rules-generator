@@ -151,7 +151,7 @@ prg providers benchmark  # Side-by-side quality ranking
 prg init .                                    # First-run wizard: detect stack, generate rules
 prg analyze .                                 # Regenerate from README + file structure
 prg analyze . --ai                            # AI-powered analysis (LLM-generated skills)
-prg analyze . --incremental                   # Update only what changed (3–5x faster)
+prg analyze . --incremental                   # Skip unchanged phases (README/deps/source tracked)
 prg analyze . --constitution                  # Also generate constitution.md
 ```
 

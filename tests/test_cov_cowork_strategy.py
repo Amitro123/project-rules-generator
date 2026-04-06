@@ -61,7 +61,9 @@ class TestReadmeBridging:
     def test_bridges_missing_context_when_readme_insufficient(self, tmp_path):
         strategy, creator = _strategy_with_creator()
         with patch("generator.strategies.cowork_strategy.is_readme_sufficient", return_value=False):
-            with patch("generator.strategies.cowork_strategy.bridge_missing_context", return_value="# Supplement") as mock_bridge:
+            with patch(
+                "generator.strategies.cowork_strategy.bridge_missing_context", return_value="# Supplement"
+            ) as mock_bridge:
                 strategy.generate("my-skill", tmp_path, None, "groq", use_ai=True)
         mock_bridge.assert_called_once()
 
@@ -75,14 +77,18 @@ class TestReadmeBridging:
     def test_handles_bridge_exception_gracefully(self, tmp_path):
         strategy, creator = _strategy_with_creator()
         with patch("generator.strategies.cowork_strategy.is_readme_sufficient", return_value=False):
-            with patch("generator.strategies.cowork_strategy.bridge_missing_context", side_effect=RuntimeError("bridge error")):
+            with patch(
+                "generator.strategies.cowork_strategy.bridge_missing_context", side_effect=RuntimeError("bridge error")
+            ):
                 result = strategy.generate("my-skill", tmp_path, None, "groq", use_ai=True)
         # Should not raise — result depends on creator
         assert result is not None or result is None
 
     def test_handles_sufficiency_check_exception(self, tmp_path):
         strategy, creator = _strategy_with_creator()
-        with patch("generator.strategies.cowork_strategy.is_readme_sufficient", side_effect=RuntimeError("check failed")):
+        with patch(
+            "generator.strategies.cowork_strategy.is_readme_sufficient", side_effect=RuntimeError("check failed")
+        ):
             with patch("generator.strategies.cowork_strategy.bridge_missing_context", return_value=""):
                 strategy.generate("my-skill", tmp_path, None, "groq", use_ai=True)
 

@@ -142,8 +142,8 @@ class TestDefaultBranch:
 
     def test_falls_back_to_local_main(self, tmp_path):
         side_effects = [
-            MagicMock(returncode=1, stdout=""),   # remote HEAD fails
-            MagicMock(returncode=0, stdout=""),   # local main exists
+            MagicMock(returncode=1, stdout=""),  # remote HEAD fails
+            MagicMock(returncode=0, stdout=""),  # local main exists
         ]
         with patch("subprocess.run", side_effect=side_effects):
             result = default_branch(tmp_path)

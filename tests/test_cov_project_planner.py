@@ -7,7 +7,6 @@ import pytest
 
 from generator.planning.project_planner import Phase, Plan, ProjectPlanner, Task
 
-
 # ---------------------------------------------------------------------------
 # Task
 # ---------------------------------------------------------------------------

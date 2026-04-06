@@ -216,8 +216,8 @@ def analyze(
     # Incremental mode: check for changes before heavy work (exits if nothing changed)
     inc_analyzer = setup_incremental(incremental, project_path, output_dir)
     if inc_analyzer and verbose:
-        changed_sections = inc_analyzer.detect_changes()
-        click.echo(f"Incremental: changed sections: {', '.join(sorted(changed_sections))}")
+        # detect_changes() is cached — no re-read cost
+        click.echo(f"Incremental: changed sections: {', '.join(sorted(inc_analyzer.detect_changes()))}")
 
     if verbose:
         click.echo(f"Target: {project_path}")
@@ -316,7 +316,8 @@ def analyze(
         commit_generated_files(commit, config, generated_files, project_path, interactive)
 
         if inc_analyzer:
-            inc_analyzer.save_hash(inc_analyzer.compute_project_hash())
+            # Reuse the hash already computed by detect_changes(); avoids a second full re-read
+            inc_analyzer.save_hash(inc_analyzer._current_hash or inc_analyzer.compute_project_hash())
             if verbose:
                 click.echo("   Saved incremental cache")
 

@@ -38,7 +38,10 @@ class TestRulesGitMinerExtractAntipatterns:
     def test_returns_rules_when_available(self, tmp_path):
         miner = _miner_with_available(tmp_path, available=True)
         hotspot_result = MagicMock(returncode=0, stdout="file.py\nfile.py\n" * 12)
-        large_result = MagicMock(returncode=0, stdout="abc123 commit\n 600 insertions(+)\nabc456 commit\n 700 insertions(+)\nabc789 commit\n 800 insertions(+)\n")
+        large_result = MagicMock(
+            returncode=0,
+            stdout="abc123 commit\n 600 insertions(+)\nabc456 commit\n 700 insertions(+)\nabc789 commit\n 800 insertions(+)\n",
+        )
         with patch("subprocess.run", side_effect=[hotspot_result, large_result]):
             rules = miner.extract_antipatterns()
         assert len(rules) > 0
@@ -78,9 +81,7 @@ class TestRulesGitMinerFindHotspots:
     def test_shows_up_to_three_hotspot_filenames(self, tmp_path):
         miner = _miner_with_available(tmp_path)
         # 4 hot files, should only show 3
-        output = "\n".join(
-            ["a.py"] * 15 + ["b.py"] * 14 + ["c.py"] * 13 + ["d.py"] * 12
-        )
+        output = "\n".join(["a.py"] * 15 + ["b.py"] * 14 + ["c.py"] * 13 + ["d.py"] * 12)
         with patch("subprocess.run", return_value=MagicMock(returncode=0, stdout=output)):
             rules = miner._find_hotspots()
         # Rule content mentions hotspot file names; d.py may or may not appear

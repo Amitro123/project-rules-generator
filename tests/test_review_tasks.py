@@ -9,7 +9,6 @@ from click.testing import CliRunner
 
 from cli.cmd_review import _generate_tasks_from_review
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

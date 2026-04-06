@@ -47,7 +47,9 @@ class TestDetectTechStack:
 class TestDetectProjectType:
     def test_delegates_to_detector(self, tmp_path):
         c = _creator(tmp_path)
-        with patch("generator.analyzers.project_type_detector.detect_project_type", return_value={"primary_type": "python-api"}):
+        with patch(
+            "generator.analyzers.project_type_detector.detect_project_type", return_value={"primary_type": "python-api"}
+        ):
             result = c._detect_project_type(["fastapi"], {})
         assert result == "python-api"
 
@@ -112,13 +114,17 @@ class TestDetectSignals:
 class TestGenerateGenericRules:
     def test_returns_three_rules(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="P", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="P", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[]
+        )
         rules = c._generate_generic_rules(meta)
         assert len(rules) == 3
 
     def test_all_rules_are_rule_instances(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="P", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="P", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[]
+        )
         rules = c._generate_generic_rules(meta)
         assert all(isinstance(r, Rule) for r in rules)
 
@@ -126,20 +132,26 @@ class TestGenerateGenericRules:
 class TestGenerateArchitectureRules:
     def test_python_api_returns_route_rules(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="P", tech_stack=["fastapi"], project_type="python-api", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="P", tech_stack=["fastapi"], project_type="python-api", priority_areas=[], detected_signals=[]
+        )
         rules = c._generate_architecture_rules(meta)
         assert len(rules) > 0
         assert any("route" in r.content.lower() or "layer" in r.content.lower() for r in rules)
 
     def test_python_cli_returns_click_rules(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="P", tech_stack=["click"], project_type="python-cli", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="P", tech_stack=["click"], project_type="python-cli", priority_areas=[], detected_signals=[]
+        )
         rules = c._generate_architecture_rules(meta)
         assert any("cli" in r.content.lower() or "command" in r.content.lower() for r in rules)
 
     def test_unknown_type_returns_generic_rules(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="P", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="P", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[]
+        )
         rules = c._generate_architecture_rules(meta)
         assert isinstance(rules, list)
 
@@ -147,19 +159,25 @@ class TestGenerateArchitectureRules:
 class TestGenerateTestingRules:
     def test_pytest_project_returns_pytest_rules(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="P", tech_stack=["pytest"], project_type="python-cli", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="P", tech_stack=["pytest"], project_type="python-cli", priority_areas=[], detected_signals=[]
+        )
         rules = c._generate_testing_rules(meta)
         assert any("pytest" in r.content.lower() for r in rules)
 
     def test_jest_project_returns_jest_rules(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="P", tech_stack=["jest"], project_type="react-app", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="P", tech_stack=["jest"], project_type="react-app", priority_areas=[], detected_signals=[]
+        )
         rules = c._generate_testing_rules(meta)
         assert any("jest" in r.content.lower() for r in rules)
 
     def test_returns_list(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="P", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="P", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[]
+        )
         rules = c._generate_testing_rules(meta)
         assert isinstance(rules, list)
 
@@ -167,25 +185,33 @@ class TestGenerateTestingRules:
 class TestExportToFile:
     def test_creates_file(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="Proj", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="Proj", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[]
+        )
         path = c.export_to_file("# Content\n", meta, tmp_path)
         assert path.exists()
 
     def test_file_contains_content(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="Proj", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="Proj", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[]
+        )
         path = c.export_to_file("# My Rules\n", meta, tmp_path)
         assert "# My Rules" in path.read_text(encoding="utf-8")
 
     def test_custom_filename(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="Proj", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="Proj", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[]
+        )
         path = c.export_to_file("content", meta, tmp_path, filename="custom.md")
         assert path.name == "custom.md"
 
     def test_creates_output_directory(self, tmp_path):
         c = _creator(tmp_path)
-        meta = RulesMetadata(project_name="Proj", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[])
+        meta = RulesMetadata(
+            project_name="Proj", tech_stack=[], project_type="unknown", priority_areas=[], detected_signals=[]
+        )
         out_dir = tmp_path / "subdir" / "rules"
         path = c.export_to_file("content", meta, out_dir)
         assert path.exists()

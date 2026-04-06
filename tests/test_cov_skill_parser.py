@@ -151,25 +151,13 @@ class TestBuildGuidelines:
 
 class TestExtractAllTriggers:
     def test_extracts_quoted_triggers(self):
-        skills = {
-            "project": {
-                "my-skill": {
-                    "content": '## Auto-Trigger\n\n- "run tests"\n- "execute suite"\n'
-                }
-            }
-        }
+        skills = {"project": {"my-skill": {"content": '## Auto-Trigger\n\n- "run tests"\n- "execute suite"\n'}}}
         result = SkillParser.extract_all_triggers(skills)
         assert "my-skill" in result
         assert "run tests" in result["my-skill"]
 
     def test_extracts_unquoted_trigger(self):
-        skills = {
-            "project": {
-                "my-skill": {
-                    "content": "## Auto-Trigger\n\n- run tests\n"
-                }
-            }
-        }
+        skills = {"project": {"my-skill": {"content": "## Auto-Trigger\n\n- run tests\n"}}}
         result = SkillParser.extract_all_triggers(skills)
         assert "my-skill" in result
 
@@ -183,22 +171,12 @@ class TestExtractAllTriggers:
         assert "builtin phrase" not in result.get("shared", [])
 
     def test_missing_trigger_section_skipped(self):
-        skills = {
-            "project": {
-                "no-trigger-skill": {"content": "# Skill\n\nNo trigger section.\n"}
-            }
-        }
+        skills = {"project": {"no-trigger-skill": {"content": "# Skill\n\nNo trigger section.\n"}}}
         result = SkillParser.extract_all_triggers(skills)
         assert "no-trigger-skill" not in result
 
     def test_strips_when_prefix_from_unquoted(self):
-        skills = {
-            "project": {
-                "my-skill": {
-                    "content": "## Auto-Trigger\n\n- when user asks about testing\n"
-                }
-            }
-        }
+        skills = {"project": {"my-skill": {"content": "## Auto-Trigger\n\n- when user asks about testing\n"}}}
         result = SkillParser.extract_all_triggers(skills)
         if "my-skill" in result:
             assert not any("when " in t for t in result["my-skill"])

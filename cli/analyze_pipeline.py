@@ -76,19 +76,40 @@ def run_generation_pipeline(
 
     generated_files: List[Path] = []
 
+    # Determine which phases need to run (all True when not incremental)
+    _run_enhanced = _run_rules = _run_constitution = _run_skills_gen = True
+    if inc_analyzer:
+        _run_enhanced, _run_rules, _run_constitution, _run_skills_gen = inc_analyzer.phases_to_run()
+        if verbose:
+            skipped = [
+                n
+                for n, flag in [
+                    ("enhanced-parse", _run_enhanced),
+                    ("rules", _run_rules),
+                    ("constitution", _run_constitution),
+                    ("skills-gen", _run_skills_gen),
+                ]
+                if not flag
+            ]
+            if skipped:
+                click.echo(f"   Incremental: skipping unchanged phases: {', '.join(skipped)}")
+
     with tqdm(total=4, disable=not verbose, desc="Build") as pbar:
         # --- Phase 1: Enhanced project parsing ---
         pbar.set_description("Analyzing Project")
         enhanced_context = None
-        try:
-            enhanced_parser = EnhancedProjectParser(project_path)
-            enhanced_context = enhanced_parser.extract_full_context()
-        except Exception as e:
-            if verbose:
-                click.echo(f"   Enhanced analysis unavailable: {e}")
+        if _run_enhanced:
+            try:
+                enhanced_parser = EnhancedProjectParser(project_path)
+                enhanced_context = enhanced_parser.extract_full_context()
+            except Exception as e:
+                if verbose:
+                    click.echo(f"   Enhanced analysis unavailable: {e}")
+        elif verbose:
+            click.echo("   Incremental: skipped enhanced parse (source/structure unchanged)")
 
         # --- Phase 2: Constitution ---
-        if constitution and enhanced_context:
+        if constitution and _run_constitution and enhanced_context:
             pbar.set_description("Generating Constitution")
             constitution_content = generate_constitution(project_name, enhanced_context, project_path=project_path)
             constitution_path = output_dir / "constitution.md"
@@ -96,19 +117,32 @@ def run_generation_pipeline(
             generated_files.append(constitution_path)
             if verbose:
                 click.echo("   Generated constitution.md")
+        elif constitution and not _run_constitution:
+            if verbose:
+                click.echo("   Incremental: skipped constitution (README unchanged)")
         elif constitution and not enhanced_context:
             if verbose:
                 click.echo("   Skipping constitution (enhanced analysis unavailable)")
 
         # --- Phase 3: Rules ---
         pbar.set_description("Generating Rules")
-        rules_content = generate_rules(project_data, config, enhanced_context=enhanced_context)
+        if _run_rules:
+            rules_content = generate_rules(project_data, config, enhanced_context=enhanced_context)
+        else:
+            # Load existing rules.md as the base content to carry forward
+            existing_rules_path = output_dir / "rules.md"
+            if existing_rules_path.exists():
+                rules_content = existing_rules_path.read_text(encoding="utf-8")
+                if verbose:
+                    click.echo("   Incremental: skipped rules regen (README/deps unchanged) — using cached rules.md")
+            else:
+                rules_content = generate_rules(project_data, config, enhanced_context=enhanced_context)
         pbar.update(1)
 
         # --- Phase 4: Skills auto-generation ---
         pbar.set_description("Processing Skills")
         enhanced_selected_skills: Set[str] = set()
-        if auto_generate_skills:
+        if auto_generate_skills and _run_skills_gen:
             enhanced_selected_skills = _auto_generate_skills(
                 project_path=project_path,
                 project_name=project_name,
@@ -119,6 +153,8 @@ def run_generation_pipeline(
                 skills_manager=skills_manager,
                 strategy=strategy,
             )
+        elif auto_generate_skills and not _run_skills_gen and verbose:
+            click.echo("   Incremental: skipped skills auto-gen (source/README unchanged)")
 
         # Extract triggers
         triggers_dict: Dict[str, Any] = {}
@@ -148,18 +184,11 @@ def run_generation_pipeline(
         if inc_analyzer and rules_path.exists():
             from generator.incremental_analyzer import IncrementalAnalyzer
 
-            all_sections = set(inc_analyzer.compute_project_hash().keys())
+            changed_sections = inc_analyzer.detect_changes()  # cached — no re-read
             existing_rules = rules_path.read_text(encoding="utf-8")
-            changed_sections = inc_analyzer.detect_changes()
-            skipped_sections = all_sections - changed_sections
             unified_content = IncrementalAnalyzer.merge_rules(existing_rules, unified_content, changed_sections)
             if verbose:
-                if changed_sections:
-                    click.echo(f"   Incremental: regenerated {', '.join(sorted(changed_sections))}")
-                else:
-                    click.echo("   Incremental: all sections up-to-date — nothing regenerated")
-                if skipped_sections:
-                    click.echo(f"   Incremental: skipped (cached) {', '.join(sorted(skipped_sections))}")
+                click.echo(f"   Incremental: merged changes from {', '.join(sorted(changed_sections))}")
         save_markdown(rules_path, unified_content)
         generated_files.append(rules_path)
 

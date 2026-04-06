@@ -5,7 +5,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,9 @@ class IncrementalAnalyzer:
         self.project_path = Path(project_path)
         self.output_dir = Path(output_dir)
         self.cache_path = self.output_dir / CACHE_FILENAME
+        self._cached_changed: Optional[Set[str]] = None
+        # Current hash computed during detect_changes() — reused by save_hash()
+        self._current_hash: Optional[Dict[str, str]] = None
 
     # ------------------------------------------------------------------
     # Hashing
@@ -72,6 +75,10 @@ class IncrementalAnalyzer:
                 'tests': '<sha256>',      # test files
                 'structure': '<sha256>',  # directory layout
             }
+
+        This method is intentionally NOT cached — it re-reads files on each call
+        so it always reflects the current on-disk state. Use detect_changes() for
+        the cached "what changed vs last run" result.
         """
         return {
             "deps": self._hash_deps(),
@@ -185,18 +192,48 @@ class IncrementalAnalyzer:
 
         Returns a set of changed section keys (e.g. ``{'deps', 'readme'}``).
         If no cache exists, returns *all* sections (full regen).
+        Result is cached on the instance — safe to call multiple times with
+        no performance penalty (hash is computed only once per analyzer lifetime).
         """
+        if self._cached_changed is not None:
+            return self._cached_changed
+
         current = self.compute_project_hash()
+        self._current_hash = current  # store for save_hash() to reuse
         previous = self.load_previous_hash()
 
         if previous is None:
-            return set(current.keys())
+            self._cached_changed = set(current.keys())
+        else:
+            changed: Set[str] = set()
+            for key, value in current.items():
+                if previous.get(key) != value:
+                    changed.add(key)
+            self._cached_changed = changed
 
-        changed: Set[str] = set()
-        for key, value in current.items():
-            if previous.get(key) != value:
-                changed.add(key)
-        return changed
+        return self._cached_changed
+
+    def phases_to_run(self) -> Tuple[bool, bool, bool, bool]:
+        """Return which pipeline phases need to run based on changed sections.
+
+        Returns:
+            (run_enhanced_parse, run_rules, run_constitution, run_skills_gen)
+
+        Mapping logic:
+        - ``readme`` or ``deps`` changed  → rules + constitution need regeneration
+        - ``source`` or ``structure`` changed → enhanced parse + skills need regeneration
+        - Nothing changed          → all False (should have exited earlier)
+        """
+        changed = self.detect_changes()
+        readme_or_deps = bool(changed & {"readme", "deps"})
+        source_or_structure = bool(changed & {"source", "structure", "tests"})
+
+        run_enhanced_parse = readme_or_deps or source_or_structure
+        run_rules = readme_or_deps
+        run_constitution = bool(changed & {"readme"})
+        run_skills_gen = readme_or_deps or source_or_structure
+
+        return run_enhanced_parse, run_rules, run_constitution, run_skills_gen
 
     # ------------------------------------------------------------------
     # Merge

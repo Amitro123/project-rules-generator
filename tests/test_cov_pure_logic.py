@@ -383,7 +383,9 @@ class TestSelfReviewerParseReview:
 
     def test_parses_strengths(self):
         r = self._reviewer()
-        response = "VERDICT: Pass\nSTRENGTHS:\n- Great tests\n- Clear structure\nISSUES:\nHALLUCINATIONS:\nACTION_PLAN:\n"
+        response = (
+            "VERDICT: Pass\nSTRENGTHS:\n- Great tests\n- Clear structure\nISSUES:\nHALLUCINATIONS:\nACTION_PLAN:\n"
+        )
         report = r._parse_review(response)
         assert "Great tests" in report.strengths
         assert "Clear structure" in report.strengths
@@ -461,7 +463,9 @@ class TestSelfReviewerStaticReview:
 
     def test_missing_title_is_issue(self):
         r = self._reviewer()
-        content = "no title here\n\n## Phase 1\n\n- [ ] Task 1\n- [ ] Task 2\n- [ ] Task 3\n- [ ] Task 4\n- [ ] Task 5\n"
+        content = (
+            "no title here\n\n## Phase 1\n\n- [ ] Task 1\n- [ ] Task 2\n- [ ] Task 3\n- [ ] Task 4\n- [ ] Task 5\n"
+        )
         report = r._static_review(content, "")
         assert any("title" in i.lower() for i in report.issues)
 
