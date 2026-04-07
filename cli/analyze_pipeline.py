@@ -111,7 +111,7 @@ def run_generation_pipeline(
 
     generated_files: List[Path] = []
 
-    # Determine which phases need to run (all True when not incremental)
+    # Resolve which phases need to run (all True when not incremental)
     _run_enhanced = _run_rules = _run_constitution = _run_skills_gen = True
     if inc_analyzer:
         _run_enhanced, _run_rules, _run_constitution, _run_skills_gen = inc_analyzer.phases_to_run()
@@ -130,79 +130,33 @@ def run_generation_pipeline(
                 click.echo(f"   Incremental: skipping unchanged phases: {', '.join(skipped)}")
 
     with tqdm(total=4, disable=not verbose, desc="Build") as pbar:
-        # --- Phase 1: Enhanced project parsing ---
         pbar.set_description("Analyzing Project")
-        enhanced_context = None
-        if _run_enhanced:
-            try:
-                enhanced_parser = EnhancedProjectParser(project_path)
-                enhanced_context = enhanced_parser.extract_full_context()
-            except Exception as e:
-                if verbose:
-                    click.echo(f"   Enhanced analysis unavailable: {e}")
-        elif verbose:
-            click.echo("   Incremental: skipped enhanced parse (source/structure unchanged)")
+        enhanced_context = _phase_enhanced_parse(project_path, _run_enhanced, verbose)
+        pbar.update(1)
 
-        # --- Phase 2: Constitution ---
-        if constitution and _run_constitution and enhanced_context:
-            pbar.set_description("Generating Constitution")
-            constitution_content = generate_constitution(project_name, enhanced_context, project_path=project_path)
-            constitution_path = output_dir / "constitution.md"
-            constitution_path.write_text(constitution_content, encoding="utf-8")
-            generated_files.append(constitution_path)
-            if verbose:
-                click.echo("   Generated constitution.md")
-        elif constitution and not _run_constitution:
-            if verbose:
-                click.echo("   Incremental: skipped constitution (README unchanged)")
-        elif constitution and not enhanced_context:
-            if verbose:
-                click.echo("   Skipping constitution (enhanced analysis unavailable)")
+        _phase_constitution(
+            project_name, enhanced_context, output_dir, project_path,
+            verbose, constitution, _run_constitution, generated_files,
+        )
 
-        # --- Phase 3: Rules ---
         pbar.set_description("Generating Rules")
-        if _run_rules:
-            rules_content = generate_rules(project_data, config, enhanced_context=enhanced_context)
-        else:
-            # Load existing rules.md as the base content to carry forward
-            existing_rules_path = output_dir / "rules.md"
-            if existing_rules_path.exists():
-                rules_content = existing_rules_path.read_text(encoding="utf-8")
-                if verbose:
-                    click.echo("   Incremental: skipped rules regen (README/deps unchanged) — using cached rules.md")
-            else:
-                rules_content = generate_rules(project_data, config, enhanced_context=enhanced_context)
+        rules_content = _phase_rules(
+            project_data, config, enhanced_context, output_dir, verbose, _run_rules,
+        )
         pbar.update(1)
 
-        # --- Phase 4: Skills auto-generation ---
         pbar.set_description("Processing Skills")
-        enhanced_selected_skills: Set[str] = set()
-        if auto_generate_skills and _run_skills_gen:
-            enhanced_selected_skills = _auto_generate_skills(
-                project_path=project_path,
-                project_name=project_name,
-                enhanced_context=enhanced_context,
-                provider=provider,
-                ai=ai,
-                verbose=verbose,
-                skills_manager=skills_manager,
-                strategy=strategy,
-            )
-        elif auto_generate_skills and not _run_skills_gen and verbose:
-            click.echo("   Incremental: skipped skills auto-gen (source/README unchanged)")
-
-        # Extract triggers
-        triggers_dict: Dict[str, Any] = {}
-        if with_skills:
-            triggers_dict = skills_manager.extract_project_triggers()
-            skills_manager.save_triggers_json(output_dir)
+        enhanced_selected_skills = _phase_skills(
+            project_path, project_name, enhanced_context, provider, ai,
+            verbose, skills_manager, strategy,
+            auto_generate_skills, _run_skills_gen,
+        )
         pbar.update(1)
 
-        # --- Phase 5: Build unified content ---
         pbar.set_description("Unified Export (.clinerules/)")
         unified_content = _build_unified_content(
             rules_content=rules_content,
-            triggers_dict=triggers_dict,
+            triggers_dict=skills_manager.extract_project_triggers() if with_skills else {},
             skills_manager=skills_manager,
             enhanced_selected_skills=enhanced_selected_skills,
             project_name=project_name,
@@ -214,29 +168,9 @@ def run_generation_pipeline(
             generated_files=generated_files,
         )
 
-        # --- Phase 6: Write rules.md ---
-        rules_path = output_dir / "rules.md"
-        if inc_analyzer and rules_path.exists():
-            changed_sections = inc_analyzer.detect_changes()  # cached — no re-read
-            existing_rules = rules_path.read_text(encoding="utf-8")
-            unified_content = IncrementalAnalyzer.merge_rules(existing_rules, unified_content, changed_sections)
-            if verbose:
-                click.echo(f"   Incremental: merged changes from {', '.join(sorted(changed_sections))}")
-        save_markdown(rules_path, unified_content)
-        generated_files.append(rules_path)
-
-        # Generate rules.json
-        rules_json_path = output_dir / "rules.json"
-        rules_json_path.write_text(rules_to_json(unified_content), encoding="utf-8")
-        if verbose:
-            click.echo("Generating auto-triggers...")
-        skills_manager.save_triggers_json(output_dir)
-        generated_files.append(rules_json_path)
-        if verbose:
-            click.echo("   Generated rules.json")
+        _phase_write_rules(unified_content, output_dir, inc_analyzer, verbose, generated_files, skills_manager)
         pbar.update(1)
 
-        # --- Phase 7: Skill orchestration ---
         pbar.set_description("Saving Skill Artifacts")
         _run_skill_orchestration(
             config=config,
@@ -249,9 +183,155 @@ def run_generation_pipeline(
             output_dir=output_dir,
             generated_files=generated_files,
         )
-        pbar.update(1)
 
     return generated_files
+
+
+# ---------------------------------------------------------------------------
+# Phase helpers — each does exactly one pipeline phase
+# ---------------------------------------------------------------------------
+
+
+def _phase_enhanced_parse(
+    project_path: Path,
+    run_enhanced: bool,
+    verbose: bool,
+) -> Optional[Dict[str, Any]]:
+    """Phase 1: parse the project with EnhancedProjectParser.
+
+    Returns the context dict on success, None if skipped or if parsing fails.
+    """
+    if not run_enhanced:
+        if verbose:
+            click.echo("   Incremental: skipped enhanced parse (source/structure unchanged)")
+        return None
+    try:
+        return EnhancedProjectParser(project_path).extract_full_context()
+    except Exception as e:  # noqa: BLE001 — best-effort; missing context is non-fatal
+        if verbose:
+            click.echo(f"   Enhanced analysis unavailable: {e}")
+        return None
+
+
+def _phase_constitution(
+    project_name: str,
+    enhanced_context: Optional[Dict[str, Any]],
+    output_dir: Path,
+    project_path: Path,
+    verbose: bool,
+    constitution: bool,
+    run_constitution: bool,
+    generated_files: List[Path],
+) -> None:
+    """Phase 2: optionally generate constitution.md.
+
+    Appends to generated_files if written.
+    """
+    if not constitution:
+        return
+    if not run_constitution:
+        if verbose:
+            click.echo("   Incremental: skipped constitution (README unchanged)")
+        return
+    if not enhanced_context:
+        if verbose:
+            click.echo("   Skipping constitution (enhanced analysis unavailable)")
+        return
+    content = generate_constitution(project_name, enhanced_context, project_path=project_path)
+    path = output_dir / "constitution.md"
+    path.write_text(content, encoding="utf-8")
+    generated_files.append(path)
+    if verbose:
+        click.echo("   Generated constitution.md")
+
+
+def _phase_rules(
+    project_data: Dict[str, Any],
+    config: Dict[str, Any],
+    enhanced_context: Optional[Dict[str, Any]],
+    output_dir: Path,
+    verbose: bool,
+    run_rules: bool,
+) -> str:
+    """Phase 3: produce rules content string.
+
+    When skipped, returns cached rules.md content (or regenerates if no cache exists).
+    """
+    if run_rules:
+        return generate_rules(project_data, config, enhanced_context=enhanced_context)
+    existing = output_dir / "rules.md"
+    if existing.exists():
+        if verbose:
+            click.echo("   Incremental: skipped rules regen (README/deps unchanged) — using cached rules.md")
+        return existing.read_text(encoding="utf-8")
+    return generate_rules(project_data, config, enhanced_context=enhanced_context)
+
+
+def _phase_skills(
+    project_path: Path,
+    project_name: str,
+    enhanced_context: Optional[Dict[str, Any]],
+    provider: str,
+    ai: bool,
+    verbose: bool,
+    skills_manager: Any,
+    strategy: str,
+    auto_generate_skills: bool,
+    run_skills_gen: bool,
+) -> Set[str]:
+    """Phase 4: optionally auto-generate skills.
+
+    Returns the set of selected skill names (empty when skipped or disabled).
+    Trigger JSON is written by _phase_write_rules (once, after content is assembled).
+    """
+    if not auto_generate_skills:
+        return set()
+    if not run_skills_gen:
+        if verbose:
+            click.echo("   Incremental: skipped skills auto-gen (source/README unchanged)")
+        return set()
+    return _auto_generate_skills(
+        project_path=project_path,
+        project_name=project_name,
+        enhanced_context=enhanced_context,
+        provider=provider,
+        ai=ai,
+        verbose=verbose,
+        skills_manager=skills_manager,
+        strategy=strategy,
+    )
+
+
+def _phase_write_rules(
+    unified_content: str,
+    output_dir: Path,
+    inc_analyzer: Any,
+    verbose: bool,
+    generated_files: List[Path],
+    skills_manager: Any,
+) -> None:
+    """Phase 6: write rules.md and rules.json; merge incrementally when appropriate.
+
+    Appends both files to generated_files.
+    """
+    rules_path = output_dir / "rules.md"
+    if inc_analyzer and rules_path.exists():
+        changed_sections = inc_analyzer.detect_changes()  # cached — no re-read
+        existing_rules = rules_path.read_text(encoding="utf-8")
+        unified_content = IncrementalAnalyzer.merge_rules(existing_rules, unified_content, changed_sections)
+        if verbose:
+            click.echo(f"   Incremental: merged changes from {', '.join(sorted(changed_sections))}")
+    save_markdown(rules_path, unified_content)
+    generated_files.append(rules_path)
+
+    rules_json_path = output_dir / "rules.json"
+    rules_json_path.write_text(rules_to_json(unified_content), encoding="utf-8")
+    if verbose:
+        click.echo("Generating auto-triggers...")
+    skills_manager.save_triggers_json(output_dir)
+    generated_files.append(rules_json_path)
+    if verbose:
+        click.echo("   Generated rules.json")
 
 
 def _build_unified_content(
