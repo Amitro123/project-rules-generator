@@ -119,7 +119,7 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
 
     from pathlib import Path as _Path
 
-    from cli.feature_cmd import feature as _feature_cmd
+    from cli.feature_cmd import _create_feature_workspace
     from cli.utils import detect_provider as _dp
     from cli.utils import set_api_key_env as _sk
 
@@ -143,73 +143,20 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
             "Run `git init` first, or point --project at a git repo."
         )
 
-    features_dir = proj / "features"
+    from generator.ralph_engine import RalphEngine
 
-    from generator.ralph_engine import FeatureState, RalphEngine, _save_tasks, next_feature_id, slugify
-
-    # 1. Create feature workspace (same logic as `prg feature`)
-    # Retry loop guards against the race where two concurrent `ralph go` calls
-    # both call next_feature_id() before either creates the directory.
-    features_dir.mkdir(parents=True, exist_ok=True)
-    for _attempt in range(5):
-        feature_id = next_feature_id(features_dir)
-        feature_dir = features_dir / feature_id
-        try:
-            feature_dir.mkdir()  # no exist_ok — atomic; raises if another process won
-            break
-        except FileExistsError:
-            continue
-    else:
-        raise click.ClickException("Could not allocate a unique feature directory after 5 retries.")
-    (feature_dir / "CRITIQUES").mkdir(exist_ok=True)
-
-    click.echo(f"[ralph] Feature: {feature_id} — {task_description}")
-
-    plan_path = feature_dir / "PLAN.md"
-    tasks_path = feature_dir / "TASKS.yaml"
-    tasks_total = 0
-
-    try:
-        from generator.task_decomposer import TaskDecomposer
-
-        dec = TaskDecomposer(provider=_dp_val, api_key=api_key)
-        subtasks = dec.decompose(task_description, project_path=proj)
-        plan_path.write_text(dec.generate_plan_md(subtasks, user_task=task_description), encoding="utf-8")
-        tasks_total = len(subtasks)
-        _save_tasks(
-            tasks_path,
-            [
-                {"id": s.id, "title": s.title, "status": "pending", "estimated_minutes": s.estimated_minutes}
-                for s in subtasks
-            ],
-        )
-        click.echo(f"[ralph] Plan: {tasks_total} tasks")
-    except Exception as exc:
-        logger.warning("Plan generation failed: %s — placeholder written.", exc)
-        plan_path.write_text(f"# {task_description}\n\nPlan generation failed. Edit manually.\n", encoding="utf-8")
-        _save_tasks(tasks_path, [])
-
-    slug = slugify(task_description)
-    if not slug:
-        raise click.UsageError("Task description must contain at least one alphanumeric character.")
-    branch_name = f"ralph/{feature_id}-{slug}"
-    state = FeatureState(
-        feature_id=feature_id,
-        task=task_description,
-        branch_name=branch_name,
-        status="planning_complete",
-        tasks_total=tasks_total,
+    # 1. Create feature workspace (plan, STATE.json, branch)
+    feature_id, feature_dir, tasks_total = _create_feature_workspace(
+        proj=proj,
+        task_description=task_description,
         max_iterations=max_iterations,
+        provider=_dp_val,
+        api_key=api_key,
+        verbose=verbose,
     )
-    state.save(feature_dir / "STATE.json")
-
-    try:
-        import subprocess as _sp
-
-        _sp.run(["git", "checkout", "-b", branch_name], cwd=proj, check=True, capture_output=True, timeout=30)
-        click.echo(f"[ralph] Branch: {branch_name}")
-    except Exception as exc:
-        logger.warning("Branch creation failed: %s", exc)
+    click.echo(f"[ralph] Feature: {feature_id} — {task_description}")
+    if tasks_total:
+        click.echo(f"[ralph] Plan: {tasks_total} tasks")
 
     # 2. Run the loop
     engine = RalphEngine(
@@ -564,8 +511,8 @@ def ralph_stop(feature_id, project_path, reason):
                 f"'{state.branch_name}' — state will be saved but branch checkout may be unexpected.",
                 err=True,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Branch detection skipped: %s", exc)
 
     state.status = "stopped"
     state.exit_condition = reason

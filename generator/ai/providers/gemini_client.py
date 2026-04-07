@@ -15,7 +15,10 @@ except ImportError:
     import types as _stdlib_types
 
     genai = _stdlib_types.SimpleNamespace(Client=None)
-    types = _stdlib_types.SimpleNamespace(GenerateContentConfig=lambda **kwargs: None)
+    types = _stdlib_types.SimpleNamespace(
+        GenerateContentConfig=lambda **kwargs: None,
+        HttpOptions=lambda **kwargs: None,
+    )
     GEMINI_AVAILABLE = False
 
 

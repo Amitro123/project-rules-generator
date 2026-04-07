@@ -69,7 +69,7 @@ def _load_gitignore_spec(project_path: Path):
         gitignore = project_path / ".gitignore"
         if gitignore.exists():
             return pathspec.PathSpec.from_lines("gitignore", gitignore.read_text(encoding="utf-8").splitlines())
-    except Exception:
+    except Exception:  # noqa: BLE001 — gitignore parsing is best-effort; missing spec just disables filtering
         pass
     return None
 
