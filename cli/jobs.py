@@ -230,6 +230,9 @@ def next_task(project_path):
             # For JSON we don't have a file mapping usually, so just echo
             return
 
+        click.echo("No pending tasks found.")
+        return
+
     from generator.planning.task_creator import TaskManifest
     from generator.planning.task_executor import TaskExecutor
 
