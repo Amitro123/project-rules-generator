@@ -10,9 +10,6 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -29,10 +26,16 @@ def _make_skills_manager(tmp_path: Path) -> MagicMock:
 
 
 def _call_pipeline(tmp_path: Path, **overrides):
-    """Call run_generation_pipeline with safe defaults, allowing per-test overrides."""
+    """Call run_generation_pipeline with safe defaults, allowing per-test overrides.
+
+    Always patches generate_rules and EnhancedProjectParser at the pipeline module
+    level so tests don't depend on filesystem content or LLM calls for phases they
+    aren't testing. Tests that explicitly test these phases override the patches
+    themselves.
+    """
     from cli.analyze_pipeline import run_generation_pipeline
 
-    output_dir = tmp_path / ".clinerules"
+    output_dir = overrides.pop("output_dir", tmp_path / ".clinerules")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     defaults = dict(
@@ -62,7 +65,14 @@ def _call_pipeline(tmp_path: Path, **overrides):
         strategy="auto",
     )
     defaults.update(overrides)
-    return run_generation_pipeline(**defaults), output_dir
+    defaults["output_dir"] = output_dir
+
+    with (
+        patch("cli.analyze_pipeline.generate_rules", return_value="# Rules\n") as _,
+        patch("cli.analyze_pipeline.EnhancedProjectParser") as mock_parser,
+    ):
+        mock_parser.return_value.extract_full_context.return_value = {"tech_stack": [], "structure": {}}
+        return run_generation_pipeline(**defaults), output_dir
 
 
 # ---------------------------------------------------------------------------
@@ -92,7 +102,11 @@ def test_incremental_rules_skipped_uses_cached_rules_md(tmp_path):
 
 def test_incremental_rules_skipped_no_cache_falls_back_to_generate(tmp_path):
     """When inc_analyzer says _run_rules=False but no rules.md exists,
-    generate_rules is still called as fallback."""
+    generate_rules is still called as fallback.
+
+    Note: _call_pipeline already patches generate_rules; we capture the mock
+    via the return value to verify it was called.
+    """
     output_dir = tmp_path / ".clinerules"
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -100,8 +114,38 @@ def test_incremental_rules_skipped_no_cache_falls_back_to_generate(tmp_path):
     inc.phases_to_run.return_value = (False, False, False, False)
     inc.detect_changes.return_value = set()
 
+    # Patch BEFORE calling _call_pipeline so we can inspect the mock
     with patch("cli.analyze_pipeline.generate_rules", return_value="# Generated fallback\n") as mock_gen:
-        _call_pipeline(tmp_path, output_dir=output_dir, inc_analyzer=inc)
+        # _call_pipeline also patches generate_rules, but since we hold the outer
+        # patch active, ours takes precedence and the inner one re-uses the same attr.
+        from cli.analyze_pipeline import run_generation_pipeline
+
+        output_dir2 = tmp_path / ".clinerules"
+        from generator.parsers.enhanced_parser import EnhancedProjectParser
+
+        with patch("cli.analyze_pipeline.EnhancedProjectParser") as mock_ep:
+            mock_ep.return_value.extract_full_context.return_value = {}
+            run_generation_pipeline(
+                project_path=tmp_path,
+                project_name="test-project",
+                project_data={"tech_stack": [], "name": "test-project", "description": "A.", "features": []},
+                readme_path=None,
+                config={},
+                provider="groq",
+                skills_manager=_make_skills_manager(tmp_path),
+                output_dir=output_dir2,
+                verbose=False,
+                ai=False,
+                auto_generate_skills=False,
+                constitution=False,
+                with_skills=False,
+                merge=False,
+                save_learned=False,
+                export_json=False,
+                export_yaml=False,
+                inc_analyzer=inc,
+                strategy="auto",
+            )
 
     mock_gen.assert_called_once()
 
@@ -113,15 +157,12 @@ def test_incremental_rules_skipped_no_cache_falls_back_to_generate(tmp_path):
 
 def test_constitution_skipped_when_run_constitution_false(tmp_path):
     """When inc_analyzer says _run_constitution=False, constitution.md is NOT written."""
-    output_dir = tmp_path / ".clinerules"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
     inc = MagicMock()
     inc.phases_to_run.return_value = (True, True, False, True)  # constitution skipped
     inc.detect_changes.return_value = {"source"}
 
     with patch("cli.analyze_pipeline.generate_constitution") as mock_gen_const:
-        _call_pipeline(tmp_path, output_dir=output_dir, inc_analyzer=inc, constitution=True)
+        _, output_dir = _call_pipeline(tmp_path, inc_analyzer=inc, constitution=True)
 
     mock_gen_const.assert_not_called()
     assert not (output_dir / "constitution.md").exists()
@@ -130,21 +171,13 @@ def test_constitution_skipped_when_run_constitution_false(tmp_path):
 def test_constitution_written_when_run_constitution_true(tmp_path):
     """When constitution=True and inc_analyzer says _run_constitution=True,
     constitution.md is written."""
-    output_dir = tmp_path / ".clinerules"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
     inc = MagicMock()
     inc.phases_to_run.return_value = (True, True, True, True)
     inc.detect_changes.return_value = {"readme"}
 
-    fake_context = {"tech_stack": ["python"], "structure": {}}
-
-    with (
-        patch("cli.analyze_pipeline.EnhancedProjectParser") as MockParser,
-        patch("cli.analyze_pipeline.generate_constitution", return_value="# Constitution\n") as mock_const,
-    ):
-        MockParser.return_value.extract_full_context.return_value = fake_context
-        _call_pipeline(tmp_path, output_dir=output_dir, inc_analyzer=inc, constitution=True)
+    with patch("cli.analyze_pipeline.generate_constitution", return_value="# Constitution\n") as mock_const:
+        # _call_pipeline already patches EnhancedProjectParser with a fake context
+        _, output_dir = _call_pipeline(tmp_path, inc_analyzer=inc, constitution=True)
 
     mock_const.assert_called_once()
     assert (output_dir / "constitution.md").exists()
@@ -157,15 +190,12 @@ def test_constitution_written_when_run_constitution_true(tmp_path):
 
 def test_auto_generate_skills_skipped_when_run_skills_gen_false(tmp_path):
     """When inc_analyzer says _run_skills_gen=False, _auto_generate_skills is not called."""
-    output_dir = tmp_path / ".clinerules"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
     inc = MagicMock()
     inc.phases_to_run.return_value = (False, True, False, False)  # skills skipped
     inc.detect_changes.return_value = set()
 
     with patch("cli.analyze_pipeline._auto_generate_skills") as mock_auto:
-        _call_pipeline(tmp_path, output_dir=output_dir, inc_analyzer=inc, auto_generate_skills=True, ai=True)
+        _call_pipeline(tmp_path, inc_analyzer=inc, auto_generate_skills=True, ai=True)
 
     mock_auto.assert_not_called()
 
@@ -186,7 +216,9 @@ def test_incremental_merge_called_when_rules_md_exists(tmp_path):
     inc.phases_to_run.return_value = (True, True, False, False)
     inc.detect_changes.return_value = {"deps"}
 
-    with patch("generator.incremental_analyzer.IncrementalAnalyzer.merge_rules", return_value="# Merged rules\n") as mock_merge:
+    with patch(
+        "cli.analyze_pipeline.IncrementalAnalyzer.merge_rules", return_value="# Merged rules\n"
+    ) as mock_merge:
         _call_pipeline(tmp_path, output_dir=output_dir, inc_analyzer=inc)
 
     mock_merge.assert_called_once()

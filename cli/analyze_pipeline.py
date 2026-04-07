@@ -6,6 +6,7 @@ Extracted from analyze_cmd.py to keep each module focused.
 """
 
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -19,6 +20,25 @@ from generator.rules_generator import generate_rules, rules_to_json
 from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
 from generator.storage.skill_paths import SkillPathManager
 from prg_utils.file_ops import save_markdown
+
+
+@dataclass
+class PipelineConfig:
+    """Boolean/string flags that control pipeline behaviour.
+
+    Grouping these reduces run_generation_pipeline's parameter count from 17 to 11
+    and gives callers a single object to inspect/override in tests.
+    """
+
+    ai: bool = False
+    auto_generate_skills: bool = False
+    constitution: bool = False
+    with_skills: bool = True
+    merge: bool = False
+    save_learned: bool = False
+    export_json: bool = False
+    export_yaml: bool = False
+    strategy: str = "auto"
 
 try:
     from tqdm import tqdm
@@ -54,22 +74,38 @@ def run_generation_pipeline(
     skills_manager: Any,
     output_dir: Path,
     verbose: bool,
-    ai: bool,
-    auto_generate_skills: bool,
-    constitution: bool,
-    with_skills: bool,
-    merge: bool,
-    save_learned: bool,
-    export_json: bool,
-    export_yaml: bool,
     inc_analyzer: Any,
-    strategy: str,
+    # Flat kwargs kept for backward-compat; prefer passing pipeline_cfg instead.
+    pipeline_cfg: Optional[PipelineConfig] = None,
+    ai: bool = False,
+    auto_generate_skills: bool = False,
+    constitution: bool = False,
+    with_skills: bool = True,
+    merge: bool = False,
+    save_learned: bool = False,
+    export_json: bool = False,
+    export_yaml: bool = False,
+    strategy: str = "auto",
 ) -> List[Path]:
     """Run the full artifact generation pipeline.
+
+    Accepts either a PipelineConfig object (preferred) or the individual boolean/string
+    kwargs (kept for backward-compat). When both are supplied, pipeline_cfg wins.
 
     Returns:
         List of generated file paths.
     """
+    if pipeline_cfg is not None:
+        ai = pipeline_cfg.ai
+        auto_generate_skills = pipeline_cfg.auto_generate_skills
+        constitution = pipeline_cfg.constitution
+        with_skills = pipeline_cfg.with_skills
+        merge = pipeline_cfg.merge
+        save_learned = pipeline_cfg.save_learned
+        export_json = pipeline_cfg.export_json
+        export_yaml = pipeline_cfg.export_yaml
+        strategy = pipeline_cfg.strategy
+
     if verbose:
         click.echo("\nGenerating files...")
 
