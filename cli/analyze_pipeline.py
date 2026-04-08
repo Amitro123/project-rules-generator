@@ -218,7 +218,9 @@ def _phase_enhanced_parse(
 ) -> Optional[Dict[str, Any]]:
     """Phase 1: parse the project with EnhancedProjectParser.
 
-    Returns the context dict on success, None if skipped or if parsing fails.
+    Returns the context dict on success, None if skipped (incremental) or if
+    parsing fails on bad input.  Programming errors (AttributeError, TypeError)
+    are intentionally *not* caught here — they should surface so they get fixed.
     """
     if not run_enhanced:
         if verbose:
@@ -226,9 +228,8 @@ def _phase_enhanced_parse(
         return None
     try:
         return EnhancedProjectParser(project_path).extract_full_context()
-    except Exception as e:  # noqa: BLE001 — best-effort; missing context is non-fatal
-        if verbose:
-            click.echo(f"   Enhanced analysis unavailable: {e}")
+    except (OSError, ValueError, RuntimeError) as e:
+        click.echo(f"⚠️  Enhanced analysis failed (generation will continue with reduced context): {e}", err=True)
         return None
 
 

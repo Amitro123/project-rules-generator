@@ -145,6 +145,6 @@ class READMEStrategy:
             content += f"\n## Context (from README){context_note}\n\n{excerpt}\n"
 
             return content
-        except Exception as e:
+        except (ImportError, OSError, ValueError, TypeError, AttributeError) as e:
             logger.warning("Smart parsing failed (%s). Falling back to next strategy.", e)
             return None

@@ -119,7 +119,7 @@ class CoworkStrategy:
         if not isinstance(project_path, Path):
             try:
                 project_path = Path(project_path)
-            except Exception as exc:  # defensive cast
+            except (TypeError, ValueError) as exc:
                 logging.exception("Failed to coerce project_path to Path: %s", exc)
                 return None
         if not project_path.exists():
@@ -129,10 +129,11 @@ class CoworkStrategy:
             logging.error("project_path is not a directory: %s", project_path)
             return None
 
-        # Creator construction
+        # Creator construction — broad catch is intentional: factory may raise anything
+        # depending on which creator backend is configured (import errors, init failures).
         try:
             creator = self._creator_factory(project_path)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logging.exception("Failed to create Cowork skill creator: %s", exc)
             return None
 
@@ -144,7 +145,7 @@ class CoworkStrategy:
         # Assess README sufficiency and bridge missing context when needed
         try:
             sufficient = is_readme_sufficient(readme_content)
-        except Exception as exc:
+        except (ValueError, TypeError, AttributeError, RuntimeError) as exc:
             logging.exception("Failed to assess README sufficiency for '%s': %s", skill_name, exc)
             sufficient = False  # fall back to bridging if unsure
 
@@ -153,7 +154,7 @@ class CoworkStrategy:
                 supplement = bridge_missing_context(project_path, skill_name)
                 if supplement:
                     readme_content = f"{supplement}\n\n{readme_content}" if readme_content else supplement
-            except Exception as exc:
+            except (OSError, ValueError, AttributeError, RuntimeError) as exc:
                 logging.exception("Failed to bridge missing context for '%s': %s", skill_name, exc)
                 # Proceed with whatever README content we have
 
@@ -175,9 +176,9 @@ class CoworkStrategy:
             )
             try:
                 logging.info(_LOG_QUALITY, getattr(quality, "score", "?"))
-            except Exception:  # logging should not break flow
+            except AttributeError:
                 logging.debug("Quality object did not provide a score attribute")
             return content
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — AI call; network/API errors are unpredictable
             logging.exception("%s: %s", _LOG_FALLBACK, exc)
             return None
