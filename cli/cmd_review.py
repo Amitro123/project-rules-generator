@@ -91,7 +91,7 @@ def _display_review_report(report: Any, verbose: bool) -> None:
         table.add_row("Verdict", report.verdict)
         table.add_row("Strengths", str(len(report.strengths)))
         table.add_row("Issues", str(len(report.issues)))
-        table.add_row("Hallucinations", str(len(report.hallucinations)))
+        table.add_row("Suspicious Terms", str(len(report.suspicious_terms)))
         console.print(table)
 
         if report.strengths and verbose:
@@ -104,9 +104,9 @@ def _display_review_report(report: Any, verbose: bool) -> None:
             for i in report.issues:
                 click.echo(f"  - {i}")
 
-        if report.hallucinations:
-            click.echo("\nHallucinations:")
-            for h in report.hallucinations:
+        if report.suspicious_terms:
+            click.echo("\nSuspicious Terms:")
+            for h in report.suspicious_terms:
                 click.echo(f"  ! {h}")
 
         if report.action_plan and verbose:
@@ -118,10 +118,10 @@ def _display_review_report(report: Any, verbose: bool) -> None:
         click.echo(f"\nVerdict: {report.verdict}")
         click.echo(f"Strengths: {len(report.strengths)}")
         click.echo(f"Issues: {len(report.issues)}")
-        click.echo(f"Hallucinations: {len(report.hallucinations)}")
+        click.echo(f"Suspicious Terms: {len(report.suspicious_terms)}")
         for i in report.issues:
             click.echo(f"  - {i}")
-        for h in report.hallucinations:
+        for h in report.suspicious_terms:
             click.echo(f"  ! {h}")
 
 

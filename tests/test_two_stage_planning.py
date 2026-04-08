@@ -178,7 +178,7 @@ class TestDesignGeneratorIntegration:
         d = gen.generate_design("Add authentication", project_context=context)
 
         # Should produce a valid design even without AI
-        assert "Authentication" in d.title
+        assert "authentication" in d.title.lower()
         assert "authentication" in d.problem_statement.lower()
 
     @patch("cli.cmd_plan._has_api_key", return_value=True)

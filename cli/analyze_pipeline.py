@@ -185,6 +185,7 @@ def run_generation_pipeline(
             merge=merge,
             verbose=verbose,
             generated_files=generated_files,
+            enhanced_context=enhanced_context,
         )
 
         _phase_write_rules(unified_content, output_dir, inc_analyzer, verbose, generated_files, skills_manager)
@@ -366,6 +367,7 @@ def _build_unified_content(
     merge: bool,
     verbose: bool,
     generated_files: List[Path],
+    enhanced_context: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Assemble the unified rules + skills content string."""
     unified_content = rules_content + "\n\n# 🧠 Agent Skills\n\n"
@@ -380,7 +382,7 @@ def _build_unified_content(
         lightweight_yaml = generate_clinerules(
             project_name,
             enhanced_selected_skills,
-            _get_enhanced_context(skills_manager, project_data),
+            enhanced_context,
             output_dir=output_dir,
         )
         unified_content += f"\n\n<!-- Lightweight Skill References\n{lightweight_yaml}-->\n"
@@ -428,16 +430,6 @@ def _build_unified_content(
         )
 
     return unified_content
-
-
-def _get_enhanced_context(skills_manager: Any, project_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Best-effort re-extraction of enhanced context (used for clinerules generation)."""
-    try:
-        from generator.parsers.enhanced_parser import EnhancedProjectParser
-
-        return EnhancedProjectParser(skills_manager.project_path).extract_full_context()
-    except Exception:
-        return None
 
 
 # Backward-compat re-exports — import from skill_pipeline directly for new code

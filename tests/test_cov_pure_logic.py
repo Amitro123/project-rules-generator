@@ -348,10 +348,10 @@ class TestReviewReportToMarkdown:
         md = r.to_markdown()
         assert "- [ ] Add unit tests" in md
 
-    def test_hallucinations_section(self):
-        r = ReviewReport(verdict="Major Issues", hallucinations=["FakeService"])
+    def test_suspicious_terms_section(self):
+        r = ReviewReport(verdict="Major Issues", suspicious_terms=["FakeService"])
         md = r.to_markdown()
-        assert "## Hallucinations Detected" in md
+        assert "## Suspicious Terms" in md
         assert "- FakeService" in md
 
     def test_empty_sections_not_rendered(self):
@@ -396,13 +396,13 @@ class TestSelfReviewerParseReview:
         r = self._reviewer()
         response = "VERDICT: Pass\nSTRENGTHS:\nISSUES:\nHALLUCINATIONS:\n- None\n- N/A\nACTION_PLAN:\n"
         report = r._parse_review(response)
-        assert report.hallucinations == []
+        assert report.suspicious_terms == []
 
     def test_real_hallucination_kept(self):
         r = self._reviewer()
         response = "VERDICT: Pass\nSTRENGTHS:\nISSUES:\nHALLUCINATIONS:\n- FakeService-Pro\nACTION_PLAN:\n"
         report = r._parse_review(response)
-        assert "FakeService-Pro" in report.hallucinations
+        assert "FakeService-Pro" in report.suspicious_terms
 
 
 class TestSelfReviewerExtractSection:
@@ -426,23 +426,23 @@ class TestSelfReviewerExtractSection:
         assert items == ["Good structure"]
 
 
-class TestSelfReviewerDetectHallucinations:
+class TestSelfReviewerFlagSuspiciousTerms:
     def _reviewer(self):
         return SelfReviewer(client=MagicMock())
 
     def test_camel_case_not_in_readme_flagged(self):
         r = self._reviewer()
-        result = r._detect_hallucinations("Use DevLens-AI for analysis", "readme has nothing about that")
+        result = r._flag_suspicious_terms("Use DevLens-AI for analysis", "readme has nothing about that")
         assert "DevLens-AI" in result
 
     def test_term_in_readme_not_flagged(self):
         r = self._reviewer()
-        result = r._detect_hallucinations("Use DevLens-AI for analysis", "devlens-ai is great")
+        result = r._flag_suspicious_terms("Use DevLens-AI for analysis", "devlens-ai is great")
         assert "DevLens-AI" not in result
 
     def test_empty_readme_returns_empty(self):
         r = self._reviewer()
-        result = r._detect_hallucinations("Use FakeTool-Pro", "")
+        result = r._flag_suspicious_terms("Use FakeTool-Pro", "")
         assert result == []
 
 

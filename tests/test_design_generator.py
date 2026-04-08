@@ -151,7 +151,8 @@ class TestDesignGenerator:
         d = gen.generate_design("Add rate limiting")
         assert d.title == "Add rate limiting"
         assert "Add rate limiting" in d.problem_statement
-        assert len(d.success_criteria) >= 1
+        # Stub returns an honest empty design — sections are populated only by AI
+        assert "AI provider unavailable" in d.problem_statement
 
     @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
     def test_generate_with_context(self, mock_llm):

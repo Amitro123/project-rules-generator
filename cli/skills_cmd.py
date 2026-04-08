@@ -606,9 +606,9 @@ def skills_remove(skill_name, path):
     project_path = Path(path).resolve()
     sm = SkillsManager(project_path=project_path)
 
-    target = (sm.learned_path / skill_name).resolve()
+    target = (sm.global_learned / skill_name).resolve()
     try:
-        target.relative_to(sm.learned_path.resolve())
+        target.relative_to(sm.global_learned.resolve())
     except ValueError:
         click.echo(f"\u274c Invalid skill path: {skill_name}", err=True)
         raise SystemExit(1)

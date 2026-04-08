@@ -26,7 +26,7 @@ class ReviewReport:
     strengths: List[str] = field(default_factory=list)
     issues: List[str] = field(default_factory=list)
     action_plan: List[str] = field(default_factory=list)
-    hallucinations: List[str] = field(default_factory=list)
+    suspicious_terms: List[str] = field(default_factory=list)
 
     def to_markdown(self) -> str:
         """Render as CRITIQUE.md content."""
@@ -46,9 +46,9 @@ class ReviewReport:
                 lines.append(f"- {i}")
             lines.append("")
 
-        if self.hallucinations:
-            lines.append("## Hallucinations Detected")
-            for h in self.hallucinations:
+        if self.suspicious_terms:
+            lines.append("## Suspicious Terms")
+            for h in self.suspicious_terms:
                 lines.append(f"- {h}")
             lines.append("")
 
@@ -103,13 +103,13 @@ class SelfReviewer:
             report = self._static_review(content, readme_excerpt)
 
         # Always run static hallucination check
-        static_hallucinations = self._detect_hallucinations(content, readme_excerpt)
+        static_hallucinations = self._flag_suspicious_terms(content, readme_excerpt)
         for h in static_hallucinations:
-            if h not in report.hallucinations:
-                report.hallucinations.append(h)
+            if h not in report.suspicious_terms:
+                report.suspicious_terms.append(h)
 
         # Upgrade verdict if hallucinations found
-        if report.hallucinations and report.verdict == "Pass":
+        if report.suspicious_terms and report.verdict == "Pass":
             report.verdict = "Needs Revision"
 
         return report
@@ -184,7 +184,7 @@ ACTION_PLAN:
             strengths=strengths,
             issues=issues,
             action_plan=action_plan,
-            hallucinations=hallucinations,
+            suspicious_terms=hallucinations,
         )
 
     def _extract_section(self, text: str, header: str) -> List[str]:
@@ -203,7 +203,7 @@ ACTION_PLAN:
                     items.append(item)
         return items
 
-    def _detect_hallucinations(self, content: str, readme_content: str) -> List[str]:
+    def _flag_suspicious_terms(self, content: str, readme_content: str) -> List[str]:
         """Static check for terms in artifact not present in README."""
         if not readme_content:
             return []
@@ -246,7 +246,7 @@ ACTION_PLAN:
         else:
             issues.append(f"Only {task_count} task(s) found")
 
-        hallucinations = self._detect_hallucinations(content, readme_excerpt)
+        hallucinations = self._flag_suspicious_terms(content, readme_excerpt)
 
         verdict = "Pass"
         if hallucinations:
@@ -258,6 +258,6 @@ ACTION_PLAN:
             verdict=verdict,
             strengths=strengths,
             issues=issues,
-            hallucinations=hallucinations,
+            suspicious_terms=hallucinations,
             action_plan=[f"Fix: {i}" for i in issues],
         )

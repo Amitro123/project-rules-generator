@@ -32,7 +32,7 @@ def _make_report(verdict="PASS", strengths=None, issues=None, hallucinations=Non
     r.verdict = verdict
     r.strengths = strengths or ["good structure"]
     r.issues = issues or []
-    r.hallucinations = hallucinations or []
+    r.suspicious_terms = hallucinations or []
     r.action_plan = action_plan or []
     r.to_markdown.return_value = "# Critique\n"
     return r

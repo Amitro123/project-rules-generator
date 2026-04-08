@@ -76,19 +76,21 @@ Locked in by `test_enhanced_parse_warning_emitted_regardless_of_verbose` and
   catches (creator factory, AI call) documented with `# noqa: BLE001` + reason comment
 - 10 new tests in `tests/test_p1_visible_failures.py`
 
-#### P1-C: Decompose `analyze()` by splitting sub-commands — ⬜ TODO
+#### P1-C: Decompose `analyze()` by splitting sub-commands — ✅ COMPLETE (2026-04-08)
 
-The real fix is sub-commands, not more helper extraction:
+`analyze()` reduced from 33 → 19 parameters. 14 flags extracted to focused commands:
 
-| Current flags | Target sub-command |
+| Removed flags | New command |
 |---|---|
-| `--quality-check`, `--eval-opik`, `--auto-fix` | `prg quality` |
-| `--create-rules` | `prg rules` |
+| `--create-skill`, `--add-skill` | `prg skills create` |
+| `--remove-skill` | `prg skills remove` |
 | `--generate-index` | `prg skills index` |
-| Core generation | `prg analyze .` (≤12 params) |
+| `--quality-check`, `--eval-opik`, `--auto-fix`, `--max-iterations` | `prg quality` (new `cli/quality_cmd.py`) |
+| `--create-rules`, `--rules-quality-threshold` | `prg create-rules` (already existed) |
+| `--from-readme`, `--force`, `--scope` | moved to `prg skills create` |
 
-Skill management flags (`--create-skill`, `--remove-skill`, `--list-skills`) already have
-`prg skills` equivalents — remove the aliases from `analyze`.
+`SkillsManager` promoted to module-level import in `skills_cmd.py` for test patchability.
+Tests updated: `test_analyze_cmd_characterization.py`, `test_skills_manager.py`.
 
 ---
 
@@ -99,21 +101,31 @@ Skill management flags (`--create-skill`, `--remove-skill`, `--list-skills`) alr
 5 `print()` calls in two `except ImportError` blocks replaced with `click.echo()`.
 Files: `cli/providers_cmd.py` (lines 81-86, 211-213).
 
-#### P2-B: Eliminate `_get_enhanced_context` double-parse — ⬜ TODO
+#### P2-B: Eliminate `_get_enhanced_context` double-parse — ✅ COMPLETE (2026-04-08)
 
-`analyze_pipeline.py:413-420` re-instantiates `EnhancedProjectParser` after Phase 1 already ran it.
-Fix: thread the `enhanced_context` from `_phase_enhanced_parse` through to `_build_unified_content`
-directly and delete `_get_enhanced_context`.
+`analyze_pipeline.py` was re-instantiating `EnhancedProjectParser` inside `_build_unified_content`
+via `_get_enhanced_context`, even though Phase 1 already produced `enhanced_context`.
+Fix: added `enhanced_context` parameter to `_build_unified_content`; updated call site to thread
+the value through; deleted `_get_enhanced_context`. EnhancedProjectParser is now constructed
+exactly once per pipeline run.
 
-#### P2-C: `DesignGenerator` fallback — replace 200+ line template with minimal stub — ⬜ TODO
+#### P2-C: `DesignGenerator` fallback — replace 200+ line template with minimal stub — ✅ COMPLETE (2026-04-08)
 
-`generator/design_generator.py` (671 lines) contains `_generate_comprehensive_template` —
-a deterministic pseudo-architect. Replace with a 10-line honest stub.
+`generator/design_generator.py`: `_generate_comprehensive_template` (220 lines of
+cache/auth-specific heuristics) replaced with an 8-line honest stub that returns a minimal
+`Design` with the original request as the title and a note that an AI provider is required.
+Tests updated: `test_design_generator.py::test_generate_fallback` (criterion changed from
+`len(success_criteria) >= 1` to asserting the "AI provider unavailable" note),
+`test_two_stage_planning.py::test_design_with_real_project` (assertion relaxed to
+`"authentication" in d.title.lower()`).
 
-#### P2-D: `SelfReviewer` — scope hallucination detection correctly — ⬜ TODO
+#### P2-D: `SelfReviewer` — scope hallucination detection correctly — ✅ COMPLETE (2026-04-08)
 
-Rename detection method from `detect_hallucinations()` to `flag_suspicious_terms()` and update
-`ReviewReport` field names to reflect the actual (lint-style, not semantic) detection scope.
+- `generator/planning/self_reviewer.py`: `_detect_hallucinations` → `_flag_suspicious_terms`;
+  `ReviewReport.hallucinations` field → `suspicious_terms`;
+  `to_markdown()` section header `"## Hallucinations Detected"` → `"## Suspicious Terms"`
+- `cli/cmd_review.py`: display labels updated to "Suspicious Terms"
+- Tests updated in `test_cov_pure_logic.py` and `test_cov_cmd_review.py`
 
 ---
 
@@ -124,5 +136,5 @@ Rename detection method from `detect_hallucinations()` to `flag_suspicious_terms
 | First pass | 6.8/10 | 2026-04-06 |
 | Second pass (packaging fixed) | 7.0/10 | 2026-04-08 |
 | P0 complete (baseline enforced) | ~7.4/10 | 2026-04-08 |
-| P1 complete (silent degradation fixed) | ~7.8–8.1/10 | — |
-| P2 complete (consistency + debt) | ~8.5/10 | — |
+| P1 complete (visible failures + decomposition) | ~8.0/10 | 2026-04-08 |
+| P2 complete (consistency + debt) | ~8.5/10 | 2026-04-08 |

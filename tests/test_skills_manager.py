@@ -25,9 +25,10 @@ def temp_skills_dir(tmp_path):
 def mock_manager(temp_skills_dir):
     def side_effect(*args, **kwargs):
         # Allow any args, return manager pointing to temp dir for functional tests
-        # We override learned_path to use our temp dir instead of user home
+        # We override learned to use our temp dir instead of user home
         manager = SkillsManager(project_path=temp_skills_dir)
         manager.discovery.global_learned = temp_skills_dir / "learned"
+        manager.global_learned = temp_skills_dir / "learned"
         return manager
 
     return side_effect
@@ -134,3 +135,21 @@ def test_create_duplicate_skill(temp_skills_dir, mock_manager):
         result = runner.invoke(main, ["skills", "create", "dup-skill", str(temp_skills_dir)])
         assert result.exit_code == 0
         assert "Updating" in result.output or "Created" in result.output
+
+
+def test_remove_skill(temp_skills_dir, mock_manager):
+    runner = CliRunner()
+    with patch("cli.skills_cmd.SkillsManager", side_effect=mock_manager):
+        runner.invoke(main, ["skills", "create", "to-remove", str(temp_skills_dir)])
+        result = runner.invoke(main, ["skills", "remove", "to-remove", str(temp_skills_dir)])
+        assert result.exit_code == 0
+        assert "Removed" in result.output
+        skill_path = temp_skills_dir / "learned" / "to-remove"
+        assert not skill_path.exists()
+
+
+def test_remove_nonexistent_skill_exits_1(temp_skills_dir, mock_manager):
+    runner = CliRunner()
+    with patch("cli.skills_cmd.SkillsManager", side_effect=mock_manager):
+        result = runner.invoke(main, ["skills", "remove", "no-such-skill", str(temp_skills_dir)])
+        assert result.exit_code != 0
