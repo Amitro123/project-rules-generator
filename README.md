@@ -180,6 +180,19 @@ prg providers benchmark  # Side-by-side quality ranking
 
 ---
 
+## See Ralph in Action
+
+**PRG is not a chatbot — it is an autonomous loop that runs until the feature is done.**
+
+Here is a 3-step look at Ralph autonomously resolving a feature request:
+1. **Reads Context:** Automatically reads your `.clinerules/rules.md` and codebase structure without needing you to copy-paste.
+2. **Executes & Self-Reviews:** Writes the code, tests its own work via your test suite, and refines if it breaks anything.
+3. **Awaits Approval:** Checks the completed code into a branch and awaits human sign-off.
+
+![Ralph Autonomous Demo](docs/assets/ralph-demo.png)
+
+---
+
 ## All Features & Commands
 
 ### 🔍 1. Analysis & Generation
