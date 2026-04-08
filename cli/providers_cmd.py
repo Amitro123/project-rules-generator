@@ -78,10 +78,10 @@ def providers_list() -> None:
 
     except ImportError:
         # Plain fallback if rich not available
-        print(f"{'Provider':<14} {'Status':<14} {'Quality':>8} {'Speed':>7}  Env Variable")
-        print("-" * 70)
+        click.echo(f"{'Provider':<14} {'Status':<14} {'Quality':>8} {'Speed':>7}  Env Variable")
+        click.echo("-" * 70)
         for s in statuses:
-            print(
+            click.echo(
                 f"{s['provider']:<14} {s['status']:<14} " f"{s['quality']:>6}/100 {s['speed']:>5}/100  {s['env_key']}"
             )
 
@@ -208,6 +208,6 @@ def providers_benchmark(prompts: int) -> None:
         console.print()
 
     except ImportError:
-        print("\nBenchmark Results (quality / latency):")
+        click.echo("\nBenchmark Results (quality / latency):")
         for i, (p, data) in enumerate(ranked, 1):
-            print(f"  {i}. {p:<12} avg={data['avg_latency']:.2f}s  quality={data['quality']}")
+            click.echo(f"  {i}. {p:<12} avg={data['avg_latency']:.2f}s  quality={data['quality']}")

@@ -39,7 +39,7 @@ jobs:
 
     - name: Type check (mypy)
       run: |
-        mypy generator/ cli/ prg_utils/ --install-types --non-interactive
+        mypy generator/ cli/ prg_utils/ --ignore-missing-imports
 
     - name: Run tests
       env:

@@ -40,6 +40,7 @@ class PipelineConfig:
     export_yaml: bool = False
     strategy: str = "auto"
 
+
 try:
     from tqdm import tqdm
 except ImportError:
@@ -135,21 +136,39 @@ def run_generation_pipeline(
         pbar.update(1)
 
         _phase_constitution(
-            project_name, enhanced_context, output_dir, project_path,
-            verbose, constitution, _run_constitution, generated_files,
+            project_name,
+            enhanced_context,
+            output_dir,
+            project_path,
+            verbose,
+            constitution,
+            _run_constitution,
+            generated_files,
         )
 
         pbar.set_description("Generating Rules")
         rules_content = _phase_rules(
-            project_data, config, enhanced_context, output_dir, verbose, _run_rules,
+            project_data,
+            config,
+            enhanced_context,
+            output_dir,
+            verbose,
+            _run_rules,
         )
         pbar.update(1)
 
         pbar.set_description("Processing Skills")
         enhanced_selected_skills = _phase_skills(
-            project_path, project_name, enhanced_context, provider, ai,
-            verbose, skills_manager, strategy,
-            auto_generate_skills, _run_skills_gen,
+            project_path,
+            project_name,
+            enhanced_context,
+            provider,
+            ai,
+            verbose,
+            skills_manager,
+            strategy,
+            auto_generate_skills,
+            _run_skills_gen,
         )
         pbar.update(1)
 

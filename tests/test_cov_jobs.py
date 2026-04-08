@@ -15,7 +15,6 @@ from click.testing import CliRunner
 
 from cli.jobs import exec_task, next_task, query_tasks, status
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -208,9 +207,7 @@ def test_next_task_no_manifest(tmp_path):
 def test_next_task_json_path(tmp_path):
     """next_task finds next task from TASKS.json."""
     tasks_json = tmp_path / "TASKS.json"
-    tasks_json.write_text(
-        json.dumps({"task": "x", "tasks": [{"id": 1, "title": "First", "status": "pending"}]})
-    )
+    tasks_json.write_text(json.dumps({"task": "x", "tasks": [{"id": 1, "title": "First", "status": "pending"}]}))
 
     runner = CliRunner()
     result = runner.invoke(next_task, ["--project-path", str(tmp_path)])

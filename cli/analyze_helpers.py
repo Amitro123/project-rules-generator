@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import click
 
@@ -201,7 +201,7 @@ def setup_logging_and_provider(verbose: bool, provider: Optional[str], api_key: 
     else:
         setup_logging(verbose=False)
 
-    resolved = detect_provider(provider, api_key)
+    resolved: str = detect_provider(provider, api_key) or ""
     if verbose:
         click.echo(f"Auto-detected provider: {resolved}")
     set_api_key_env(resolved, api_key)
@@ -232,7 +232,7 @@ def setup_incremental(incremental: bool, project_path: Path, output_dir: Path) -
 def commit_generated_files(
     commit: bool,
     config: Dict[str, Any],
-    generated_files: List[str],
+    generated_files: Sequence[Union[str, Path]],
     project_path: Path,
     interactive: bool,
 ) -> None:

@@ -12,16 +12,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from cli.create_rules_cmd import create_rules, _display_quality_report
-
+from cli.create_rules_cmd import _display_quality_report, create_rules
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 
-def _make_quality(score=92.0, passed=True, completeness=0.95, issues=None,
-                  warnings=None, conflicts=None):
+def _make_quality(score=92.0, passed=True, completeness=0.95, issues=None, warnings=None, conflicts=None):
     q = MagicMock()
     q.score = score
     q.passed = passed
@@ -116,6 +114,7 @@ def test_create_rules_export_report_writes_json(tmp_path):
     assert result.exit_code == 0, result.output
     assert (output_dir / "rules.quality.json").exists()
     import json
+
     report = json.loads((output_dir / "rules.quality.json").read_text())
     assert "score" in report
     assert "tech_stack" in report["metadata"]

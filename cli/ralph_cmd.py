@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 _FAILURE_STATUSES = {"stopped", "max_iterations"}
 
 
-def _exit_on_loop_failure(engine) -> None:  # type: ignore[type-arg]
+def _exit_on_loop_failure(engine) -> None:
     """Exit with code 1 when Ralph finished without success.
 
     Callers (ralph go / run / resume) must call this after run_loop() so that

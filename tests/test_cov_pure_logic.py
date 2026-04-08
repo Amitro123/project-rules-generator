@@ -5,12 +5,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from generator.planning.task_creator import TaskEntry
+from generator.requirements import Requirement
+
 # ---------------------------------------------------------------------------
 # TraceabilityMatrix (tasks.py)
 # ---------------------------------------------------------------------------
 from generator.tasks import TraceabilityMatrix
-from generator.requirements import Requirement
-from generator.planning.task_creator import TaskEntry
 
 
 def _req(id_, desc, source="README"):
@@ -102,11 +103,12 @@ class TestTraceabilityMatrix:
         assert "Req ID" in m.format_table()
 
 
+from generator.rules_creator import Rule, RulesMetadata
+
 # ---------------------------------------------------------------------------
 # rules_renderer.py
 # ---------------------------------------------------------------------------
-from generator.rules_renderer import append_mandatory_anti_patterns, RulesContentRenderer
-from generator.rules_creator import Rule, RulesMetadata
+from generator.rules_renderer import RulesContentRenderer, append_mandatory_anti_patterns
 
 
 def _metadata(name="MyProject", tech=None, ptype="python-cli", areas=None, signals=None):
@@ -219,7 +221,7 @@ class TestRulesContentRenderer:
 # ---------------------------------------------------------------------------
 # quality_validators.py
 # ---------------------------------------------------------------------------
-from generator.quality_validators import SkillQualityValidator, RulesQualityValidator
+from generator.quality_validators import RulesQualityValidator, SkillQualityValidator
 
 
 class TestSkillQualityValidatorAutoFix:

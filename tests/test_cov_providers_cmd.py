@@ -13,7 +13,6 @@ from click.testing import CliRunner
 
 from cli.providers_cmd import providers_group
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -82,7 +81,12 @@ def test_providers_list_plain_fallback_without_rich():
     runner = CliRunner()
     with (
         patch("cli.providers_cmd.AIStrategyRouter") as MockRouter,
-        patch("builtins.__import__", side_effect=lambda name, *a, **kw: (_ for _ in ()).throw(ImportError()) if name == "rich.console" else __import__(name, *a, **kw)),
+        patch(
+            "builtins.__import__",
+            side_effect=lambda name, *a, **kw: (
+                (_ for _ in ()).throw(ImportError()) if name == "rich.console" else __import__(name, *a, **kw)
+            ),
+        ),
     ):
         MockRouter.return_value.provider_status.return_value = _make_statuses()
         # Even if rich fails, the command should not crash

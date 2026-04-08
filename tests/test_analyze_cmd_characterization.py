@@ -14,7 +14,6 @@ from click.testing import CliRunner
 from cli.analyze_cmd import analyze
 from prg_utils.exceptions import ProjectRulesGeneratorError, READMENotFoundError
 
-
 # ---------------------------------------------------------------------------
 # Scenario 1: --generate-index exits 0 after generating the index
 # ---------------------------------------------------------------------------

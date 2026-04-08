@@ -3,7 +3,7 @@
 import os
 import subprocess
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Sequence, Union
 
 
 def _posix(path: Union[str, Path]) -> str:
@@ -25,7 +25,7 @@ def is_git_repo(path: Union[str, Path]) -> bool:
         return False
 
 
-def stage_files(paths: List[Union[str, Path]], repo_path: Union[str, Path] = ".") -> None:
+def stage_files(paths: Sequence[Union[str, Path]], repo_path: Union[str, Path] = ".") -> None:
     """Stage files for commit."""
     repo = _posix(repo_path)
     for path in paths:
@@ -87,7 +87,7 @@ def has_staged_changes(repo_path: Union[str, Path] = ".") -> bool:
 
 
 def commit_files(
-    paths: List[Union[str, Path]],
+    paths: Sequence[Union[str, Path]],
     message: str,
     repo_path: Union[str, Path] = ".",
     user_name: Optional[str] = None,

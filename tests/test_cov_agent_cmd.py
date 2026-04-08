@@ -13,7 +13,6 @@ from click.testing import CliRunner
 
 from cli.agent import agent_command, setup, start
 
-
 # ---------------------------------------------------------------------------
 # start command
 # ---------------------------------------------------------------------------

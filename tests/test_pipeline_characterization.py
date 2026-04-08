@@ -216,9 +216,7 @@ def test_incremental_merge_called_when_rules_md_exists(tmp_path):
     inc.phases_to_run.return_value = (True, True, False, False)
     inc.detect_changes.return_value = {"deps"}
 
-    with patch(
-        "cli.analyze_pipeline.IncrementalAnalyzer.merge_rules", return_value="# Merged rules\n"
-    ) as mock_merge:
+    with patch("cli.analyze_pipeline.IncrementalAnalyzer.merge_rules", return_value="# Merged rules\n") as mock_merge:
         _call_pipeline(tmp_path, output_dir=output_dir, inc_analyzer=inc)
 
     mock_merge.assert_called_once()

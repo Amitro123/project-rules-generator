@@ -7,10 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cli.agent_plan_helpers import (
-    _heuristic_files_for_task,
-    write_tasks_manifest,
-)
+from cli.agent_plan_helpers import _heuristic_files_for_task, write_tasks_manifest
 
 
 def _subtask(id=1, title="Add feature", goal="Implement X", files=None, deps=None, mins=5):

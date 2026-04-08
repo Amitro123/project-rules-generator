@@ -76,9 +76,7 @@ def _create_feature_workspace(
         )
     except Exception as exc:
         logger.warning("Plan generation failed: %s — writing placeholder.", exc)
-        plan_path.write_text(
-            f"# {task_description}\n\nPlan generation failed. Edit manually.\n", encoding="utf-8"
-        )
+        plan_path.write_text(f"# {task_description}\n\nPlan generation failed. Edit manually.\n", encoding="utf-8")
         _save_tasks(tasks_path, [])
 
     slug = slugify(task_description)
