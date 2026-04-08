@@ -9,7 +9,7 @@ version: 1.0
 
 ## PROJECT CONTEXT
 - **Type**: Agent
-- **Tech Stack**: python, fastapi, docker, claude, gemini, gpt, groq, click, pydantic, gitpython
+- **Tech Stack**: python, fastapi, claude, gemini, gpt, groq, click, pydantic, gitpython
 - **Domain**: ![Python 3.8+](https://python.org)...
 
 ## CORE SKILLS
@@ -78,20 +78,6 @@ Check FastAPI endpoints for common security issues.
 - Adding new authenticated endpoints
 - Reviewing dependency injection
 - Pydantic model validation
-
-### docker-optimizer
-Optimize Dockerfile and compose configurations.
-
-> *Source: builtin*
-
-**Triggers:**
-- optimize docker
-- check container
-
-**When to use:**
-- Slow build times
-- Large image sizes
-- Container security scanning
 
 ## AGENT SKILLS
 

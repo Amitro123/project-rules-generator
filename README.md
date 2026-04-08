@@ -134,6 +134,10 @@ Here is an example of what `prg analyze` actually generates from a real Python F
 - Test against a real PostgreSQL test database using rollback-based transactional fixtures.
 ```
 
+**PRG analyzing itself** — real terminal output, no staging:
+
+![PRG Analyze Demo](docs/assets/prg-analyze-demo.png)
+
 ---
 
 ## The 3-Layer Skill System
