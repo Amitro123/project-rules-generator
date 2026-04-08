@@ -103,6 +103,39 @@ prg ralph approve FEATURE-001          # Human approval → merge to main
 
 ---
 
+## Real Output Example
+
+**Without PRG:** You ask an AI agent to "add a user login endpoint". It generates synchronous SQLAlchemy queries, uses raw dictionaries for responses, and dumps the route in `main.py`.
+**With PRG:** The agent first reads your `.clinerules/rules.md`. It automatically uses async SQLAlchemy 2.0 syntax, creates a Pydantic response schema, and places the route correctly in `app/api/v1/endpoints/auth.py`.
+
+Here is an example of what `prg analyze` actually generates from a real Python FastAPI + React + PostgreSQL codebase — no templates, just your project's exact reality:
+
+```markdown
+# FastAPI + React Web Stack Rules
+
+## Core Architecture
+- **Backend**: FastAPI 0.100+, SQLAlchemy 2.0 (async), Pydantic V2
+- **Frontend**: React 18, TypeScript, TailwindCSS, Vite
+- **Database**: PostgreSQL 15+ (accessed exclusively via asyncpg)
+
+## Backend Conventions
+- **Asynchronous I/O**: ALL database operations and external requests MUST use `async`/`await`. Never use synchronous `Session`.
+- **Dependency Injection**: Always use FastAPI `Depends()` for database sessions (`get_db_session`) and current user state.
+- **Routing**: API routes must be placed in `app/api/v1/endpoints/`. Organize by domain logic (e.g., `auth.py`, `users.py`).
+- **Validation**: Strict use of Pydantic V2 schemas for all request/response models. No raw `dict` structures.
+
+## Frontend Conventions
+- **Components**: Functional components only, placed in `src/components/`. Enforce `PascalCase.tsx` naming.
+- **Styling**: Tailwind utility classes exclusively. Keep `index.css` minimal.
+- **Data Fetching**: Use React Query (`@tanstack/react-query`) for all backend API integration and caching.
+
+## Testing Guidelines
+- Use `pytest` and `pytest-asyncio` for backend tests in `tests/backend/`.
+- Test against a real PostgreSQL test database using rollback-based transactional fixtures.
+```
+
+---
+
 ## The 3-Layer Skill System
 
 Skills are ranked by specificity. More specific always wins:
