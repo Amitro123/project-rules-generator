@@ -32,13 +32,27 @@ class StubStrategy:
 
         # Use README for a purpose hint if available
         purpose = f"Inconsistent {action} patterns slow down {tech} development. Apply this skill to enforce the correct {action} approach every time."
+        # Shell/code prefixes that should never be used as purpose prose
+        _SKIP_PREFIXES = (
+            "export ", "pip ", "npm ", "yarn ", "cd ", "git ", "python ", "prg ",
+            "set ", "curl ", "docker ", "poetry ", "uv ", "http", "https",
+        )
         if from_readme:
             for line in from_readme.split("\n"):
                 stripped = line.strip()
                 if not stripped or stripped.startswith(("#", "-", "*", ">", "|", "!", "`")):
                     continue
-                skill_words = skill_label.split()
-                if any(w in stripped.lower() for w in skill_words) and len(stripped) > 20:
+                if any(stripped.lower().startswith(p) for p in _SKIP_PREFIXES):
+                    continue
+                # Skip assignment / env-var lines (contain '=' but no sentence punctuation)
+                if "=" in stripped and not any(c in stripped for c in ".,?!"):
+                    continue
+                # Skip tech-stack / badge lines (dot-separated capabilities lists)
+                if "·" in stripped or stripped.count("|") >= 2:
+                    continue
+                # Only match on skill words that are long enough to be specific
+                skill_words = [w for w in skill_label.split() if len(w) >= 5]
+                if skill_words and any(w in stripped.lower() for w in skill_words) and len(stripped) > 20:
                     purpose = stripped[:200]
                     break
 

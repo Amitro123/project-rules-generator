@@ -61,7 +61,11 @@ class Design(BaseModel):
         if self.data_models:
             lines += ["## Data Models", ""]
             for model in self.data_models:
-                lines.append(f"- {model}")
+                # Code blocks are stored verbatim; plain strings get a bullet prefix
+                if model.startswith("```"):
+                    lines.append(model)
+                else:
+                    lines.append(f"- {model}")
             lines.append("")
 
         if self.success_criteria:
@@ -121,9 +125,9 @@ class Design(BaseModel):
                     )
                 )
 
-        # Parse bullet lists
+        # Parse bullet lists; data_models may contain fenced code blocks
         api_contracts = _extract_bullets(sections.get("API Contracts", ""))
-        data_models = _extract_bullets(sections.get("Data Models", ""))
+        data_models = _extract_code_blocks_or_bullets(sections.get("Data Models", ""))
         success_criteria = _extract_bullets(sections.get("Success Criteria", ""))
 
         return cls(
@@ -159,6 +163,14 @@ def _extract_bullets(text: str) -> List[str]:
     if current:
         items.append(" ".join(current))
     return [item for item in items if item]
+
+
+def _extract_code_blocks_or_bullets(text: str) -> List[str]:
+    """Extract fenced code blocks from a section; fall back to bullets if none found."""
+    blocks = re.findall(r"(```(?:\w+)?\n.*?```)", text, re.DOTALL)
+    if blocks:
+        return [b.strip() for b in blocks if b.strip()]
+    return _extract_bullets(text)
 
 
 class DesignGenerator:
