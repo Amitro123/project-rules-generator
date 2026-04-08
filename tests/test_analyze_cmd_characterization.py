@@ -1,7 +1,8 @@
-"""Characterization tests for the analyze() CLI command early-exit paths.
+"""Characterization tests for the analyze() CLI command early-exit paths,
+and for the prg skills index sub-command that replaced --generate-index.
 
-These tests lock down the four early-exit scenarios before any structural
-refactor of analyze_cmd.py, so regressions are caught immediately.
+These tests lock down the early-exit scenarios so regressions are caught
+immediately during any structural refactor of analyze_cmd.py.
 """
 
 from __future__ import annotations
@@ -12,54 +13,39 @@ import pytest
 from click.testing import CliRunner
 
 from cli.analyze_cmd import analyze
+from cli.cli import cli as main
 from prg_utils.exceptions import ProjectRulesGeneratorError, READMENotFoundError
 
 # ---------------------------------------------------------------------------
-# Scenario 1: --generate-index exits 0 after generating the index
+# Scenario 1: prg skills index (was --generate-index on analyze)
 # ---------------------------------------------------------------------------
 
 
-def test_generate_index_flag_exits_0(tmp_path):
-    """--generate-index generates skills/index.md then exits 0 immediately."""
+def test_skills_index_exits_0(tmp_path):
+    """prg skills index generates skills/index.md then exits 0."""
     runner = CliRunner()
 
     mock_sm = MagicMock()
     mock_sm.generate_perfect_index.return_value = tmp_path / "skills" / "index.md"
 
-    with patch("cli.analyze_cmd.SkillsManager", return_value=mock_sm):
-        result = runner.invoke(analyze, [str(tmp_path), "--generate-index", "--no-commit"])
+    with patch("cli.skills_cmd.SkillsManager", return_value=mock_sm):
+        result = runner.invoke(main, ["skills", "index", str(tmp_path)])
 
     assert result.exit_code == 0, result.output
     mock_sm.generate_perfect_index.assert_called_once()
 
 
-def test_generate_index_flag_does_not_run_pipeline(tmp_path):
-    """--generate-index must NOT invoke the generation pipeline."""
-    runner = CliRunner()
-
-    mock_sm = MagicMock()
-    mock_sm.generate_perfect_index.return_value = tmp_path / "skills" / "index.md"
-
-    with (
-        patch("cli.analyze_cmd.SkillsManager", return_value=mock_sm),
-        patch("cli.analyze_cmd.run_generation_pipeline") as mock_pipeline,
-    ):
-        runner.invoke(analyze, [str(tmp_path), "--generate-index", "--no-commit"])
-
-    mock_pipeline.assert_not_called()
-
-
-def test_generate_index_failure_exits_1(tmp_path):
-    """If generate_perfect_index raises, exits 1 with an error message."""
+def test_skills_index_failure_exits_1(tmp_path):
+    """If generate_perfect_index raises, prg skills index exits 1."""
     runner = CliRunner()
 
     mock_sm = MagicMock()
     mock_sm.generate_perfect_index.side_effect = RuntimeError("disk full")
 
-    with patch("cli.analyze_cmd.SkillsManager", return_value=mock_sm):
-        result = runner.invoke(analyze, [str(tmp_path), "--generate-index", "--no-commit"])
+    with patch("cli.skills_cmd.SkillsManager", return_value=mock_sm):
+        result = runner.invoke(main, ["skills", "index", str(tmp_path)])
 
-    assert result.exit_code == 1
+    assert result.exit_code != 0
 
 
 # ---------------------------------------------------------------------------
@@ -97,12 +83,10 @@ def _patch_analyze_for_readme_error():
     stack = ExitStack()
 
     mock_sm = MagicMock()
-    mock_sm.generate_perfect_index.return_value = MagicMock()
     stack.enter_context(patch("cli.analyze_cmd.SkillsManager", return_value=mock_sm))
     stack.enter_context(patch("cli.analyze_cmd.setup_incremental", return_value=None))
     stack.enter_context(patch("cli.analyze_cmd.setup_logging_and_provider", return_value="groq"))
     stack.enter_context(patch("cli.analyze_cmd.load_config", return_value={}))
-    stack.enter_context(patch("cli.analyze_cmd._handle_skill_management"))
     stack.enter_context(patch("cli.analyze_cmd.load_external_packs"))
     return stack
 

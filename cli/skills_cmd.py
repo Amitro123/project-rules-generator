@@ -7,6 +7,8 @@ from typing import List, Optional, Tuple
 
 import click
 
+from generator.skills_manager import SkillsManager
+
 logger = logging.getLogger(__name__)
 
 
@@ -88,8 +90,6 @@ def skills_list(path, show_all):
     project_path = Path(path).resolve()
 
     try:
-        from generator.skills_manager import SkillsManager
-
         sm = SkillsManager(project_path=project_path)
         skills = sm.list_skills()
     except Exception as exc:
@@ -508,3 +508,139 @@ def skills_purge(mode, yes, dry_run):
             failed += 1
 
     click.echo(f"Removed {removed} stub skill(s)." + (f" ({failed} failed)" if failed else ""))
+
+
+# ---------------------------------------------------------------------------
+# prg skills create
+# ---------------------------------------------------------------------------
+
+
+@skills_group.command(name="create")
+@click.argument("skill_name")
+@click.argument("path", type=click.Path(exists=True, file_okay=False), default=".")
+@click.option("--from-readme", type=click.Path(exists=True, dir_okay=False), help="Use README as context for skill")
+@click.option("--ai", is_flag=True, help="Use AI to generate skill content (requires an API key)")
+@click.option(
+    "--provider",
+    type=click.Choice(["gemini", "groq", "anthropic", "openai"]),
+    default=None,
+    help="AI provider (auto-detected from env if omitted)",
+)
+@click.option("--api-key", help="API key (overrides env var)")
+@click.option("--force", is_flag=True, default=False, help="Overwrite if skill already exists")
+@click.option(
+    "--strategy",
+    default="auto",
+    show_default=True,
+    help="Router strategy: auto, speed, quality, or provider:<name>",
+)
+@click.option(
+    "--scope",
+    type=click.Choice(["learned", "builtin", "project"], case_sensitive=False),
+    default="learned",
+    show_default=True,
+    help="Where to write the skill: learned (global reusable), builtin, or project",
+)
+@click.option(
+    "--output",
+    type=click.Path(file_okay=False),
+    default=".clinerules",
+    show_default=True,
+    help="Output directory (used for auto-triggers.json refresh)",
+)
+def skills_create(skill_name, path, from_readme, ai, provider, api_key, force, strategy, scope, output):
+    """Create a new skill and add it to the learned library.
+
+    Examples:
+
+      \b
+      prg skills create pytest-workflow
+      prg skills create my-skill --from-readme README.md
+      prg skills create my-skill --ai --provider groq
+    """
+    from cli.utils import detect_provider, set_api_key_env
+
+    project_path = Path(path).resolve()
+    output_dir = project_path / output
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    resolved_provider: str = detect_provider(provider, api_key) or "groq"
+    set_api_key_env(resolved_provider, api_key)
+
+    sm = SkillsManager(project_path=project_path)
+    try:
+        skill_path = sm.create_skill(
+            skill_name,
+            from_readme=from_readme,
+            project_path=str(project_path),
+            use_ai=ai,
+            provider=resolved_provider,
+            force=force,
+            strategy=strategy if ai else None,
+            scope=scope,
+        )
+        click.echo(f"\u2728 Created new skill '{skill_path.name}' in {skill_path}")
+        click.echo("\U0001f504 Updating agent cache...")
+        sm.save_triggers_json(output_dir)
+        click.echo("\u2705 auto-triggers.json refreshed!")
+    except Exception as e:  # noqa: BLE001 — surface all skill creation failures to the user
+        click.echo(f"\u274c Failed to create skill: {e}", err=True)
+        raise SystemExit(1)
+
+
+# ---------------------------------------------------------------------------
+# prg skills remove
+# ---------------------------------------------------------------------------
+
+
+@skills_group.command(name="remove")
+@click.argument("skill_name")
+@click.argument("path", type=click.Path(exists=True, file_okay=False), default=".")
+def skills_remove(skill_name, path):
+    """Remove a learned skill by name.
+
+    Example:
+
+      prg skills remove pytest-workflow
+    """
+    project_path = Path(path).resolve()
+    sm = SkillsManager(project_path=project_path)
+
+    target = (sm.learned_path / skill_name).resolve()
+    try:
+        target.relative_to(sm.learned_path.resolve())
+    except ValueError:
+        click.echo(f"\u274c Invalid skill path: {skill_name}", err=True)
+        raise SystemExit(1)
+
+    if target.exists():
+        shutil.rmtree(target)
+        click.echo(f"\U0001f5d1\ufe0f  Removed skill '{skill_name}'")
+    else:
+        click.echo(f"\u274c Skill '{skill_name}' not found in learned skills.", err=True)
+        raise SystemExit(1)
+
+
+# ---------------------------------------------------------------------------
+# prg skills index
+# ---------------------------------------------------------------------------
+
+
+@skills_group.command(name="index")
+@click.argument("path", type=click.Path(exists=True, file_okay=False), default=".")
+@click.option("--skills-dir", type=click.Path(file_okay=False), help="Custom skills directory (default: ./skills)")
+def skills_index(path, skills_dir):
+    """Generate a perfect index.md for all available skills.
+
+    Example:
+
+      prg skills index .
+    """
+    project_path = Path(path).resolve()
+    sm = SkillsManager(project_path=project_path, skills_dir=skills_dir)
+    try:
+        index_path = sm.generate_perfect_index()
+        click.echo(f"\u2705 Perfect index.md generated at: {index_path}")
+    except Exception as e:  # noqa: BLE001 — surface index generation failures
+        click.echo(f"\u274c Failed to generate index.md: {e}", err=True)
+        raise SystemExit(1)

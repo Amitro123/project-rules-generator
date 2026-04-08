@@ -9,8 +9,6 @@ from pydantic import ValidationError
 
 from cli._version import __version__
 from cli.analyze_helpers import (  # noqa: E402
-    _handle_skill_management,
-    _run_create_rules,
     commit_generated_files,
     normalize_analyze_options,
     setup_incremental,
@@ -18,7 +16,6 @@ from cli.analyze_helpers import (  # noqa: E402
     setup_orchestrator,
 )
 from cli.analyze_pipeline import run_generation_pipeline
-from cli.analyze_quality import run_quality_check
 from cli.analyze_readme import resolve_readme
 from generator.pack_manager import load_external_packs
 from generator.skills_manager import SkillsManager
@@ -83,16 +80,6 @@ def _register_ide_rules(ide: str, project_path: Path, project_name: str, output_
     type=click.Path(exists=True, file_okay=False),
     help="Directory containing external packs",
 )
-@click.option("--list-skills", is_flag=True, help="List all available skills from all sources")
-@click.option("--create-skill", help="Create a new skill with the given name")
-@click.option(
-    "--scope",
-    type=click.Choice(["learned", "builtin", "project"], case_sensitive=False),
-    default="learned",
-    show_default=True,
-    help="Where to write the skill: learned (default, global reusable), builtin (universal patterns), project (this project only)",
-)
-@click.option("--from-readme", type=click.Path(exists=True, dir_okay=False), help="Use README as context for new skill")
 @click.option("--ai", is_flag=True, help="Use AI to generate skill content (requires an API key)")
 @click.option(
     "--output",
@@ -125,21 +112,6 @@ def _register_ide_rules(ide: str, project_path: Path, project_name: str, output_
     show_default=True,
     help="Router strategy: auto (smart fallback), speed, quality, or provider:<name>",
 )
-@click.option("--add-skill", help="Add a skill (alias for create-skill)")
-@click.option("--force", is_flag=True, default=False, help="Force overwrite if skill already exists")
-@click.option("--remove-skill", help="Remove a learned skill")
-@click.option("--quality-check", is_flag=True, help="Analyze quality of generated .clinerules files")
-@click.option("--eval-opik", is_flag=True, help="Run Comet Opik evaluation (requires OPIK_API_KEY)")
-@click.option("--auto-fix", is_flag=True, help="Automatically fix low-quality files (requires --quality-check)")
-@click.option("--max-iterations", type=int, default=3, help="Max improvement iterations for auto-fix (default: 3)")
-@click.option("--generate-index", is_flag=True, help="Auto-generate skills/index.md from available skills")
-@click.option(
-    "--create-rules",
-    "create_rules_flag",
-    is_flag=True,
-    help="Generate Cowork-quality rules.md (overrides default rules generation)",
-)
-@click.option("--rules-quality-threshold", type=int, default=85, help="Minimum quality score for --create-rules")
 @click.option("--skills-dir", type=click.Path(file_okay=False), help="Custom skills directory (default: ./skills)")
 def analyze(
     project_path,
@@ -151,9 +123,6 @@ def analyze(
     save_learned,
     include_pack,
     external_packs_dir,
-    list_skills,
-    create_skill,
-    from_readme,
     ai,
     output,
     with_skills,
@@ -165,35 +134,19 @@ def analyze(
     incremental,
     ide,
     provider,
-    add_skill,
-    force,
-    remove_skill,
-    quality_check,
-    eval_opik,
-    auto_fix,
-    max_iterations,
-    generate_index,
-    create_rules_flag,
-    rules_quality_threshold,
     skills_dir,
     strategy,
-    scope,
 ):
-    """Analyze project and generate rules.md and skills.md from README.md"""
+    """Analyze project and generate rules.md and skills.md from README.md
+
+    For skill management use: prg skills create / remove / list / index
+    For quality analysis use:  prg quality .
+    For rules creation use:    prg create-rules .
+    """
     project_path = Path(project_path).resolve()
     cleanup_awesome_skills()
 
     skills_manager = SkillsManager(project_path=project_path, skills_dir=skills_dir)
-
-    # Early-exit: generate index only
-    if generate_index:
-        try:
-            index_path = skills_manager.generate_perfect_index()
-            click.echo(f"✅ Perfect index.md generated at: {index_path}")
-            sys.exit(0)
-        except Exception as e:
-            click.echo(f"❌ Failed to generate index.md: {e}", err=True)
-            sys.exit(1)
 
     # Resolve mode shortcuts and provider-implied flags
     auto_generate_skills, ai, constitution = normalize_analyze_options(
@@ -209,7 +162,7 @@ def analyze(
         skills_manager.setup_project_structure()
         if verbose:
             click.echo("✅ Skills structure initialized (Global -> Project)")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         if verbose:
             click.echo(f"⚠️  Skills structure setup warning: {e}")
 
@@ -231,23 +184,6 @@ def analyze(
             if "learned" not in config["skill_sources"]:
                 config["skill_sources"]["learned"] = {}
             config["skill_sources"]["learned"]["auto_save"] = True
-
-        _handle_skill_management(
-            skills_manager=skills_manager,
-            create_skill=create_skill,
-            add_skill=add_skill,
-            from_readme=from_readme,
-            ai=ai,
-            provider=provider,
-            force=force,
-            strategy=strategy,
-            output_dir=output_dir,
-            create_rules_flag=create_rules_flag,
-            remove_skill=remove_skill,
-            list_skills=list_skills,
-            verbose=verbose,
-            scope=scope,
-        )
 
         if include_pack or (config.get("packs") and config["packs"].get("enabled")):
             load_external_packs(
@@ -320,30 +256,6 @@ def analyze(
             inc_analyzer.save_hash(inc_analyzer._current_hash or inc_analyzer.compute_project_hash())
             if verbose:
                 click.echo("   Saved incremental cache")
-
-        if quality_check or eval_opik:
-            run_quality_check(
-                output_dir=output_dir,
-                project_path=project_path,
-                provider=provider,
-                api_key=api_key,
-                eval_opik=eval_opik,
-                auto_fix=auto_fix,
-                verbose=verbose,
-            )
-
-        if create_rules_flag:
-            _run_create_rules(
-                project_path=project_path,
-                readme_path=readme_path,
-                project_name=project_name,
-                project_data=project_data,
-                enhanced_context=None,
-                output_dir=output_dir,
-                rules_quality_threshold=rules_quality_threshold,
-                verbose=verbose,
-                generated_files=generated_files,
-            )
 
         click.echo("\nDone!")
 

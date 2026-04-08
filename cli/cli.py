@@ -75,6 +75,7 @@ from cli.init_cmd import init
 from cli.jobs import exec_task, leaderboard, next_task, query_tasks, status
 from cli.manager_cmd import manager
 from cli.providers_cmd import providers_group
+from cli.quality_cmd import quality_cmd
 from cli.ralph_cmd import ralph_group
 from cli.skills_cmd import skills_group
 from cli.tasks_cmd import tasks_cmd
@@ -101,6 +102,7 @@ cli.add_command(spec_cmd, name="spec")
 cli.add_command(agent_command)
 cli.add_command(leaderboard)
 cli.add_command(providers_group, name="providers")
+cli.add_command(quality_cmd, name="quality")
 cli.add_command(skills_group, name="skills")
 cli.add_command(watch)
 cli.add_command(feature)

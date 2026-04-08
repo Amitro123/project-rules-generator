@@ -38,35 +38,33 @@ def test_cli_respects_project_path(tmp_path):
     target_dir.mkdir()
 
     runner = CliRunner()
-    with patch("cli.analyze_cmd.SkillsManager") as MockClass:
-        # Mocking list_skills to return a structure that won't cause main.py to crash on sum()
+    with patch("cli.skills_cmd.SkillsManager") as MockClass:
         MockClass.return_value.list_skills.return_value = {"skill1": {"type": "builtin", "path": "path/to/skill1"}}
+        MockClass.return_value.project_path = target_dir
 
-        result = runner.invoke(main, [str(target_dir), "--list-skills"])
+        result = runner.invoke(main, ["skills", "list", str(target_dir)])
 
         assert result.exit_code == 0
-        # Main now passes project specific path for skills location
-        MockClass.assert_called_with(project_path=target_dir, skills_dir=None)
+        MockClass.assert_called_with(project_path=target_dir)
 
 
 def test_list_skills(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager):
-        result = runner.invoke(main, ["--list-skills"])
+    with patch("cli.skills_cmd.SkillsManager", side_effect=mock_manager):
+        result = runner.invoke(main, ["skills", "list", str(temp_skills_dir), "--all"])
         assert result.exit_code == 0
-        assert "Skills" in result.output
         assert "brainstorming" in result.output
 
 
 def test_create_skill(temp_skills_dir, mock_manager):
     runner = CliRunner()
     llm_output = "# Skill: New Skill\n\n## Purpose\nTest skill.\n"
-    with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager), patch(
+    with patch("cli.skills_cmd.SkillsManager", side_effect=mock_manager), patch(
         "generator.llm_skill_generator.LLMSkillGenerator.generate_skill", return_value=llm_output
     ):
-        result = runner.invoke(main, ["--create-skill", "new-skill"])
+        result = runner.invoke(main, ["skills", "create", "new-skill", str(temp_skills_dir)])
 
-        assert result.exit_code == 0
+        assert result.exit_code == 0, result.output
         assert "Created new skill 'new-skill'" in result.output
 
         skill_path = temp_skills_dir / "learned" / "new-skill" / "SKILL.md"
@@ -76,8 +74,8 @@ def test_create_skill(temp_skills_dir, mock_manager):
 
 def test_create_skill_sanitization(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager):
-        result = runner.invoke(main, ["--create-skill", "bad name!"])
+    with patch("cli.skills_cmd.SkillsManager", side_effect=mock_manager):
+        result = runner.invoke(main, ["skills", "create", "bad name!", str(temp_skills_dir)])
         # It should sanitize 'bad name!' to 'bad-name' and succeed
         assert result.exit_code == 0
         # We now expect the sanitized name in the output
@@ -103,12 +101,15 @@ Description of test project.
     )
 
     runner = CliRunner()
-    with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager):
+    with patch("cli.skills_cmd.SkillsManager", side_effect=mock_manager):
         # Use "test-project" so the skill name words ("test", "project") appear in the
         # README purpose ("Description of test project.") and READMEStrategy returns
         # content rather than falling through to StubStrategy.
-        result = runner.invoke(main, ["--create-skill", "test-project", "--from-readme", str(readme)])
-        assert result.exit_code == 0
+        result = runner.invoke(
+            main,
+            ["skills", "create", "test-project", str(temp_skills_dir), "--from-readme", str(readme)],
+        )
+        assert result.exit_code == 0, result.output
 
         skill_path = temp_skills_dir / "learned" / "test-project" / "SKILL.md"
         assert skill_path.exists()
@@ -128,8 +129,8 @@ Description of test project.
 
 def test_create_duplicate_skill(temp_skills_dir, mock_manager):
     runner = CliRunner()
-    with patch("cli.analyze_cmd.SkillsManager", side_effect=mock_manager):
-        runner.invoke(main, ["--create-skill", "dup-skill"])
-        result = runner.invoke(main, ["--create-skill", "dup-skill"])
+    with patch("cli.skills_cmd.SkillsManager", side_effect=mock_manager):
+        runner.invoke(main, ["skills", "create", "dup-skill", str(temp_skills_dir)])
+        result = runner.invoke(main, ["skills", "create", "dup-skill", str(temp_skills_dir)])
         assert result.exit_code == 0
         assert "Updating" in result.output or "Created" in result.output

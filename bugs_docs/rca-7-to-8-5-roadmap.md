@@ -61,19 +61,20 @@ Result: `mypy generator/ cli/ prg_utils/ --ignore-missing-imports` → **0 error
 
 ### P1 — Replace Silent Degradation with Visible Failure Modes
 
-#### P1-A: Distinguish "skipped" from "failed" in `_phase_enhanced_parse` — ⬜ TODO
+#### P1-A: Distinguish "skipped" from "failed" in `_phase_enhanced_parse` — ✅ COMPLETE (2026-04-08)
 
-`analyze_pipeline.py:208-213`: catches bare `Exception`, emits warning only under `--verbose`,
-returns `None` for both "incremental skip" and "parse failure" cases. Fix:
-- Narrow catch to `(OSError, ValueError, RuntimeError)`
-- Emit warning unconditionally to stderr (not verbose-gated)
-- Differentiate None-by-design (incremental) from None-by-error at call sites
+`analyze_pipeline.py`: narrowed `except Exception` → `(OSError, ValueError, RuntimeError)`.
+Warning moved from verbose-gated to unconditional stderr. `AttributeError` (programming error)
+now propagates — bugs surface instead of being silently swallowed.
+Locked in by `test_enhanced_parse_warning_emitted_regardless_of_verbose` and
+`test_enhanced_parse_attribute_error_propagates` in `tests/test_p1_visible_failures.py`.
 
-#### P1-B: Apply same pattern to READMEStrategy and CoworkStrategy — ⬜ TODO
+#### P1-B: Apply same pattern to READMEStrategy and CoworkStrategy — ✅ COMPLETE (2026-04-08)
 
-- `readme_strategy.py:148`: broad catch silently returns `None` on parser bugs
-- `cowork_strategy.py`: 5 broad catches; at minimum add `# noqa: BLE001` with explanation
-  for each that is genuinely non-fatal
+- `readme_strategy.py`: narrowed to `(ImportError, OSError, ValueError, TypeError, AttributeError)`
+- `cowork_strategy.py`: 4 of 6 catches narrowed with specific types; 2 intentionally broad
+  catches (creator factory, AI call) documented with `# noqa: BLE001` + reason comment
+- 10 new tests in `tests/test_p1_visible_failures.py`
 
 #### P1-C: Decompose `analyze()` by splitting sub-commands — ⬜ TODO
 
