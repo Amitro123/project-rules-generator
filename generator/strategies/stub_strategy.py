@@ -34,8 +34,21 @@ class StubStrategy:
         purpose = f"Inconsistent {action} patterns slow down {tech} development. Apply this skill to enforce the correct {action} approach every time."
         # Shell/code prefixes that should never be used as purpose prose
         _SKIP_PREFIXES = (
-            "export ", "pip ", "npm ", "yarn ", "cd ", "git ", "python ", "prg ",
-            "set ", "curl ", "docker ", "poetry ", "uv ", "http", "https",
+            "export ",
+            "pip ",
+            "npm ",
+            "yarn ",
+            "cd ",
+            "git ",
+            "python ",
+            "prg ",
+            "set ",
+            "curl ",
+            "docker ",
+            "poetry ",
+            "uv ",
+            "http",
+            "https",
         )
         if from_readme:
             for line in from_readme.split("\n"):

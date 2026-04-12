@@ -15,6 +15,7 @@ from generator.rules import (  # noqa: F401
     RulesMetadata,
     append_mandatory_anti_patterns,
 )
+
 # Re-export internal collaborators so existing mock.patch('generator.rules_creator.X') targets work.
 from generator.rules_git_miner import RulesGitMiner  # noqa: F401
 from generator.rules_renderer import RulesContentRenderer  # noqa: F401

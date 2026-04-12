@@ -291,7 +291,9 @@ class CoworkRulesCreator(ArtifactGenerator):
                     )
 
             if rules_by_category:
-                logger.info("LLM generated %d rules for unknown tech stack.", sum(len(v) for v in rules_by_category.values()))
+                logger.info(
+                    "LLM generated %d rules for unknown tech stack.", sum(len(v) for v in rules_by_category.values())
+                )
                 return dict(rules_by_category)
 
         except Exception as e:
@@ -321,15 +323,27 @@ class CoworkRulesCreator(ArtifactGenerator):
                 tech_rules = self.TECH_RULES[tech_lower]
                 for rule_content in tech_rules.get("high", []):
                     rules_by_category["Coding Standards"].append(
-                        Rule(content=rule_content, priority="High", category="Coding Standards", source=f"{tech}_patterns")
+                        Rule(
+                            content=rule_content,
+                            priority="High",
+                            category="Coding Standards",
+                            source=f"{tech}_patterns",
+                        )
                     )
                 for rule_content in tech_rules.get("medium", []):
                     rules_by_category["Best Practices"].append(
-                        Rule(content=rule_content, priority="Medium", category="Best Practices", source=f"{tech}_patterns")
+                        Rule(
+                            content=rule_content,
+                            priority="Medium",
+                            category="Best Practices",
+                            source=f"{tech}_patterns",
+                        )
                     )
                 for rule_content in tech_rules.get("low", []):
                     rules_by_category["Recommendations"].append(
-                        Rule(content=rule_content, priority="Low", category="Recommendations", source=f"{tech}_patterns")
+                        Rule(
+                            content=rule_content, priority="Low", category="Recommendations", source=f"{tech}_patterns"
+                        )
                     )
 
         arch_rules = self._generate_architecture_rules(metadata)
@@ -351,20 +365,50 @@ class CoworkRulesCreator(ArtifactGenerator):
         rules = []
 
         if metadata.project_type == "python-api":
-            rules.append(Rule("Use layered architecture: routes -> services -> repositories", priority="High", category="Architecture"))
-            rules.append(Rule("Keep route handlers thin - move logic to service layer", priority="High", category="Architecture"))
+            rules.append(
+                Rule(
+                    "Use layered architecture: routes -> services -> repositories",
+                    priority="High",
+                    category="Architecture",
+                )
+            )
+            rules.append(
+                Rule("Keep route handlers thin - move logic to service layer", priority="High", category="Architecture")
+            )
 
         if metadata.project_type == "python-cli":
-            rules.append(Rule("Keep @click.command() / @app.command() functions thin — delegate business logic to core modules", priority="High", category="Architecture"))
-            rules.append(Rule("Register all new CLI commands in a dedicated entry-point module — never add commands directly to main.py", priority="High", category="Architecture"))
-            rules.append(Rule("Always use encoding='utf-8' when reading/writing files — never rely on system default", priority="High", category="Architecture"))
+            rules.append(
+                Rule(
+                    "Keep @click.command() / @app.command() functions thin — delegate business logic to core modules",
+                    priority="High",
+                    category="Architecture",
+                )
+            )
+            rules.append(
+                Rule(
+                    "Register all new CLI commands in a dedicated entry-point module — never add commands directly to main.py",
+                    priority="High",
+                    category="Architecture",
+                )
+            )
+            rules.append(
+                Rule(
+                    "Always use encoding='utf-8' when reading/writing files — never rely on system default",
+                    priority="High",
+                    category="Architecture",
+                )
+            )
 
         if metadata.project_type == "ai-agent":
-            rules.append(Rule("Single orchestrator pattern - one main coordinator", priority="High", category="Architecture"))
+            rules.append(
+                Rule("Single orchestrator pattern - one main coordinator", priority="High", category="Architecture")
+            )
             rules.append(Rule("Implement error boundaries for LLM failures", priority="High", category="Architecture"))
 
         if metadata.project_type == "frontend-app":
-            rules.append(Rule("Component-based architecture - single responsibility", priority="High", category="Architecture"))
+            rules.append(
+                Rule("Component-based architecture - single responsibility", priority="High", category="Architecture")
+            )
 
         return rules
 
@@ -397,7 +441,9 @@ class CoworkRulesCreator(ArtifactGenerator):
         """Delegate to RulesGitMiner."""
         return self._git_miner.extract_antipatterns()
 
-    def _generate_content(self, metadata: RulesMetadata, rules_by_category: Dict[str, List[Rule]], readme_content: str) -> str:
+    def _generate_content(
+        self, metadata: RulesMetadata, rules_by_category: Dict[str, List[Rule]], readme_content: str
+    ) -> str:
         """Delegate to RulesContentRenderer."""
         return self._renderer.render(metadata, rules_by_category, readme_content)
 
@@ -405,7 +451,9 @@ class CoworkRulesCreator(ArtifactGenerator):
         """Delegate to RulesContentRenderer."""
         return self._renderer.format_priority_areas(areas)
 
-    def _validate_quality(self, content: str, metadata: RulesMetadata, rules_by_category: Dict[str, List[Rule]]) -> QualityReport:
+    def _validate_quality(
+        self, content: str, metadata: RulesMetadata, rules_by_category: Dict[str, List[Rule]]
+    ) -> QualityReport:
         """Delegate to RulesQualityValidator."""
         return self._quality_validator.validate(content, metadata, rules_by_category)
 
@@ -417,7 +465,9 @@ class CoworkRulesCreator(ArtifactGenerator):
         """Delegate to RulesGitMiner."""
         return self._git_miner.available
 
-    def export_to_file(self, content: str, metadata: RulesMetadata, output_dir: Path, filename: str = "rules.md") -> Path:
+    def export_to_file(
+        self, content: str, metadata: RulesMetadata, output_dir: Path, filename: str = "rules.md"
+    ) -> Path:
         """Export rules to file in .clinerules structure."""
         output_dir.mkdir(parents=True, exist_ok=True)
         rules_file = output_dir / filename

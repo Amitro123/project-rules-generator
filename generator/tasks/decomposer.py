@@ -139,7 +139,9 @@ class TaskDecomposer(ArtifactGenerator):
 
         if not tasks:
             tasks.append(
-                SubTask(id=1, title=design.title[:80], goal=design.problem_statement or design.title, estimated_minutes=5)
+                SubTask(
+                    id=1, title=design.title[:80], goal=design.problem_statement or design.title, estimated_minutes=5
+                )
             )
 
         return tasks
@@ -430,11 +432,41 @@ Generate the subtasks now:
         if len(tasks) == 1 and tasks[0].title == user_task[:80]:
             next_id = 1
             return [
-                SubTask(id=next_id, title="Research and plan approach", goal=f"Understand requirements for: {user_task[:60]}", estimated_minutes=3, dependencies=[]),
-                SubTask(id=next_id + 1, title="Implement core changes", goal=f"Make primary code changes for: {user_task[:60]}", estimated_minutes=5, dependencies=[next_id]),
-                SubTask(id=next_id + 2, title="Write tests", goal="Add tests covering the new behaviour", estimated_minutes=4, dependencies=[next_id + 1]),
-                SubTask(id=next_id + 3, title="Update documentation", goal="Update relevant docs and comments", estimated_minutes=2, dependencies=[next_id + 1]),
-                SubTask(id=next_id + 4, title="Verify and clean up", goal="Run full test suite, fix lint, confirm success", estimated_minutes=3, dependencies=[next_id + 2, next_id + 3]),
+                SubTask(
+                    id=next_id,
+                    title="Research and plan approach",
+                    goal=f"Understand requirements for: {user_task[:60]}",
+                    estimated_minutes=3,
+                    dependencies=[],
+                ),
+                SubTask(
+                    id=next_id + 1,
+                    title="Implement core changes",
+                    goal=f"Make primary code changes for: {user_task[:60]}",
+                    estimated_minutes=5,
+                    dependencies=[next_id],
+                ),
+                SubTask(
+                    id=next_id + 2,
+                    title="Write tests",
+                    goal="Add tests covering the new behaviour",
+                    estimated_minutes=4,
+                    dependencies=[next_id + 1],
+                ),
+                SubTask(
+                    id=next_id + 3,
+                    title="Update documentation",
+                    goal="Update relevant docs and comments",
+                    estimated_minutes=2,
+                    dependencies=[next_id + 1],
+                ),
+                SubTask(
+                    id=next_id + 4,
+                    title="Verify and clean up",
+                    goal="Run full test suite, fix lint, confirm success",
+                    estimated_minutes=3,
+                    dependencies=[next_id + 2, next_id + 3],
+                ),
             ]
 
         return tasks

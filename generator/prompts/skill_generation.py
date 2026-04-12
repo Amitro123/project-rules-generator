@@ -394,7 +394,10 @@ def _detect_relevant_files(skill_topic: str, context: Dict[str, Any], project_pa
 def _format_code_examples(examples: List[Dict[str, Any]]) -> str:
     """Format code examples for the prompt."""
     if not examples:
-        return "No code examples were found for this skill topic. DO NOT invent fake file paths or code — use general best-practice patterns instead."
+        return (
+            "No code examples were found for this skill topic. DO NOT invent fake file paths"
+            " or code — use general best-practice patterns instead."
+        )
 
     parts = []
     for ex in examples[:5]:  # Limit to 5 examples

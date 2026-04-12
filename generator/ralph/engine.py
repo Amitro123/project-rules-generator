@@ -18,20 +18,20 @@ logger = logging.getLogger(__name__)
 # Thresholds and timeouts
 # ---------------------------------------------------------------------------
 
-REVIEW_SCORE_EMERGENCY_STOP = 60   # Loop halts; human intervention required
-REVIEW_SCORE_TASK_COMPLETE = 70    # Minimum score to mark a task done
-REVIEW_SCORE_SUCCESS_GATE = 85     # Minimum score to declare the feature complete
-CONSECUTIVE_FAILURE_LIMIT = 3      # Max consecutive agent/test failures before stopping
+REVIEW_SCORE_EMERGENCY_STOP = 60  # Loop halts; human intervention required
+REVIEW_SCORE_TASK_COMPLETE = 70  # Minimum score to mark a task done
+REVIEW_SCORE_SUCCESS_GATE = 85  # Minimum score to declare the feature complete
+CONSECUTIVE_FAILURE_LIMIT = 3  # Max consecutive agent/test failures before stopping
 
-VERDICT_SCORE_PASS = 100           # SelfReviewer "Pass" verdict
-VERDICT_SCORE_MAJOR = 40           # SelfReviewer "Major issues" verdict
+VERDICT_SCORE_PASS = 100  # SelfReviewer "Pass" verdict
+VERDICT_SCORE_MAJOR = 40  # SelfReviewer "Major issues" verdict
 VERDICT_SCORE_NEEDS_REVISION = 65  # SelfReviewer "Needs Revision" (below task-complete threshold)
 
-REVIEW_SCORE_NEUTRAL = 70          # Fallback score when self-review cannot run
+REVIEW_SCORE_NEUTRAL = 70  # Fallback score when self-review cannot run
 
-TIMEOUT_GIT = 10                   # seconds — git log / diff
-TIMEOUT_SUBPROCESS = 30            # seconds — git commit / gh pr create
-TIMEOUT_TESTS = 120                # seconds — full test suite
+TIMEOUT_GIT = 10  # seconds — git log / diff
+TIMEOUT_SUBPROCESS = 30  # seconds — git commit / gh pr create
+TIMEOUT_TESTS = 120  # seconds — full test suite
 
 
 class RalphEngine:

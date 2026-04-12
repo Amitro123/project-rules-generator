@@ -23,9 +23,7 @@ TECH_TOOLS: Dict[str, List[str]] = {p.name: p.tools for p in _PROFILES if p.tool
 TECH_RULES: Dict[str, Dict[str, List[str]]] = {p.name: p.rules for p in _PROFILES if p.rules}
 
 # tech name → list of README keywords
-TECH_README_KEYWORDS: Dict[str, List[str]] = {
-    p.name: p.readme_keywords for p in _PROFILES if p.readme_keywords
-}
+TECH_README_KEYWORDS: Dict[str, List[str]] = {p.name: p.readme_keywords for p in _PROFILES if p.readme_keywords}
 
 # package name → canonical tech name  (inverse of TechProfile.packages)
 PKG_MAP: Dict[str, str] = {}
