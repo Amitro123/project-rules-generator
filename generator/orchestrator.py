@@ -23,13 +23,8 @@ class SkillOrchestrator:
     def register_source(self, source: SkillSource):
         """Register a skill source."""
         self.sources.append(source)
-        # Sort by priority descending (higher number = higher priority?
-        # Wait, usually priority 0 is highest or lowest?
-        # Let's enforce: Priority val logic in config is "index in preference_order"
-        # Since preference_order is [learned, awesome, builtin] (user said higher index = higher priority?)
-        # Actually user said: "preference_order: [builtin, awesome, learned] # learned has highest priority"
-        # So index 2 > index 0.
-        # So REVERSE=True is correct sort order for index.
+        # Sources are sorted by priority (higher index = higher priority).
+        # preference_order: [builtin, awesome, learned] → learned (index 2) wins over builtin (index 0).
         self.sources.sort(key=lambda s: s.priority, reverse=True)
 
     def orchestrate(self, project_data: Dict[str, Any], project_path: str) -> List[Skill]:
@@ -58,8 +53,6 @@ class SkillOrchestrator:
 
         # 4. Adaptation
         adapted_skills = self._adapt_skills(matched_skills, project_data)
-
-        # 5. Generation (TODO: Future phase)
 
         return adapted_skills
 
@@ -130,8 +123,7 @@ class SkillOrchestrator:
         project_name = project_data.get("name", "project")
 
         for skill in skills:
-            # Simple placeholder replacement
-            # TODO: More robust Jinja2 templating later
+            # Simple placeholder replacement for project name.
             if skill.description:
                 skill.description = skill.description.replace("{project_name}", project_name)
 

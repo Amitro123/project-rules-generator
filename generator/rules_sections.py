@@ -9,10 +9,13 @@ Import directly for new code:
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any, Dict, List, Optional
 
 from generator.rules_creator import append_mandatory_anti_patterns
+
+logger = logging.getLogger(__name__)
 
 
 def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any], ctx: Dict[str, Any]) -> str:
@@ -51,8 +54,8 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
             from generator.analyzers.readme_parser import extract_conventions
 
             _readme_conventions = extract_conventions(raw_readme)
-        except Exception:  # noqa: BLE001 — conventions extraction is optional enrichment
-            pass
+        except Exception as e:
+            logger.debug(f"Expected error: {e}")
 
     arch_lines = []
     if project_type != "unknown":

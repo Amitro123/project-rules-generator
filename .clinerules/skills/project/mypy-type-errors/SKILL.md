@@ -1,9 +1,18 @@
 ---
 name: mypy-type-errors
 description: |
-  Developers struggle with inconsistent type checking, leading to runtime errors and hard-to-debug issues; this skill provides a structured workflow to identify and resolve `mypy` type errors effectively.
+  Developers struggle with inconsistent type checking, leading to runtime errors and hard-to-debug issues.
+  When the user reports mypy errors or type checking failures, use this skill.
+  When the user asks to fix type hints or resolve type annotation issues, use this skill.
+  When the user encounters `Incompatible types`, `union-attr`, or `arg-type` errors, use this skill.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [python, type-checking, mypy, code-quality, troubleshooting]
 ---

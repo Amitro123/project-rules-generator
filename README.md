@@ -2,7 +2,7 @@
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-passing-brightgreen.svg)](tests/)
+[![Tests](https://github.com/Amitro123/project-rules-generator/actions/workflows/tests.yml/badge.svg)](https://github.com/Amitro123/project-rules-generator/actions/workflows/tests.yml)
 
 ---
 
@@ -71,7 +71,7 @@ No templates. No hand-holding. Generated from *your actual project.*
 **No API key needed** — `prg init` and `prg analyze` work fully offline from your README and file structure:
 
 ```bash
-pip install -e .
+pip install project-rules-generator
 prg init .
 prg analyze .
 ```

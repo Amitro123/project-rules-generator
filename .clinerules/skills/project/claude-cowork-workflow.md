@@ -1,3 +1,19 @@
+---
+name: claude-cowork-workflow
+description: |
+  Without a structured cowork workflow, generated skills are generic stubs that score below 70 and get rejected.
+  When the user asks to create or generate a skill using Claude or the Anthropic provider, use this skill.
+  When the user asks why a generated skill has a low quality score, use this skill.
+  When the user needs to wire a new AI provider into CoworkSkillCreator, use this skill.
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+---
+
 ### claude-cowork-workflow
 Expert workflow for collaborating with Claude AI agents using the PRG skill
 system — covering skill creation, trigger design, quality gates, and
@@ -33,10 +49,9 @@ and the 3-layer skill resolution chain (`builtin → learned → project`).
 
 ## Purpose
 
-Expert workflow for collaborating with Claude AI agents using the PRG skill
-system in `project-rules-generator`.
+Without a cowork workflow, `prg analyze --ai` produces generic skills that score below 70 and get rejected by the quality gate. The common mistake is calling `CoworkSkillCreator` without verifying the API key, provider, or README content — resulting in stub output that passes no validation checks.
 
-This skill provides step-by-step guidance for claude cowork workflow.
+This skill walks you through the full creation pipeline: project context → skill name → LLM generation → quality validation → auto-fix → save.
 
 ## Auto-Trigger
 

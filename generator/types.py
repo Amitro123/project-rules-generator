@@ -8,6 +8,8 @@ SKILL_REQUIRED_SECTIONS = ["## Purpose", "## Auto-Trigger", "## Process", "## Ou
 
 @dataclass
 class SkillNeed:
+    """Represents a detected need in the project (tech, pattern, file, domain)."""
+
     type: str  # 'tech', 'pattern', 'file', 'domain'
     name: str  # e.g., 'fastapi', 'dockerfile', 'video_processing'
     confidence: float
@@ -62,6 +64,8 @@ class Skill:
 
 @dataclass
 class SkillPack:
+    """A named collection of related skills."""
+
     name: str
     description: str = ""
     skills: List[Skill] = field(default_factory=list)
@@ -69,6 +73,8 @@ class SkillPack:
 
 @dataclass
 class SkillFile:
+    """Top-level manifest written to disk, grouping all skills for a project."""
+
     project_name: str
     project_type: str
     skills: List[Skill]
