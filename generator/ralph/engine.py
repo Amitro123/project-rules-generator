@@ -14,6 +14,25 @@ from prg_utils import git_ops  # noqa: F401 — kept for downstream consumers
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Thresholds and timeouts
+# ---------------------------------------------------------------------------
+
+REVIEW_SCORE_EMERGENCY_STOP = 60   # Loop halts; human intervention required
+REVIEW_SCORE_TASK_COMPLETE = 70    # Minimum score to mark a task done
+REVIEW_SCORE_SUCCESS_GATE = 85     # Minimum score to declare the feature complete
+CONSECUTIVE_FAILURE_LIMIT = 3      # Max consecutive agent/test failures before stopping
+
+VERDICT_SCORE_PASS = 100           # SelfReviewer "Pass" verdict
+VERDICT_SCORE_MAJOR = 40           # SelfReviewer "Major issues" verdict
+VERDICT_SCORE_NEEDS_REVISION = 65  # SelfReviewer "Needs Revision" (below task-complete threshold)
+
+REVIEW_SCORE_NEUTRAL = 70          # Fallback score when self-review cannot run
+
+TIMEOUT_GIT = 10                   # seconds — git log / diff
+TIMEOUT_SUBPROCESS = 30            # seconds — git commit / gh pr create
+TIMEOUT_TESTS = 120                # seconds — full test suite
+
 
 class RalphEngine:
     """Autonomous feature-scoped iteration loop.
@@ -213,7 +232,7 @@ class RalphEngine:
             self.state.consecutive_agent_failures += 1
             if self.verbose:
                 logger.info("⚠️  No changes produced by agent this iteration.")
-            if self.state.consecutive_agent_failures >= 3:
+            if self.state.consecutive_agent_failures >= CONSECUTIVE_FAILURE_LIMIT:
                 self.state.status = "stopped"
                 self.state.exit_condition = "agent_fail_3x"
                 self.save_state()
@@ -235,19 +254,20 @@ class RalphEngine:
         self.state.last_review_score = review_score
         self.save_state()
 
-        if review_score < 60:
+        if review_score < REVIEW_SCORE_EMERGENCY_STOP:
             self.state.status = "stopped"
             self.state.exit_condition = f"review_score_too_low:{review_score}"
             self.save_state()
             logger.error(
-                "🚨 Emergency stop — review score %d < 60. State saved. "
+                "🚨 Emergency stop — review score %d < %d. State saved. "
                 "Run `prg ralph resume %s` after manual fixes.",
                 review_score,
+                REVIEW_SCORE_EMERGENCY_STOP,
                 self.feature_id,
             )
             return None
 
-        if review_score < 70 and self.verbose:
+        if review_score < REVIEW_SCORE_TASK_COMPLETE and self.verbose:
             logger.info("⚠️  Review score %d — fixing issues before next iteration.", review_score)
         return review_score
 
@@ -264,7 +284,7 @@ class RalphEngine:
             self.state.consecutive_test_failures = 0
         else:
             self.state.consecutive_test_failures += 1
-            if self.state.consecutive_test_failures >= 3:
+            if self.state.consecutive_test_failures >= CONSECUTIVE_FAILURE_LIMIT:
                 self.state.status = "stopped"
                 self.state.exit_condition = "test_fail_3x"
                 self.save_state()
@@ -275,7 +295,7 @@ class RalphEngine:
                 )
                 return None
 
-        if tests_passed and review_score >= 70:
+        if tests_passed and review_score >= REVIEW_SCORE_TASK_COMPLETE:
             self._mark_task_complete(next_task_title)
             self.state.tasks_complete = max(
                 0, self.state.tasks_total - len(_pending_tasks(_load_tasks(self.tasks_yaml)))
@@ -321,7 +341,7 @@ class RalphEngine:
         Reuses the test result cached by execute_iteration() to avoid running
         the test suite twice per successful iteration.
         """
-        if (self.state.last_review_score or 0) < 85:
+        if (self.state.last_review_score or 0) < REVIEW_SCORE_SUCCESS_GATE:
             return False
         tasks = _load_tasks(self.tasks_yaml)
         if tasks and len(_pending_tasks(tasks)) > 0:
@@ -359,10 +379,10 @@ class RalphEngine:
         """Map a SelfReviewer verdict string to a numeric score (0-100)."""
         v = verdict.strip().lower()
         if "pass" in v:
-            return 100
+            return VERDICT_SCORE_PASS
         if "major" in v:
-            return 40
-        return 65  # Needs Revision — below 70 threshold so fix-pass is triggered
+            return VERDICT_SCORE_MAJOR
+        return VERDICT_SCORE_NEEDS_REVISION  # below REVIEW_SCORE_TASK_COMPLETE; triggers a fix-pass
 
     # ------------------------------------------------------------------
     # Private helpers
@@ -424,7 +444,7 @@ class RalphEngine:
                     cwd=self.project_path,
                     check=True,
                     capture_output=True,
-                    timeout=30,
+                    timeout=TIMEOUT_SUBPROCESS,
                 )
             else:
                 subprocess.run(
@@ -432,14 +452,14 @@ class RalphEngine:
                     cwd=self.project_path,
                     check=True,
                     capture_output=True,
-                    timeout=30,
+                    timeout=TIMEOUT_SUBPROCESS,
                 )
             subprocess.run(
                 ["git", "commit", "-m", message],
                 cwd=self.project_path,
                 check=True,
                 capture_output=True,
-                timeout=30,
+                timeout=TIMEOUT_SUBPROCESS,
             )
             if self.verbose:
                 logger.info("💾 Committed: %s", message)
@@ -449,7 +469,7 @@ class RalphEngine:
     def _run_self_review(self) -> int:
         """Run SelfReviewer on PLAN.md and return a numeric score."""
         if not self.plan_md.exists():
-            return 70  # Can't review without a plan — neutral score
+            return REVIEW_SCORE_NEUTRAL  # Can't review without a plan — neutral score
 
         try:
             from generator.planning.self_reviewer import SelfReviewer
@@ -468,7 +488,7 @@ class RalphEngine:
             return score
         except Exception as exc:  # noqa: BLE001 — self-review is best-effort; neutral fallback keeps loop running
             logger.warning("Self-review failed: %s — using neutral score.", exc)
-            return 70
+            return REVIEW_SCORE_NEUTRAL
 
     def _run_tests(self) -> Tuple[bool, str]:
         """Run project tests; returns (passed, output)."""
@@ -482,7 +502,7 @@ class RalphEngine:
                 cwd=self.project_path,
                 capture_output=True,
                 text=True,
-                timeout=120,
+                timeout=TIMEOUT_TESTS,
             )
             passed = result.returncode == 0
             output = (result.stdout + result.stderr).strip()
@@ -491,7 +511,7 @@ class RalphEngine:
                 logger.info("%s Tests %s", icon, "passed" if passed else "FAILED")
             return passed, output
         except subprocess.TimeoutExpired:
-            return False, "Tests timed out after 120s."
+            return False, f"Tests timed out after {TIMEOUT_TESTS}s."
         except FileNotFoundError:
             return True, f"Test runner '{runner}' not found — skipping."
         except (OSError, subprocess.SubprocessError) as exc:
@@ -539,7 +559,7 @@ class RalphEngine:
                 cwd=self.project_path,
                 capture_output=True,
                 text=True,
-                timeout=10,
+                timeout=TIMEOUT_GIT,
             )
             return result.stdout.strip() or "(no commits yet)"
         except Exception:  # noqa: BLE001 — git may not be available; informational only
@@ -552,7 +572,7 @@ class RalphEngine:
                 cwd=self.project_path,
                 capture_output=True,
                 text=True,
-                timeout=10,
+                timeout=TIMEOUT_GIT,
             )
             return result.stdout.strip() or "(no uncommitted changes)"
         except Exception:
@@ -574,7 +594,7 @@ class RalphEngine:
                 ["gh", "pr", "create", "--title", title, "--body", body, "--head", state.branch_name],
                 cwd=self.project_path,
                 capture_output=True,
-                timeout=30,
+                timeout=TIMEOUT_SUBPROCESS,
             )
             if self.verbose:
                 logger.info("📬 PR created for branch %s", state.branch_name)

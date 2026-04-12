@@ -16,6 +16,23 @@ from generator.integrations.opik_client import OpikEvaluator
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Grade thresholds (score out of 100)
+# ---------------------------------------------------------------------------
+GRADE_EXCELLENT = 90
+GRADE_GOOD = 80
+GRADE_NEEDS_IMPROVEMENT = 65
+
+# Minimum sub-scores per dimension (out of 20 each)
+MIN_STRUCTURE = 16
+MIN_ACTIONABILITY = 16
+MIN_CLARITY = 15
+MIN_CONSISTENCY = 15
+MIN_PROJECT_GROUNDING = 12
+
+# Score below which a patch/improvement is generated
+PATCH_THRESHOLD = 85
+
 
 @dataclass
 class QualityBreakdown:
@@ -48,11 +65,11 @@ class QualityReport:
 
     @property
     def status(self) -> str:
-        if self.score >= 90:
+        if self.score >= GRADE_EXCELLENT:
             return "✅ Excellent"
-        if self.score >= 80:
+        if self.score >= GRADE_GOOD:
             return "✅ Good"
-        if self.score >= 65:
+        if self.score >= GRADE_NEEDS_IMPROVEMENT:
             return "⚠️  Needs improvement"
         return "❌ Poor quality"
 
@@ -89,32 +106,32 @@ class ContentAnalyzer:
         suggestions: List[str] = []
         if is_skills_index:
             # Specialized suggestions for skills
-            if breakdown.structure < 16:
+            if breakdown.structure < MIN_STRUCTURE:
                 suggestions.append("Ensure specific sections: Project Context, Core Skills, Usage")
-            if breakdown.actionability < 16:
+            if breakdown.actionability < MIN_ACTIONABILITY:
                 suggestions.append("Add usage examples and clear 'Triggers' for each skill")
-            if breakdown.project_grounding < 12:
+            if breakdown.project_grounding < MIN_PROJECT_GROUNDING:
                 suggestions.append("Reference specific project tools (e.g. pytest) or paths (src/)")
-            if breakdown.clarity < 15:
+            if breakdown.clarity < MIN_CLARITY:
                 suggestions.append("Use concise, clear skill names and descriptions")
-            if breakdown.consistency < 15:
+            if breakdown.consistency < MIN_CONSISTENCY:
                 suggestions.append("Ensure all skills follow the same format (e.g. all have triggers)")
         else:
             # Generic suggestions
-            if breakdown.structure < 16:
+            if breakdown.structure < MIN_STRUCTURE:
                 suggestions.append("Improve document structure with clear headers")
-            if breakdown.actionability < 16:
+            if breakdown.actionability < MIN_ACTIONABILITY:
                 suggestions.append("Add actionable examples or code blocks")
-            if breakdown.project_grounding < 12:
+            if breakdown.project_grounding < MIN_PROJECT_GROUNDING:
                 suggestions.append("Reference specific project files or commands")
-            if breakdown.clarity < 15:
+            if breakdown.clarity < MIN_CLARITY:
                 suggestions.append("Clarify explanations and expand details")
-            if breakdown.consistency < 15:
+            if breakdown.consistency < MIN_CONSISTENCY:
                 suggestions.append("Ensure consistent formatting and sections")
 
         # Optionally create a patch proposal (only when clearly below target)
         patch = None
-        if score < 85:
+        if score < PATCH_THRESHOLD:
             # If a client is available, we could ask it; otherwise synthesize minimal improved version
             try:
                 if self.client and hasattr(self.client, "generate"):
