@@ -1,2 +1,14 @@
+# Optional LLM provider dependencies.
+# Install the provider(s) you use:
+#   pip install -r requirements-llm.txt
+# Or install selectively via extras:
+#   pip install "project-rules-generator[groq]"
+#   pip install "project-rules-generator[openai]"
+#   pip install "project-rules-generator[anthropic]"
+#   pip install "project-rules-generator[gemini]"
+#   pip install "project-rules-generator[all]"
+
 anthropic>=0.20.0
 google-genai>=0.2.0
+groq>=0.4.0
+openai>=1.0.0

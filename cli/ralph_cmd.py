@@ -613,6 +613,7 @@ def ralph_approve(feature_id, project_path, target_branch):
                 ],
                 cwd=project_path,
                 capture_output=True,
+                timeout=60,
             )
             if pr_result.returncode == 0:
                 click.echo("📬 PR created.")

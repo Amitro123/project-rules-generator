@@ -1,71 +1,48 @@
-# Project Roadmap: Project Rules Generator
+# Project Roadmap
 
-High-level roadmap for project development
-
----
-
-## Roadmap Diagram
-
-```mermaid
-graph TD
-    P1["Phase 1: Foundation"]
-    T1_1["[ ] Set up project structure"]
-    P1 --> T1_1
-    T1_2["[ ] Configure development environment"]
-    P1 --> T1_2
-    T1_3["[ ] Implement core modules"]
-    P1 --> T1_3
-    P2["Phase 2: Feature Implementation"]
-    T2_1["[ ] Implement core features"]
-    P2 --> T2_1
-    P1 --> P2
-    P3["Phase 3: Testing & Documentation"]
-    T3_1["[ ] Write comprehensive tests"]
-    P3 --> T3_1
-    T3_2["[ ] Update documentation"]
-    P3 --> T3_2
-    P2 --> P3
-```
+Status as of v0.3.0. Items marked ✅ are shipped; 🔄 are in progress; 📋 are planned.
 
 ---
 
-## Task Details
+## ✅ Shipped (v0.1–v0.3)
 
-## Phase 1: Foundation
+- ✅ `prg init` — scaffold `.clinerules/` for any project
+- ✅ `prg analyze` — analyze codebase and generate rules + skills
+- ✅ `prg create-skill` — generate a single skill from topic name
+- ✅ Multi-IDE support: antigravity, cursor, windsurf, claude, gemini
+- ✅ Multi-provider AI: Groq, OpenAI, Anthropic, Gemini (with graceful fallback)
+- ✅ Strategy chain: AI → README → Cowork → Stub
+- ✅ `prg providers benchmark` — measure and rank provider latency
+- ✅ `prg ralph` — autonomous feature loop (plan → implement → review → commit)
+- ✅ Skills index with quality scoring (heuristic + optional Opik evaluation)
+- ✅ PyPI publishing with OIDC trusted publishing
+- ✅ 89 test files, 70%+ test-to-source ratio
 
-Set up core infrastructure and architecture
+---
 
-- [ ] Set up project structure
-  - [ ] Create directory layout
-  - [ ] Initialize configuration
+## 🔄 In Progress (v0.4)
 
-- [ ] Configure development environment
-  - [ ] Set up linting
-  - [ ] Configure testing framework
+- 🔄 Reduce broad `except Exception` in CLI to specific exception types
+- 🔄 Reduce module coupling in `skill_pipeline.py` and `rules/creator.py`
+- 🔄 Improve `prg watch` reliability under rapid file change events
 
-- [ ] Implement core modules
-  - [ ] Create base classes
-  - [ ] Set up utilities
+---
 
-## Phase 2: Feature Implementation
+## 📋 Planned
 
-Implement main features
+### Near-term
+- 📋 `prg update` — refresh existing rules/skills as codebase evolves
+- 📋 Web UI for browsing and editing generated skills
+- 📋 Skill marketplace — share skills across projects
+- 📋 VS Code extension integration
 
-- [ ] Implement core features
-  - [ ] Design API
-  - [ ] Write implementation
-  - [ ] Add tests
+### Longer-term
+- 📋 Local LLM support (Ollama)
+- 📋 Team sync — shared skill repositories via git
+- 📋 Diff-aware rule updates (only regenerate sections that changed)
 
-## Phase 3: Testing & Documentation
+---
 
-Ensure quality and document the project
+## Contributing
 
-- [ ] Write comprehensive tests
-  - [ ] Unit tests
-  - [ ] Integration tests
-  - [ ] E2E tests
-
-- [ ] Update documentation
-  - [ ] API docs
-  - [ ] User guide
-  - [ ] Examples
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to pick up a planned item or propose something new.

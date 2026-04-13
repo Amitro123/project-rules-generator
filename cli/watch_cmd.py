@@ -169,7 +169,7 @@ class _PRGHandler:
                 click.echo("[watch] Running incremental analysis...")
                 cmd = [sys.executable, "-m", "cli.cli", "analyze", str(self._project_path), "--incremental"]
                 cmd.extend(self._extra_args)
-                result = subprocess.run(cmd, capture_output=False)
+                result = subprocess.run(cmd, capture_output=False, timeout=300)
                 if result.returncode != 0 and self._verbose:
                     click.echo(f"[watch] analyze exited with code {result.returncode}", err=True)
                 else:

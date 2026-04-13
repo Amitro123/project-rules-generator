@@ -151,7 +151,7 @@ def providers_benchmark(prompts: int) -> None:
             from generator.ai.factory import create_ai_client
 
             client = create_ai_client(provider)
-            latencies: list[float] = []
+            latencies: list[float] = []  # list[float] requires Python 3.10+
             for prompt in test_prompts:
                 t0 = time.perf_counter()
                 client.generate(prompt, max_tokens=200)

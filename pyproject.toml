@@ -10,7 +10,7 @@ authors = [
   { name = "Amitro123", email = "amitrosen4@gmail.com" },
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 keywords = ["ai", "agents", "rules", "skills", "scaffolding", "claude", "cursor", "windsurf"]
 classifiers = [
     "Development Status :: 3 - Alpha",

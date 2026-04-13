@@ -186,7 +186,8 @@ def run_interactive_mode(subtasks: List[Any], project_path: Path, auto_execute: 
                     full_path.parent.mkdir(parents=True, exist_ok=True)
                     full_path.write_text(f"# TODO: {task.title}\n", encoding="utf-8")
                 try:
-                    subprocess.Popen([editor, str(full_path)])
+                    proc = subprocess.Popen([editor, str(full_path)])
+                    proc.wait(timeout=5)  # brief wait; editor may detach immediately
                 except Exception as e:
                     click.echo(f"  Could not open {fpath}: {e}")
         elif task.files:
