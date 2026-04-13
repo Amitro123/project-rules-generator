@@ -30,7 +30,7 @@ class OpikEvaluator:
                 # Initialize Opik client
                 self.client = Opik(api_key=self.api_key, project_name=self.project_name)
                 logger.info(f"Opik integration initialized for project: {self.project_name}")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — observability must never block main flow
                 logger.warning(f"Failed to initialize Opik client: {e}")
                 self.enabled = False
 
@@ -83,7 +83,7 @@ class OpikEvaluator:
                     # log_feedback_score(name, value, category_name=None, reason=None)
                     try:
                         trace.log_feedback_score(name=k, value=float(v))
-                    except Exception:
+                    except Exception:  # noqa: BLE001 — observability must never block main flow
                         pass  # Ignore individual metric failures
 
             # Log local check metrics as feedback scores too
@@ -91,13 +91,13 @@ class OpikEvaluator:
                 for k, v in metadata["quick_check"].items():
                     try:
                         trace.log_feedback_score(name=k, value=1.0 if v else 0.0)
-                    except Exception:
+                    except Exception:  # noqa: BLE001 — observability must never block main flow
                         pass
 
             trace.end()
             logger.debug(f"Logged Opik trace: {trace.id}")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — observability must never block main flow
             logger.warning(f"Failed to log to Opik: {e}")
 
     def get_dashboard_url(self) -> str:

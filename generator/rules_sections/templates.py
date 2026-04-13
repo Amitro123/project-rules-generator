@@ -50,7 +50,7 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
             from generator.analyzers.readme_parser import extract_conventions
 
             _readme_conventions = extract_conventions(raw_readme)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — optional enrichment; fallback to empty
             logger.debug(f"Expected error: {e}")
 
     arch_lines = []

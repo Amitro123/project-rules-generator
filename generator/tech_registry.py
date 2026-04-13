@@ -10,6 +10,7 @@ This file re-exports everything so existing imports continue to work unchanged.
 """
 
 from generator.tech import (  # noqa: F401
+    _PROFILES,
     PKG_MAP,
     REGISTRY,
     SKILL_IMPORT_NAMES,
@@ -18,7 +19,6 @@ from generator.tech import (  # noqa: F401
     TECH_SKILL_NAMES,
     TECH_TOOLS,
     TechProfile,
-    _PROFILES,
 )
 
 __all__ = [

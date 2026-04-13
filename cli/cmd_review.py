@@ -63,7 +63,7 @@ def review(filepath, project_path, output, provider, api_key, tasks, verbose):
 
     try:
         report = reviewer.review(filepath, project_path=project_path)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
         click.echo(f"Review failed: {e}", err=True)
         sys.exit(1)
 
@@ -221,5 +221,5 @@ def _generate_tasks_from_review(
             output_dir=output_dir,
         )
         click.echo(f"Created {len(subtasks)} tasks in {output_dir}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
         click.echo(f"Failed to generate tasks: {e}", err=True)

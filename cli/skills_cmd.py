@@ -47,7 +47,7 @@ def _resolve_skill(name_or_path: str, project_path: Path):
                 return skill_file, info["type"]
             if skill_file.parent.name.lower() == name_or_path.lower():
                 return skill_file, info["type"]
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — optional skill resolution; fallback to None
         logger.debug("Could not resolve skill %r via SkillsManager: %s", name_or_path, exc)
 
     return None, None
@@ -92,7 +92,7 @@ def skills_list(path, show_all):
     try:
         sm = SkillsManager(project_path=project_path)
         skills = sm.list_skills()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
         click.echo(f"Error loading skills: {exc}", err=True)
         raise SystemExit(1)
 
@@ -146,7 +146,7 @@ def skills_list(path, show_all):
                 tools_str = " ".join(tools)
             elif isinstance(tools, str):
                 tools_str = tools
-        except Exception as exc:
+        except (OSError, ValueError) as exc:
             logger.debug("Could not read skill file %s: %s", skill_path, exc)
 
         stats = all_stats.get(name, {})

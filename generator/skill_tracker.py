@@ -121,7 +121,7 @@ class SkillTracker:
         try:
             raw = self._path.read_text(encoding="utf-8")
             self._data = json.loads(raw)
-        except Exception as exc:
+        except (OSError, ValueError) as exc:
             logger.warning("Could not load skill usage data from %s: %s", self._path, exc)
             self._data = {}
 
@@ -129,5 +129,5 @@ class SkillTracker:
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
             self._path.write_text(json.dumps(self._data, indent=2), encoding="utf-8")
-        except Exception as exc:
+        except OSError as exc:
             logger.warning("Could not save skill usage data to %s: %s", self._path, exc)

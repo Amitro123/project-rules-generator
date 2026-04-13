@@ -115,7 +115,7 @@ def providers_test(provider: str | None) -> None:
             result = client.generate(test_prompt, max_tokens=20)
             latency = time.perf_counter() - t0
             click.echo(f"✅ {p:<12} — {latency:.2f}s → {result.strip()[:60]}")
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — CLI boundary: AI provider test can fail in many ways
             click.echo(f"❌ {p:<12} — {exc}")
 
     if not any_tested:
@@ -164,7 +164,7 @@ def providers_benchmark(prompts: int) -> None:
                 "speed": SPEED_SCORES.get(provider, 50),
             }
             click.echo(f"   ✅ done — avg {avg_latency:.2f}s")
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — CLI boundary: AI provider benchmark can fail in many ways
             click.echo(f"   ❌ {provider}: {exc}")
 
     if not results:

@@ -155,7 +155,7 @@ def plan(
         if verbose:
             meta = enhanced_context.get("metadata", {})
             click.echo(f"Context: {meta.get('project_type', 'unknown')} ({', '.join(meta.get('tech_stack', []))})")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — optional enrichment; fallback to no context
         if verbose:
             click.echo(f"Context extraction skipped: {exc}")
 

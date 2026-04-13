@@ -38,7 +38,7 @@ def is_readme_minimal(readme_path: Path) -> bool:
                 return True
 
         return False
-    except Exception:
+    except OSError:
         return True
 
 
@@ -105,7 +105,7 @@ Generate the complete README now:
 
         generator = LLMSkillGenerator()
         return generator.generate_content(prompt, max_tokens=3000)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — LLM call; any provider/network error must fall back gracefully
         click.echo(f"⚠️  LLM generation failed: {e}", err=True)
         click.echo("Falling back to template...")
         return generate_readme_template(user_input, context)

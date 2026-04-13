@@ -52,7 +52,7 @@ def resolve_readme(
                 readme_path.write_text(content, encoding="utf-8")
                 click.echo(f"✅ README.md created/updated and saved to {readme_path}\n")
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
                 click.echo(f"⚠️  README generation failed: {e}")
         else:
             if not readme_path:

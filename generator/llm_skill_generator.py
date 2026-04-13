@@ -95,7 +95,7 @@ class LLMSkillGenerator:
 
         try:
             self.client = create_ai_client(self.provider, api_key=self.api_key)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — AI client init; any provider/config error must surface clearly
             raise RuntimeError(f"Failed to initialize AI client ({self.provider}): {e}")
 
     def generate_skill(self, skill_name: str, context: Dict) -> str:
@@ -169,12 +169,12 @@ class LLMSkillGenerator:
                 content, used_provider = router.smart_generate(prompt, task_type="skills", max_tokens=max_tokens)
                 self.provider = used_provider  # record which provider was chosen
                 return content
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — LLM router call; any provider/network error must surface
                 raise RuntimeError(f"Router generation failed: {e}")
         # Direct mode (original behaviour)
         try:
             if self.client is None:
                 return ""
             return self.client.generate(prompt, max_tokens=max_tokens, model=self.model_name)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — LLM call; any provider/network error must surface
             raise RuntimeError(f"LLM generation failed: {e}")

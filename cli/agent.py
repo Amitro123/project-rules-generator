@@ -63,7 +63,7 @@ def start(task_description, project_path, provider, api_key, verbose):
 
     try:
         workflow.run_full()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
         click.echo(f"Workflow failed: {e}", err=True)
         sys.exit(1)
 
@@ -103,7 +103,7 @@ def setup(task_description, project_path, provider, api_key, verbose):
         manifest = workflow.run_setup()
         click.echo(f"\nSetup complete: {len(manifest.tasks)} tasks created.")
         click.echo("Run 'prg status' to see progress or 'prg exec tasks/<file>' to begin.")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
         click.echo(f"Setup failed: {e}", err=True)
         sys.exit(1)
 

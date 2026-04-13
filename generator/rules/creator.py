@@ -296,7 +296,7 @@ class CoworkRulesCreator(ArtifactGenerator):
                 )
                 return dict(rules_by_category)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — LLM call; any provider error must fall back to generic rules
             logger.warning("LLM rules fallback failed (%s). Using generic rules.", e)
 
         return {}

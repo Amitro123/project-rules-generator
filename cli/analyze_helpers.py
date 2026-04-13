@@ -74,7 +74,7 @@ def _handle_skill_management(
             click.echo("\U0001f504 Updating agent cache...")
             skills_manager.save_triggers_json(output_dir)
             click.echo("\u2705 auto-triggers.json refreshed!")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
             click.echo(f"\u274c Failed to create skill: {e}", err=True)
             raise click.exceptions.Exit(1)
         if not create_rules_flag:
@@ -167,7 +167,7 @@ def _run_create_rules(
         generated_files.append(cowork_rules_file)
         if verbose:
             click.echo(f"   \u2705 Cowork rules.md saved: {cowork_rules_file}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
         click.echo(f"   \u26a0\ufe0f  Cowork rules generation failed: {e}", err=True)
         if verbose:
             import traceback
@@ -254,6 +254,6 @@ def commit_generated_files(
         click.echo("\nCommitted to git")
         if "nothing to commit" in result.lower():
             click.echo("   (or files already tracked)")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — CLI boundary: git commit can fail in many ways
         click.echo(f"\nWARNING: Git commit failed: {e}")
         click.echo("   Files were generated, you can commit manually")

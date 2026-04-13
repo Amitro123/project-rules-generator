@@ -174,7 +174,7 @@ class _PRGHandler:
                     click.echo(f"[watch] analyze exited with code {result.returncode}", err=True)
                 else:
                     click.echo("[watch] Done.")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — CLI boundary: watch loop must not crash on analysis error
                 click.echo(f"[watch] Error during analysis: {e}", err=True)
             finally:
                 with self._lock:

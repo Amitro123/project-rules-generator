@@ -280,7 +280,7 @@ def analyze(
     except click.exceptions.Exit:
         raise
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
         if verbose:
             import traceback
 

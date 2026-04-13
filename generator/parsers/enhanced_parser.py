@@ -56,7 +56,7 @@ class EnhancedProjectParser:
                 from generator.analyzers.readme_parser import parse_readme
 
                 return parse_readme(readme_path)
-            except Exception as e:
+            except (OSError, ValueError) as e:
                 logger.warning(f"README parsing failed: {e}")
                 # Return raw content as fallback
                 try:

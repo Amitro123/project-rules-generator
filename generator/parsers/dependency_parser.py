@@ -45,7 +45,7 @@ class DependencyParser:
         deps: List[Dict[str, str]] = []
         try:
             content = file_path.read_text(encoding="utf-8", errors="replace")
-        except Exception as e:
+        except OSError as e:
             logger.warning(f"Failed to read {file_path}: {e}")
             return deps
 
@@ -138,7 +138,7 @@ class DependencyParser:
         try:
             with open(file_path, "rb") as f:
                 data = tomllib.load(f)
-        except Exception as e:
+        except (OSError, ValueError) as e:
             logger.warning(f"Failed to parse {file_path}: {e}")
             return result
 
@@ -220,7 +220,7 @@ class DependencyParser:
                     parsed = DependencyParser._parse_pep508(dep_str)
                     if parsed:
                         result["dependencies"].append(parsed)
-        except Exception as e:
+        except OSError as e:
             logger.warning(f"Fallback pyproject.toml parsing failed: {e}")
 
         return result
@@ -249,7 +249,7 @@ class DependencyParser:
 
         try:
             data = json.loads(file_path.read_text(encoding="utf-8", errors="replace"))
-        except Exception as e:
+        except (OSError, ValueError) as e:
             logger.warning(f"Failed to parse {file_path}: {e}")
             return result
 

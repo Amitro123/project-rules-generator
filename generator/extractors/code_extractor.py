@@ -118,7 +118,7 @@ class CodeExampleExtractor:
             try:
                 file_examples = self._extract_from_file(source_file, project_path, search_patterns)
                 examples.extend(file_examples)
-            except Exception as e:
+            except OSError as e:
                 logger.debug(f"Failed to extract from {source_file}: {e}")
 
             # Limit total examples

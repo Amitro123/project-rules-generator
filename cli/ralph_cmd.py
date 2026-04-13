@@ -241,7 +241,7 @@ def ralph_discover(project_path, provider, api_key, auto_run, verbose):
         click.echo(f"[discover] Found {len(features_found)} feature(s):")
         for f in features_found:
             click.echo(f"  • {f}")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — CLI boundary: LLM call can fail in many ways
         click.echo(f"[discover] AI extraction failed: {exc}", err=True)
         click.echo('[discover] Try: prg ralph "<specific task>" instead.')
         raise SystemExit(1)
@@ -331,7 +331,7 @@ def ralph_run(feature_id, project_path, max_iterations, provider, api_key, verbo
             capture_output=True,
             timeout=30,
         )
-    except Exception as exc:
+    except (OSError, subprocess.SubprocessError) as exc:
         click.echo(f"⚠️  Could not checkout branch {branch}: {exc}")
 
     provider = _detect_provider(provider, api_key)
@@ -511,7 +511,7 @@ def ralph_stop(feature_id, project_path, reason):
                 f"'{state.branch_name}' — state will be saved but branch checkout may be unexpected.",
                 err=True,
             )
-    except Exception as exc:
+    except (OSError, _sub.SubprocessError) as exc:
         logger.debug("Branch detection skipped: %s", exc)
 
     state.status = "stopped"
@@ -536,9 +536,9 @@ def ralph_stop(feature_id, project_path, reason):
                 )
                 click.echo(f"🌿 Checked out {candidate}")
                 break
-            except Exception:
+            except (OSError, subprocess.SubprocessError):
                 continue
-    except Exception as exc:
+    except (OSError, subprocess.SubprocessError) as exc:
         click.echo(f"⚠️  Could not switch branch: {exc}")
 
 
@@ -621,5 +621,5 @@ def ralph_approve(feature_id, project_path, target_branch):
                 err = pr_result.stderr.decode(errors="replace").strip()
                 click.echo(f"⚠️  PR creation failed (not authenticated?): {err}", err=True)
                 click.echo("Branch has been merged locally. Create the PR manually if needed.")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — CLI boundary: approval involves git+gh; many failure modes
         click.echo(f"❌ Approval failed: {exc}", err=True)

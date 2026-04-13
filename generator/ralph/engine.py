@@ -575,7 +575,7 @@ class RalphEngine:
                 timeout=TIMEOUT_GIT,
             )
             return result.stdout.strip() or "(no uncommitted changes)"
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             return "(git diff unavailable)"
 
     def _create_pr(self) -> None:

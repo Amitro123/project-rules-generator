@@ -83,7 +83,7 @@ class SkillOrchestrator:
         for source in self.sources:
             try:
                 all_skills.extend(source.list_skills())
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — one item failure must not abort the batch
                 logger.error(f"Error listing skills from {source.name}: {e}")
         return all_skills
 
@@ -94,7 +94,7 @@ class SkillOrchestrator:
             try:
                 found = source.discover(needs)
                 all_skills.extend(found)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — one item failure must not abort the batch
                 # Log error but continue
                 logger.error(f"Error discovering from {source.name}: {e}")
         return all_skills

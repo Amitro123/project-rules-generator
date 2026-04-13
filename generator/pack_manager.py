@@ -55,7 +55,7 @@ def load_external_packs(
                     logger.info(f"Loaded {pack.name} ({len(pack.skills)} skills)")
                 else:
                     logger.warning(f"No skills found in {pack_ref}")
-            except Exception as e:
+            except (OSError, ValueError) as e:
                 logger.error(f"Failed to load {pack_ref}: {e}")
         else:
             logger.warning(f"Pack not found: {pack_ref}")

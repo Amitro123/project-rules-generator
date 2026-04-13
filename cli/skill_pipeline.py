@@ -72,7 +72,7 @@ def _auto_generate_skills(
 
         return enhanced_selected_skills
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — CLI boundary: enhanced generation is optional
         click.echo(f"Warning: Enhanced auto-generation failed: {e}")
         if verbose:
             import traceback
@@ -131,7 +131,7 @@ def _llm_generate_skills(
             SkillPathManager.save_learned_skill({"name": skill_topic, "content": skill_content}, category)
             skills_manager.discovery.invalidate_cache()
             click.echo(f"   💾 Generated: {skill_ref}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — one item failure must not abort the batch
             err_str = str(e)
             click.echo(f"   ⚠️  Failed to generate {skill_ref}: {e}")
             if "invalid_api_key" in err_str or "401" in err_str or "authentication" in err_str.lower():

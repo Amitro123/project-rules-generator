@@ -195,7 +195,7 @@ class AIStrategyRouter:
                 self._latency_cache[provider] = time.perf_counter() - t0
                 self._usage_counts[provider] = self._usage_counts.get(provider, 0) + 1
                 return result, provider
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — AI provider call; try next provider on any failure
                 errors.append(f"{provider}: {exc}")
                 continue
 

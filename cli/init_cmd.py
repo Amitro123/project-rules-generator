@@ -74,7 +74,7 @@ def init(project_path, yes, provider, api_key):
             analyzer = ProjectAnalyzer(project_path)
             context = analyzer.analyze()
             tech = sorted(set(sum(context["tech_stack"].values(), [])))
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — optional enrichment; fallback to empty tech stack
             logger.debug("Tech stack detection failed during init: %s", exc)
             tech = []
         project_data = {
@@ -116,7 +116,7 @@ def init(project_path, yes, provider, api_key):
         rules_file = output_dir / "rules.md"
         rules_file.write_text(rules_content, encoding="utf-8")
         click.echo("  Written: .clinerules/rules.md")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
         click.echo(f"  Error generating rules: {exc}", err=True)
         raise SystemExit(1)
 
@@ -127,7 +127,7 @@ def init(project_path, yes, provider, api_key):
         sm.ensure_global_structure()
         sm.setup_project_structure()
         click.echo("  Skills directories ready.")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — CLI boundary: skills setup is optional
         click.echo(f"  Warning: skills setup failed ({exc})")
 
     # --- 6. Print next steps ---

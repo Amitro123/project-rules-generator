@@ -65,7 +65,7 @@ class AIStrategy:
 
             click.secho(f"[!] AI provider not available ({e}). Falling back to next strategy.", fg="red", err=True)
             return None
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — AI strategy call; any error must fall back to next strategy
             import click
 
             click.secho(f"[!] AI generation failed ({e}). Falling back to next strategy.", fg="red", err=True)

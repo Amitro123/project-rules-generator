@@ -87,14 +87,14 @@ class SkillContentRenderer:
 
                 logger.info("Generating with AI (%s)...", provider)
                 return generator.generate_skill(skill_name, context)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — AI call; any error must fall back to template
                 logger.warning("AI generation failed: %s. Falling back to templates.", e)
 
         # 2. Try Jinja2 template first, fallback to inline generation
         if HAS_JINJA2:
             try:
                 return self._generate_with_jinja2(skill_name, readme_content, metadata, custom_context)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 — template rendering; any error must fall back to inline
                 logger.warning("Jinja2 template failed (%s), using inline generation", e)
 
         # Fallback: inline generation

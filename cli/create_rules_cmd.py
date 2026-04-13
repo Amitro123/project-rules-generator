@@ -172,7 +172,7 @@ def create_rules(
         click.echo("\n[OK] Cowork-quality rules generation complete!")
         click.echo(f"\nRules saved to: {rules_file}")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
         click.echo(f"\nError generating rules: {e}", err=True)
         if verbose:
             import traceback

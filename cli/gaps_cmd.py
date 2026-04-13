@@ -142,7 +142,7 @@ def _generate_spec_with_llm(project_path: Path, provider: str, api_key) -> None:
     try:
         client = create_ai_client(provider=provider or "groq", api_key=api_key)
         spec_content = client.generate(prompt, system_message=SPEC_SYSTEM_MESSAGE)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — CLI boundary: LLM call can fail in many ways
         click.echo(f"LLM generation failed: {exc}", err=True)
         return
 

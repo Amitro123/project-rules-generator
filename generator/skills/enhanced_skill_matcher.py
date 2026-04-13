@@ -22,7 +22,7 @@ class EnhancedSkillMatcher:
         try:
             with open(path, encoding="utf-8") as f:
                 return json.load(f)
-        except Exception as e:
+        except (OSError, ValueError) as e:
             logger.error(f"Failed to load skill index: {e}")
             return {"version": "1.0", "skills": {}}
 

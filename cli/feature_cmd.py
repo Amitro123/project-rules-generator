@@ -74,7 +74,7 @@ def _create_feature_workspace(
                 for s in subtasks
             ],
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — CLI boundary: LLM/decomposition can fail; write placeholder
         logger.warning("Plan generation failed: %s — writing placeholder.", exc)
         plan_path.write_text(f"# {task_description}\n\nPlan generation failed. Edit manually.\n", encoding="utf-8")
         _save_tasks(tasks_path, [])
@@ -104,7 +104,7 @@ def _create_feature_workspace(
             capture_output=True,
             timeout=30,
         )
-    except Exception as exc:
+    except (OSError, subprocess.SubprocessError) as exc:
         logger.warning("Branch creation failed: %s", exc)
 
     return feature_id, feature_dir, tasks_total

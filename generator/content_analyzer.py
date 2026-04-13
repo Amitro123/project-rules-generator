@@ -358,5 +358,5 @@ class ContentAnalyzer:
             raise FileOperationError(f"Path {filepath} is outside allowed base {self.allowed_base_path}")
         try:
             filepath.write_text(patch, encoding="utf-8")
-        except Exception as e:
+        except OSError as e:
             raise FileOperationError(f"Failed to write to {filepath}: {e}")

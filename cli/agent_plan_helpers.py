@@ -188,7 +188,7 @@ def run_interactive_mode(subtasks: List[Any], project_path: Path, auto_execute: 
                 try:
                     proc = subprocess.Popen([editor, str(full_path)])
                     proc.wait(timeout=5)  # brief wait; editor may detach immediately
-                except Exception as e:
+                except (OSError, subprocess.SubprocessError) as e:
                     click.echo(f"  Could not open {fpath}: {e}")
         elif task.files:
             for fpath in task.files:

@@ -61,7 +61,7 @@ def migrate_project(project_path: Path, dry_run: bool = False):
     # 1. Backup
     try:
         backup_clinerules(project_path, dry_run)
-    except Exception as e:
+    except OSError as e:
         logger.error(f"Backup failed: {e}")
         return
 
@@ -137,7 +137,7 @@ def migrate_project(project_path: Path, dry_run: bool = False):
 
             logger.info("Migration verified successfully.")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — CLI boundary: migration involves many operations; rollback on any failure
         logger.error(f"Migration failed: {e}")
         if not dry_run:
             logger.info("Rolling back changes...")
