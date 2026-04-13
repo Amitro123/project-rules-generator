@@ -6,12 +6,15 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
+from generator.analyzers.project_type_detector import detect_project_type
 from generator.base_generator import ArtifactGenerator
 from generator.quality_validators import RulesQualityValidator
 from generator.rules.models import QualityReport, Rule, RulesMetadata
 from generator.rules_git_miner import RulesGitMiner
 from generator.rules_renderer import RulesContentRenderer
 from generator.tech_registry import TECH_RULES as _TECH_RULES
+from generator.utils.readme_bridge import build_project_tree
+from generator.utils.tech_detector import detect_tech_stack as _detect_tech_stack_util
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +128,6 @@ class CoworkRulesCreator(ArtifactGenerator):
 
     def _detect_tech_stack(self, readme_content: str, enhanced_context: Optional[Dict]) -> List[str]:
         """Auto-detect tech stack from README, project files, and optional enhanced context."""
-        from generator.utils.tech_detector import detect_tech_stack as _detect_tech_stack_util
-
         detected: Set[str] = set(_detect_tech_stack_util(self.project_path, readme_content))
 
         if enhanced_context:
@@ -139,8 +140,6 @@ class CoworkRulesCreator(ArtifactGenerator):
 
     def _detect_project_type(self, tech_stack: List[str], enhanced_context: Optional[Dict]) -> str:
         """Detect project type using the canonical detector for consistency with `prg analyze`."""
-        from generator.analyzers.project_type_detector import detect_project_type
-
         raw_readme = ""
         if enhanced_context:
             raw_readme = enhanced_context.get("readme", {}).get("content", "") or enhanced_context.get("raw_readme", "")
@@ -216,8 +215,6 @@ class CoworkRulesCreator(ArtifactGenerator):
 
     def _build_prompt(self, metadata: RulesMetadata, readme_content: str = "") -> str:
         """Build the LLM prompt for rules generation."""
-        from generator.utils.readme_bridge import build_project_tree
-
         tree = build_project_tree(self.project_path)
 
         snippets: List[str] = []

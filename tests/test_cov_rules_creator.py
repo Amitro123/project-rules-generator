@@ -39,7 +39,7 @@ class TestDetectTechStack:
 
     def test_uses_tech_detector_util(self, tmp_path):
         c = _creator(tmp_path)
-        with patch("generator.utils.tech_detector.detect_tech_stack", return_value=["react"]):
+        with patch("generator.rules.creator._detect_tech_stack_util", return_value=["react"]):
             result = c._detect_tech_stack("some readme content", {})
         assert isinstance(result, list)
 
@@ -48,14 +48,14 @@ class TestDetectProjectType:
     def test_delegates_to_detector(self, tmp_path):
         c = _creator(tmp_path)
         with patch(
-            "generator.analyzers.project_type_detector.detect_project_type", return_value={"primary_type": "python-api"}
+            "generator.rules.creator.detect_project_type", return_value={"primary_type": "python-api"}
         ):
             result = c._detect_project_type(["fastapi"], {})
         assert result == "python-api"
 
     def test_returns_library_on_exception(self, tmp_path):
         c = _creator(tmp_path)
-        with patch("generator.analyzers.project_type_detector.detect_project_type", return_value={}):
+        with patch("generator.rules.creator.detect_project_type", return_value={}):
             result = c._detect_project_type(["fastapi"], {})
         # Returns result.get("primary_type", "python-library") — empty dict → fallback
         assert result == "python-library"

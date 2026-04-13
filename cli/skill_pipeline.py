@@ -11,6 +11,18 @@ from typing import Any, Dict, List, Optional, Set
 
 import click
 
+from generator.analyzers.project_type_detector import detect_project_type_from_data
+from generator.extractors.code_extractor import CodeExampleExtractor
+from generator.parsers.enhanced_parser import EnhancedProjectParser
+from generator.prompts.skill_generation import build_skill_prompt
+from generator.renderers import get_renderer
+from generator.skill_generator import SkillGenerator
+from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
+from generator.sources.learned import LearnedSkillsSource
+from generator.storage.skill_paths import SkillPathManager
+from generator.types import SkillFile
+from prg_utils.file_ops import save_markdown
+
 
 def _auto_generate_skills(
     project_path: Path,
@@ -28,8 +40,6 @@ def _auto_generate_skills(
 
     try:
         if enhanced_context is None:
-            from generator.parsers.enhanced_parser import EnhancedProjectParser
-
             enhanced_context = EnhancedProjectParser(project_path).extract_full_context()
 
         detected_tech = enhanced_context.get("metadata", {}).get("tech_stack", [])
@@ -92,10 +102,6 @@ def _llm_generate_skills(
     skills_manager: Any,
 ) -> None:
     """Call the LLM to generate content for each matched learned skill."""
-    from generator.extractors.code_extractor import CodeExampleExtractor
-    from generator.prompts.skill_generation import build_skill_prompt
-    from generator.storage.skill_paths import SkillPathManager
-
     extractor = CodeExampleExtractor()
     llm_auth_failed = False
 
@@ -149,8 +155,6 @@ def _copy_skill_files(
     verbose: bool,
 ) -> None:
     """Copy or stub skill files into output_dir/skills/ using subfolder layout."""
-    from generator.storage.skill_paths import SkillPathManager
-
     for skill_ref in sorted(enhanced_selected_skills):
         skill_path = SkillPathManager.get_skill_path(skill_ref)
         ref_name = skill_ref.split("/")[-1]
@@ -265,12 +269,7 @@ def _run_skill_orchestration(
     generated_files: List[Path],
 ) -> None:
     """Run skill orchestrator and write skills index + optional exports."""
-    from cli.analyze_helpers import setup_orchestrator
-    from generator.analyzers.project_type_detector import detect_project_type_from_data
-    from generator.renderers import get_renderer
-    from generator.sources.learned import LearnedSkillsSource
-    from generator.types import SkillFile
-    from prg_utils.file_ops import save_markdown
+    from cli.analyze_helpers import setup_orchestrator  # lazy: avoids circular cli imports
 
     orchestrator = setup_orchestrator(config)
     skills = orchestrator.orchestrate(project_data, str(project_path))
@@ -283,8 +282,6 @@ def _run_skill_orchestration(
         if learned_source:
             for skill in skills:
                 learned_source.save_skill(skill)
-
-    from generator.skill_generator import SkillGenerator
 
     type_info = detect_project_type_from_data(project_data, str(project_path))
     primary_type = type_info["primary_type"]

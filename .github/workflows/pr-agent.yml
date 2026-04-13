@@ -19,6 +19,6 @@ jobs:
         uses: qodo-ai/pr-agent@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOGLE_AI_STUDIO: ${{ secrets.OPENAI_KEY }}
+          GOOGLE_AI_STUDIO: ${{ secrets.GOOGLE_AI_STUDIO }}
           CONFIG.AI_PROVIDER: "google"
           CONFIG.MODEL: "gemini/gemini-2.0-flash"
