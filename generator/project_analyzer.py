@@ -68,101 +68,84 @@ class ProjectAnalyzer:
         return None
 
     def _detect_tech_stack(self) -> Dict[str, List[str]]:
-        """Detect technologies from project files."""
+        """Detect technologies from project files.
+
+        Data-driven: all detection rules live in generator/tech/profiles.py.
+        To add a new technology, add a TechProfile entry there — no code changes needed here.
+        """
+        from generator.tech.lookups import (
+            DIR_DETECTION_MAP,
+            FILE_DETECTION_MAP,
+            PKG_MAP,
+            REGISTRY,
+            TECH_CATEGORIES,
+            TECH_DISPLAY_NAMES,
+        )
+
         tech: Dict[str, List[str]] = {
             "backend": [],
             "frontend": [],
             "database": [],
             "infrastructure": [],
             "languages": [],
+            "testing": [],
+            "ml": [],
+            "ai": [],
         }
+        detected: set = set()
 
-        # Gather raw text from all Python dependency sources
+        def _add_tech(tech_name: str) -> None:
+            """Bucket a detected tech name into the correct category list."""
+            if tech_name in detected or tech_name not in REGISTRY:
+                return
+            detected.add(tech_name)
+            category = TECH_CATEGORIES.get(tech_name, "backend")
+            if category not in tech:
+                tech[category] = []
+            display = TECH_DISPLAY_NAMES.get(tech_name, tech_name.title())
+            tech[category].append(display)
+
+        # 1. Python dependency files — scan concatenated text for package names
         dep_content = ""
-        for dep_file in ["requirements.txt", "requirements-dev.txt", "pyproject.toml", "setup.cfg", "Pipfile"]:
+        python_dep_files = ["requirements.txt", "requirements-dev.txt", "pyproject.toml", "setup.cfg", "Pipfile"]
+        for dep_file in python_dep_files:
             dep_path = self.project_path / dep_file
             if dep_path.exists():
-                tech["languages"].append("Python")
+                if "Python" not in tech["languages"]:
+                    tech["languages"].append("Python")
                 try:
                     dep_content += dep_path.read_text(encoding="utf-8", errors="replace").lower()
                 except OSError:
                     pass
-
         if dep_content:
-            # Frameworks
-            if "fastapi" in dep_content:
-                tech["backend"].append("FastAPI")
-            if "flask" in dep_content:
-                tech["backend"].append("Flask")
-            if "django" in dep_content:
-                tech["backend"].append("Django")
-            # CLI
-            if "click" in dep_content:
-                tech["backend"].append("Click")
-            # Validation / data
-            if "pydantic" in dep_content:
-                tech["backend"].append("Pydantic")
-            # Testing
-            if "pytest" in dep_content:
-                tech["backend"].append("pytest")
-            # AI providers
-            if "gemini" in dep_content or "google-generativeai" in dep_content:
-                tech["backend"].append("Gemini")
-            if "anthropic" in dep_content:
-                tech["backend"].append("Anthropic")
-            if "openai" in dep_content:
-                tech["backend"].append("OpenAI")
-            if "groq" in dep_content:
-                tech["backend"].append("Groq")
-            # Databases
-            if "redis" in dep_content:
-                tech["database"].append("Redis")
-            if "postgresql" in dep_content or "psycopg" in dep_content:
-                tech["database"].append("PostgreSQL")
-            if "mysql" in dep_content or "pymysql" in dep_content:
-                tech["database"].append("MySQL")
-            # Utilities
-            if "rich" in dep_content:
-                tech["backend"].append("rich")
-            if "jinja2" in dep_content:
-                tech["backend"].append("Jinja2")
-            if "gitpython" in dep_content:
-                tech["backend"].append("GitPython")
-            if "whisper" in dep_content or "openai-whisper" in dep_content:
-                tech["backend"].append("Whisper")
+            for pkg, tech_name in PKG_MAP.items():
+                if pkg.lower() in dep_content:
+                    _add_tech(tech_name)
 
-        # From package.json (JavaScript/TypeScript)
+        # 2. package.json (JavaScript / TypeScript)
         pkg_file = self.project_path / "package.json"
         if pkg_file.exists():
-            tech["languages"].append("JavaScript/TypeScript")
+            if "JavaScript/TypeScript" not in tech["languages"]:
+                tech["languages"].append("JavaScript/TypeScript")
             try:
                 pkg_content = pkg_file.read_text(encoding="utf-8", errors="replace").lower()
-                if "react" in pkg_content:
-                    tech["frontend"].append("React")
-                if "vue" in pkg_content:
-                    tech["frontend"].append("Vue")
-                if "next" in pkg_content:
-                    tech["frontend"].append("Next.js")
-                if "vite" in pkg_content:
-                    tech["frontend"].append("Vite")
-                if "tailwind" in pkg_content:
-                    tech["frontend"].append("TailwindCSS")
-                if "node" in pkg_content:
-                    tech["backend"].append("Node.js")
+                for pkg, tech_name in PKG_MAP.items():
+                    if pkg.lower() in pkg_content:
+                        _add_tech(tech_name)
             except OSError:
                 pass
 
-        # Infrastructure
-        if (self.project_path / "Dockerfile").exists():
-            tech["infrastructure"].append("Docker")
-        if (self.project_path / "docker-compose.yml").exists():
-            tech["infrastructure"].append("Docker Compose")
-        if (self.project_path / ".github" / "workflows").exists():
-            tech["infrastructure"].append("GitHub Actions")
+        # 3. File / directory presence (infrastructure tools, config-file signals)
+        for filename, tech_name in FILE_DETECTION_MAP.items():
+            if (self.project_path / filename).exists():
+                _add_tech(tech_name)
+        for dirname, tech_name in DIR_DETECTION_MAP.items():
+            if (self.project_path / dirname).is_dir():
+                _add_tech(tech_name)
 
-        # Deduplicate
+        # Deduplicate and sort for stable output
         for key in tech:
-            tech[key] = list(set(tech[key]))
+            tech[key] = sorted(set(tech[key]))
 
         return tech
 

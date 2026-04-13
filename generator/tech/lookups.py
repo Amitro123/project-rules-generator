@@ -41,3 +41,23 @@ for _p in _PROFILES:
     elif _p.packages:
         _kw = _p.packages[0].replace("-", "_").split(".")[0]
         SKILL_IMPORT_NAMES[_p.skill_name] = _kw
+
+# tech name → output category (backend | frontend | database | infrastructure | ml | ai | testing | language)
+TECH_CATEGORIES: Dict[str, str] = {p.name: p.category for p in _PROFILES}
+
+# tech name → human-readable display label (e.g. "FastAPI", "Next.js")
+TECH_DISPLAY_NAMES: Dict[str, str] = {
+    p.name: (p.display_name if p.display_name else p.name.title()) for p in _PROFILES
+}
+
+# filename → tech name  (for file-presence–based detection, e.g. "Dockerfile" → "docker")
+FILE_DETECTION_MAP: Dict[str, str] = {}
+for _p in _PROFILES:
+    for _f in _p.detection_files:
+        FILE_DETECTION_MAP[_f] = _p.name
+
+# directory path → tech name  (e.g. ".github/workflows" → "github-actions")
+DIR_DETECTION_MAP: Dict[str, str] = {}
+for _p in _PROFILES:
+    for _d in _p.detection_dirs:
+        DIR_DETECTION_MAP[_d] = _p.name

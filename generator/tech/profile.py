@@ -31,3 +31,20 @@ class TechProfile:
     E.g. gitpython is installed as 'gitpython' but imported as 'git'.
     Leave empty to derive from packages[0] (stripping hyphens, taking first segment).
     """
+
+    display_name: str = ""
+    """Human-readable label used in tech_stack output (e.g. 'FastAPI', 'Next.js').
+    Falls back to name.title() when empty."""
+
+    category: str = "backend"
+    """Bucket in the tech_stack dict returned by ProjectAnalyzer.
+    Valid values: backend | frontend | database | infrastructure | ml | ai | testing | language
+    """
+
+    detection_files: List[str] = field(default_factory=list)
+    """File paths relative to project root whose existence signals this tech
+    (used for infrastructure tools that aren't pip/npm packages, e.g. 'Dockerfile')."""
+
+    detection_dirs: List[str] = field(default_factory=list)
+    """Directory paths relative to project root whose existence signals this tech
+    (e.g. '.github/workflows' for GitHub Actions)."""
