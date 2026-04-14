@@ -36,7 +36,10 @@ def _load_state_dict(feature_dir: Path) -> dict:
     state_path = feature_dir / "STATE.json"
     if not state_path.exists():
         raise click.ClickException(f"STATE.json not found in {feature_dir}. Did you run `prg feature`?")
-    return json.loads(state_path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(state_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise click.ClickException(f"STATE.json is corrupted and cannot be parsed: {exc}") from exc
 
 
 def _feature_dir(project_path: Path, feature_id: str) -> Path:

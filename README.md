@@ -1,6 +1,6 @@
 # Project Rules Generator
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests](https://github.com/Amitro123/project-rules-generator/actions/workflows/tests.yml/badge.svg)](https://github.com/Amitro123/project-rules-generator/actions/workflows/tests.yml)
 
@@ -303,7 +303,7 @@ pip install -e .
 prg --version
 ```
 
-**Requirements:** Python 3.8+, Git
+**Requirements:** Python 3.10+, Git
 
 ---
 

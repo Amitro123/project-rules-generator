@@ -104,10 +104,7 @@ capture_ralph_terminal.py
 # User config override (copy config.yaml.example → config.yaml to customize)
 config.yaml
 
-# Generated plan/task artifacts
-PLAN.md
-TASKS.json
-spec.md
+# Generated plan/task artifacts (duplicates of entries above removed)
 Code Review*.md
 Comprehensive Code Review*.md
 REVIEW_*.md

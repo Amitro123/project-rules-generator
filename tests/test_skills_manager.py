@@ -153,3 +153,12 @@ def test_remove_nonexistent_skill_exits_1(temp_skills_dir, mock_manager):
     with patch("cli.skills_cmd.SkillsManager", side_effect=mock_manager):
         result = runner.invoke(main, ["skills", "remove", "no-such-skill", str(temp_skills_dir)])
         assert result.exit_code != 0
+
+
+def test_remove_skill_path_traversal_blocked(temp_skills_dir, mock_manager):
+    """Path traversal attempts (../../) must be rejected with a non-zero exit code."""
+    runner = CliRunner()
+    with patch("cli.skills_cmd.SkillsManager", side_effect=mock_manager):
+        result = runner.invoke(main, ["skills", "remove", "../../etc/passwd", str(temp_skills_dir)])
+        assert result.exit_code != 0
+        assert "Invalid" in result.output or result.exit_code != 0

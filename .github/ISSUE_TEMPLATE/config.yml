@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a Question / Discussion
+    url: https://github.com/Amitro123/project-rules-generator/discussions
+    about: Use GitHub Discussions for questions and community help.
