@@ -73,7 +73,6 @@ tests/                   # pytest tests (380+ passing)
 - **Naming**: Use functional names (`pytest-testing-workflow`) not abstract (`tech-patterns`)
 
 ## Key Docs
-- [`AMIT_CODING_PREFERENCES.md`](AMIT_CODING_PREFERENCES.md) — approved/rejected patterns
 - [`docs/architecture.md`](docs/architecture.md) — full architecture with ASCII diagrams
 - [`docs/features.md`](docs/features.md) — feature list
 - [`CHANGELOG.md`](CHANGELOG.md) — version history

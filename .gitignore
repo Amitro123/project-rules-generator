@@ -133,3 +133,6 @@ docs/project_plan.md
 
 # Ralph feature workspaces (local only — created by prg ralph)
 features/
+
+# Internal issue triage docs
+GITHUB_ISSUES_REVIEW.md

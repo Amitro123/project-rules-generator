@@ -15,4 +15,4 @@
 | [agent_integration_guide.md](agent_integration_guide.md) | Integrating PRG with AI agents |
 | [BEST_PRACTICES.md](BEST_PRACTICES.md) | Coding and skill authoring best practices |
 | [KNOWN-ISSUES.md](KNOWN-ISSUES.md) | Known limitations and workarounds |
-| [AMIT_CODING_PREFERENCES.md](AMIT_CODING_PREFERENCES.md) | Approved/rejected patterns (referenced by CLAUDE.md) |
+
