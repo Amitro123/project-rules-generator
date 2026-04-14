@@ -35,9 +35,6 @@ def _auto_generate_skills(
     strategy: str,
 ) -> Set[str]:
     """Auto-detect and optionally LLM-generate matched skills. Returns selected skill refs."""
-    from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
-    from generator.storage.skill_paths import SkillPathManager
-
     try:
         if enhanced_context is None:
             enhanced_context = EnhancedProjectParser(project_path).extract_full_context()

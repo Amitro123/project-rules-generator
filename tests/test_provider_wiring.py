@@ -65,9 +65,10 @@ class TestDesignProviderWiring:
         from cli.agent import design
 
         runner = CliRunner()
-        with patch("cli.cmd_design._has_api_key", return_value=True), patch(
-            "generator.design_generator.DesignGenerator"
-        ) as MockDG:
+        with (
+            patch("cli.cmd_design._has_api_key", return_value=True),
+            patch("generator.design_generator.DesignGenerator") as MockDG,
+        ):
             mock_instance = MagicMock()
             mock_instance.generate_design.return_value = MagicMock(
                 title="T",
@@ -101,9 +102,10 @@ class TestDesignProviderWiring:
 
         runner = CliRunner()
         for prov in ["gemini", "groq", "anthropic", "openai"]:
-            with patch("cli.cmd_design._has_api_key", return_value=True), patch(
-                "generator.design_generator.DesignGenerator"
-            ) as MockDG:
+            with (
+                patch("cli.cmd_design._has_api_key", return_value=True),
+                patch("generator.design_generator.DesignGenerator") as MockDG,
+            ):
                 mock_instance = MagicMock()
                 mock_instance.generate_design.return_value = MagicMock(
                     title="T",

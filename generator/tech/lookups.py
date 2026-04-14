@@ -46,9 +46,7 @@ for _p in _PROFILES:
 TECH_CATEGORIES: Dict[str, str] = {p.name: p.category for p in _PROFILES}
 
 # tech name → human-readable display label (e.g. "FastAPI", "Next.js")
-TECH_DISPLAY_NAMES: Dict[str, str] = {
-    p.name: (p.display_name if p.display_name else p.name.title()) for p in _PROFILES
-}
+TECH_DISPLAY_NAMES: Dict[str, str] = {p.name: (p.display_name if p.display_name else p.name.title()) for p in _PROFILES}
 
 # filename → tech name  (for file-presence–based detection, e.g. "Dockerfile" → "docker")
 FILE_DETECTION_MAP: Dict[str, str] = {}

@@ -47,9 +47,7 @@ class TestDetectTechStack:
 class TestDetectProjectType:
     def test_delegates_to_detector(self, tmp_path):
         c = _creator(tmp_path)
-        with patch(
-            "generator.rules.creator.detect_project_type", return_value={"primary_type": "python-api"}
-        ):
+        with patch("generator.rules.creator.detect_project_type", return_value={"primary_type": "python-api"}):
             result = c._detect_project_type(["fastapi"], {})
         assert result == "python-api"
 

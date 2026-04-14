@@ -52,9 +52,12 @@ def test_ralph_run_invokes_engine(runner, tmp_path):
     """prg ralph run calls RalphEngine.run_loop."""
     _setup_feature(tmp_path)
 
-    with patch("generator.ralph_engine.RalphEngine") as MockEngine, patch(
-        "cli.ralph_cmd._detect_provider", return_value="groq"
-    ), patch("cli.ralph_cmd._set_api_key"), patch("subprocess.run") as mock_git:
+    with (
+        patch("generator.ralph_engine.RalphEngine") as MockEngine,
+        patch("cli.ralph_cmd._detect_provider", return_value="groq"),
+        patch("cli.ralph_cmd._set_api_key"),
+        patch("subprocess.run") as mock_git,
+    ):
         mock_git.return_value = MagicMock(returncode=0)
         instance = MockEngine.return_value
         instance.state.status = "success"
@@ -70,8 +73,10 @@ def test_ralph_run_missing_state_raises(runner, tmp_path):
     (tmp_path / "features" / "FEATURE-001").mkdir(parents=True)
     # No STATE.json
 
-    with patch("cli.ralph_cmd._detect_provider", return_value="groq"), patch("cli.ralph_cmd._set_api_key"), patch(
-        "prg_utils.git_ops.is_git_repo", return_value=True
+    with (
+        patch("cli.ralph_cmd._detect_provider", return_value="groq"),
+        patch("cli.ralph_cmd._set_api_key"),
+        patch("prg_utils.git_ops.is_git_repo", return_value=True),
     ):
         result = runner.invoke(ralph_group, ["run", "FEATURE-001", "--project", str(tmp_path)])
 
@@ -83,10 +88,12 @@ def test_ralph_run_passes_max_iterations(runner, tmp_path):
     """--max-iterations is forwarded to run_loop."""
     _setup_feature(tmp_path)
 
-    with patch("generator.ralph_engine.RalphEngine") as MockEngine, patch(
-        "cli.ralph_cmd._detect_provider", return_value="groq"
-    ), patch("cli.ralph_cmd._set_api_key"), patch("prg_utils.git_ops.is_git_repo", return_value=True), patch(
-        "subprocess.run"
+    with (
+        patch("generator.ralph_engine.RalphEngine") as MockEngine,
+        patch("cli.ralph_cmd._detect_provider", return_value="groq"),
+        patch("cli.ralph_cmd._set_api_key"),
+        patch("prg_utils.git_ops.is_git_repo", return_value=True),
+        patch("subprocess.run"),
     ):
         MockEngine.return_value.state.status = "success"
         runner.invoke(ralph_group, ["run", "FEATURE-001", "--project", str(tmp_path), "--max-iterations", "5"])
@@ -126,9 +133,10 @@ def test_ralph_stop_updates_state(runner, tmp_path):
     _setup_feature(tmp_path, status="running")
 
     # git_ops.get_current_branch is imported locally inside ralph_stop, patch at source
-    with patch("prg_utils.git_ops.get_current_branch", return_value="ralph/FEATURE-001"), patch(
-        "subprocess.run"
-    ) as mock_sub:
+    with (
+        patch("prg_utils.git_ops.get_current_branch", return_value="ralph/FEATURE-001"),
+        patch("subprocess.run") as mock_sub,
+    ):
         mock_sub.return_value = MagicMock(returncode=0)
 
         result = runner.invoke(
@@ -175,9 +183,12 @@ def test_ralph_resume_clears_stopped_status(runner, tmp_path):
     """prg ralph resume resets stopped state before running engine."""
     _setup_feature(tmp_path, status="stopped")
 
-    with patch("generator.ralph_engine.RalphEngine") as MockEngine, patch(
-        "cli.ralph_cmd._detect_provider", return_value="groq"
-    ), patch("cli.ralph_cmd._set_api_key"), patch("prg_utils.git_ops.is_git_repo", return_value=True):
+    with (
+        patch("generator.ralph_engine.RalphEngine") as MockEngine,
+        patch("cli.ralph_cmd._detect_provider", return_value="groq"),
+        patch("cli.ralph_cmd._set_api_key"),
+        patch("prg_utils.git_ops.is_git_repo", return_value=True),
+    ):
         MockEngine.return_value.run_loop = MagicMock()
         MockEngine.return_value.state.status = "success"
         result = runner.invoke(ralph_group, ["resume", "FEATURE-001", "--project", str(tmp_path)])
@@ -191,9 +202,12 @@ def test_ralph_resume_non_stopped_still_runs(runner, tmp_path):
     """prg ralph resume works even if status is not 'stopped'."""
     _setup_feature(tmp_path, status="running")
 
-    with patch("generator.ralph_engine.RalphEngine") as MockEngine, patch(
-        "cli.ralph_cmd._detect_provider", return_value="groq"
-    ), patch("cli.ralph_cmd._set_api_key"), patch("prg_utils.git_ops.is_git_repo", return_value=True):
+    with (
+        patch("generator.ralph_engine.RalphEngine") as MockEngine,
+        patch("cli.ralph_cmd._detect_provider", return_value="groq"),
+        patch("cli.ralph_cmd._set_api_key"),
+        patch("prg_utils.git_ops.is_git_repo", return_value=True),
+    ):
         MockEngine.return_value.run_loop = MagicMock()
         MockEngine.return_value.state.status = "success"
         runner.invoke(ralph_group, ["resume", "FEATURE-001", "--project", str(tmp_path)])
@@ -211,9 +225,11 @@ def test_ralph_approve_merges_branch(runner, tmp_path):
     _setup_feature(tmp_path, status="running", branch_name="ralph/FEATURE-001-add-loading-states")
 
     # git_ops is imported locally inside ralph_approve, patch at source module
-    with patch("prg_utils.git_ops.checkout") as mock_checkout, patch(
-        "prg_utils.git_ops.merge_branch"
-    ) as mock_merge, patch("subprocess.run") as mock_sub:
+    with (
+        patch("prg_utils.git_ops.checkout") as mock_checkout,
+        patch("prg_utils.git_ops.merge_branch") as mock_merge,
+        patch("subprocess.run") as mock_sub,
+    ):
         mock_sub.return_value = MagicMock(returncode=0)
 
         result = runner.invoke(
