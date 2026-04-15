@@ -311,6 +311,8 @@ class StructureAnalyzer:
 
         for tf in test_files:
             try:
+                if tf.stat().st_size > 1024 * 1024:  # skip files > 1 MB
+                    continue
                 content = tf.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 continue

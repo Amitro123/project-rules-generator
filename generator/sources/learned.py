@@ -111,4 +111,4 @@ class LearnedSkillsSource(SkillSource):
                 yaml.dump([data], f, sort_keys=False)
 
         except (OSError, ValueError, TypeError) as e:
-            logger.error(f"Failed to save skill {skill.name}: {e}")
+            logger.error("Failed to save skill %s: %s", skill.name, e)

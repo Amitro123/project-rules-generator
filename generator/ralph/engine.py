@@ -118,7 +118,7 @@ class RalphEngine:
                 self.state.exit_condition = "all_checks_passed"
                 self.save_state()
                 if self.verbose:
-                    logger.info("✅ Feature complete — all success checks passed.")
+                    logger.info("Feature complete — all success checks passed.")
                 self._create_pr()
                 break
 
@@ -190,7 +190,7 @@ class RalphEngine:
             self.save_state()
             return None
         if self.verbose:
-            logger.info("🎯 Next task: %s", next_task_title)
+            logger.info("Next task: %s", next_task_title)
         return context, next_task_title
 
     def _step_skill(self, context: str) -> Optional[str]:
@@ -231,7 +231,7 @@ class RalphEngine:
         else:
             self.state.consecutive_agent_failures += 1
             if self.verbose:
-                logger.info("⚠️  No changes produced by agent this iteration.")
+                logger.info("No changes produced by agent this iteration.")
             if self.state.consecutive_agent_failures >= CONSECUTIVE_FAILURE_LIMIT:
                 self.state.status = "stopped"
                 self.state.exit_condition = "agent_fail_3x"
@@ -268,7 +268,7 @@ class RalphEngine:
             return None
 
         if review_score < REVIEW_SCORE_TASK_COMPLETE and self.verbose:
-            logger.info("⚠️  Review score %d — fixing issues before next iteration.", review_score)
+            logger.info("Review score %d — fixing issues before next iteration.", review_score)
         return review_score
 
     def _step_tests(self, next_task_title: str, review_score: int) -> Optional[bool]:
@@ -605,7 +605,7 @@ class RalphEngine:
     def _print_summary(self) -> None:
         s = self.state
         logger.info("\n%s", "=" * 60)
-        logger.info("🏁 Ralph Loop: %s", self.feature_id)
+        logger.info("Ralph Loop: %s", self.feature_id)
         logger.info("   Status    : %s", s.status)
         logger.info("   Iterations: %d/%d", s.iteration, s.max_iterations)
         logger.info("   Tasks     : %d/%d complete", s.tasks_complete, s.tasks_total)

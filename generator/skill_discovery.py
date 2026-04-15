@@ -153,8 +153,9 @@ class SkillDiscovery:
                     else:
                         shutil.copy2(source, target)
                 except (
-                    Exception
-                ) as copy_err:  # noqa: BLE001 — link/copy failure is non-fatal; skill just won't be available
+                    OSError,
+                    shutil.Error,
+                ) as copy_err:  # link/copy failure is non-fatal; skill just won't be available
                     logger.warning("Failed to link or copy %s to %s: %s", source, target, copy_err)
 
     def list_skills(self) -> Dict[str, Dict[str, Any]]:

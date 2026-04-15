@@ -83,7 +83,7 @@ class RulesGitMiner:
 
         return [
             Rule(
-                f"\U0001f525 Hot spots detected: {', '.join(hotspots[:3])} - consider refactoring",
+                f"Hot spots detected: {', '.join(hotspots[:3])} - consider refactoring",
                 priority="Medium",
                 category="Anti-Patterns from History",
                 source="git_history",
@@ -118,7 +118,7 @@ class RulesGitMiner:
 
         return [
             Rule(
-                "\U0001f525 Large commits detected - break down changes into smaller commits",
+                "Large commits detected - break down changes into smaller commits",
                 priority="Low",
                 category="Anti-Patterns from History",
                 source="git_history",

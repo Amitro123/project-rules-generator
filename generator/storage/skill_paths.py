@@ -90,6 +90,10 @@ class SkillPathManager:
         skill_dir = category_dir / skill_name
         skill_dir.mkdir(parents=True, exist_ok=True)
         skill_path = skill_dir / "SKILL.md"
+
+        if not cls._within_base(skill_path, cls.GLOBAL_LEARNED):
+            raise ValueError(f"Skill path {skill_path} escapes learned skills directory")
+
         skill_path.write_text(skill_content, encoding="utf-8")
 
         logger.info("Saved learned skill: %s", skill_path)

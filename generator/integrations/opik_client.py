@@ -29,9 +29,9 @@ class OpikEvaluator:
             try:
                 # Initialize Opik client
                 self.client = Opik(api_key=self.api_key, project_name=self.project_name)
-                logger.info(f"Opik integration initialized for project: {self.project_name}")
+                logger.info("Opik integration initialized for project: %s", self.project_name)
             except Exception as e:  # noqa: BLE001 — observability must never block main flow
-                logger.warning(f"Failed to initialize Opik client: {e}")
+                logger.warning("Failed to initialize Opik client: %s", e)
                 self.enabled = False
 
     def track_evaluation(
@@ -95,10 +95,10 @@ class OpikEvaluator:
                         pass
 
             trace.end()
-            logger.debug(f"Logged Opik trace: {trace.id}")
+            logger.debug("Logged Opik trace: %s", trace.id)
 
         except Exception as e:  # noqa: BLE001 — observability must never block main flow
-            logger.warning(f"Failed to log to Opik: {e}")
+            logger.warning("Failed to log to Opik: %s", e)
 
     def get_dashboard_url(self) -> str:
         """Return the URL to the Opik dashboard."""

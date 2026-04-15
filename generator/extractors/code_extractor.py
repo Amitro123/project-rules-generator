@@ -182,6 +182,8 @@ class CodeExampleExtractor:
         examples: List[Dict[str, Any]] = []
 
         try:
+            if file_path.stat().st_size > 1024 * 1024:  # skip files > 1 MB
+                return examples
             content = file_path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             return examples

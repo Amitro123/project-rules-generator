@@ -76,7 +76,11 @@ class RequirementsInferrer:
         """Extract recent evolution from git log."""
         try:
             result = subprocess.run(
-                ["git", "-C", str(project_path), "log", "--oneline", "-50"], capture_output=True, text=True, check=True
+                ["git", "-C", str(project_path), "log", "--oneline", "-50"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=10,
             )
             logs = result.stdout.splitlines()
             # Simple heuristic: commits with "feat:", "add", "fix"
