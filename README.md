@@ -224,7 +224,7 @@ prg plan   "Add OAuth2 login"                 # Stage 2: Generates PLAN.md + TAS
 prg analyze . --create-skill "auth-flow" --ai             # Create a global learned/ reusable skill
 prg analyze . --create-skill "mypy-types" --scope builtin # Create a universal builtin/ skill
 prg skills list --all                                     # List project + learned + builtin skills
-prg skills validate my-skill                              # Run quality checker (score must be ≥ 90)
+prg skills validate my-skill                              # Run quality checker (score must be ≥ 70)
 prg skills feedback my-skill --useful                     # Record a useful vote for a skill
 prg skills feedback my-skill --not-useful                 # Record a not-useful vote for a skill
 prg skills stale                                          # List skills scoring below 30% with ≥3 votes
@@ -279,7 +279,7 @@ prg analyze . --ai
   └─────────────────────────────────────────┘
         │
         ▼
-  Quality gate (score ≥ 90) → auto-retry if needed
+  Quality gate (score ≥ 85, configurable via --quality-threshold) → auto-retry if needed
         │
         ▼
   .clinerules/rules.md + skills/

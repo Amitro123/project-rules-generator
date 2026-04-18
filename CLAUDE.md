@@ -69,7 +69,7 @@ tests/                   # pytest tests (380+ passing)
 - **Config single source of truth**: Never allow `.clinerules/clinerules.yaml` AND `.clinerules.yaml` to coexist
 - **No duplicate config files** — enforce one root config only
 - **`__pycache__`** must stay in `.gitignore`; use `clean.ps1` to purge
-- **Quality thresholds**: Currently 90 — don't lower without explicit instruction
+- **Quality thresholds**: Rules gate default is 85 (`create-rules --quality-threshold`, overridable); skill `validate_quality()` PASS is 70. Don't lower either without explicit instruction.
 - **Naming**: Use functional names (`pytest-testing-workflow`) not abstract (`tech-patterns`)
 
 ## Key Docs

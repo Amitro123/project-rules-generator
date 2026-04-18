@@ -5,7 +5,6 @@ This file houses the remaining small commands and re-exports everything so
 cli/cli.py can continue to import from cli.agent without change.
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -110,12 +109,26 @@ def setup(task_description, project_path, provider, api_key, verbose):
 
 @click.command(name="agent")
 @click.argument("query")
-def agent_command(query):
+@click.option(
+    "--project-path",
+    type=click.Path(exists=True, file_okay=False),
+    default=".",
+    show_default=True,
+    help="Project directory",
+)
+@click.option(
+    "--output",
+    type=click.Path(file_okay=False),
+    default=".clinerules",
+    show_default=True,
+    help="Rules directory previously produced by `prg analyze --output` (contains auto-triggers.json)",
+)
+def agent_command(query, project_path, output):
     """Simulate agent auto-trigger matching for a query."""
     from generator.planning.agent_executor import AgentExecutor
 
-    project_path = Path(os.getcwd())
-    executor = AgentExecutor(project_path)
+    root = Path(project_path).resolve()
+    executor = AgentExecutor(root, rules_dir=Path(output))
     matched_skill = executor.match_skill(query)
 
     if matched_skill:

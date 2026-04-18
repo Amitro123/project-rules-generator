@@ -87,12 +87,22 @@ def _handle_skill_management(
         except ValueError:
             click.echo(f"\u274c Invalid skill path: {remove_skill}", err=True)
             raise click.exceptions.Exit(1)
-        if target.exists():
-            shutil.rmtree(target)
-            click.echo(f"\U0001f5d1\ufe0f Removed skill '{remove_skill}'")
-        else:
+        if not target.exists():
             click.echo(f"\u274c Skill '{remove_skill}' not found in learned skills.", err=True)
             raise click.exceptions.Exit(1)
+        shutil.rmtree(target)
+        click.echo(f"\U0001f5d1\ufe0f Removed skill '{remove_skill}'")
+        # Refresh derived artifacts so removed skill doesn't linger in index/triggers.
+        try:
+            skills_manager.generate_perfect_index()
+            click.echo("\U0001f504 index.md refreshed")
+        except Exception as exc:  # noqa: BLE001 — non-fatal
+            click.echo(f"\u26a0\ufe0f  Could not refresh index.md: {exc}", err=True)
+        try:
+            skills_manager.save_triggers_json(output_dir)
+            click.echo("\u2705 auto-triggers.json refreshed")
+        except Exception as exc:  # noqa: BLE001 — non-fatal
+            click.echo(f"\u26a0\ufe0f  Could not refresh auto-triggers.json: {exc}", err=True)
         raise click.exceptions.Exit(0)
 
     if list_skills:

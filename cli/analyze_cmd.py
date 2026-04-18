@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from cli._version import __version__
 from cli.analyze_helpers import (  # noqa: E402
+    _handle_skill_management,
     commit_generated_files,
     normalize_analyze_options,
     setup_incremental,
@@ -113,6 +114,31 @@ def _register_ide_rules(ide: str, project_path: Path, project_name: str, output_
     help="Router strategy: auto (smart fallback), speed, quality, or provider:<name>",
 )
 @click.option("--skills-dir", type=click.Path(file_okay=False), help="Custom skills directory (default: ./skills)")
+@click.option("--create-skill", default=None, help="Create a new skill by name (writes to learned/ by default)")
+@click.option("--add-skill", default=None, help="Alias for --create-skill")
+@click.option("--remove-skill", default=None, help="Remove a learned skill by name")
+@click.option("--list-skills", is_flag=True, help="List all available skills and exit")
+@click.option(
+    "--from-readme",
+    type=click.Path(exists=True, dir_okay=False),
+    default=None,
+    help="Use README as context for --create-skill",
+)
+@click.option("--force", is_flag=True, default=False, help="Overwrite existing skill when using --create-skill")
+@click.option(
+    "--scope",
+    type=click.Choice(["learned", "builtin", "project"], case_sensitive=False),
+    default="learned",
+    show_default=True,
+    help="Destination for --create-skill (learned=global reusable, builtin=universal, project=local)",
+)
+@click.option(
+    "--create-rules",
+    "create_rules_flag",
+    is_flag=True,
+    default=False,
+    help="When used with --create-skill, continue on to rules generation instead of exiting",
+)
 def analyze(
     project_path,
     commit,
@@ -136,10 +162,22 @@ def analyze(
     provider,
     skills_dir,
     strategy,
+    create_skill,
+    add_skill,
+    remove_skill,
+    list_skills,
+    from_readme,
+    force,
+    scope,
+    create_rules_flag,
 ):
     """Analyze project and generate rules.md and skills.md from README.md
 
-    For skill management use: prg skills create / remove / list / index
+    Supports inline skill management via --create-skill / --remove-skill /
+    --list-skills (equivalent to the `prg skills create / remove / list`
+    sub-commands). Use --create-rules alongside --create-skill to continue
+    on to full rules generation after the skill is created.
+
     For quality analysis use:  prg quality .
     For rules creation use:    prg create-rules .
     """
@@ -156,6 +194,26 @@ def analyze(
     # Create output directory
     output_dir = project_path / output
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Handle skill management early-exit actions (--create-skill / --remove-skill / --list-skills).
+    # Raises click.exceptions.Exit when the action completes and --create-rules was not set.
+    if create_skill or add_skill or remove_skill or list_skills:
+        _handle_skill_management(
+            skills_manager,
+            create_skill,
+            add_skill,
+            from_readme,
+            ai,
+            provider,
+            force,
+            strategy,
+            output_dir,
+            create_rules_flag,
+            remove_skill,
+            list_skills,
+            verbose,
+            scope,
+        )
 
     # Skills structure setup
     try:

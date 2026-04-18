@@ -342,11 +342,13 @@ def _phase_write_rules(
         unified_content = IncrementalAnalyzer.merge_rules(existing_rules, unified_content, changed_sections)
         if verbose:
             click.echo(f"   Incremental: merged changes from {', '.join(sorted(changed_sections))}")
-    save_markdown(rules_path, unified_content)
+    save_markdown(rules_path, unified_content, backup=True)
     generated_files.append(rules_path)
 
     rules_json_path = output_dir / "rules.json"
-    rules_json_path.write_text(rules_to_json(unified_content), encoding="utf-8")
+    from prg_utils.file_ops import atomic_write_text
+
+    atomic_write_text(rules_json_path, rules_to_json(unified_content), backup=True)
     if verbose:
         click.echo("Generating auto-triggers...")
     skills_manager.save_triggers_json(output_dir)

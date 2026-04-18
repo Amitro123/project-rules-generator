@@ -265,16 +265,25 @@ def _calculate_final_scores(scores: Dict[str, float]) -> Dict[str, Any]:
         and not (primary in ("web_app", "python_api") and k in ("web_app", "python_api"))
     ]
 
-    # Map internal score key → canonical type string
-    _TYPE_LABELS = {
-        "python_api": "python-api",
-    }
-    primary_type = _TYPE_LABELS.get(primary_type, primary_type)
-    secondary_types = [_TYPE_LABELS.get(t, t) for t in secondary_types]
-
+    # Public API contract: primary_type/secondary_types use the internal
+    # snake_case score keys (agent, ml_pipeline, web_app, python_api, cli_tool,
+    # library, generator). Callers that need to compare against StructureAnalyzer
+    # labels (which are hyphenated) should translate using TYPE_LABEL_MAP below.
     return {
         "primary_type": primary_type,
         "secondary_types": secondary_types,
         "confidence": min(primary_score, 1.0),
         "all_scores": scores,
     }
+
+
+# Translation table from detect_project_type's internal score keys to the
+# hyphenated canonical labels used by StructureAnalyzer and the rest of the
+# pipeline. Exposed at module level so EnhancedProjectParser can apply it
+# without reaching into private helpers.
+TYPE_LABEL_MAP = {
+    "python_api": "python-api",
+    "ml_pipeline": "ml-pipeline",
+    "cli_tool": "cli-tool",
+    "web_app": "web-app",
+}

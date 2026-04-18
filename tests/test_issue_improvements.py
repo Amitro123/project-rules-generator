@@ -104,7 +104,10 @@ def test_project_type_detector_python_api(tmp_path):
         },
         str(tmp_path),
     )
-    assert result["primary_type"] == "python-api", f"Got: {result['primary_type']}"
+    # detect_project_type returns snake_case internal score keys; the
+    # hyphenated form (`python-api`) is applied by EnhancedProjectParser
+    # via TYPE_LABEL_MAP when reconciling with StructureAnalyzer.
+    assert result["primary_type"] == "python_api", f"Got: {result['primary_type']}"
 
 
 def test_project_type_detector_cli_still_works(tmp_path):

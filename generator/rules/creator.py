@@ -465,8 +465,17 @@ class CoworkRulesCreator(ArtifactGenerator):
     def export_to_file(
         self, content: str, metadata: RulesMetadata, output_dir: Path, filename: str = "rules.md"
     ) -> Path:
-        """Export rules to file in .clinerules structure."""
+        """Export rules to file in .clinerules structure.
+
+        Writes atomically via a same-directory temp file + os.replace. When
+        ``filename`` already exists, the prior contents are preserved as
+        ``<filename>.bak`` so a re-run cannot silently destroy hand edits.
+        """
+        from prg_utils.file_ops import atomic_write_text
+
         output_dir.mkdir(parents=True, exist_ok=True)
         rules_file = output_dir / filename
-        rules_file.write_bytes(content.replace("\r\n", "\n").encode("utf-8"))
+        # Normalise CRLF → LF for cross-platform consistency (matches prior behaviour).
+        normalised = content.replace("\r\n", "\n")
+        atomic_write_text(rules_file, normalised, backup=True)
         return rules_file

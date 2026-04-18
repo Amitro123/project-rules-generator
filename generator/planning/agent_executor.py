@@ -100,9 +100,23 @@ class AgentExecutor:
         ],
     }
 
-    def __init__(self, project_path: Path):
+    def __init__(self, project_path: Path, rules_dir: Optional[Path] = None):
+        """Initialize an executor rooted at ``project_path``.
+
+        ``rules_dir`` is the directory that ``prg analyze --output`` writes to
+        (default ``.clinerules``). When supplied it may be absolute or relative
+        to ``project_path``. Tests and callers that pointed analyze at a
+        non-default output directory should pass the same path here so the
+        executor reads the matching ``auto-triggers.json`` and resolves skill
+        files against the correct layout.
+        """
         self.project_path = project_path
-        self.triggers_path = project_path / ".clinerules" / "auto-triggers.json"
+        if rules_dir is None:
+            self.rules_dir = project_path / ".clinerules"
+        else:
+            rules_path = Path(rules_dir)
+            self.rules_dir = rules_path if rules_path.is_absolute() else project_path / rules_path
+        self.triggers_path = self.rules_dir / "auto-triggers.json"
         self._file_triggers: Dict[str, List[str]] = {}
         self._load_triggers()
 
@@ -177,15 +191,16 @@ class AgentExecutor:
 
     def _record_match(self, skill: str) -> None:
         """Log skill path presence and record the match via SkillTracker (best-effort)."""
-        skill_path = self.project_path / ".clinerules" / "skills" / "learned" / skill
-        flat_path = self.project_path / ".clinerules" / "skills" / "learned" / f"{skill}.md"
+        skill_path = self.rules_dir / "skills" / "learned" / skill
+        flat_path = self.rules_dir / "skills" / "learned" / f"{skill}.md"
         if skill_path.exists() or flat_path.exists():
             logger.debug("MATCH FOUND for skill: %s", skill)
         else:
             logger.debug(
-                "Trigger matched but skill '%s' not found in .clinerules/skills/learned — "
+                "Trigger matched but skill '%s' not found in %s/skills/learned — "
                 "returning anyway (may be a builtin)",
                 skill,
+                self.rules_dir,
             )
         try:
             from generator.skill_tracker import SkillTracker

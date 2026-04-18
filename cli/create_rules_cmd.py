@@ -144,6 +144,20 @@ def create_rules(
         rules_file = creator.export_to_file(content, metadata, output_dir)
         click.echo(f"\nRules generated: {rules_file.name}")
 
+        # Emit machine-readable rules.json for parity with `prg analyze`.
+        # Downstream commands (prg agent / prg plan / preflight) read rules.json
+        # to decide whether a project has been analyzed — omitting it here
+        # silently broke those commands when users chose `prg create-rules`.
+        try:
+            from generator.rules_generator import rules_to_json
+            from prg_utils.file_ops import atomic_write_text
+
+            rules_json_path = output_dir / "rules.json"
+            atomic_write_text(rules_json_path, rules_to_json(content), backup=True)
+            click.echo(f"JSON export:     {rules_json_path.name}")
+        except Exception as exc:  # noqa: BLE001 — non-fatal; rules.md already written
+            click.echo(f"Warning: could not write rules.json: {exc}", err=True)
+
         # Display rule count
         click.echo("\nRules Summary:")
         click.echo(f"   - Tech-specific rules: {sum(1 for t in metadata.tech_stack if t in content.lower())}")

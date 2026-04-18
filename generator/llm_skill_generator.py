@@ -2,7 +2,7 @@
 
 import os
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from .ai.factory import create_ai_client
 
@@ -156,7 +156,29 @@ class LLMSkillGenerator:
             code_examples=code_examples,
             detected_patterns=detected_patterns,
         )
-        return self.generate_content(prompt, max_tokens=4000)
+
+        # Single retry when the LLM echoes literal template placeholders back
+        # (e.g. "[One sentence: what problem does this solve]"). The repair
+        # prompt tells the model explicitly not to keep bracketed guidance.
+        from generator.ai.hardening import contains_unfilled_placeholders
+
+        result = self.generate_content(prompt, max_tokens=4000)
+        if contains_unfilled_placeholders(result):
+            repair_prompt = (
+                prompt + "\n\n---\n"
+                "NOTE: Your previous response contained literal placeholders in square "
+                "brackets (e.g. '[One sentence: what problem does this solve]'). Those "
+                "are GUIDANCE — you must REPLACE them with real, project-specific "
+                "content. Do NOT copy any bracketed hint from the template into the "
+                "final output."
+            )
+            retried = self.generate_content(repair_prompt, max_tokens=4000)
+            if retried and not contains_unfilled_placeholders(retried):
+                return retried
+            # Keep the cleaner of the two — neither may be perfect, but the
+            # retry response is usually at least as good.
+            return retried or result
+        return result
 
     def generate_content(self, prompt: str, max_tokens: int = 2000) -> str:
         """Generate content from prompt using the configured model or router."""

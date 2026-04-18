@@ -596,7 +596,14 @@ def skills_create(skill_name, path, from_readme, ai, provider, api_key, force, s
 @skills_group.command(name="remove")
 @click.argument("skill_name")
 @click.argument("path", type=click.Path(exists=True, file_okay=False), default=".")
-def skills_remove(skill_name, path):
+@click.option(
+    "--output",
+    type=click.Path(file_okay=False),
+    default=".clinerules",
+    show_default=True,
+    help="Output directory (used for auto-triggers.json refresh)",
+)
+def skills_remove(skill_name, path, output):
     """Remove a learned skill by name.
 
     Example:
@@ -613,12 +620,26 @@ def skills_remove(skill_name, path):
         click.echo(f"\u274c Invalid skill path: {skill_name}", err=True)
         raise SystemExit(1)
 
-    if target.exists():
-        shutil.rmtree(target)
-        click.echo(f"\U0001f5d1\ufe0f  Removed skill '{skill_name}'")
-    else:
+    if not target.exists():
         click.echo(f"\u274c Skill '{skill_name}' not found in learned skills.", err=True)
         raise SystemExit(1)
+
+    shutil.rmtree(target)
+    click.echo(f"\U0001f5d1\ufe0f  Removed skill '{skill_name}'")
+
+    # Regenerate derived artifacts so removed skill does not linger in index/triggers.
+    output_dir = project_path / output
+    try:
+        sm.generate_perfect_index()
+        click.echo("\U0001f504 index.md refreshed")
+    except Exception as exc:  # noqa: BLE001 — non-fatal; main removal already succeeded
+        click.echo(f"\u26a0\ufe0f  Could not refresh index.md: {exc}", err=True)
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        sm.save_triggers_json(output_dir)
+        click.echo("\u2705 auto-triggers.json refreshed")
+    except Exception as exc:  # noqa: BLE001 — non-fatal
+        click.echo(f"\u26a0\ufe0f  Could not refresh auto-triggers.json: {exc}", err=True)
 
 
 # ---------------------------------------------------------------------------

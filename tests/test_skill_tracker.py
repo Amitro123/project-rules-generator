@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-
-import pytest
 
 from generator.skill_tracker import MIN_FEEDBACK_FOR_FLAG, SkillTracker
 
@@ -151,6 +148,57 @@ class TestPersistence:
         t.record_match("skill-y")
         data = json.loads(path.read_text())
         assert "skill-y" in data
+
+
+class TestConcurrencySafety:
+    """Regression tests for multi-writer races (Bug 6 from Batch B)."""
+
+    def test_thread_concurrent_matches_do_not_lose_counts(self, tmp_path):
+        """10 threads each record 50 matches on the same skill — final count must be 500."""
+        import threading as _threading
+
+        path = tmp_path / "usage.json"
+        tracker = SkillTracker(data_path=path)
+
+        def worker():
+            for _ in range(50):
+                tracker.record_match("hot-skill")
+
+        threads = [_threading.Thread(target=worker) for _ in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert tracker.get_stats("hot-skill")["match_count"] == 500
+
+    def test_separate_tracker_instances_do_not_clobber(self, tmp_path):
+        """Two tracker instances on the same file — mutations must merge, not overwrite.
+
+        Simulates two processes each holding their own tracker and recording
+        matches for *different* skills. Before the file-lock + reload fix,
+        whichever wrote last overwrote the other's skill.
+        """
+        path = tmp_path / "usage.json"
+        tracker_a = SkillTracker(data_path=path)
+        tracker_b = SkillTracker(data_path=path)
+
+        tracker_a.record_match("skill-alpha")
+        tracker_b.record_match("skill-beta")
+
+        # A fresh tracker reloading from disk should see BOTH skills.
+        tracker_c = SkillTracker(data_path=path)
+        assert tracker_c.get_stats("skill-alpha")["match_count"] == 1
+        assert tracker_c.get_stats("skill-beta")["match_count"] == 1
+
+    def test_no_temp_files_left_behind(self, tmp_path):
+        """Atomic write must not leave .tmp sidecars after successful writes."""
+        path = tmp_path / "usage.json"
+        tracker = SkillTracker(data_path=path)
+        for i in range(5):
+            tracker.record_match(f"skill-{i}")
+        leftovers = [p.name for p in tmp_path.iterdir() if ".tmp." in p.name]
+        assert leftovers == []
 
 
 # ---------------------------------------------------------------------------
