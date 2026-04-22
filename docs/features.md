@@ -12,12 +12,13 @@ Project Rules Generator generates structured memory artifacts — rules, skills,
 | **Task Breakdown** | Breaks large tasks into smaller steps | Medium | Yes | ✅ |
 | **Two-Stage Planning** | Design → Plan workflow for complex features | Slow | Yes | ✅ |
 | **Constitution** | Generates high-level principles | Fast | No | ✅ |
-| **Skill Management** (`--create-skill`, `--list-skills`) | Managing your learned/project skills library | Instant | No | ✅ |
+| **Skill Management** (`--create-skill`, `--list-skills`, `prg skills *`) | Managing your learned/project skills library | Instant | No | ✅ |
 | **`prg init`** | First-run wizard — detect stack, generate rules, print next steps | Fast | No | ✅ |
-| **`prg skills list/validate/show`** | Sub-commands for skill inspection and validation | Instant | No | ✅ |
+| **`prg skills list/validate/show/purge`** | Sub-commands for skill inspection, validation, and cleanup | Instant | No | ✅ |
 | **`prg watch`** | Watches project files and auto-runs `analyze --incremental` on change | Instant | No | ✅ |
 | **Spec Generation** | LLM-generated `spec.md` (Overview, Goals, User Stories, Acceptance Criteria) | Medium | Yes | ✅ |
 | **Skill Usage Tracking** | Auto-tracks match counts; `feedback` votes; `stale` detection | Instant | No | ✅ |
+| **Self-Review** | Critiques generated artifacts for hallucinations and quality issues | Medium | Yes | ✅ |
 | **Ralph Feature Loop** 🔁 _(optional)_ | Autonomous feature-scoped iteration loop with git commits & self-review gate. Requires existing PRG artifacts. Run `prg analyze` and `prg feature` first. | Slow | Yes | ✅ |
 
 ---
@@ -72,11 +73,12 @@ prg analyze . --ai --provider anthropic   # force a specific provider
 
 | Provider | Model | Speed | Cost |
 | :--- | :--- | :--- | :--- |
-| **Groq** | Llama 3.1 8b | ⚡⚡⚡ | Free |
-| **Gemini** | Gemini 2.0 Flash | ⚡⚡ | Free |
-| **Claude** | Sonnet 4.6 | ⚡ | Paid |
+| **Groq** | Llama 3 (8b / 70b) | ⚡⚡⚡ | Free |
+| **Gemini** | Gemini 2.0 Flash | ⚡⚡ | Free tier |
+| **Claude** | Claude Sonnet | ⚡ | Paid |
+| **OpenAI** | GPT-4o | ⚡ | Paid |
 
-### Feature 3: Incremental Mode ⚡ NEW
+### Feature 3: Incremental Mode ⚡
 **What it does**: Only regenerates sections rules that have changed since the last run (3-5x faster on large projects).
 
 **Command**:
@@ -100,7 +102,7 @@ Changes detected: dependencies, tests
 
 **Use Case**: Daily updates, CI/CD pipelines, large codebases where full re-analysis is slow.
 
-### Feature 4: Task Breakdown 🎯 NEW
+### Feature 4: Task Breakdown 🎯
 **What it does**: Uses AI to break down large, ambiguous tasks into small, executable subtasks (2-5 minutes each).
 
 **Command**:
@@ -130,7 +132,7 @@ prg plan "Add authentication to API"
 
 **Use Case**: Break down features before implementation, feed to Subagent-Driven Development skill, or for better estimation & planning.
 
-### Feature 5: Two-Stage Planning 🏗️ NEW
+### Feature 5: Two-Stage Planning 🏗️
 **What it does**: A powerful workflow for complex features. First, generating an architectural design (`DESIGN.md`), then decomposing it into a detailed implementation plan (`PLAN.md`).
 
 **Stage 1: Design**
@@ -195,9 +197,13 @@ prg skills show fastapi-endpoints
 # Validate quality score
 prg skills validate my-skill
 
-# Create a new skill
+# Create a new skill (via analyze)
 prg analyze . --create-skill "auth-flow" --ai
 prg analyze . --create-skill "deploy-checklist" --scope project
+
+# Or use the dedicated sub-command
+prg skills create auth-flow --ai
+prg skills create deploy-checklist --scope project
 ```
 
 **Output**:
@@ -216,7 +222,7 @@ Available skills:
 **Layered Architecture**:
 1.  **Project-Specific** (`.clinerules/skills/project/`): Highest priority. Custom overrides for this repo.
 2.  **Global Learned** (`~/.project-rules-generator/learned/`): Medium priority. Your personal library.
-3.  **Builtin** (`~/.project-rules-generator/builtin/`): Lowest priority. Default best practices.
+3.  **Builtin** (`generator/templates/skills/`): Lowest priority. Ships with PRG and is installed into the package.
 
 **Auto-Triggers**:
 Skills can define activation phrases in an `## Auto-Trigger` section. PRG extracts these to `.clinerules/auto-triggers.json` for instant lookup.
@@ -260,7 +266,7 @@ One paragraph describing what the project does, who it's for, and the core probl
 As a developer, I want rules auto-generated so that every AI session starts with project context.
 
 ## Constraints
-- Python 3.8+ compatibility required
+- Python 3.10+ compatibility required
 - Must work offline (no API key required for basic analysis)
 
 ## Acceptance Criteria
@@ -275,7 +281,7 @@ As a developer, I want rules auto-generated so that every AI session starts with
 
 ---
 
-### Feature 12: Self-Review 🔍
+### Feature 10: Self-Review 🔍
 
 **What it does**: Critiques a generated artifact (PLAN.md, skill file, design doc) for quality issues and hallucinations using an LLM + static analysis pass. Detects fabricated file paths, invented library names, and project-specific inconsistencies by cross-referencing the README.
 
@@ -312,7 +318,7 @@ prg review DESIGN.md --output CRITIQUE.md --tasks
 
 ---
 
-### Feature 14: Skill Usage Tracking
+### Feature 11: Skill Usage Tracking
 
 **What it does**: Builds a persistent feedback loop around skill quality. Every time `prg agent` matches a skill the match count is incremented silently. Developers vote on individual skills after using them, and `prg skills stale` surfaces skills that are consistently unhelpful so they can be regenerated.
 
@@ -355,7 +361,7 @@ Suggestion: prg analyze . --create-skill <name>  to regenerate each skill.
 
 ---
 
-### Feature 13: Watch Mode
+### Feature 12: Watch Mode
 
 **What it does**: Monitors project files for changes and automatically re-runs `prg analyze --incremental` whenever a relevant file is saved. Keeps `.clinerules/` in sync with the codebase without manual intervention.
 
@@ -382,7 +388,7 @@ prg watch . --ide cursor --quiet # target a specific IDE, suppress non-error out
 
 ---
 
-### Feature 15: Ralph Feature Loop Engine 🔁 _(Optional)_
+### Feature 13: Ralph Feature Loop Engine 🔁 _(Optional)_
 
 > **Prerequisites**: Ralph requires existing PRG artifacts to operate. Run `prg analyze .` to generate `rules.md` and skills, then run `prg feature "<description>"` to generate `PLAN.md`, `TASKS.yaml`, and `STATE.json` for the target feature. Ralph reads these artifacts as its execution context on every iteration.
 
