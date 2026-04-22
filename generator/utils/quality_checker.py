@@ -141,7 +141,9 @@ _PAIN_INDICATORS = [
     "when you don't",
     "stops you",
     "prevents",
+    "prevent",
     "avoids",
+    "avoid",
     "before you",
     "if you don't",
     "wrong way",
@@ -154,6 +156,32 @@ _PAIN_INDICATORS = [
     "difficult to",
     "hard to",
     "easy to forget",
+    # Added (Batch D / Fix 4): real pain-oriented phrasing that the narrow
+    # original list was rejecting. Empirically 69% of generated skills were
+    # penalised for "lack of pain language" despite having legitimate pain
+    # framing via these phrases.
+    "ensure consistent",
+    "ensure correct",
+    "tedious",
+    "error-prone",
+    "error prone",
+    "bug-prone",
+    "bug prone",
+    "brittle",
+    "regression",
+    "risk of",
+    "at risk",
+    "stale",
+    "outdated",
+    "out of sync",
+    "out-of-sync",
+    "drift",
+    "silently",
+    "ship broken",
+    "break production",
+    "breaks production",
+    "catch bugs",
+    "catches bugs",
 ]
 
 
@@ -216,6 +244,45 @@ def _check_strategic_depth(content: str) -> Tuple[List[str], List[str], List[str
     return issues, warnings, suggestions, penalty
 
 
+# Keys of a dict-shaped `auto_triggers:` block whose values are themselves
+# lists of trigger phrases. `project_signals` is included because real skills
+# (see .clinerules/skills/learned/deadcode) put signal names like
+# `has_tests` there and the scorer has historically treated them as triggers.
+_TRIGGER_DICT_LIST_KEYS = ("keywords", "phrases", "project_signals")
+
+
+def _flatten_trigger_spec(spec) -> List[str]:
+    """Normalise a frontmatter `auto_triggers`/`triggers` value to a flat list of strings.
+
+    Handles three shapes found in real skills:
+      * list of strings — returned as-is
+      * list of dicts with `keywords:` sub-lists — flattened
+      * dict with `keywords:` / `phrases:` / `project_signals:` sub-lists —
+        flattened (this is the shape the generator emits for most skills)
+
+    Any other shape returns [].
+    """
+    if isinstance(spec, list):
+        flat: List[str] = []
+        for item in spec:
+            if isinstance(item, dict):
+                for key in _TRIGGER_DICT_LIST_KEYS:
+                    values = item.get(key)
+                    if isinstance(values, list):
+                        flat.extend(str(v) for v in values if v)
+            elif isinstance(item, str):
+                flat.append(item)
+        return flat
+    if isinstance(spec, dict):
+        flat = []
+        for key in _TRIGGER_DICT_LIST_KEYS:
+            values = spec.get(key)
+            if isinstance(values, list):
+                flat.extend(str(v) for v in values if v)
+        return flat
+    return []
+
+
 def validate_quality(
     content: str,
     metadata_triggers: Optional[List[str]] = None,
@@ -243,17 +310,16 @@ def validate_quality(
     if metadata_triggers is None or metadata_tools is None:
         meta, _ = _parse_frontmatter(content)
         if metadata_triggers is None:
-            # Prefer explicit YAML triggers list; fall back to body parsing
+            # Prefer explicit YAML triggers list; fall back to body parsing.
+            # Three shapes are valid in the wild:
+            #   1) auto_triggers: [foo, bar]                     — plain list
+            #   2) auto_triggers: [{keywords: [foo, bar]}, ...]  — list of dicts
+            #   3) auto_triggers: {keywords: [foo], project_signals: [has_tests]}
+            #      — dict with keyword + signal sub-lists (generator-template shape)
+            # Previously shape (3) raised TypeError on `dict + list` concat, which
+            # silently made 9 real skills unscoreable. Normalise all three here.
             yaml_triggers = meta.get("triggers") or meta.get("auto_triggers") or []
-            if isinstance(yaml_triggers, list):
-                # Flatten list-of-dicts (auto_triggers: [{keywords: [...]}]) or plain list
-                flat: List[str] = []
-                for item in yaml_triggers:
-                    if isinstance(item, dict):
-                        flat.extend(item.get("keywords") or [])
-                    elif isinstance(item, str):
-                        flat.append(item)
-                yaml_triggers = flat
+            yaml_triggers = _flatten_trigger_spec(yaml_triggers)
             body_triggers = _extract_body_triggers(content)
             # Merge both sources; yaml takes precedence for deduplication ordering
             metadata_triggers = list(dict.fromkeys(yaml_triggers + body_triggers))

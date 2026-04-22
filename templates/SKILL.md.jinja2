@@ -1,9 +1,15 @@
 ---
 name: {{ name }}
 description: |
-  {{ desc_with_triggers }}
+{{ desc_with_triggers | indent(2, first=True) }}
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   author: PRG
   version: 1.0.0

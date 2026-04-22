@@ -101,23 +101,29 @@ class SkillMetadataBuilder:
     def render_frontmatter(self, metadata: "SkillMetadata") -> str:
         """Emit Anthropic-spec-compliant YAML frontmatter (GAP 1 + GAP 4 + GAP 5)."""
         base_desc = metadata.description.rstrip(".")
-        # Use "When the user mentions..." format so the validator's trigger-phrase check passes
-        when_phrases = [f'When the user mentions "{t}".' for t in metadata.auto_triggers[:3]]
-        when_phrases.append(f"When the user needs help with {metadata.name.replace('-', ' ')}.")
-        desc = base_desc + " " + " ".join(when_phrases)
+        # Emit "When …" trigger phrases on separate lines so they survive
+        # validate_quality's per-line check. Previously we joined with spaces,
+        # which produced a single line starting with the base description —
+        # the validator then failed to see any "when"-starting line.
+        desc_lines = [f"{base_desc}."]
+        desc_lines.extend(f'When the user mentions "{t}".' for t in metadata.auto_triggers[:3])
+        desc_lines.append(f"When the user needs help with {metadata.name.replace('-', ' ')}.")
         if metadata.negative_triggers:
             neg_str = ", ".join(f'"{t}"' for t in metadata.negative_triggers[:3])
-            desc += f" Do NOT activate for {neg_str}."
-        desc = desc[:1024]
+            desc_lines.append(f"Do NOT activate for {neg_str}.")
+        desc = "\n".join(desc_lines)[:1024]
 
         tags = metadata.tags if metadata.tags else [metadata.category]
         tags_str = "[" + ", ".join(tags) + "]"
+
+        # Render the YAML literal block: each line of `desc` indented by 2 spaces.
+        indented_desc = "\n".join(f"  {ln}" for ln in desc.split("\n"))
 
         lines = [
             "---",
             f"name: {metadata.name}",
             "description: |",
-            f"  {desc}",
+            indented_desc,
             "license: MIT",
             "allowed-tools:",
             "  - Bash",

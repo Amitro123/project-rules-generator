@@ -117,13 +117,20 @@ class SkillContentRenderer:
         env = Environment(loader=FileSystemLoader(str(template_dir)))
         template = env.get_template("SKILL.md.jinja2")
 
-        trigger_str = ", ".join(f'"{t}"' for t in metadata.auto_triggers[:5])
         base_desc = metadata.description.rstrip(".")
-        desc_with_triggers = f"{base_desc}. Use when user mentions {trigger_str}."
+        # Emit the description as a YAML literal block so each "When …" trigger
+        # sits on its own line. validate_quality() splits the description on
+        # newlines and requires at least one line starting with "when";
+        # historically we wrote a single prose line with "Use when …" embedded,
+        # which failed the check and drained ~-10 pts on 67% of generated skills.
+        # The `|` block scalar in SKILL.md.jinja2 preserves these newlines.
+        desc_lines = [f"{base_desc}."]
+        desc_lines.extend(f'When the user mentions "{t}".' for t in metadata.auto_triggers[:3])
+        desc_lines.append(f"When the user needs help with {metadata.name.replace('-', ' ')}.")
         if metadata.negative_triggers:
             neg_str = ", ".join(f'"{t}"' for t in metadata.negative_triggers[:3])
-            desc_with_triggers += f" Do NOT activate for {neg_str}."
-        desc_with_triggers = desc_with_triggers[:1024]
+            desc_lines.append(f"Do NOT activate for {neg_str}.")
+        desc_with_triggers = "\n".join(desc_lines)[:1024]
 
         tags = metadata.tags if metadata.tags else [metadata.category]
         tech_stack = self._scanner.detect_tech_stack(readme_content)
