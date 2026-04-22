@@ -33,27 +33,40 @@ Your `.clinerules/` is now the memory your AI agents never had. Generate the art
 
 ## What Gets Generated
 
+PRG writes to two locations depending on which agent you use:
+
 ```text
+.agents/
+└── rules/
+    └── <project-name>.md     ← Auto-loaded by Claude Code / Windsurf (Always On)
+
 .clinerules/
-├── rules.md              ← Your coding conventions (tech-specific, auto-detected)
-├── rules.json            ← Machine-readable rules (used by planning commands)
-├── constitution.md       ← Non-negotiable principles — generated with --constitution
-├── clinerules.yaml       ← Skill index for agents — generated when skills are present
+├── rules.json                ← Machine-readable rules (used by planning commands)
+├── constitution.md           ← Non-negotiable principles — generated with --constitution
+├── clinerules.yaml           ← Skill index for agents — generated when skills are present
 └── skills/
-    ├── index.md          ← Skills manifest (always generated)
-    ├── project/          ← AI-generated workflows tailored to YOUR project
-    ├── learned/          ← Reusable patterns, shared across projects
-    └── builtin/          ← Battle-tested best practices, bundled
+    ├── index.md              ← Skills manifest (always generated)
+    ├── project/              ← AI-generated workflows tailored to YOUR project
+    ├── learned/              ← Reusable patterns, shared across projects
+    └── builtin/              ← Battle-tested best practices, bundled
 ```
 
-**Offline baseline** (`prg analyze` with no API key): generates `rules.md`, `rules.json`, and `skills/index.md`. `constitution.md` requires `--constitution`; `clinerules.yaml` is written when skills are discovered.
+### Why two locations?
+
+**`.agents/rules/<project-name>.md`** is picked up automatically by Claude Code and Windsurf as an "Always On" workspace rule — no configuration needed. The agent receives your project's stack, architecture, and conventions at the start of every session without you having to paste anything.
+
+**`.clinerules/`** is consumed by Cline and agents that follow the `.clinerules` convention. It also powers the full skill system (`prg design`, `prg plan`, `prg agent`).
+
+See [`docs/structure.md`](docs/structure.md) for a full breakdown of every file.
+
+**Offline baseline** (`prg analyze` with no API key): generates the agent rules file, `rules.json`, and `skills/index.md`. `constitution.md` requires `--constitution`; `clinerules.yaml` is written when skills are discovered.
 
 **Project Lifecycle Generators (Optional):**
 - `spec.md`: High-level Product Specifications and constraints (Goals, Stories).
 - `DESIGN.md`: Phase 1 Architecture Document detailing technical integrations.
 - `PLAN.md` & `TASKS.json`: Phase 2 AI-driven granular task decomposition.
 
-**Example `rules.md` output for a FastAPI project:**
+**Example output for a FastAPI project:**
 
 ```markdown
 ## FastAPI Rules (High Priority)
@@ -118,7 +131,7 @@ prg ralph approve FEATURE-001          # Human approval → merge to main
 ## Real Output Example
 
 **Without PRG:** You ask an AI agent to "add a user login endpoint". It generates synchronous SQLAlchemy queries, uses raw dictionaries for responses, and dumps the route in `main.py`.
-**With PRG:** The agent first reads your `.clinerules/rules.md`. It automatically uses async SQLAlchemy 2.0 syntax, creates a Pydantic response schema, and places the route correctly in `app/api/v1/endpoints/auth.py`.
+**With PRG:** The agent first reads your `.agents/rules/<project>.md` (or `.clinerules/`). It automatically uses async SQLAlchemy 2.0 syntax, creates a Pydantic response schema, and places the route correctly in `app/api/v1/endpoints/auth.py`.
 
 Here is an example of what `prg analyze` actually generates from a real Python FastAPI + React + PostgreSQL codebase — no templates, just your project's exact reality:
 
@@ -197,7 +210,7 @@ prg providers benchmark  # Side-by-side quality ranking
 **PRG is not a chatbot — it is an autonomous loop that runs until the feature is done.**
 
 Here is a 3-step look at Ralph autonomously resolving a feature request:
-1. **Reads Context:** Automatically reads your `.clinerules/rules.md` and codebase structure without needing you to copy-paste.
+1. **Reads Context:** Automatically reads your `.agents/rules/<project>.md` and codebase structure without needing you to copy-paste.
 2. **Executes & Self-Reviews:** Writes the code, tests its own work via your test suite, and refines if it breaks anything.
 3. **Awaits Approval:** Checks the completed code into a branch and awaits human sign-off.
 
@@ -290,7 +303,7 @@ prg analyze . --ai
   Quality gate (score ≥ 85, configurable via --quality-threshold) → auto-retry if needed
         │
         ▼
-  .clinerules/rules.md + skills/
+  .agents/rules/<project-name>.md + .clinerules/ skills/
 ```
 
 Rules are **scored** before they're written. Generic filler never makes it through.
