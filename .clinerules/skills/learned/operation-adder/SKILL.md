@@ -1,9 +1,15 @@
----
+﻿---
 name: operation-adder
 description: |
   > **The First AI That Learns Your Coding Style**. Use when user mentions "operation", "adder", "operation adder", "add operation". Do NOT activate for "general operation adder questions", "operation adder theory".
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   author: PRG
   version: 1.0.0

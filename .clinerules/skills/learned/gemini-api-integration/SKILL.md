@@ -1,9 +1,15 @@
----
+﻿---
 name: gemini-api-integration
 description: |
   Best practices and patterns for integrating the Gemini API in a Python project, focusing on configuration, secure key management, and structured API calls.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [gemini, api, integration, python, security, best-practices]
 ---

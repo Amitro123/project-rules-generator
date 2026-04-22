@@ -1,9 +1,15 @@
----
+﻿---
 name: python-debugger-best-practices
 description: |
   Developers struggle with inefficient bug resolution and lack of systematic debugging; this skill provides a structured approach using Python's built-in debugger to quickly identify and fix issues.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [python, debugger, pdb, troubleshooting, best-practices]
 ---

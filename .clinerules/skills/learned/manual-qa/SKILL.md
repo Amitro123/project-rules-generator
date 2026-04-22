@@ -1,4 +1,4 @@
----
+﻿---
 name: manual-qa
 description: |
   Run a full manual QA pass on the project-rules-generator codebase: verify skill
@@ -7,7 +7,13 @@ description: |
   "test run", "regression check", "verify skills". Do NOT activate for
   "general testing theory", "unit test design questions".
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   author: PRG
   version: 1.0.0

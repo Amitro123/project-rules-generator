@@ -1,9 +1,15 @@
----
+﻿---
 name: python-patterns
 description: |
   PYTHON patterns for this project. Use when user mentions "audit python", "python patterns", "review python". Do NOT activate for "general python questions", "python theory".
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   author: PRG
   version: 1.0.0

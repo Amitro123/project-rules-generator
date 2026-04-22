@@ -1,9 +1,15 @@
----
+﻿---
 name: pytest-debugger
 description: |
   Developers struggling with debugging pytest tests can quickly pinpoint and resolve issues by setting breakpoints and inspecting variables directly within their test execution flow.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [testing, debugging, python, pytest]
 ---

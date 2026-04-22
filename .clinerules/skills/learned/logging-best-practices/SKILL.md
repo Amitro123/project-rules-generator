@@ -1,9 +1,15 @@
----
+﻿---
 name: logging-best-practices
 description: |
   LOGGING practices for this project. Use when user mentions "logging best practices". Do NOT activate for "general logging questions", "logging theory".
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   author: PRG
   version: 1.0.0

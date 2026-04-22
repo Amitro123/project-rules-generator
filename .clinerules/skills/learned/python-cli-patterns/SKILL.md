@@ -1,9 +1,15 @@
----
+﻿---
 name: python-cli-patterns
 description: |
   Provides best practices and patterns for structuring command-line interfaces in Python projects, leveraging common file organization.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [python, cli, patterns, best-practices, architecture]
 ---

@@ -1,9 +1,15 @@
----
+﻿---
 name: readme-improver
 description: |
   For developers struggling with incomplete or inconsistent README files, this skill provides automated checks and best-practice guidance to ensure project documentation is clear and comprehensive.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [readme, documentation, ci, best-practices]
 ---

@@ -43,7 +43,7 @@ Skills are Markdown files with YAML frontmatter. Three layers (lowest-to-highest
 
 | Layer   | Location                              | Created by         |
 |---------|---------------------------------------|--------------------|
-| builtin | `generator/skills/builtin/`           | shipped with PRG   |
+| builtin | `generator/templates/skills/`         | shipped with PRG   |
 | learned | `~/.project-rules-generator/learned/` | `prg analyze`      |
 | project | `.clinerules/skills/project/`         | `prg analyze`      |
 

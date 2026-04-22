@@ -1,4 +1,4 @@
----
+﻿---
 name: readme-improver
 description: |
   Audits and rewrites README.md for a Python CLI project. Fixes stale data (badge counts,
@@ -6,7 +6,13 @@ description: |
   ensures every command example is runnable as-is. Activate when user says "improve readme",
   "fix readme", "update readme", or "readme is outdated".
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   author: PRG
   version: 1.0.0

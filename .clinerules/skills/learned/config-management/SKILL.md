@@ -1,9 +1,15 @@
----
+﻿---
 name: config-management
 description: |
   Developers struggle with inconsistent and error-prone configuration handling; this skill standardizes configuration loading, validation, and access using Pydantic and YAML for robust application behavior.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [configuration, pydantic, yaml, cli, best-practices]
 ---

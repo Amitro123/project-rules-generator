@@ -69,3 +69,9 @@ jobs:
         run: |
           pip install --force-reinstall dist/*.whl
           prg --help
+          # Deeper smoke: init + analyze on a minimal temp project to catch
+          # import-level crashes (e.g. missing runtime deps like `packaging`)
+          mkdir /tmp/smoke-proj
+          echo "# Smoke project" > /tmp/smoke-proj/README.md
+          cd /tmp/smoke-proj && prg init
+          prg analyze .

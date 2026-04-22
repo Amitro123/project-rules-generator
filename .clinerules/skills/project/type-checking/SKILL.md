@@ -1,9 +1,15 @@
----
+﻿---
 name: type-checking
 description: |
   TYPE checking for this project. Use when user mentions "type checking". Do NOT activate for "general type questions", "type theory".
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   author: PRG
   version: 1.0.0

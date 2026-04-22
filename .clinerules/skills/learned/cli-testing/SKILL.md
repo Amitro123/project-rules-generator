@@ -1,9 +1,15 @@
----
+﻿---
 name: cli-testing
 description: |
   Most rule generators give you static templates. Project Rules Generator (PRG) reads your code, understands your architecture, and learns from your patterns to create smarter, context-aware `.clinerules` for any AI agent (Claude, Cursor, Windsurf, Gemini). Use when user mentions "cli", "testing", "cli testing", "add cli". Do NOT activate for "general cli testing questions", "cli testing theory".
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   author: PRG
   version: 1.0.0

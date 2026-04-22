@@ -1,9 +1,15 @@
----
+﻿---
 name: python-gemini-architecture-improvements
 description: |
   Provides best practices for improving the architecture of Python projects leveraging Gemini, focusing on modularity, testability, and maintainability, especially with GitHub Actions.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [architecture, python, gemini, github-actions, refactoring, best-practices]
 ---

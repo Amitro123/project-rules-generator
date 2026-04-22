@@ -1,9 +1,15 @@
----
+﻿---
 name: identify-and-remove-dead-code
 description: |
   Identifies and removes unused code in this Python project to improve maintainability and performance, leveraging existing tests.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [python, dead-code, maintenance, refactoring, code-quality]
 ---

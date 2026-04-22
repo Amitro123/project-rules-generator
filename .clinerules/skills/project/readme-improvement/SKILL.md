@@ -1,4 +1,4 @@
----
+﻿---
 name: readme-improvement
 description: |
   Audits and rewrites README.md for the Project Rules Generator project.
@@ -6,7 +6,13 @@ description: |
   descriptions (project/ vs learned/), and ensures every command is runnable.
   Activate when user says "improve readme", "update readme", "readme needs work".
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 triggers:
   - "improve readme"
   - "update readme"

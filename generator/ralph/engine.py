@@ -11,6 +11,12 @@ from generator.exceptions import SecurityError
 from generator.ralph.state import FeatureState
 from generator.ralph.tasks import _load_tasks, _pending_tasks, _save_tasks
 from prg_utils import git_ops  # noqa: F401 — kept for downstream consumers
+from prg_utils.logger import ensure_utf8_streams
+
+# Library consumers (pytest, programmatic callers) import this module directly
+# without going through cli/cli.py, so the Windows UTF-8 reconfigure has to
+# happen here too. Idempotent and a no-op on non-Windows.
+ensure_utf8_streams()
 
 logger = logging.getLogger(__name__)
 

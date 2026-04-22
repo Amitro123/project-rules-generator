@@ -1,9 +1,15 @@
----
+﻿---
 name: ci-lint-failures
 description: |
   Developers struggling with CI lint failures can use this skill to diagnose and fix linting issues locally before pushing code, preventing repeated CI pipeline failures.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [ci, linting, github-actions, python, troubleshooting]
 ---

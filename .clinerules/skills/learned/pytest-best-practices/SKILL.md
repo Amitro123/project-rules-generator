@@ -1,9 +1,15 @@
----
+﻿---
 name: pytest-best-practices
 description: |
   Provides best practices and patterns for writing effective and maintainable tests using pytest in this Python project.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [pytest, testing, python, best-practices, quality, has_tests]
 ---
@@ -46,7 +52,7 @@ pip install pytest
 
 Execute the current test suite to understand its existing structure and identify any immediate issues or areas for improvement. This helps establish a baseline.
 
-```bashbash
+```bash
 pytest
 ```
 

@@ -138,7 +138,7 @@ if (-not $found) { Write-Host "✅ Cleanup complete — no stale artifacts found
 pytest --tb=short -q
 ```
 
-**Expected**: ≥437 passed (the only pre-existing failure is
+**Expected**: ≥1367 passed (the only pre-existing failure is
 `tests/test_two_stage_planning.py::test_design_with_real_project` — known title-casing bug,
 not a regression).
 

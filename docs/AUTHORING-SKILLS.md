@@ -18,7 +18,7 @@ Three layers are resolved in priority order by `SkillsManager`:
 |---------|---------------------------------------|--------------------|
 | project | `.clinerules/skills/project/`         | `prg analyze`      |
 | learned | `~/.project-rules-generator/learned/` | `prg analyze`      |
-| builtin | `generator/skills/builtin/`           | shipped with PRG   |
+| builtin | `generator/templates/skills/`         | shipped with PRG   |
 
 Project > learned > builtin — the first match wins.
 

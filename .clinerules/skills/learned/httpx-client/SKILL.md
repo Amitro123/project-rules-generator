@@ -1,9 +1,15 @@
----
+﻿---
 name: httpx-client
 description: |
   │   │   ├── ai_client.py. Use when user mentions "httpx client". Do NOT activate for "general httpx questions", "httpx theory".
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   author: PRG
   version: 1.0.0

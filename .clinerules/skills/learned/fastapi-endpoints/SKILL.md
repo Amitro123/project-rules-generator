@@ -1,9 +1,15 @@
----
+﻿---
 name: fastapi-endpoints
 description: |
   > **The First AI That Learns Your Coding Style**. Use when user mentions "fastapi", "endpoints", "fastapi endpoints", "add fastapi". Do NOT activate for "general fastapi endpoints questions", "fastapi endpoints theory".
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   author: PRG
   version: 1.0.0

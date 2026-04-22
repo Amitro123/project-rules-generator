@@ -1,9 +1,15 @@
----
+﻿---
 name: code-duplication-best-practices
 description: |
   Identifies and refactors duplicate Python code within this project, leveraging its testing infrastructure and GitHub Actions for validation.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [code-quality, refactoring, python, gemini, github-actions, maintainability, testing]
 ---
