@@ -180,34 +180,48 @@ class DesignGenerator:
         self,
         api_key: Optional[str] = None,
         model_name: Optional[str] = None,
-        provider: str = "groq",
+        provider: Optional[str] = "groq",
     ):
         """Initialize design generator with AI client.
 
         Args:
-            api_key: Optional API key (auto-detects from environment)
-            model_name: Optional model name override
-            provider: AI provider ('gemini' or 'groq'), defaults to 'groq'
+            api_key: Optional API key. When omitted, read from the environment
+                variable for the chosen provider.
+            model_name: Optional model name override.
+            provider: AI provider — one of ``"groq"``, ``"gemini"``, ``"anthropic"``,
+                ``"openai"``. Defaults to ``"groq"``. When ``None`` or ``"groq"``
+                and ``GROQ_API_KEY`` is unset, auto-detects the first configured
+                provider in preference order groq → gemini → anthropic → openai.
         """
-        # Auto-detect provider if not explicitly set
-        _gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        # Env-var resolution for every supported provider. Gemini accepts two
+        # historical key names; the others are straightforward.
+        _env_keys: Dict[str, Optional[str]] = {
+            "groq": os.getenv("GROQ_API_KEY"),
+            "gemini": os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"),
+            "anthropic": os.getenv("ANTHROPIC_API_KEY"),
+            "openai": os.getenv("OPENAI_API_KEY"),
+        }
+
+        # Auto-detect when the caller did not pin a provider.  Preference order
+        # is groq first (free tier, fastest) then gemini, anthropic, openai —
+        # matches the order advertised in the README.
         if provider is None or provider == "groq":
-            # Default to Groq to avoid API key errors
-            if os.getenv("GROQ_API_KEY"):
-                self.provider = "groq"
-                self.api_key = api_key or os.getenv("GROQ_API_KEY")
-            elif _gemini_key:
-                self.provider = "gemini"
-                self.api_key = api_key or _gemini_key
-            else:
+            selected: Optional[str] = None
+            for candidate in ("groq", "gemini", "anthropic", "openai"):
+                if _env_keys.get(candidate):
+                    selected = candidate
+                    break
+            if selected is None:
+                # No keys configured — keep the nominal default so errors surface
+                # with a useful provider name rather than ``None``.
                 self.provider = "groq"
                 self.api_key = api_key
+            else:
+                self.provider = selected
+                self.api_key = api_key or _env_keys[selected]
         else:
             self.provider = provider
-            if provider == "gemini":
-                self.api_key = api_key or _gemini_key
-            else:
-                self.api_key = api_key or os.getenv(f"{provider.upper()}_API_KEY")
+            self.api_key = api_key or _env_keys.get(provider) or os.getenv(f"{provider.upper()}_API_KEY")
 
         # Only initialize AI client if an API key is available; otherwise fallback deterministically
         self.client: Optional[Any] = None
@@ -438,29 +452,100 @@ NOW generate the complete design following this structure. Be specific, detailed
 """
 
     def _call_llm(self, prompt: str) -> str:
+        """Call the LLM with validator-driven retry.
+
+        ``max_tokens=4000`` is a safe upper bound for the Groq free-tier Llama
+        models (output cap ~6k); oversized requests previously caused silent
+        mid-document truncation and an empty stub fallback.  Retries fire when
+        the output is truncated or is missing the Success Criteria / Architecture
+        Decisions sections — the failure modes users actually hit.
+        """
         if not self.client:
             logger.warning("No AI client available")
             return ""
-        try:
-            result = self.client.generate(prompt, max_tokens=8000, model=self.model_name, temperature=0.7)
-            if not result or len(result.strip()) < 100:
-                logger.warning("LLM returned short/empty response (%d chars)", len(result))
-            return result
-        except Exception as e:  # noqa: BLE001 — LLM call failures return empty string for caller to handle
-            logger.error("Error calling LLM: %s", e)
-            return ""
+        from generator.ai.hardening import generate_with_validator, require_sections
+
+        validator = require_sections("Success Criteria", "Architecture Decisions")
+        result = generate_with_validator(
+            self.client,
+            prompt,
+            validator=validator,
+            max_tokens=4000,
+            model=self.model_name,
+            temperature=0.7,
+            max_retries=1,
+        )
+        if not result or len(result.strip()) < 100:
+            logger.warning("LLM returned short/empty response (%d chars)", len(result or ""))
+        return result or ""
 
     def _parse_response(self, raw: str, user_request: str) -> Design:
-        """Parse AI output into a Design. Falls back to comprehensive template if empty."""
-        if raw.strip():
-            try:
-                return Design.from_markdown(raw)
-            except Exception as exc:  # noqa: BLE001 — malformed LLM output falls back to template
-                logger.debug("Could not parse LLM output as Design markdown, using template fallback: %s", exc)
+        """Parse AI output into a Design. Falls back to the minimal stub if empty.
 
-        # Fallback: Generate comprehensive template-based design
-        # This demonstrates production-quality output structure
+        When ``from_markdown`` raises on malformed output we still try to
+        salvage the recognisable sections (title, success criteria,
+        architecture decisions) before surrendering to the stub — a truncated
+        response with 4 real success criteria is more useful than an empty
+        placeholder document.
+        """
+        if not raw.strip():
+            return self._generate_comprehensive_template(user_request)
+
+        try:
+            return Design.from_markdown(raw)
+        except Exception as exc:  # noqa: BLE001 — malformed LLM output, attempt salvage
+            logger.debug("Could not parse LLM output as Design markdown, attempting salvage: %s", exc)
+
+        salvaged = self._salvage_partial_design(raw, user_request)
+        if salvaged is not None:
+            return salvaged
+
         return self._generate_comprehensive_template(user_request)
+
+    @staticmethod
+    def _salvage_partial_design(raw: str, user_request: str) -> Optional["Design"]:
+        """Extract whatever sections are parseable from a malformed response.
+
+        Runs the section-level regexes individually instead of the full
+        ``from_markdown`` walker so a failure in one section (e.g. truncated
+        Data Models) does not throw away a perfectly good Success Criteria
+        block.  Returns ``None`` when nothing was recoverable.
+        """
+        sections: Dict[str, str] = {}
+        current = ""
+        for line in raw.split("\n"):
+            if line.startswith("## "):
+                current = line[3:].strip()
+                sections[current] = ""
+            elif current:
+                sections[current] += line + "\n"
+
+        title_match = re.search(r"^#\s+Design:\s*(.+)", raw, re.MULTILINE)
+        title = title_match.group(1).strip() if title_match else user_request.strip()
+
+        problem = sections.get("Problem Statement", "").strip()
+        criteria = _extract_bullets(sections.get("Success Criteria", ""))
+        contracts = _extract_bullets(sections.get("API Contracts", ""))
+        models = _extract_code_blocks_or_bullets(sections.get("Data Models", ""))
+
+        if not any([problem, criteria, contracts, models]):
+            return None
+
+        logger.info(
+            "Salvaged partial Design: problem=%s, criteria=%d, contracts=%d, models=%d",
+            bool(problem),
+            len(criteria),
+            len(contracts),
+            len(models),
+        )
+        return Design(
+            title=title or "Untitled Design",
+            problem_statement=problem
+            or f"{user_request}\n\n> **Note:** LLM response was partial; some sections may be missing.",
+            api_contracts=contracts,
+            data_models=models,
+            success_criteria=criteria,
+        )
 
     def _generate_comprehensive_template(self, user_request: str) -> Design:
         """Minimal stub returned when AI is unavailable or LLM output cannot be parsed."""

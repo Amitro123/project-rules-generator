@@ -1,0 +1,82 @@
+---
+name: argparse-patterns
+description: |
+  Developers attempting to define new command-line interfaces with `argparse` often face inconsistencies, as this project standardizes on `click` for CLI development; this skill guides them to adopt `click` patterns.
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  tags: [cli, click, argparse, python, patterns]
+---
+
+# Skill: Argparse Patterns
+
+## Purpose
+
+Every time you need to add a new command-line interface (CLI) to this project, you might instinctively reach for Python's built-in `argparse` module. However, this project is built using `click` for its CLI, leading to inconsistencies, duplicated effort, and a fragmented user experience if `argparse` is introduced. This skill helps you align with the project's established `click` patterns, ensuring a unified, consistent, and maintainable command-line interface.
+
+## Auto-Trigger
+
+Activate when the user mentions:
+- **"how to add a new cli command"**
+- **"argparse example"**
+- **"command line arguments"**
+- **"define a new cli"**
+- **"cli patterns"**
+
+Do NOT activate for: `web routes`, `api endpoints`, `database schema`
+
+## CRITICAL
+
+- This project uses `click` for its command-line interface. **NEVER** introduce `argparse` for new CLI commands in this project.
+- All new CLI features must integrate seamlessly with the existing `click` structure, typically defined in `main.py`.
+
+## Process
+
+### 1. Identify Existing CLI Structure
+
+Understanding the project's current CLI setup is crucial to ensure any new commands integrate correctly.
+
+```bash
+grep -r "@click" .
+```
+
+### 2. Locate the Main Entry Point
+
+The `main.py` file is the primary entry point for the project's CLI, where the main `click` group or command is typically defined.
+
+```bash
+ls main.py
+```
+
+### 3. Implement New Click Command
+
+New commands should be added using `click` decorators to maintain consistency with the project's existing CLI patterns.
+
+```bash
+# Example of adding a new command using click (do not run directly, this is a template)
+# You would typically add this within or alongside existing click commands in main.py or a dedicated cli module.
+
+# File: main.py (conceptual location)
+# import click
+#
+# @click.group()
+# def cli():
+#     """Project Rules Generator CLI."""
+#     pass
+#
+# @cli.command()
+# @click.option('--verbose', is_flag=True, help='Enable verbose output.')
+# def new_feature(verbose):
+#     """A new feature command for the CLI."""
+#     if verbose:
+#         click.echo("Running new_feature in verbose mode.")
+#     else:
+#         click.echo("Running new_feature.")
+#
+# if __name__ == '__main__':
+#     cli()
+```
+
+### 4. Validate
+
+Running the help command for the main CLI entry point will confirm that

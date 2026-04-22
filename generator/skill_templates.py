@@ -11,8 +11,8 @@ from .types import Skill
 
 logger = logging.getLogger(__name__)
 
-# Base location for external templates
-TEMPLATE_DIR = Path(__file__).parent.parent / "templates" / "skills"
+# Base location for packaged templates (installed alongside the generator package).
+TEMPLATE_DIR = Path(__file__).parent / "templates" / "skills"
 
 
 @lru_cache(maxsize=10)
@@ -27,15 +27,9 @@ def load_skill_template(project_type: str) -> List[Skill]:
         List of Skill objects
     """
     if not TEMPLATE_DIR.exists():
-        # Fallback if directory structure differs
-        local_template_dir = Path(__file__).parent.parent / "templates" / "skills"
-        if local_template_dir.exists():
-            template_path = local_template_dir / f"{project_type}.yaml"
-        else:
-            # Try legacy markdown location just in case, or fail gracefully
-            return []
-    else:
-        template_path = TEMPLATE_DIR / f"{project_type}.yaml"
+        return []
+
+    template_path = TEMPLATE_DIR / f"{project_type}.yaml"
 
     if not template_path.exists():
         return []

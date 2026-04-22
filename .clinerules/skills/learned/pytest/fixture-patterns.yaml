@@ -1,0 +1,31 @@
+---
+name: fixture-patterns
+description: |
+  Developers often write repetitive setup code across multiple tests, leading to brittle and hard-to-maintain test suites; this skill guides them to consolidate and manage test environments efficiently using `pytest` fixtures.
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  tags: [pytest, testing, fixtures, python, cli]
+---
+
+# Skill: Fixture Patterns
+
+## Purpose
+
+Every time you write redundant setup and teardown logic in your `pytest` test files, you introduce maintenance overhead and make your tests harder to read and debug. This skill helps you identify common setup patterns and refactor them into reusable `pytest` fixtures, ensuring consistent test environments and improving test suite efficiency and readability.
+
+## Auto-Trigger
+
+Activate when the user mentions:
+- **"pytest fixture"**
+- **"test setup"**
+- **"shared test data"**
+- **"test environment"**
+- **"conftest.py"**
+
+Do NOT activate for: "setup.py", "setup tools", "project setup"
+
+## CRITICAL
+
+- Prioritize built-in `pytest` fixtures, such as `tmp_path` for temporary filesystem operations, to leverage well-tested and robust solutions.
+- Design each fixture with a single, clear responsibility; complex

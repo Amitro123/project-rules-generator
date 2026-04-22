@@ -108,7 +108,7 @@ class SkillContentRenderer:
         custom_context: Optional[Dict] = None,
     ) -> str:
         """Generate using Jinja2 template."""
-        template_dir = Path(__file__).parent.parent / "templates"
+        template_dir = Path(__file__).parent / "templates"
         template_path = template_dir / "SKILL.md.jinja2"
 
         if not template_path.exists():

@@ -36,8 +36,9 @@ class TaskDecomposer(ArtifactGenerator):
     ) -> List[SubTask]:
         """Use AI to break down *user_task* into a list of SubTasks."""
         prompt = self._build_prompt(user_task, project_context, project_path)
-        raw = self._call_llm(prompt)
+        raw = self._call_llm(prompt, expect_multiple=True)
         tasks = self._parse_response(raw, user_task)
+        tasks = self._ground_task_paths(tasks, project_path)
         return self._ensure_minimum_tasks(tasks, user_task)
 
     def from_plan(self, plan_path: Path) -> List[SubTask]:
@@ -64,7 +65,14 @@ class TaskDecomposer(ArtifactGenerator):
         return tasks
 
     def from_design(self, design_path: Path, project_context: Optional[Dict] = None) -> List[SubTask]:
-        """Generate subtasks from an existing DESIGN.md file."""
+        """Generate subtasks from an existing DESIGN.md file.
+
+        Falls back to the deterministic ``_tasks_from_design`` builder when the
+        LLM under-decomposes.  "Under-decomposed" is defined as fewer than 3
+        tasks — previously this check was title-string equality, which missed
+        the common failure where the LLM returns one task with a paraphrased
+        title and never gets replaced by the structural builder.
+        """
         from generator.design_generator import Design
 
         text = Path(design_path).read_text(encoding="utf-8")
@@ -72,14 +80,19 @@ class TaskDecomposer(ArtifactGenerator):
 
         project_path = Path(design_path).parent
         prompt = self._build_design_prompt(design, project_context, project_path)
-        raw = self._call_llm(prompt)
+        raw = self._call_llm(prompt, expect_multiple=True)
         tasks = self._parse_response(raw, design.title)
 
-        # If AI returned only the fallback, build tasks from design structure
-        if len(tasks) == 1 and tasks[0].title == design.title[:80]:
-            tasks = self._tasks_from_design(design)
+        # LLM under-decomposition: a single task (or none) is almost always the
+        # fallback stub, regardless of its title.  Prefer the structural build
+        # so the user gets one task per architecture decision / contract / model.
+        if len(tasks) < 3:
+            structural = self._tasks_from_design(design)
+            if len(structural) >= len(tasks):
+                logger.info("LLM returned %d tasks; using structural fallback (%d)", len(tasks), len(structural))
+                tasks = structural
 
-        return tasks
+        return self._ground_task_paths(tasks, project_path)
 
     @staticmethod
     def _tasks_from_design(design) -> List[SubTask]:
@@ -278,7 +291,15 @@ Generate the subtasks now:
         project_context: Optional[Dict] = None,
         project_path: Optional[Path] = None,
     ) -> str:
-        """Build the task-decomposition prompt."""
+        """Build the task-decomposition prompt.
+
+        The example file path in the rules section is chosen from the actual
+        project's top-level source directories when available; this prevents
+        the LLM from anchoring on ``src/`` (a common training-data artefact)
+        in projects that organise code under ``generator/``, ``lib/``, etc.
+        """
+        from generator.ai.hardening import discover_source_dirs
+
         ctx_block = ""
         if project_context:
             meta = project_context.get("metadata", {})
@@ -292,6 +313,24 @@ Generate the subtasks now:
             if structure.get("entry_points"):
                 ctx_block += f"- Entry points: {', '.join(structure['entry_points'])}\n"
 
+        # Inject the real project tree so the LLM grounds its file paths in
+        # what actually exists — previously only from_design() did this.
+        if project_path and project_path.is_dir():
+            try:
+                from generator.utils.readme_bridge import build_project_tree
+
+                tree = build_project_tree(project_path, max_depth=3, max_items=60)
+                ctx_block += (
+                    f"\n## Project Structure (use THESE directories in Files fields)\n```\n{tree[:1200]}\n```\n"
+                )
+            except Exception as exc:  # noqa: BLE001 — tree build is best-effort
+                logger.debug("Could not build project tree for prompt: %s", exc)
+
+        # Pick a real top-level dir for the example; fall back to a
+        # generic placeholder when discovery fails.
+        source_dirs = discover_source_dirs(project_path) if project_path else []
+        example_path = f"{source_dirs[0]}/api.py" if source_dirs else "<package>/api.py"
+
         return (
             f"# Task Decomposition\n\n"
             f"{self._PAIN_FIRST_PREAMBLE}\n"
@@ -301,18 +340,20 @@ Generate the subtasks now:
             f"## Task\n{user_task}\n"
             f"{ctx_block}\n"
             f"## Requirements\n\n"
-            f'1. Each subtask MUST specify concrete file paths (e.g. `src/api.py`, not "the API file")\n'
-            f"2. Each subtask MUST include code change descriptions with +/- line indicators\n"
-            f"3. Each subtask MUST include test commands (e.g. `pytest tests/test_api.py -k test_create`)\n"
-            f"4. Subtasks must be ordered by dependency (foundations first, features next, tests last)\n"
-            f"5. NO subtask should take longer than 5 minutes\n"
-            f"6. Every subtask MUST include a SkipConsequence line\n\n"
+            f'1. Each subtask MUST specify concrete file paths (e.g. `{example_path}`, not "the API file")\n'
+            f"2. File paths MUST use directories that exist in the Project Structure above. "
+            f"Do NOT invent `src/` or other paths if they are not listed.\n"
+            f"3. Each subtask MUST include code change descriptions with +/- line indicators\n"
+            f"4. Each subtask MUST include test commands (e.g. `pytest tests/test_api.py -k test_create`)\n"
+            f"5. Subtasks must be ordered by dependency (foundations first, features next, tests last)\n"
+            f"6. NO subtask should take longer than 5 minutes\n"
+            f"7. Every subtask MUST include a SkipConsequence line\n\n"
             f"## Output Format\n\n"
             f"Return a numbered list of 5-8 subtasks. For each subtask provide:\n"
             f"- Title (short, imperative)\n"
             f"- Goal (one sentence)\n"
             f"- SkipConsequence (what breaks or is blocked if this task is skipped)\n"
-            f"- Files to create/modify (SPECIFIC paths)\n"
+            f"- Files to create/modify (SPECIFIC paths from the Project Structure)\n"
             f"- Changes (with code snippets showing what to add/modify)\n"
             f"- Tests (specific pytest/test commands to verify)\n"
             f"- Dependencies (which subtask IDs must finish first)\n"
@@ -329,18 +370,53 @@ Generate the subtasks now:
             f"Generate exactly 5-8 subtasks now:\n"
         )
 
-    def _call_llm(self, prompt: str) -> str:
-        """Call the AI model via the shared factory. Falls back to empty string if unavailable."""
+    def _call_llm(self, prompt: str, *, expect_multiple: bool = False) -> str:
+        """Call the AI model with validator-driven retry.
+
+        ``expect_multiple`` switches the validator to require at least three
+        ``### N.`` task headings — the most common failure mode for
+        ``decompose()`` is returning one task and quitting.  max_tokens is
+        increased to 8000 to reduce the chance of mid-task truncation.
+        """
         if not self.api_key:
             return ""
         try:
             from generator.ai.factory import create_ai_client
+            from generator.ai.hardening import generate_with_validator, require_min_count
 
             client = create_ai_client(self.provider, api_key=self.api_key)
-            return client.generate(prompt, max_tokens=5000) or ""
+            validator = require_min_count(r"^###?\s*\d+\.", 3) if expect_multiple else None
+            return (
+                generate_with_validator(
+                    client,
+                    prompt,
+                    validator=validator,
+                    max_tokens=8000,
+                    max_retries=1,
+                )
+                or ""
+            )
         except Exception as exc:  # noqa: BLE001 — LLM failures fall back to empty string
             logger.debug("LLM call failed in TaskDecomposer: %s", exc)
             return ""
+
+    @staticmethod
+    def _ground_task_paths(tasks: List[SubTask], project_path: Optional[Path]) -> List[SubTask]:
+        """Rewrite hallucinated top-level directories in task file paths.
+
+        When an LLM emits ``src/api.py`` but the project has no ``src/``,
+        the path is rewritten to use a real source directory (e.g.
+        ``generator/api.py``).  Never drops paths — bad paths that cannot be
+        repaired stay so the user sees the problem.
+        """
+        if not project_path or not tasks:
+            return tasks
+        from generator.ai.hardening import ground_paths
+
+        for task in tasks:
+            if task.files:
+                task.files = ground_paths(task.files, project_path)
+        return tasks
 
     @classmethod
     def parse_response(cls, raw: str, user_task: str) -> List[SubTask]:
@@ -410,9 +486,48 @@ Generate the subtasks now:
 
     @staticmethod
     def _extract_field(content: str, field: str) -> str:
-        """Extract a single-line field value like 'Goal: ...'."""
-        match = re.search(rf"{field}:\s*(.+)", content)
-        return match.group(1).strip() if match else ""
+        """Extract a field value, joining continuation lines.
+
+        Previously used a single-line regex which silently dropped anything
+        after the first line, turning a truncated continuation into an empty
+        string.  Now captures the full value up to the next ``Field:``-style
+        label or a blank line, which is what a human reader would do.
+        """
+        # Labels we treat as terminators when scanning for continuation lines.
+        # Matched case-insensitively so "files:" and "Files:" both stop us.
+        terminators = (
+            "goal",
+            "skipconsequence",
+            "skip consequence",
+            "files",
+            "changes",
+            "tests",
+            "dependencies",
+            "estimated",
+        )
+
+        lines = content.split("\n")
+        pattern = re.compile(rf"^\s*{re.escape(field)}\s*:\s*(.*)$", re.IGNORECASE)
+        collected: List[str] = []
+        in_field = False
+        for line in lines:
+            if in_field:
+                stripped = line.strip()
+                if not stripped:
+                    break  # blank line ends the field
+                # Another labelled field starts — stop here
+                first_token = stripped.split(":", 1)[0].strip().lower() if ":" in stripped else ""
+                if first_token in terminators or stripped.startswith("###"):
+                    break
+                collected.append(stripped)
+                continue
+            m = pattern.match(line)
+            if m:
+                in_field = True
+                first = m.group(1).strip()
+                if first:
+                    collected.append(first)
+        return " ".join(collected).strip()
 
     @staticmethod
     def _extract_list(content: str, field: str) -> List[str]:

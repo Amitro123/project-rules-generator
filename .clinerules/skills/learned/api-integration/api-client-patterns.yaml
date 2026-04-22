@@ -1,0 +1,62 @@
+---
+name: api-client-patterns
+description: |
+  Developers often struggle with inconsistent API client initialization and credential management across various commands; this skill guides them to leverage existing provider detection and secure API key patterns, ensuring robust and maintainable external API interactions.
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  tags: [api, client, llm, provider, credentials, python-cli, openai, anthropic, groq, google-generativeai]
+---
+
+# Skill: API Client Patterns
+
+## Purpose
+
+Without a standardized approach, developers frequently implement inconsistent API client initialization, leading to duplicated code, insecure credential handling, and difficult-to-maintain integrations with external LLM providers. Every time you add a new command or feature requiring an LLM, you risk introducing subtle variations in how providers are detected and API keys are managed. This skill ensures that all API interactions follow the established patterns for provider detection and secure credential management, promoting consistency, security, and reusability across the project.
+
+## Auto-Trigger
+
+Activate when the user mentions:
+- **"API client"**
+- **"LLM provider"**
+- **"model integration"**
+- **"credentials"**
+- **"API key"**
+- **"new command with LLM"**
+
+Do NOT activate for: "database client", "HTTP client" (unless LLM related), "frontend API"
+
+## CRITICAL
+
+- Always use the project's `_detect_provider` and `_set_api_key` utilities for consistent LLM provider handling and credential management.
+- API keys MUST be loaded securely from environment variables (e.g., using `python-dotenv`) and NEVER hardcoded.
+
+## Process
+
+### 1. Identify Existing Provider Handling
+
+To ensure consistency, first identify how other parts of the CLI handle LLM provider detection and API key setup.
+
+```bash
+grep -r "_detect_provider" cli/
+grep -r "_set_api_key" cli/
+```
+
+### 2. Implement Standard Provider Initialization
+
+It is crucial to reuse the existing `_detect_provider` and `_set_api_key` functions to maintain a single source of truth for LLM provider configuration and credential setup. This prevents discrepancies and simplifies future updates to how providers are managed.
+
+```python
+# Assuming these utilities are available in the scope where the command is defined,
+# or imported as needed.
+# Example: from cli.agent import _detect_provider, _set_api_key (adjust path as needed)
+
+# In your new click command function:
+provider = _detect_provider(provider_argument_from_cli, api_key_argument_from_cli)
+_set_api_key(provider, api_key_argument_from_cli)
+
+# Now, when interacting with the LLM, the appropriate client (e.g., openai, anthropic)
+# will be configured with the detected provider and API key.
+```
+
+### 3. Encapsulate LL

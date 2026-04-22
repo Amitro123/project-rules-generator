@@ -105,6 +105,12 @@
     "handle api response",
     "structured output from llm"
   ],
+  "cleanup": [
+    "clean up project",
+    "remove temporary files",
+    "clear build artifacts",
+    "start fresh environment"
+  ],
   "click-cli": [
     "working with click integration code",
     "editing files that import or configure click"

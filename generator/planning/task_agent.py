@@ -11,14 +11,23 @@ from generator.task_decomposer import SubTask
 
 logger = logging.getLogger(__name__)
 
-TASK_AGENT_SYSTEM_PROMPT = """You are an expert software engineer. 
+TASK_AGENT_SYSTEM_PROMPT = """You are an expert software engineer.
 Your task is to implement the changes described in the provided subtask.
 You will receive the project context and the specific subtask details.
-Respond with the exact code changes needed. 
-Format your response as a list of file changes, each starting with [FILE: path/to/file] followed by the complete file content.
-Example:
-[FILE: src/main.py]
-print("Hello World")
+Respond with the exact code changes needed.
+
+Format your response as a list of file changes, each starting with
+[FILE: <relative path from project root>] followed by the complete file content.
+
+CRITICAL path rules:
+- Use ONLY directories that exist in the Project Structure section of the
+  prompt. Do not invent `src/` unless `src/` is listed there.
+- Paths must be relative to the project root and use forward slashes.
+- Do not emit absolute paths, Windows drive letters, or `..` traversal.
+
+Example (generic placeholder — replace `<pkg>` with a real project directory):
+[FILE: <pkg>/module.py]
+<file content here>
 
 Only provide the files that need to be created or modified."""
 
@@ -51,6 +60,20 @@ class TaskImplementationAgent:
             rules = project_context.get("rules_context") or project_context.get("metadata") or ""
             if rules:
                 ctx_str = f"\nProject Rules & Context:\n{rules}"
+
+            # Pass the real project tree through to the agent so [FILE: ...]
+            # paths are grounded in what actually exists.
+            project_path = project_context.get("project_path")
+            if project_path:
+                try:
+                    from generator.utils.readme_bridge import build_project_tree
+
+                    path_obj = project_path if isinstance(project_path, Path) else Path(project_path)
+                    if path_obj.is_dir():
+                        tree = build_project_tree(path_obj, max_depth=3, max_items=60)
+                        ctx_str += f"\nProject Structure (use THESE directories):\n```\n{tree[:1200]}\n```\n"
+                except Exception as exc:  # noqa: BLE001 — tree build is best-effort
+                    logger.debug("Could not build project tree for task agent prompt: %s", exc)
 
         files_str = ", ".join(subtask.files) if subtask.files else "N/A"
         changes_str = "\n".join(f"- {c}" for c in subtask.changes) if subtask.changes else "N/A"

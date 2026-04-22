@@ -21,16 +21,17 @@ class BuiltinSkillsSource(SkillSource):
             self.templates_path = templates_dir
         else:
             cfg_path = config.get("skill_sources", {}).get("builtin", {}).get("path", "templates/skills")
-            # Resolve relative to project root (assuming we are running from project root or package)
-            # Better approach: If relative, assume relative to this file's package parent
             if not os.path.isabs(cfg_path):
-                # generator/sources/builtin.py -> generator/sources -> generator -> project_root -> (cfg_path)
-                # This logic depends on where the code is installed.
-                # For dev mode (current structure), templates is at project root.
-                # Let's try to find it relative to current file's grandparent
+                # Templates ship inside the generator package (generator/templates/skills).
+                # generator/sources/builtin.py -> generator/sources -> generator (package root).
+                # Strip a leading "templates/" in user-provided relative paths so legacy
+                # config values keep working after the templates/ -> generator/templates/ move.
                 current_file = Path(__file__).resolve()
-                project_root = current_file.parent.parent.parent
-                self.templates_path = project_root / cfg_path
+                package_root = current_file.parent.parent
+                normalised = cfg_path.replace("\\", "/").lstrip("./")
+                if normalised.startswith("templates/"):
+                    normalised = normalised[len("templates/"):]
+                self.templates_path = package_root / "templates" / normalised
             else:
                 self.templates_path = Path(cfg_path)
 

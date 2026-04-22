@@ -1,0 +1,74 @@
+---
+name: response-parsing
+description: |
+  Developers often struggle with robustly extracting structured data from diverse LLM outputs, leading to fragile integrations; this skill provides a standardized approach for parsing AI responses with resilient error handling and fallback mechanisms within `project-rules-generator`.
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  tags: [llm, parsing, error-handling, pydantic, python]
+---
+
+# Skill: Response Parsing
+
+## Purpose
+
+Every time you integrate a new LLM response into `project-rules-generator`, you risk fragile code that crashes on unexpected or malformed AI output. The common mistake is to assume LLM responses will always adhere to a perfect structure. This skill provides a consistent, resilient workflow for parsing AI outputs, ensuring your application remains stable and produces predictable results even when the LLM provides an imperfect response.
+
+## Auto-Trigger
+
+Activate when the user mentions:
+- **"parse AI response"**
+- **"LLM output processing"**
+- **"handle API response"**
+- **"structured output from LLM"**
+
+Do NOT activate for: parse arguments, parse CLI options, parse file, parse configuration
+
+## CRITICAL
+
+- Always define the expected structure of the parsed output using `pydantic.BaseModel` to ensure type safety and validation.
+- Implement robust `try...except` blocks around all parsing logic to gracefully handle malformed or unexpected AI responses.
+- Provide a clear and functional fallback mechanism that returns a sensible default or simplified object when primary parsing fails or the raw response is empty.
+
+## Process
+
+### 1. Define the Target Data Structure
+
+A clear `pydantic.BaseModel` ensures type safety, validation, and a well-defined contract for the parsed AI response, preventing runtime errors from unexpected data shapes.
+
+Define a `pydantic.BaseModel` that precisely describes the expected structure of the AI's output. For example, if you expect a design, define a `Design` model; if you expect subtasks, define a `SubTask` model.
+
+### 2. Implement Initial Raw Response Validation
+
+Handling empty or whitespace-only raw responses early prevents unnecessary parsing attempts and potential errors or exceptions from downstream logic.
+
+```python
+# In your parsing method (e.g., _parse_response)
+if not raw.strip():
+    # Implement fallback logic immediately if no content
+    return self._get_fallback_design_or_tasks(user_request_or_task)
+```
+
+### 3. Attempt Structured Parsing with Robust Error Handling
+
+Safely attempting to parse the response into the defined Pydantic structure, while catching any exceptions, prevents application crashes from malformed AI output and provides an opportunity for recovery.
+
+```python
+# In your parsing method
+try:
+    # Attempt to parse using your Pydantic model's method
+    # e.g., Design.from_markdown(raw) or a custom parsing function
+    parsed_output = YourPydanticModel.parse_llm_response(raw)
+    return parsed_output
+except Exception as e:
+    # Log the error for debugging
+    print(f"Warning: Failed to parse LLM response. Error: {e}")
+    # Proceed to fallback mechanism
+```
+
+### 4. Provide a Comprehensive Fallback Mechanism
+
+A robust fallback ensures the application remains functional and provides a default, predictable output even when the primary parsing fails due to unexpected AI responses, maintaining user experience.
+
+```python
+#

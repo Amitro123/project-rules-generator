@@ -1,0 +1,8 @@
+---
+name: coverage-patterns
+description: |
+  Developers often release code with untested paths, leading to unexpected bugs; this skill helps identify critical code and establish comprehensive `pytest` patterns to ensure conceptual test coverage.
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  tags: [testing, quality, pytest, patterns

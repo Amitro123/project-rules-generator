@@ -1,0 +1,24 @@
+---
+name: click-commands
+description: |
+  Developers struggling to consistently define and integrate new CLI commands in `project-rules-generator` will learn to create and register `click` commands following established project patterns.
+license: MIT
+allowed-tools: "Bash Read Write Edit Glob Grep"
+metadata:
+  tags: [cli, click, python, development]
+---
+
+# Skill: Click Commands
+
+## Purpose
+
+Without a clear process for defining and registering `click` commands, developers in `project-rules-generator` often create inconsistent or uncallable CLI tools, leading to a fragmented user experience. This skill provides a structured approach to adding new `click` commands, ensuring they integrate seamlessly with the existing CLI structure and adhere to project-specific patterns for API key handling and verbose output.
+
+## Auto-Trigger
+
+Activate when the user mentions:
+- **"add new cli command"**
+- **"create click command"**
+- **"register cli tool"**
+
+Do NOT activate for: `install click`, `click library
