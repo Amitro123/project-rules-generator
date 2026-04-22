@@ -97,6 +97,14 @@ prg plan "Add OAuth2 login"     # requires API key
 | `prg review` | — | ✓ |
 | `prg analyze --ai` | — | ✓ |
 
+**Housekeeping** — PRG ships a tiny helper to purge the Python bytecode cache on Windows:
+
+```powershell
+pwsh ./clean.ps1   # removes __pycache__/, *.pyc, *.pyo, .pytest_cache/
+```
+
+On macOS/Linux: `find . -type d -name __pycache__ -exec rm -rf {} +`.
+
 **Optionally, run Ralph** — an autonomous execution loop that reads your generated artifacts and iterates until the feature is done:
 
 ```bash

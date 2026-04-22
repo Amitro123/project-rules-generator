@@ -31,6 +31,8 @@ Thumbs.db
 *-rules.md
 !tests/test_samples/sample-project/sample-project-skills.md
 !tests/test_samples/sample-project/sample-project-rules.md
+# Tracked documentation that happens to match the glob above.
+!docs/AUTHORING-SKILLS.md
 SESSION_SUMMARY.md
 CHANGES_TRACKER.md
 CODE_REVIEW.md

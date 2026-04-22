@@ -95,6 +95,8 @@ Rules:
 
 Run `pytest tests/test_quality_checker_triggers.py` after adding a skill to confirm the quality check still passes.
 
+For the deep-dive — project-signal detection, tech profiles, worked examples, common mistakes — see [`docs/AUTHORING-SKILLS.md`](docs/AUTHORING-SKILLS.md).
+
 ## Offline vs AI-enabled commands
 
 | Command       | Offline | Requires API key |

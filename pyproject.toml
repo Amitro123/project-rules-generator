@@ -75,7 +75,9 @@ include = ["generator*", "prg_utils*", "cli*", "core*"]
 exclude = ["tests*", "_bmad*"]
 
 [tool.setuptools.package-data]
-generator = ["skills/**/*", "templates/**/*"]
+# `py.typed` tells downstream type-checkers (mypy, pyright) that this
+# package ships inline type hints — see PEP 561.
+generator = ["py.typed", "skills/**/*", "templates/**/*"]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["__pycache__", "*.pyc", "*.pyo"]

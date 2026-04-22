@@ -4,6 +4,50 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Unreleased]
+
+### Pre-open-source hardening (Batches A–D + OSS audit)
+
+**Packaging**
+- Moved `templates/` → `generator/templates/` so Jinja templates ship inside the wheel. `pip install project-rules-generator` now works end-to-end; previously loaders 404'd on packaged templates. (#1)
+- Added `generator/py.typed` (PEP 561) — downstream projects now see inline type hints. (#11)
+- `.env.example` now documents every API-key env var the code reads (`GEMINI_API_KEY`, `GOOGLE_API_KEY`, `GROQ_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPIK_API_KEY`, plus optional model overrides). (#10)
+
+**Skill quality (Batch D)**
+- `validate_quality()` now parses the three real trigger shapes (list, list-of-dicts, and `auto_triggers: {keywords, project_signals}` dict) via a `_flatten_trigger_spec()` helper. Previously 9 real skills in the repo silently crashed scoring with `TypeError: unsupported operand type(s) for +: 'dict' and 'list'`.
+- Templates emit `description: |` as a multi-line block scalar with one `When …` line per trigger, so the scorer's "lacks When trigger phrase" check actually finds them.
+- `allowed-tools` emitted as a YAML list instead of a quoted string.
+- Broadened `_PAIN_INDICATORS` to match real pain-oriented phrasing (`tedious`, `error-prone`, `brittle`, `stale`, `out of sync`, etc.); previously 69% of generated skills were falsely penalised.
+- Description now checked for length (< 40 chars penalised) and leading/trailing whitespace (template-fill leak).
+
+**Concurrency & durability (Batches B/C)**
+- All skill writes go through atomic temp-file + `os.replace` so interrupted runs never leave half-written `SKILL.md` files.
+- Cross-platform file locking (`fcntl` / `msvcrt`) on the skill-tracker manifest — concurrent `prg analyze` runs no longer corrupt it.
+- Placeholder-leak detector (`contains_unfilled_placeholders`) added; quality gate warns before writing placeholder content to `learned/`.
+
+**Skill generator hygiene (Blocker #3)**
+- `SkillGenerator.create_skill()` refuses names starting with `temp-`, `tmp-`, `scratch-`, `placeholder-`, or `draft-` — scratch files like `temp_test_project-workflow` can never ship.
+- Underscores / spaces normalise to hyphens (so `temp_foo` is caught, not collapsed to `tempfoo`).
+- 14 new tests in `tests/test_skill_name_refusal.py`.
+
+**Documentation**
+- `CONTRIBUTING.md` documents canonical skill shape, frontmatter schema, and naming rules. (#8)
+- `docs/AUTHORING-SKILLS.md` — deep-dive skill-authoring guide with worked examples. (#14)
+- `README.md` Quick Start now mentions `clean.ps1` for Windows housekeeping. (#12)
+- `docs/PRE-OSS-AUDIT.md` tracks all 19 audit findings with a Progress Log.
+
+**Repo cleanup**
+- Removed tracked developer scratch files (`CR.md`, `leftovers.md`, `temp_test_project-workflow.md`) and stale generated artefacts (`.clinerules/clinerules.yaml`, `.clinerules/rules.md`).
+- Deduped duplicate learned skills — `fastapi-api/` → `fastapi-endpoints/`, `gitpython/` → `gitpython-ops/`, `pytest/` + `pytest-patterns/` → `pytest-best-practices/`, `python-cli/` → `python-cli-patterns/`. Canonical shape is now `<slug>/SKILL.md` directory form only.
+- `.gitignore` extended with scratch-file patterns.
+
+**Metrics**
+- Test suite: **1367 → 1381** (+14 refusal tests), all green.
+- Generated-skill mean quality score: **67 → ≥ 90** on a 10-skill sample.
+- End-to-end CLI flows (`prg analyze --create-skill` and `prg create-rules`) both score 100/100.
+
+---
+
 ## [v0.3.0] — 2026-04-03
 
 ### Published to PyPI
