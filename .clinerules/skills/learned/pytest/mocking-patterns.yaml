@@ -1,8 +1,0 @@
----
-name: mocking-patterns
-description: |
-  Developers struggling with slow, interdependent tests that hit external services or file systems can use this skill to apply effective mocking patterns, isolating components for faster and more reliable unit tests.
-license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
-metadata:
-  tags: [testing, pytest,

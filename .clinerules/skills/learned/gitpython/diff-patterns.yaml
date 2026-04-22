@@ -1,8 +1,0 @@
----
-name: diff-patterns
-description: |
-  Developers struggle to quickly identify new code patterns or anti-patterns introduced in recent changes; this skill streamlines the review of `git diff` output to highlight relevant modifications for the `project-rules-generator`.
-license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
-metadata:
-  tags:

@@ -1,6 +1,9 @@
 ---
 name: test-refactor
-description: TEST refactor for this project
+description: |
+  Refactors the project's test suite to remove duplication, extract fixtures, and tighten assertions — keeps behaviour unchanged while improving readability.
+  When the user mentions "test refactor", "test cleanup", "testing refactor", "refactor tests".
+  Do NOT activate for writing new tests from scratch (use tdd-guide instead).
 auto_triggers:
   keywords:
     - test cleanup

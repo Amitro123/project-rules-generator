@@ -30,7 +30,7 @@ class BuiltinSkillsSource(SkillSource):
                 package_root = current_file.parent.parent
                 normalised = cfg_path.replace("\\", "/").lstrip("./")
                 if normalised.startswith("templates/"):
-                    normalised = normalised[len("templates/"):]
+                    normalised = normalised[len("templates/") :]
                 self.templates_path = package_root / "templates" / normalised
             else:
                 self.templates_path = Path(cfg_path)

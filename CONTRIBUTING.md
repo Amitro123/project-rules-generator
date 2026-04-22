@@ -49,6 +49,52 @@ Skills are Markdown files with YAML frontmatter. Three layers (lowest-to-highest
 
 `SkillsManager` (in `generator/skills_manager.py`) is the single entry point for all skill operations. Use `sm.list_skills()`, `sm.resolve_skill(name)`, etc.
 
+### Canonical skill shape
+
+A skill is a **directory** containing one `SKILL.md` file:
+
+```
+my-skill/
+└── SKILL.md
+```
+
+Loose `my-skill.md` files at the top of a skill scope are supported for backward compatibility but are deprecated — the directory form is canonical and new skills must use it.
+
+### Canonical frontmatter
+
+```yaml
+---
+name: my-skill                    # lowercase, hyphenated, matches directory
+description: |                    # YAML block scalar, multi-line
+  One full sentence explaining what the skill does and why it matters.
+  When the user mentions "foo", "bar", "baz".
+  When the user needs help with my-skill.
+  Do NOT activate for "unrelated-thing", "off-topic".
+license: MIT
+allowed-tools:                    # YAML list, not a quoted string
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+metadata:
+  author: PRG
+  version: 1.0.0
+  category: project
+  tags: [python, testing, my-tag]
+---
+```
+
+Rules:
+
+1. **Description** is a YAML block scalar (`description: |`). First line is a full-sentence explanation (≥ 40 chars). Subsequent `When ...` lines are the machine-readable triggers — agents decide when to activate by matching these. End with a `Do NOT activate for ...` line to reduce false positives.
+2. **`allowed-tools`** is a YAML list. Legacy skills may use `tools:` (alias) or a quoted space-separated string — the parser accepts both but lints warn on the string shape.
+3. **Triggers** live inside `description` (`When the user ...`). Older skills may have a top-level `auto_triggers:` dict with `keywords:` and `project_signals:` lists — the parser flattens both shapes, but new skills should put triggers in the description.
+4. **Name** must be lowercase, hyphenated, and must **not** start with `temp-`, `tmp-`, `scratch-`, `placeholder-`, or `draft-` — the generator refuses these prefixes so scratch files never ship.
+
+Run `pytest tests/test_quality_checker_triggers.py` after adding a skill to confirm the quality check still passes.
+
 ## Offline vs AI-enabled commands
 
 | Command       | Offline | Requires API key |

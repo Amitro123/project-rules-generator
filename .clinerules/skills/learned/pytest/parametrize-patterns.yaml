@@ -1,6 +1,0 @@
----
-name: parametrize-patterns
-description: |
-  Developers often struggle with repetitive test code when testing various inputs or scenarios, leading to verbose and unmaintainable test suites; this skill guides them to consolidate similar tests using `pytest.mark.parametrize` for cleaner, more efficient, and robust testing.
-license: MIT
-allowed-tools: "Bash Read Write Edit Glob Gre

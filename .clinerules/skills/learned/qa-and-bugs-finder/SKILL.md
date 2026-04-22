@@ -1,6 +1,9 @@
 ---
 name: qa-and-bugs-finder
-description: QA finder for this project
+description: |
+  Systematically audits the project for bugs, regressions, and quality gaps — runs tests, inspects coverage, and reports findings with reproducers.
+  When the user mentions "qa and bugs finder", "find bugs", "audit quality", "regression scan".
+  Do NOT activate for general "fix this bug" requests that already have a known defect.
 auto_triggers:
   keywords:
     - qa and bugs finder

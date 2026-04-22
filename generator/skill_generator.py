@@ -120,10 +120,25 @@ class SkillGenerator(ArtifactGenerator):
         """
         self.discovery.ensure_global_structure()
 
-        # Normalize name: lowercase, hyphens only
-        safe_name = re.sub(r"[^a-z0-9-]", "", name.lower().replace(" ", "-"))
+        # Normalize name: lowercase, hyphens only.
+        # Treat underscores/spaces as hyphens so scratch names like
+        # `temp_test_project-workflow` normalise to `temp-test-project-workflow`
+        # (and hit the refusal check below) instead of collapsing to
+        # `temptestproject-workflow`.
+        safe_name = re.sub(r"[^a-z0-9-]", "", name.lower().replace(" ", "-").replace("_", "-"))
         if not safe_name:
             raise ValueError("Invalid skill name provided.")
+
+        # Refuse scratch/placeholder names so developer throwaways like
+        # `temp_test_project-workflow` or `scratch-foo` never ship as real
+        # skills. Anchor on a prefix token (ends at hyphen or end-of-string)
+        # so legitimate names like "temperature-gauge" or "draftkings-api"
+        # aren't blocked.
+        if re.match(r"^(temp|tmp|scratch|placeholder|draft)(-|$)", safe_name):
+            raise ValueError(
+                f"Refusing to create skill with scratch/placeholder name '{safe_name}'. "
+                "Rename to something permanent (e.g. 'project-workflow' instead of 'temp-project-workflow')."
+            )
 
         # ── Resolve target root from scope ───────────────────────────────────
         if scope == "builtin":

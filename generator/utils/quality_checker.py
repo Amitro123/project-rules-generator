@@ -372,7 +372,8 @@ def validate_quality(
     # It must contain at least one line starting with "When" so agents know when to activate.
     desc_value = meta_for_tools.get("description", "")
     if desc_value:
-        desc_lines = [ln.strip() for ln in str(desc_value).splitlines() if ln.strip()]
+        desc_str = str(desc_value).strip()
+        desc_lines = [ln.strip() for ln in desc_str.splitlines() if ln.strip()]
         has_when_trigger = any(ln.lower().startswith("when") for ln in desc_lines)
         if not has_when_trigger:
             score -= 10
@@ -380,6 +381,28 @@ def validate_quality(
                 "description frontmatter lacks 'When ...' trigger phrases. "
                 "Each line should start with 'When the user ...' so agents know when to activate."
             )
+
+        # Skills with a single terse description line (e.g. "QA finder for this project",
+        # "cleanup workflow for this project", or the literal "# Requires GEMINI_API_KEY"
+        # caught in the OSS audit) are unhelpful to agents and embarrassing to ship.
+        # Require at least ~40 characters of substantive description before the trigger
+        # lines. Penalise leading/trailing whitespace artefacts too.
+        # Prefer the first non-"when" line as the "real" description.
+        non_when_lines = [
+            ln for ln in desc_lines if not ln.lower().startswith("when") and not ln.lower().startswith("do not")
+        ]
+        primary_desc = non_when_lines[0] if non_when_lines else (desc_lines[0] if desc_lines else "")
+        if primary_desc and len(primary_desc) < 40:
+            score -= 5
+            warnings.append(
+                f"description is too terse ('{primary_desc[:60]}'). "
+                "Expand to a full sentence explaining what the skill does and why it matters."
+            )
+        if isinstance(desc_value, str) and desc_value != desc_value.strip():
+            # Leading/trailing whitespace like "  workflow for this project" is a
+            # generator-template leak. Flag it so the bug gets noticed.
+            score -= 3
+            warnings.append("description has leading/trailing whitespace — template-fill bug")
 
     # Check content length
     if len(content) < 200:
