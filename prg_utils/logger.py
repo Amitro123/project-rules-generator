@@ -5,11 +5,15 @@ import sys
 def ensure_utf8_streams() -> None:
     """Force sys.stdout/stderr to UTF-8 on Windows.
 
-    Windows consoles default to cp1252, which crashes on emoji/astral chars
-    that appear in logger output (e.g. generator/ralph/engine.py uses
-    "🚀", "✅", "📊"). Calling this from any entry point that may emit
-    such chars — CLI, test runner, library consumer — is safe and
-    idempotent. On non-Windows or pre-3.7 Python it is a no-op.
+    Windows consoles default to cp1252, which crashes on emoji or any
+    other non-cp1252 codepoint that may appear in logger output.
+    generator/ralph/engine.py uses ASCII markers ([START], [OK], [FAIL], …)
+    for its own logs to avoid this risk, but this helper is still wired in
+    at entry points as defense-in-depth for strings coming from
+    dependencies, LLM providers, or user-provided project content.
+    Calling this from any entry point — CLI, test runner, library
+    consumer — is safe and idempotent. On non-Windows or pre-3.7 Python
+    it is a no-op.
 
     Separate from setup_logging() so library consumers that already
     configure their own logging can still get the encoding fix.

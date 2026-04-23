@@ -90,7 +90,7 @@ class RalphEngine:
 
         if self.verbose:
             logger.info(
-                "🚀 Ralph Loop starting — %s (%d max iterations)",
+                "[START] Ralph Loop starting — %s (%d max iterations)",
                 self.feature_id,
                 self.state.max_iterations,
             )
@@ -99,7 +99,7 @@ class RalphEngine:
             self.state.iteration += 1
             if self.verbose:
                 logger.info(
-                    "\n%s\n🔄  Iteration %d/%d\n%s",
+                    "\n%s\n[ITER] Iteration %d/%d\n%s",
                     "=" * 60,
                     self.state.iteration,
                     self.state.max_iterations,
@@ -108,7 +108,7 @@ class RalphEngine:
             try:
                 self.execute_iteration()
             except Exception as exc:  # noqa: BLE001 — top-level loop guard; logs and re-raises
-                logger.error("💥 Unhandled exception in iteration %d: %s", self.state.iteration, exc)
+                logger.error("[CRASH] Unhandled exception in iteration %d: %s", self.state.iteration, exc)
                 self.state.status = "stopped"
                 self.state.exit_condition = "unhandled_exception"
                 self.save_state()
@@ -136,7 +136,7 @@ class RalphEngine:
                 self.save_state()
                 if self.verbose:
                     logger.info(
-                        "⚠️  Max iterations (%d) reached — creating PR with findings.",
+                        "[WARN] Max iterations (%d) reached — creating PR with findings.",
                         self.state.max_iterations,
                     )
                 self._create_pr()
@@ -145,7 +145,7 @@ class RalphEngine:
             self._print_summary()
 
     def execute_iteration(self) -> None:
-        """Orchestrate one Ralph iteration: context → skill → agent → commit → review → tests."""
+        """Orchestrate one Ralph iteration: context -> skill -> agent -> commit -> review -> tests."""
         result = self._step_context()
         if result is None:
             return
@@ -170,10 +170,10 @@ class RalphEngine:
 
         if self.verbose:
             logger.info(
-                "📊 Iter %d complete — review=%d, tests=%s, tasks=%d/%d",
+                "[STAT] Iter %d complete — review=%d, tests=%s, tasks=%d/%d",
                 self.state.iteration,
                 review_score,
-                "✅" if tests_passed else "❌",
+                "[OK]" if tests_passed else "[FAIL]",
                 self.state.tasks_complete,
                 self.state.tasks_total,
             )
@@ -203,7 +203,7 @@ class RalphEngine:
         """Step 2: match a skill from the context string."""
         skill = self._match_skill(context)
         if self.verbose and skill:
-            logger.info("🧩 Matched skill: %s", skill)
+            logger.info("[SKILL] Matched skill: %s", skill)
         return skill
 
     def _step_agent(self, context: str, skill: Optional[str], next_task_title: str) -> Optional[dict]:
@@ -215,7 +215,7 @@ class RalphEngine:
             return self._agent_execute(context, skill, next_task_title)
         except SecurityError as sec_exc:
             logger.error(
-                "🚨 Security violation — LLM attempted path traversal: %s. Stopping loop for manual review.",
+                "[ALERT] Security violation — LLM attempted path traversal: %s. Stopping loop for manual review.",
                 sec_exc,
             )
             self.state.status = "stopped"
@@ -243,7 +243,7 @@ class RalphEngine:
                 self.state.exit_condition = "agent_fail_3x"
                 self.save_state()
                 logger.error(
-                    "🚨 Agent produced no changes 3× in a row — stopping for human intervention. "
+                    "[ALERT] Agent produced no changes 3x in a row — stopping for human intervention. "
                     "Check your provider/API key configuration. "
                     "Run `prg ralph resume %s` after fixing.",
                     self.feature_id,
@@ -265,7 +265,7 @@ class RalphEngine:
             self.state.exit_condition = f"review_score_too_low:{review_score}"
             self.save_state()
             logger.error(
-                "🚨 Emergency stop — review score %d < %d. State saved. "
+                "[ALERT] Emergency stop — review score %d < %d. State saved. "
                 "Run `prg ralph resume %s` after manual fixes.",
                 review_score,
                 REVIEW_SCORE_EMERGENCY_STOP,
@@ -295,7 +295,7 @@ class RalphEngine:
                 self.state.exit_condition = "test_fail_3x"
                 self.save_state()
                 logger.error(
-                    "🚨 Tests failed 3× in a row — stopping for human intervention. "
+                    "[ALERT] Tests failed 3x in a row — stopping for human intervention. "
                     "Run `prg ralph resume %s` after fixes.",
                     self.feature_id,
                 )
@@ -433,7 +433,7 @@ class RalphEngine:
                 full.parent.mkdir(parents=True, exist_ok=True)
                 full.write_text(content, encoding="utf-8")
                 if self.verbose:
-                    logger.info("   ✏️  %s", rel_path)
+                    logger.info("   [EDIT] %s", rel_path)
             return changes
         except SecurityError:
             # Path traversal attempt from LLM — must not be silently swallowed.
@@ -468,7 +468,7 @@ class RalphEngine:
                 timeout=TIMEOUT_SUBPROCESS,
             )
             if self.verbose:
-                logger.info("💾 Committed: %s", message)
+                logger.info("[COMMIT] Committed: %s", message)
         except subprocess.CalledProcessError as e:
             logger.warning("Git commit failed: %s", e.stderr.decode(errors="replace").strip())
 
@@ -490,7 +490,7 @@ class RalphEngine:
             critique_path.write_text(report.to_markdown(), encoding="utf-8")
 
             if self.verbose:
-                logger.info("📝 Review: %s (score=%d)", report.verdict, score)
+                logger.info("[REVIEW] %s (score=%d)", report.verdict, score)
             return score
         except Exception as exc:  # noqa: BLE001 — self-review is best-effort; neutral fallback keeps loop running
             logger.warning("Self-review failed: %s — using neutral score.", exc)
@@ -513,7 +513,7 @@ class RalphEngine:
             passed = result.returncode == 0
             output = (result.stdout + result.stderr).strip()
             if self.verbose:
-                icon = "✅" if passed else "❌"
+                icon = "[OK]" if passed else "[FAIL]"
                 logger.info("%s Tests %s", icon, "passed" if passed else "FAILED")
             return passed, output
         except subprocess.TimeoutExpired:
@@ -603,10 +603,10 @@ class RalphEngine:
                 timeout=TIMEOUT_SUBPROCESS,
             )
             if self.verbose:
-                logger.info("📬 PR created for branch %s", state.branch_name)
+                logger.info("[PR] PR created for branch %s", state.branch_name)
         except (FileNotFoundError, subprocess.TimeoutExpired, subprocess.SubprocessError) as exc:
             if self.verbose:
-                logger.info("ℹ️  gh CLI unavailable — skipping auto-PR (%s).", exc)
+                logger.info("[INFO] gh CLI unavailable — skipping auto-PR (%s).", exc)
 
     def _print_summary(self) -> None:
         s = self.state

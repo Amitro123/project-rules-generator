@@ -64,6 +64,40 @@ def _make_engine(tmp_path: Path, **state_overrides) -> RalphEngine:
 
 
 # ---------------------------------------------------------------------------
+# Windows cp1252 safety — regression test for audit item #18
+# ---------------------------------------------------------------------------
+
+
+def test_engine_strings_encode_on_cp1252():
+    """Every string literal in engine.py must encode to cp1252.
+
+    Windows consoles default to cp1252; a single emoji or other astral-plane
+    char in a logger string crashes the whole process. Audit item #18 was
+    the fix: swap emoji for ASCII markers ([START], [OK], [FAIL], …).
+    This test catches future regressions — if anyone reintroduces emoji or
+    non-cp1252 chars (like →) in engine.py strings, CI fails loudly instead
+    of us discovering it when a Windows user hits a crash.
+    """
+    import ast
+    from pathlib import Path
+
+    src = Path("generator/ralph/engine.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    offenders = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            try:
+                node.value.encode("cp1252")
+            except UnicodeEncodeError:
+                offenders.append((node.lineno, node.value[:80]))
+    assert not offenders, (
+        "engine.py contains string literals that don't encode to cp1252 "
+        "(would crash on default Windows consoles). Offenders:\n"
+        + "\n".join(f"  line {ln}: {s!r}" for ln, s in offenders)
+    )
+
+
+# ---------------------------------------------------------------------------
 # FeatureState tests
 # ---------------------------------------------------------------------------
 
