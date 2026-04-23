@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -11,6 +12,32 @@ logger = logging.getLogger(__name__)
 
 class SkillDiscovery:
     """Manages skill discovery, paths, and structure."""
+
+    # Skills that should never be loaded in non-test environments
+    TEST_SKILL_BLACKLIST: frozenset = frozenset(
+        {
+            "failed-ai-skill",
+            "missing-dep-skill",
+            "ai-test-skill",
+            "test-manual",
+            "fallback-test-skill",
+            "test-skill",
+            "test-skill-1",
+            "test-skill-2",
+            "test-ai-skill",
+            "test-investigation",
+            "test-strategy",
+        }
+    )
+
+    def _is_blacklisted(self, name: str) -> bool:
+        """Check if a skill name matches any test-related blacklist patterns."""
+        if name in self.TEST_SKILL_BLACKLIST:
+            return True
+        # Also catch pattern matches like test-skill-1, test-skill-2
+        if re.match(r"^test-skill(-\d+)?$", name):
+            return True
+        return False
 
     def __init__(self, project_path: Optional[Path] = None, skills_dir: Optional[Path] = None):
         """
@@ -246,6 +273,10 @@ class SkillDiscovery:
             else:
                 name = rel.rsplit(".", 1)[0].split("/")[-1]
                 prio = priority.get(path.suffix, 0)
+
+            # Skip blacklisted test skills
+            if self._is_blacklisted(name):
+                continue
 
             # Use priority to decide which one wins for the same base name
             if name not in skills or prio > skills_prio.get(name, 0):

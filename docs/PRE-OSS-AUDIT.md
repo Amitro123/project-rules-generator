@@ -125,13 +125,23 @@ No entry for Batches A/B/C/D (atomic writes, concurrency-safe tracker, detector 
 
 **Fix:** Add `docs/AUTHORING-SKILLS.md` and link from CONTRIBUTING.
 
-### [x] 15. Decide what `.clinerules/` is for ✅ FIXED 2026-04-23
+### [x] 15. Decide what `.clinerules/` is for ✅ FIXED 2026-04-23 — chose **option (b)**
 
 Currently neither a clear showcase (too messy) nor self-dogfooding-only.
 
 **Fix — pick one:**
 - (a) Gitignore it entirely; add a curated `examples/showcase-clinerules/` set, OR
-- (b) Keep it but regenerate cleanly post-Batch-D and label as "generated output, do not edit."
+- (b) **Keep it but regenerate cleanly post-Batch-D and label as "generated output, do not edit."** ← chosen
+
+**Decision (2026-04-23):** option (b). The repo ships `.clinerules/` as
+**self-dogfooding** — it's the output PRG produces when run against its own
+source tree, kept in-tree so first-time visitors can inspect realistic
+rules + skills without installing the tool first. `.clinerules/README.md`
+labels the directory as "generated output, do not edit" and points readers
+at the real generators. Transient artifacts (`rules.md`, `clinerules.yaml`,
+`auto-triggers.json`) stay gitignored — only the curated skill corpus is
+tracked. Regeneration will produce occasional diffs; those are expected
+and not reviewed line-by-line.
 
 ### [x] 16. Security review — clean ✅
 

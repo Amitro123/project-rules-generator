@@ -175,7 +175,11 @@ def run_generation_pipeline(
         pbar.set_description("Unified Export (.clinerules/)")
         unified_content = _build_unified_content(
             rules_content=rules_content,
-            triggers_dict=skills_manager.extract_project_triggers() if with_skills else {},
+            triggers_dict=skills_manager.extract_project_triggers(
+                include_only=enhanced_selected_skills
+            )
+            if with_skills
+            else {},
             skills_manager=skills_manager,
             enhanced_selected_skills=enhanced_selected_skills,
             project_name=project_name,

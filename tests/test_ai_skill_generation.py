@@ -15,12 +15,19 @@ class TestAISkillGeneration(unittest.TestCase):
             shutil.rmtree(self.test_dir)
         self.test_dir.mkdir(parents=True)
 
-        # Mock home directory for SkillsManager
-        self.original_home = Path.home
-        Path.home = MagicMock(return_value=self.test_dir)
+        # Mock global directory for SkillPathManager to prevent pollution
+        from generator.storage.skill_paths import SkillPathManager
+        self.patcher1 = patch.object(SkillPathManager, "GLOBAL_DIR", self.test_dir)
+        self.patcher2 = patch.object(SkillPathManager, "GLOBAL_LEARNED", self.test_dir / "learned")
+        self.patcher3 = patch.object(SkillPathManager, "GLOBAL_BUILTIN", self.test_dir / "builtin")
+        self.patcher1.start()
+        self.patcher2.start()
+        self.patcher3.start()
 
     def tearDown(self):
-        Path.home = self.original_home
+        self.patcher1.stop()
+        self.patcher2.stop()
+        self.patcher3.stop()
         if self.test_dir.exists():
             shutil.rmtree(self.test_dir)
 

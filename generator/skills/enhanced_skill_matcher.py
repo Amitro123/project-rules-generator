@@ -67,19 +67,22 @@ class EnhancedSkillMatcher:
             # Check triggers for learned skills
             triggers = tech_skills.get("triggers", [])
             if self._check_any_trigger(triggers, project_context):
+                logger.debug(f"Trigger fired for tech: {tech} (key: {tech_key})")
                 any_trigger_fired = True
                 for skill_path in tech_skills.get("learned", []):
                     selected.add(f"learned/{skill_path}")
+            else:
+                logger.debug(f"No triggers fired for tech: {tech} (key: {tech_key})")
 
-        # Fallback: if no triggers fired (e.g. 0 deps parsed), add learned
-        # skills for all detected tech anyway — the tech was confirmed by
-        # README detection, just not by dependency files.
-        if not any_trigger_fired:
-            for tech in detected_tech:
-                tech_key = self._normalize_tech_key(tech)
-                tech_skills = self.index.get("skills", {}).get(tech_key, {})
-                for skill_path in tech_skills.get("learned", []):
-                    selected.add(f"learned/{skill_path}")
+        # Fallback: builtin skills are always safe to include for matched tech.
+        # Learned skills should ONLY be added if a specific trigger fired
+        # (dependency/import/file), otherwise we leak unrelated skills
+        # from other projects into the current one.
+        for tech in detected_tech:
+            tech_key = self._normalize_tech_key(tech)
+            tech_skills = self.index.get("skills", {}).get(tech_key, {})
+            for builtin_name in tech_skills.get("builtin", []):
+                selected.add(f"builtin/{builtin_name}")
 
         # Always include code-review as baseline
         selected.add("builtin/code-review")

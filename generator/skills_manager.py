@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
@@ -111,15 +111,39 @@ class SkillsManager:
         all_skills = self.discovery.get_all_skills_content()
         return SkillParser.extract_all_triggers(all_skills)
 
-    def extract_project_triggers(self) -> Dict[str, List[str]]:
+    def extract_project_triggers(self, include_only: Optional[Set[str]] = None) -> Dict[str, List[str]]:
         """Extract triggers from project and learned skills only.
 
         Excludes builtins — their triggers are generic and appear in rules.md
         even when unrelated to the actual project, which misleads users into
         thinking PRG generated project-specific skills when it didn't.
+
+        Args:
+            include_only: Optional set of skill references (e.g. {'learned/fastapi'})
+                          to include. If None, all learned skills are included.
+                          Project-local skills are always included.
         """
         all_skills = self.discovery.get_all_skills_content()
-        project_only = {k: v for k, v in all_skills.items() if k in ("project", "learned")}
+
+        project_only = {}
+        # Always include project-local skills
+        if "project" in all_skills:
+            project_only["project"] = all_skills["project"]
+
+        # Filter learned skills by include_only if provided
+        if "learned" in all_skills:
+            if include_only is not None:
+                # Skill keys in all_skills['learned'] are the names, e.g. 'fastapi'
+                # include_only set contains refs, e.g. 'learned/fastapi'
+                learned_filtered = {
+                    name: data
+                    for name, data in all_skills["learned"].items()
+                    if f"learned/{name}" in include_only
+                }
+                project_only["learned"] = learned_filtered
+            else:
+                project_only["learned"] = all_skills["learned"]
+
         return SkillParser.extract_all_triggers(project_only)
 
     def save_triggers_json(self, output_dir: Path):
