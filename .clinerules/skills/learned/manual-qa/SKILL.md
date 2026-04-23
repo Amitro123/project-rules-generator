@@ -43,13 +43,12 @@ renders correctly on Windows, and no regressions are present.
 ### 1. Run the Full Test Suite
 
 ```bash
-cd c:\Users\Dana\.gemini\antigravity\scratch\project-rules-generator
 pytest --tb=short -q
 ```
 
-**Expected**: ≥437 passed, ≤1 pre-existing failure (`test_two_stage_planning.py::test_design_with_real_project` — known title-casing issue, do not treat as regression).
+**Expected**: every test passes. Capture the baseline count at the start of a QA session (`pytest -q` reports `<N> passed in <t>s`) and flag any drop as a regression, not a raw threshold number — the suite grows every release.
 
-If failures beyond the known one appear → **stop and investigate before proceeding**.
+If any test fails → **stop and investigate before proceeding**.
 
 ---
 
@@ -167,7 +166,7 @@ Create a summary table of each check:
 
 | Check | Command | Expected | Status |
 |-------|---------|----------|--------|
-| Full suite | `pytest -q` | ≥437 passed | |
+| Full suite | `pytest -q` | all pass (no regression vs baseline) | |
 | CR regression tests | `pytest tests/test_manus_cr_fixes.py` | all pass | |
 | Skill quality score | quality_checker script | ≥70 | |
 | CLI emoji output | `prg analyze --create-skill` | ✅ not Γ£à | |

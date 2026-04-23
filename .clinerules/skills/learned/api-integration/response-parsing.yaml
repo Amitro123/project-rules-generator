@@ -3,7 +3,13 @@ name: response-parsing
 description: |
   Developers often struggle with robustly extracting structured data from diverse LLM outputs, leading to fragile integrations; this skill provides a standardized approach for parsing AI responses with resilient error handling and fallback mechanisms within `project-rules-generator`.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [llm, parsing, error-handling, pydantic, python]
 ---

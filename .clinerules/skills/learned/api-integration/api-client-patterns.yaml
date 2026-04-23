@@ -3,7 +3,13 @@ name: api-client-patterns
 description: |
   Developers often struggle with inconsistent API client initialization and credential management across various commands; this skill guides them to leverage existing provider detection and secure API key patterns, ensuring robust and maintainable external API interactions.
 license: MIT
-allowed-tools: "Bash Read Write Edit Glob Grep"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 metadata:
   tags: [api, client, llm, provider, credentials, python-cli, openai, anthropic, groq, google-generativeai]
 ---

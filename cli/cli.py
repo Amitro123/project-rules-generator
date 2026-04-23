@@ -1,21 +1,13 @@
 """CLI orchestrator for project rules and skills generator."""
 
-import sys
 from pathlib import Path
 
-# Fix Windows console encoding so emoji/Unicode CLI output renders correctly
-if sys.platform == "win32":
-    import ctypes
+from prg_utils.logger import ensure_utf8_streams
 
-    try:
-        ctypes.windll.kernel32.SetConsoleOutputCP(65001)  # UTF-8 codepage
-    except (AttributeError, OSError):
-        pass
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
-    except (AttributeError, OSError):
-        pass
+# Fix Windows console encoding so emoji/Unicode CLI output renders correctly.
+# Library consumers should import the same helper from prg_utils.logger rather
+# than duplicating the ctypes/reconfigure dance here.
+ensure_utf8_streams()
 
 import click  # noqa: E402
 from dotenv import load_dotenv  # noqa: E402

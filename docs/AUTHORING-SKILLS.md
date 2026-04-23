@@ -14,13 +14,24 @@ A **skill** is a single Markdown file (`SKILL.md`) inside a named directory. It 
 
 Three layers are resolved in priority order by `SkillsManager`:
 
-| Layer   | Location                              | Created by         |
-|---------|---------------------------------------|--------------------|
-| project | `.clinerules/skills/project/`         | `prg analyze`      |
-| learned | `~/.project-rules-generator/learned/` | `prg analyze`      |
-| builtin | `generator/templates/skills/`         | shipped with PRG   |
+| Layer   | Source path (edit here)             | Runtime path (where lookups read)      | Created by       |
+|---------|-------------------------------------|----------------------------------------|------------------|
+| project | *(none — generated)*                | `.clinerules/skills/project/`          | `prg analyze`    |
+| learned | *(none — generated)*                | `~/.project-rules-generator/learned/`  | `prg analyze`    |
+| builtin | `generator/skills/builtin/`         | `~/.project-rules-generator/builtin/`  | shipped with PRG |
 
 Project > learned > builtin — the first match wins.
+
+To add a new ready-made skill, drop `generator/skills/builtin/<name>/SKILL.md`
+in the source path. PRG copies it into the user's global runtime path on
+first run via `SkillPathManager.sync_builtin_skills()`.
+
+> **Not the same as `generator/templates/skills/`.** That directory holds
+> YAML **scaffolds** (one per tech: `fastapi.yaml`, `react.yaml`, …) that
+> `BuiltinSkillsSource` (in `generator/sources/builtin.py`) renders on the
+> fly when a matching tech is detected in the user's project. If you want
+> to add support for a new tech stack, see [Adding a tech profile](#adding-a-tech-profile)
+> below — not this table.
 
 ---
 

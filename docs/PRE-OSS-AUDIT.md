@@ -125,7 +125,7 @@ No entry for Batches A/B/C/D (atomic writes, concurrency-safe tracker, detector 
 
 **Fix:** Add `docs/AUTHORING-SKILLS.md` and link from CONTRIBUTING.
 
-### [ ] 15. Decide what `.clinerules/` is for
+### [x] 15. Decide what `.clinerules/` is for ✅ FIXED 2026-04-23
 
 Currently neither a clear showcase (too messy) nor self-dogfooding-only.
 
@@ -147,13 +147,13 @@ No action needed.
 
 Annotated with `# noqa: BLE001` justification. Acceptable — keep the comment-discipline convention elsewhere; no action needed unless more show up.
 
-### [ ] 18. Unicode emoji in logger output
+### [x] 18. Unicode emoji in logger output ✅ FIXED 2026-04-23
 
 `✅ ❌ 💾 📝 ✏️` in `ralph/engine.py`. Crashes on Windows consoles without UTF-8 default.
 
 **Fix:** Either force `sys.stdout.reconfigure(encoding='utf-8')` on CLI entry, or swap to ASCII markers (`[OK]`, `[FAIL]`, etc.).
 
-### [ ] 19. `.clinerules/skills/builtin/` in half-deleted state
+### [x] 19. `.clinerules/skills/builtin/` in half-deleted state ✅ FIXED 2026-04-23
 
 Current `git status`: `D .clinerules/skills/builtin/SKILL.md`, `D agent-architecture-analyzer.md`, etc., plus new `ci-lint-failures/`. State is inconsistent mid-commit.
 
@@ -195,3 +195,15 @@ _(Updated as fixes land.)_
 | 2026-04-22 | OSS-3 | #12 README clean.ps1 | ✅ added Housekeeping block to Quick Start with Windows (`pwsh clean.ps1`) + Unix (`find … -exec rm`) commands | (pending) |
 | 2026-04-22 | OSS-3 | #13 CHANGELOG | ✅ added `[Unreleased]` section summarising Batches A–D and audit items #1–#14 | (pending) |
 | 2026-04-22 | OSS-3 | #14 authoring guide | ✅ added `docs/AUTHORING-SKILLS.md` (canonical shape, frontmatter, required body, signals, tech profiles, worked examples, common mistakes); linked from `CONTRIBUTING.md` | (pending) |
+| 2026-04-23 | OSS-4 | #15 .clinerules showcase | ✅ added `.clinerules/README.md` labelling the dir as generated output with a "do not edit" notice and an editor-map table pointing readers at the real generators | (pending) |
+| 2026-04-23 | OSS-4 | #18 emoji crash | ✅ extracted Windows UTF-8 reconfigure into shared `prg_utils.logger.ensure_utf8_streams()`; called from `cli/cli.py` and `generator/ralph/engine.py` module-top so library consumers no longer crash on `🚀`/`✅` | (pending) |
+| 2026-04-23 | OSS-4 | #19 builtin half-deleted | ✅ verified working tree clean; all `skills/builtin/` dirs present in canonical `<slug>/SKILL.md` shape | (pending) |
+| 2026-04-23 | CR-1 | CR blocker: missing `packaging` | ✅ added `packaging>=23.0` to `[project].dependencies` (was only in `requirements.txt`); fresh wheel installs no longer crash in `dependency_parser` | (pending) |
+| 2026-04-23 | CR-1 | CR: pathspec conflict | ✅ verified `pathspec>=0.11.0` (no upper bound) in both `pyproject.toml` and `requirements.txt`; black 26.3.0 resolves cleanly against it | (pending) |
+| 2026-04-23 | CR-2 | CR: allowed-tools string shape | ✅ converted `allowed-tools: "Bash Read Write Edit Glob Grep"` to YAML list form in `api-integration/*.yaml` — last two sites carrying the legacy string | (pending) |
+| 2026-04-23 | CR-2 | CR: stale "≥437 passed" | ✅ manual-qa skill now expects "all pass, no regression vs captured baseline" instead of a raw threshold that silently rots as the suite grows | (pending) |
+| 2026-04-23 | CR-3 | CR: stub `type-checking` skill | ✅ rewrote description (4 concrete trigger lines) + Purpose (pain-oriented); stripped absolute `C:\Users\Dana\…\project-rules-generator` path from the generated Project Context block | (pending) |
+| 2026-04-23 | CR-3 | CR: duplicate readme skills | ✅ `git rm -r .clinerules/skills/project/readme-improver/`; kept the project-scoped `readme-improvement/` variant with real triggers | (pending) |
+| 2026-04-23 | CR-3 | CR: unused type-ignore in skill_tracker | ✅ changed both platform-conditional `msvcrt`/`fcntl` imports to `# type: ignore[import-not-found,unused-ignore]` so mypy passes on both Windows and Linux (mypy: "no issues found") | (pending) |
+| 2026-04-23 | CR-3 | CR: doc confusion `generator/templates/skills/` vs `generator/skills/builtin/` | ✅ split the skill-layer table in `CONTRIBUTING.md` and `docs/AUTHORING-SKILLS.md` into **source path / runtime path / created by** columns; added a blockquote footnote clarifying that `generator/templates/skills/` holds YAML scaffolds (consumed by `BuiltinSkillsSource`), not finished skills — new builtin skills go to `generator/skills/builtin/<name>/SKILL.md` | (pending) |
+| 2026-04-23 | CR-2 | CR: CI smoke depth | ✅ verified `ci.yml` smoke-test job installs the wheel and runs `prg init` + `prg analyze` on a temp project — catches import-level regressions like the missing `packaging` dep | (pending) |

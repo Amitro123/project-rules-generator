@@ -1,7 +1,10 @@
 ﻿---
 name: type-checking
 description: |
-  TYPE checking for this project. Use when user mentions "type checking". Do NOT activate for "general type questions", "type theory".
+  Runs mypy against the project, surfaces unused type ignores and import errors, and fixes them incrementally rather than blanketing in `# type: ignore`.
+  When the user mentions "type checking", "mypy", "type errors", "unused ignore", "resolve type annotations".
+  When mypy CI fails and the user needs the first actionable error.
+  Do NOT activate for general type-theory questions or TypeScript/Flow issues.
 license: MIT
 allowed-tools:
   - Bash
@@ -21,9 +24,11 @@ metadata:
 
 ## Purpose
 
-TYPE checking for this project
-
-This skill provides step-by-step guidance for type checking.
+Without disciplined type checking, the codebase accumulates `# type: ignore`
+lines nobody can safely remove, mypy errors hide real bugs (wrong argument
+types, stale function signatures after a refactor), and CI gates stop being
+trustworthy. This skill gives a repeatable mypy-first loop: run the check,
+fix the first real error, remove now-unused ignores, re-run.
 
 ## Auto-Trigger
 
@@ -144,7 +149,6 @@ pytest
 
 ```
 Project: project-rules-generator
-Path: C:\Users\Dana\.gemini\antigravity\scratch\project-rules-generator
 Signals: has_docs, has_tests, has_api, has_ci
 Tech Stack: groq, gemini, pydantic, jinja2, python, pytest, gitpython, click
 ```

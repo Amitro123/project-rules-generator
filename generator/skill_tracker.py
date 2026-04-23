@@ -50,7 +50,7 @@ def _file_lock(lock_path: Path, *, timeout: float = 5.0) -> Iterator[None]:
     deadline = time.monotonic() + timeout
     try:
         if sys.platform == "win32":
-            import msvcrt  # type: ignore[import-not-found]
+            import msvcrt  # type: ignore[import-not-found,unused-ignore]
 
             while True:
                 try:
@@ -62,7 +62,7 @@ def _file_lock(lock_path: Path, *, timeout: float = 5.0) -> Iterator[None]:
                         break
                     time.sleep(0.05)
         else:
-            import fcntl  # type: ignore[import-not-found]
+            import fcntl  # type: ignore[import-not-found,unused-ignore]
 
             while True:
                 try:
@@ -82,7 +82,7 @@ def _file_lock(lock_path: Path, *, timeout: float = 5.0) -> Iterator[None]:
         if acquired:
             try:
                 if sys.platform == "win32":
-                    import msvcrt  # type: ignore[import-not-found]
+                    import msvcrt  # type: ignore[import-not-found,unused-ignore]
 
                     # Rewind to start of the byte we locked before unlocking.
                     try:
@@ -94,7 +94,7 @@ def _file_lock(lock_path: Path, *, timeout: float = 5.0) -> Iterator[None]:
                     except OSError:
                         pass
                 else:
-                    import fcntl  # type: ignore[import-not-found]
+                    import fcntl  # type: ignore[import-not-found,unused-ignore]
 
                     fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
             except Exception:  # noqa: BLE001 — unlock is best-effort

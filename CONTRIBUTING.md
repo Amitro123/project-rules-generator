@@ -41,11 +41,23 @@ tests/         pytest test suite
 
 Skills are Markdown files with YAML frontmatter. Three runtime layers (lowest-to-highest priority):
 
-| Layer   | Location                                    | Created by                        |
-|---------|---------------------------------------------|-----------------------------------|
-| builtin | `generator/templates/skills/`               | shipped with PRG                  |
-| learned | `~/.project-rules-generator/learned/`       | `--create-skill` (explicit)       |
-| project | `<your-project>/.clinerules/skills/project/`| `prg analyze` (auto-generated)    |
+| Layer   | Source path (edit here)             | Runtime path (where lookups read)      | Created by       |
+|---------|-------------------------------------|----------------------------------------|------------------|
+| builtin | `generator/skills/builtin/`         | `~/.project-rules-generator/builtin/`  | shipped with PRG |
+| learned | *(none — generated)*                | `~/.project-rules-generator/learned/`  | `prg analyze`    |
+| project | *(none — generated)*                | `.clinerules/skills/project/`          | `prg analyze`    |
+
+For **builtin**, edit the source path and PRG copies the file to the runtime
+path on first run via `SkillPathManager.sync_builtin_skills()` (see
+`generator/storage/skill_paths.py`). For **learned** and **project**, PRG
+writes directly to the runtime path — don't hand-edit those; re-run
+`prg analyze` instead.
+
+> **Not the same as `generator/templates/skills/`.** That directory holds
+> YAML **scaffolds** consumed by the source-based discovery pipeline
+> (`generator/sources/builtin.py`) to render tech-specific skills on the fly
+> (`fastapi.yaml`, `react.yaml`, …). It is *not* where you add a new
+> ready-made skill — use `generator/skills/builtin/<name>/SKILL.md` for that.
 
 `SkillsManager` (in `generator/skills_manager.py`) is the single entry point for all skill operations. Use `sm.list_skills()`, `sm.resolve_skill(name)`, etc.
 

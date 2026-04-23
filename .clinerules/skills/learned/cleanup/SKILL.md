@@ -151,7 +151,7 @@ After a successful cleanup:
 - `.pytest_cache`, `.mypy_cache`, `.ruff_cache` are gone
 - `build/`, `dist/`, `*.egg-info/` are removed
 - `.coverage` and `htmlcov/` are removed
-- `pytest` passes ≥437 tests from a cold cache
+- `pytest` passes the full suite from a cold cache (no tests lost to cleanup)
 
 ---
 
