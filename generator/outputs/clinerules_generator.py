@@ -36,6 +36,7 @@ def generate_clinerules(
     """
     builtin_skills = []
     learned_skills = []
+    project_skills = []
 
     for skill in sorted(selected_skills):
         parts = skill.split("/")
@@ -93,6 +94,21 @@ def generate_clinerules(
                 }
             )
 
+        elif skill.startswith("project/"):
+            # Project-local skills live under .clinerules/skills/project/<name>/SKILL.md
+            name = "/".join(parts[1:])  # preserve sub-path, e.g. "gemini-api"
+            if output_dir:
+                rel_path = f"skills/project/{name}/SKILL.md"
+            else:
+                rel_path = f"skills/project/{name}/SKILL.md"
+
+            project_skills.append(
+                {
+                    "name": name,
+                    "path": rel_path,
+                }
+            )
+
     # Build the clinerules structure
     clinerules: Dict[str, Any] = {
         "project": project_name,
@@ -120,6 +136,9 @@ def generate_clinerules(
     # Skills section
     skills_section: Dict[str, Any] = {}
 
+    if project_skills:
+        skills_section["project"] = [s["path"] for s in project_skills]
+
     if builtin_skills:
         skills_section["builtin"] = [s["path"] for s in builtin_skills]
 
@@ -130,9 +149,10 @@ def generate_clinerules(
 
     # Summary counts
     clinerules["skills_count"] = {
+        "project": len(project_skills),
         "builtin": len(builtin_skills),
         "learned": len(learned_skills),
-        "total": len(builtin_skills) + len(learned_skills),
+        "total": len(project_skills) + len(builtin_skills) + len(learned_skills),
     }
 
     # Context configuration

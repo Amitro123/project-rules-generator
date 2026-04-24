@@ -18,6 +18,7 @@ def _detect_project_type_cached(
     scores = _initialize_scores()
 
     # Run detection algorithms
+    _detect_agent_skills_signals(scores, tech_stack, project_path)
     _detect_agent_signals(scores, tech_stack, readme_content)
     _detect_ml_pipeline_signals(scores, tech_stack, readme_content)
     _detect_web_app_signals(scores, tech_stack, project_path, readme_content)
@@ -59,7 +60,41 @@ def _initialize_scores() -> Dict[str, float]:
         "cli_tool": 0.0,
         "library": 0.0,
         "generator": 0.0,
+        "agent_skills": 0.0,
     }
+
+
+def _detect_agent_skills_signals(scores: Dict[str, float], tech_stack: Tuple[str, ...], project_path: str) -> None:
+    """Detect agent-skills collection projects (SKILL.md files, no Python/JS source).
+
+    Only counts SKILL.md files outside of .clinerules/, .venv/ and other
+    infrastructure directories — those are generated artifacts, not the primary
+    purpose of a real code project.
+    """
+    path = Path(project_path)
+    _infra_dirs = {".clinerules", ".venv", "__pycache__", "node_modules", ".git"}
+
+    # Only count SKILL.md files that live outside infrastructure directories
+    skill_md_files = [
+        p for p in path.glob("**/SKILL.md")
+        if not any(part in _infra_dirs for part in p.parts)
+    ]
+    py_sources = [
+        p for p in path.glob("**/*.py")
+        if ".venv" not in p.parts and "__pycache__" not in p.parts
+    ]
+    package_json = (path / "package.json").exists()
+
+    if not skill_md_files:
+        return
+
+    if not py_sources and not package_json:
+        # Pure docs/skills repo — strong primary signal
+        scores["agent_skills"] += 0.9
+        scores["agent_skills"] += min(len(skill_md_files) * 0.05, 0.2)
+    else:
+        # Mixed project — small signal only; don't override language/framework types
+        scores["agent_skills"] += 0.2
 
 
 def _detect_agent_signals(scores: Dict[str, float], tech_stack: Tuple[str, ...], readme: str) -> None:
@@ -286,4 +321,5 @@ TYPE_LABEL_MAP = {
     "ml_pipeline": "ml-pipeline",
     "cli_tool": "cli-tool",
     "web_app": "web-app",
+    "agent_skills": "agent-skills",
 }

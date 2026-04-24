@@ -199,6 +199,15 @@ def extract_conventions(content: str) -> List[str]:
         "coding style",
         "style guide",
         "decisions",
+        # Safety / operational principles sections — common in infra/ops projects
+        "safety",
+        "safety first",
+        "principles",
+        "constraints",
+        "never do",
+        "do not",
+        "always",
+        "must",
     ]
     rules: List[str] = []
     seen: set = set()

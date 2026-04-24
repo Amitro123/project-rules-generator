@@ -270,6 +270,10 @@ def rules_to_json(rules_md: str) -> str:
     sections: Dict[str, List[str]] = {}
     current_section = None
     for line in rules_md.split("\n"):
+        # Stop collecting bullets when an HTML comment block starts (e.g. <!-- YAML refs -->)
+        if line.strip().startswith("<!--"):
+            current_section = None
+            continue
         header = re.match(r"^##\s+(.+)$", line)
         if header:
             current_section = header.group(1).strip()
@@ -289,7 +293,10 @@ def rules_to_json(rules_md: str) -> str:
     skip = {"DO (must follow)", "DON'T", "PRIORITIES"}
     for section_name, items in sections.items():
         if section_name not in skip and items:
-            key = section_name.lower().replace(" ", "_")
-            data[key] = items
+            # Strip emoji and non-word chars, then snake_case
+            key = re.sub(r"[^\w\s]", "", section_name, flags=re.UNICODE).lower().strip()
+            key = re.sub(r"\s+", "_", key).strip("_")
+            if key:
+                data[key] = items
 
     return json.dumps(data, indent=2, ensure_ascii=False)

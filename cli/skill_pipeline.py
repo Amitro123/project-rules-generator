@@ -59,6 +59,14 @@ def _auto_generate_skills(
             project_context=enhanced_context,
         )
 
+        # Always include existing project-local skills (e.g. created via --create-skill
+        # or --ai) so they appear in clinerules.yaml and skills/index.md.
+        if skills_manager and hasattr(skills_manager, "discovery") and skills_manager.discovery.project_local_dir:
+            all_discovered = skills_manager.discovery.list_skills()
+            for skill_name, skill_data in all_discovered.items():
+                if skill_data.get("type") == "project":
+                    enhanced_selected_skills.add(f"project/{skill_name}")
+
         if verbose:
             click.echo(f"   Matched Skills: {len(enhanced_selected_skills)}")
             for s in sorted(enhanced_selected_skills):
@@ -164,7 +172,7 @@ def _llm_generate_skills(
                 from generator.llm_skill_generator import LLMSkillGenerator
 
                 llm_gen = LLMSkillGenerator(provider=provider)
-            skill_content = llm_gen.generate_content(prompt, max_tokens=2000)
+            skill_content = llm_gen.generate_content(prompt, max_tokens=4000)
 
             # Write directly to the project-local learned dir — never pollute
             # the user's global ~/.project-rules-generator/learned/.

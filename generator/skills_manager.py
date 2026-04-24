@@ -156,9 +156,19 @@ class SkillsManager:
 
         return SkillParser.extract_all_triggers(project_only)
 
-    def save_triggers_json(self, output_dir: Path):
-        """Save extracted triggers to .clinerules/auto-triggers.json"""
-        triggers = self.extract_all_triggers()
+    def save_triggers_json(self, output_dir: Path, include_only: Optional[Set[str]] = None):
+        """Save extracted triggers to .clinerules/auto-triggers.json
+
+        Uses extract_project_triggers (project + filtered learned only) to avoid
+        polluting auto-triggers.json with triggers from globally-available builtin
+        skills that are unrelated to the current project.
+
+        Args:
+            include_only: Optional set of skill refs (e.g. {'learned/fastapi'}) to
+                          include from the learned layer. Matches extract_project_triggers
+                          semantics. If None, all learned skills are included.
+        """
+        triggers = self.extract_project_triggers(include_only=include_only)
         SkillParser.save_triggers_json(triggers, output_dir)
 
     def _extract_tech_context(self, tech: str, readme_content: str) -> List[str]:

@@ -195,7 +195,15 @@ def run_generation_pipeline(
             provider=provider,
         )
 
-        _phase_write_rules(unified_content, output_dir, inc_analyzer, verbose, generated_files, skills_manager)
+        _phase_write_rules(
+            unified_content,
+            output_dir,
+            inc_analyzer,
+            verbose,
+            generated_files,
+            skills_manager,
+            include_only=enhanced_selected_skills if with_skills else None,
+        )
         pbar.update(1)
 
         pbar.set_description("Saving Skill Artifacts")
@@ -339,10 +347,15 @@ def _phase_write_rules(
     verbose: bool,
     generated_files: List[Path],
     skills_manager: Any,
+    include_only: Optional[Set[str]] = None,
 ) -> None:
     """Phase 6: write rules.md and rules.json; merge incrementally when appropriate.
 
     Appends both files to generated_files.
+
+    Args:
+        include_only: Forwarded to save_triggers_json — limits auto-triggers.json to
+                      the project's selected skill refs, preventing global-cache leakage.
     """
     rules_path = output_dir / "rules.md"
     if inc_analyzer and rules_path.exists():
@@ -360,7 +373,7 @@ def _phase_write_rules(
     atomic_write_text(rules_json_path, rules_to_json(unified_content), backup=True)
     if verbose:
         click.echo("Generating auto-triggers...")
-    skills_manager.save_triggers_json(output_dir)
+    skills_manager.save_triggers_json(output_dir, include_only=include_only)
     generated_files.append(rules_json_path)
     if verbose:
         click.echo("   Generated rules.json")

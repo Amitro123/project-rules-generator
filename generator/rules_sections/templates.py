@@ -74,7 +74,7 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
     dont_rules = _build_dont_rules(tech_stack, python_deps, project_type, structure)
 
     features = project_data.get("features", [])
-    priorities = features[:3] if features else []
+    priorities = features[:7] if features else []
     while len(priorities) < 3:
         defaults = ["Code quality", "Test coverage", "Documentation clarity"]
         priorities.append(defaults[len(priorities)])
@@ -84,6 +84,7 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
     file_structure = _build_file_structure(structure, entry_points, patterns)
     workflow_section = _build_workflow_section(installation, usage, troubleshooting, test_framework, tech_stack)
     context_strategy = _build_context_strategy(structure, entry_points, project_type, test_info)
+    priorities_str = "\n".join(f"{i + 1}. {p}" for i, p in enumerate(priorities))
 
     template = f"""---
 project: {name}
@@ -125,9 +126,7 @@ This project uses: {tech_str}
 
 ## PRIORITIES
 
-1. {priorities[0]}
-2. {priorities[1]}
-3. {priorities[2]}
+{priorities_str}
 
 ## CONTEXT STRATEGY
 

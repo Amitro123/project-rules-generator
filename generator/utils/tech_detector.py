@@ -170,8 +170,29 @@ def detect_tech_stack(project_path: Path, readme_content: str = "") -> List[str]
             "reportlab",
             "pdf",
         }
+        # Infrastructure/ops techs (docker, telegram, linux, yaml, vite, …) also
+        # belong here — they live in docs/README for ops-heavy projects that have
+        # no Python/Node dependency files at all.
+        try:
+            from generator.tech.lookups import TECH_CATEGORIES
+
+            readme_primary_techs.update(
+                name for name, cat in TECH_CATEGORIES.items() if cat == "infrastructure"
+            )
+        except Exception:  # noqa: BLE001 — guard against import issues at startup
+            readme_primary_techs.update({"docker", "docker-compose", "telegram", "yaml", "linux", "vite"})
+
+        # If no dep files were found at all, treat README as the primary source
+        # for everything (docs-only / agent-skills projects).
+        allow_all_from_readme = len(detected) == 0
+
         for tech in readme_detected:
-            if tech in detected or tech in {"python", "typescript", "javascript"} or tech in readme_primary_techs:
+            if (
+                allow_all_from_readme
+                or tech in detected
+                or tech in {"python", "typescript", "javascript"}
+                or tech in readme_primary_techs
+            ):
                 detected.add(tech)
 
     return list(detected)
