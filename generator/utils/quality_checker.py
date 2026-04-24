@@ -58,6 +58,18 @@ def is_stub(filepath: Path, project_path: Optional[Path] = None) -> bool:
     if any(marker in content for marker in STUB_MARKERS):
         return True
 
+    # 1a. Bug H guard: distinctive-placeholder-phrase check catches stale
+    # files that carry variants of the stub markers (e.g. "[One sentence:
+    # … and for whom.]" vs the canonical STUB_MARKERS entry). Strip fenced
+    # code blocks first so the meta writing-skills builtin, which
+    # legitimately demonstrates the skill template inside a ```markdown```
+    # block, is not false-flagged, and real skills that embed Python/JS
+    # code with dict-access (`['key']`) or tag arrays (`[a, b, c]`) are
+    # not flagged either.
+    without_code_blocks = re.sub(r"```[\s\S]*?```", "", content)
+    if _count_placeholder_phrases(without_code_blocks) >= 2:
+        return True
+
     # 2. Hallucinated file path detection
     hallucinated_paths = re.findall(r"(?:File:\s*)?src/[\w/]+\.py(?::\d+)?", content)
     if hallucinated_paths and project_path:
@@ -80,7 +92,39 @@ def is_stub_content(content: str) -> bool:
     Check if skill content (as string) is a generic stub.
     Useful when you have content but no file path.
     """
-    return any(marker in content for marker in STUB_MARKERS)
+    if any(marker in content for marker in STUB_MARKERS):
+        return True
+    # Bug H: distinctive-placeholder-phrase check (see is_stub() for rationale).
+    without_code_blocks = re.sub(r"```[\s\S]*?```", "", content)
+    return _count_placeholder_phrases(without_code_blocks) >= 2
+
+
+# Distinctive phrases that only appear in the unfilled PRG skill template.
+# Matching two or more indicates the file was never filled in — dict access
+# (`['contents']`) and tag arrays (`[tag1, tag2, tag3]`) cannot match any
+# of these patterns.
+_PLACEHOLDER_PATTERNS = (
+    r"\[One sentence:",
+    r"\[First step\]",
+    r"\[Second step\]",
+    r"\[Third step\]",
+    r"\[What NOT to do\]",
+    r"\[What to do instead\]",
+    r"\[What artifact",
+    r"\[list false-positive",
+    r"\[description\]",
+    r"\[log data here\]",
+    r"\[Insert ",
+    r"\[Replace with",
+    r"\[Your project",
+    r"\[Describe (?:what|how|why)",
+)
+_PLACEHOLDER_RE = re.compile("|".join(_PLACEHOLDER_PATTERNS))
+
+
+def _count_placeholder_phrases(text: str) -> int:
+    """Count distinctive unfilled-template phrases in text."""
+    return len(_PLACEHOLDER_RE.findall(text))
 
 
 def _parse_frontmatter(content: str):

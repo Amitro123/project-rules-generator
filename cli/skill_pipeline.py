@@ -33,6 +33,7 @@ def _auto_generate_skills(
     verbose: bool,
     skills_manager: Any,
     strategy: str,
+    output_dir: Optional[Path] = None,
 ) -> Set[str]:
     """Auto-detect and optionally LLM-generate matched skills. Returns selected skill refs."""
     try:
@@ -75,6 +76,7 @@ def _auto_generate_skills(
                 provider=provider,
                 verbose=verbose,
                 skills_manager=skills_manager,
+                output_dir=output_dir,
             )
 
         return enhanced_selected_skills
@@ -97,10 +99,34 @@ def _llm_generate_skills(
     provider: str,
     verbose: bool,
     skills_manager: Any,
+    output_dir: Optional[Path] = None,
 ) -> None:
-    """Call the LLM to generate content for each matched learned skill."""
+    """Call the LLM to generate content for each matched learned skill.
+
+    Bug B fix: writes the LLM output to the project-local
+    ``<output_dir>/skills/learned/<ref_name>/SKILL.md`` instead of the global
+    ``~/.project-rules-generator/learned/`` cache. Previously every
+    ``prg analyze`` run poured fresh per-project LLM content into the global
+    dir, causing those skills to leak into unrelated projects as ghost
+    triggers. Global writes are now reserved for explicit
+    ``prg skills save`` / ``prg skills create --scope learned`` commands.
+    """
     extractor = CodeExampleExtractor()
     llm_auth_failed = False
+
+    # Default output_dir to <project>/.clinerules when the caller hasn't
+    # threaded it through (keeps backward-compat for older callers).
+    if output_dir is None:
+        output_dir = project_path / ".clinerules"
+
+    # Bug F fix: instantiate the LLM client ONCE and reuse it across every
+    # skill generation. Previously we created a new LLMSkillGenerator inside
+    # the loop, which re-ran `genai.Client()` — and the google-genai SDK
+    # prints "Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using
+    # GOOGLE_API_KEY." on every client construction when both env vars are
+    # present. Hoisting the instantiation makes that warning fire at most
+    # once per run (at true provider-init time), matching what users expect.
+    llm_gen = None  # lazy: stays None until the first skill that needs it
 
     for skill_ref in sorted(enhanced_selected_skills):
         if not skill_ref.startswith("learned/"):
@@ -108,11 +134,18 @@ def _llm_generate_skills(
         if llm_auth_failed:
             continue
 
+        skill_topic = skill_ref.split("/")[-1]
+
+        # Skip if the project-local skill already exists (idempotent reruns).
+        project_skill_path = output_dir / "skills" / "learned" / skill_topic / "SKILL.md"
+        if project_skill_path.exists():
+            continue
+        # Skip if the user already has this skill in their global learned cache —
+        # reuse it instead of regenerating (and _copy_skill_files will pick it up).
         existing_path = SkillPathManager.get_skill_path(skill_ref)
         if existing_path and existing_path.exists():
             continue
 
-        skill_topic = skill_ref.split("/")[-1]
         examples = extractor.extract_examples_for_skill(project_path, skill_topic, detected_tech)
         prompt = build_skill_prompt(
             skill_topic=skill_topic,
@@ -124,16 +157,21 @@ def _llm_generate_skills(
         )
 
         try:
-            from generator.llm_skill_generator import LLMSkillGenerator
+            if llm_gen is None:
+                # Lazy init on the first skill that needs generation. Keeps
+                # runs that skip every learned skill (all cached) zero-cost
+                # and emits the provider warning at most once.
+                from generator.llm_skill_generator import LLMSkillGenerator
 
-            llm_gen = LLMSkillGenerator(provider=provider)
+                llm_gen = LLMSkillGenerator(provider=provider)
             skill_content = llm_gen.generate_content(prompt, max_tokens=2000)
 
-            parts = skill_ref.split("/")
-            category = parts[1] if len(parts) >= 3 else "general"
-            SkillPathManager.save_learned_skill({"name": skill_topic, "content": skill_content}, category)
+            # Write directly to the project-local learned dir — never pollute
+            # the user's global ~/.project-rules-generator/learned/.
+            project_skill_path.parent.mkdir(parents=True, exist_ok=True)
+            project_skill_path.write_text(skill_content, encoding="utf-8")
             skills_manager.discovery.invalidate_cache()
-            click.echo(f"   💾 Generated: {skill_ref}")
+            click.echo(f"   💾 Generated: skills/learned/{skill_topic} (project-local)")
         except Exception as e:  # noqa: BLE001 — one item failure must not abort the batch
             err_str = str(e)
             click.echo(f"   ⚠️  Failed to generate {skill_ref}: {e}")

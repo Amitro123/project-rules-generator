@@ -13,6 +13,70 @@ from generator.utils.quality_checker import is_stub as _check_is_stub
 logger = logging.getLogger(__name__)
 
 
+# Bug C guard: content is rejected before disk write when it is empty, blank,
+# or a bare string with no markdown heading (e.g. "content" / "BUILTIN" /
+# "B" / "LEARNED" — the exact junk that old tests left in the user's
+# ~/.project-rules-generator/builtin/). Real skills — including the
+# StubStrategy fallback and deliberately-minimal test mocks like `# stub\n`
+# — always have at least one heading line.
+
+
+def _is_meaningful_skill_content(content: Optional[str]) -> bool:
+    """Return True iff content looks like a real skill (not 'content' / 'B' / '')."""
+    if not content:
+        return False
+    text = content.strip()
+    if not text:
+        return False
+    # Require at least one markdown heading — the cheapest signal that this
+    # is an actual skill file, not a stray literal that slipped through.
+    # StubStrategy always emits `# Skill: <Title>`, the Jinja2 template starts
+    # with `---\n...\n---\n# Skill: …`, and even trivial test mocks use
+    # `# stub\n`.  A bare "content" or "BUILTIN" has no heading and is rejected.
+    if not re.search(r"(?m)^#\s+\S", text):
+        return False
+    # Bug H guard: reject files whose body is a bracketed placeholder
+    # template like `[One sentence: ...]`, `[First step]`, `[What NOT to
+    # do]` — the exact shape emitted by stale legacy skills that were
+    # written before the strategy chain was sound.  Strip fenced code
+    # blocks first: the meta `writing-skills` builtin demonstrates the
+    # skill template inside a ```markdown``` block on purpose, and real
+    # skills often include Python/JS code with `['key']` dict access or
+    # YAML-style `[tag1, tag2]` arrays — none of which should count.
+    without_code_blocks = re.sub(r"```[\s\S]*?```", "", text)
+    if _count_placeholder_phrases(without_code_blocks) >= 2:
+        return False
+    return True
+
+
+# Distinctive phrases that appear only in the unfilled PRG skill template.
+# Matching two or more of these is strong evidence the file was never
+# filled in — dict access (`['contents']`) and tag arrays
+# (`[tag1, tag2, tag3]`) cannot match any of these patterns.
+_PLACEHOLDER_PATTERNS = (
+    r"\[One sentence:",
+    r"\[First step\]",
+    r"\[Second step\]",
+    r"\[Third step\]",
+    r"\[What NOT to do\]",
+    r"\[What to do instead\]",
+    r"\[What artifact",
+    r"\[list false-positive",
+    r"\[description\]",
+    r"\[log data here\]",
+    r"\[Insert ",
+    r"\[Replace with",
+    r"\[Your project",
+    r"\[Describe (?:what|how|why)",
+)
+_PLACEHOLDER_RE = re.compile("|".join(_PLACEHOLDER_PATTERNS))
+
+
+def _count_placeholder_phrases(text: str) -> int:
+    """Count distinctive unfilled-template phrases in text."""
+    return len(_PLACEHOLDER_RE.findall(text))
+
+
 class SkillGenerator(ArtifactGenerator):
     """Manages creation and generation of skills.
 
@@ -169,7 +233,29 @@ class SkillGenerator(ArtifactGenerator):
         content = self._run_strategy_chain(
             safe_name, from_readme, project_path, use_ai=use_ai, provider=provider, strategy=strategy
         )
-        skill_file.write_text(content or "", encoding="utf-8")
+        # Bug C guard: never write empty/junk content to disk — even the fallback
+        # StubStrategy returns a multi-hundred-char template with a heading, so
+        # anything shorter is almost certainly a test stub that escaped mocking.
+        if not _is_meaningful_skill_content(content):
+            logger.warning(
+                "Refusing to write skill '%s' in scope=%s: content is empty or has "
+                "no markdown heading. Not polluting %s.",
+                safe_name,
+                scope,
+                target_dir,
+            )
+            # Roll back the empty dir we just created so we don't leave a hollow
+            # <name>/ behind as a ghost skill.
+            try:
+                if target_dir.exists() and not any(target_dir.iterdir()):
+                    target_dir.rmdir()
+            except OSError:
+                pass
+            raise ValueError(
+                f"Skill '{safe_name}' was not written: content is empty or missing "
+                f"a markdown heading (at least one `# …` line is required)."
+            )
+        skill_file.write_text(content, encoding="utf-8")
 
         # DESIGN-1 fix: invalidate the cache so list_skills() / skill_exists() see
         # the newly-created skill immediately instead of stale pre-creation data.
@@ -312,6 +398,8 @@ class SkillGenerator(ArtifactGenerator):
         output_dir: Path,
         project_name: str = "",
         project_path: Optional[Path] = None,
+        use_ai: bool = False,
+        provider: str = "groq",
     ) -> List[str]:
         """Generate project-specific learned skills from README and tech stack.
 
@@ -366,10 +454,16 @@ class SkillGenerator(ArtifactGenerator):
 
             # Delegate to _run_strategy_chain() so adapt/create cases go through the
             # full strategy chain (CoworkStrategy, quality validation, etc.).
+            # Bug H: when the caller passed --ai, forward use_ai/provider so the
+            # adapt path invokes the LLM instead of falling back to StubStrategy.
+            # Previously this call omitted use_ai, meaning stale globals that were
+            # reclassified as "adapt" got only generic stub output even on --ai runs.
             skill_content = self._run_strategy_chain(
                 skill_name,
                 from_readme=readme_content,
                 project_path=project_path_str,
+                use_ai=use_ai,
+                provider=provider,
             )
 
             if action == "adapt":
@@ -382,15 +476,17 @@ class SkillGenerator(ArtifactGenerator):
                 generated.append(f"{skill_name} (adapted)")
 
             elif action == "create":
-                # No global skill — write to project dir and save to global learned
+                # Bug B fix: write ONLY to the project-local dir. Never touch
+                # ~/.project-rules-generator/learned/ as a side effect of
+                # `prg analyze` — project-specific skills would leak into
+                # unrelated projects as ghost triggers, and tests that
+                # exercise this path would pollute the developer's real
+                # global dir. Global learned writes are reserved for the
+                # explicit `prg skills save` / `prg skills create --scope learned`
+                # commands (SkillPathManager.save_learned_skill() and
+                # SkillGenerator.create_skill(scope="learned")).
                 dest.write_text(skill_content or "", encoding="utf-8")
-                global_dest = self.discovery.global_learned / skill_name / "SKILL.md"
-                global_dest.parent.mkdir(parents=True, exist_ok=True)
-                if not global_dest.exists():
-                    global_dest.write_text(skill_content or "", encoding="utf-8")
-                    logger.info("  [create] %s (saved to global learned)", skill_name)
-                else:
-                    logger.info("  [create] %s (project copy only)", skill_name)
+                logger.info("  [create] %s (project dir only)", skill_name)
                 generated.append(skill_name)
 
         return generated

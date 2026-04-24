@@ -169,6 +169,7 @@ def run_generation_pipeline(
             strategy,
             auto_generate_skills,
             _run_skills_gen,
+            output_dir,
         )
         pbar.update(1)
 
@@ -190,6 +191,8 @@ def run_generation_pipeline(
             verbose=verbose,
             generated_files=generated_files,
             enhanced_context=enhanced_context,
+            use_ai=ai,
+            provider=provider,
         )
 
         _phase_write_rules(unified_content, output_dir, inc_analyzer, verbose, generated_files, skills_manager)
@@ -303,6 +306,7 @@ def _phase_skills(
     strategy: str,
     auto_generate_skills: bool,
     run_skills_gen: bool,
+    output_dir: Optional[Path] = None,
 ) -> Set[str]:
     """Phase 4: optionally auto-generate skills.
 
@@ -324,6 +328,7 @@ def _phase_skills(
         verbose=verbose,
         skills_manager=skills_manager,
         strategy=strategy,
+        output_dir=output_dir,
     )
 
 
@@ -374,6 +379,8 @@ def _build_unified_content(
     verbose: bool,
     generated_files: List[Path],
     enhanced_context: Optional[Dict[str, Any]] = None,
+    use_ai: bool = False,
+    provider: str = "groq",
 ) -> str:
     """Assemble the unified rules + skills content string."""
     unified_content = rules_content + "\n\n# 🧠 Agent Skills\n\n"
@@ -418,6 +425,8 @@ def _build_unified_content(
                 output_dir=output_dir,
                 project_name=project_name,
                 project_path=skills_manager.project_path,
+                use_ai=use_ai,
+                provider=provider,
             )
             if generated_skills and verbose:
                 click.echo(f"   Generated {len(generated_skills)} project-specific skills:")

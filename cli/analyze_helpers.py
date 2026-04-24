@@ -32,6 +32,13 @@ def normalize_analyze_options(
         ai = True
         constitution = True
 
+    # Bug A fix: `--ai` (from any source — explicit flag, --mode ai, or --provider)
+    # must trigger project skill generation. Previously `auto_generate_skills`
+    # stayed False when `--ai` was passed without an explicit `--provider`,
+    # causing the project skills dir to remain empty after analysis.
+    if ai and mode != "manual":
+        auto_generate_skills = True
+
     return auto_generate_skills, ai, constitution
 
 

@@ -98,9 +98,19 @@ class SkillsManager:
         output_dir: Path,
         project_name: str = "",
         project_path: Optional[Path] = None,
+        use_ai: bool = False,
+        provider: str = "groq",
     ) -> List[str]:
         """Generate project-specific learned skills from README and tech stack."""
-        return self.generator.generate_from_readme(readme_content, tech_stack, output_dir, project_name, project_path)
+        return self.generator.generate_from_readme(
+            readme_content,
+            tech_stack,
+            output_dir,
+            project_name,
+            project_path,
+            use_ai=use_ai,
+            provider=provider,
+        )
 
     def get_all_skills_content(self) -> Dict[str, Dict]:
         """Get full content of all skills for export (Project > Learned > Builtin)."""

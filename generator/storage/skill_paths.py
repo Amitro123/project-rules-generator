@@ -7,6 +7,43 @@ from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
+# Bug C guard: reject tiny / test-named files so stale pollution in the
+# user's ~/.project-rules-generator/builtin/ never leaks into
+# project-local .clinerules/skills/builtin/ via setup_project_structure.
+_MIN_SKILL_FILE_BYTES = 80
+_BLACKLISTED_SKILL_STEMS = frozenset(
+    {
+        "b",
+        "l",
+        "p",
+        "conflict-skill",
+        "test-skill",
+        "test-skill-1",
+        "test-skill-2",
+        "ai-test-skill",
+        "failed-ai-skill",
+        "missing-dep-skill",
+        "fallback-skill",
+        "fallback-test-skill",
+        "test-manual",
+        "test-ai-skill",
+        "test-investigation",
+        "test-strategy",
+    }
+)
+
+
+def _is_skill_file_worth_syncing(path: Path) -> bool:
+    """Return True iff `path` looks like a real skill (not test junk)."""
+    try:
+        if path.stat().st_size < _MIN_SKILL_FILE_BYTES:
+            return False
+    except OSError:
+        return False
+    if path.stem in _BLACKLISTED_SKILL_STEMS:
+        return False
+    return True
+
 
 class SkillPathManager:
     """Manage builtin and learned skill locations with sync support.
@@ -43,6 +80,12 @@ class SkillPathManager:
         synced_count = 0
         for skill_item in cls.BUILTIN_SOURCE.iterdir():
             if skill_item.is_file() and skill_item.suffix in (".md", ".yaml", ".yml"):
+                # Bug C guard: never sync tiny / test-named builtin files —
+                # they pollute every project's .clinerules/skills/builtin/ dir
+                # via setup_project_structure()'s copy/symlink step.
+                if not _is_skill_file_worth_syncing(skill_item):
+                    logger.debug("Skipping non-skill file in builtin source: %s", skill_item.name)
+                    continue
                 target = cls.GLOBAL_BUILTIN / skill_item.name
                 if not target.exists() or skill_item.stat().st_mtime > target.stat().st_mtime:
                     shutil.copy2(skill_item, target)
@@ -51,6 +94,10 @@ class SkillPathManager:
 
             elif skill_item.is_dir():
                 # Sync entire skill directory (e.g., builtin/code-review/)
+                # Bug C guard: blacklist test-named skill dirs at the top level.
+                if skill_item.name in _BLACKLISTED_SKILL_STEMS:
+                    logger.debug("Skipping blacklisted builtin skill dir: %s", skill_item.name)
+                    continue
                 target_dir = cls.GLOBAL_BUILTIN / skill_item.name
                 target_dir.mkdir(exist_ok=True)
 

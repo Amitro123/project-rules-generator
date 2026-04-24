@@ -304,7 +304,13 @@ def analyze(
         else:
             click.echo("\nGenerated files:")
             for f in generated_files:
-                click.echo(f"   {f}")
+                # Bug G: print paths relative to the analyzed project root when possible
+                try:
+                    rel = Path(f).resolve().relative_to(Path(project_path).resolve())
+                    display = rel.as_posix()
+                except (ValueError, OSError):
+                    display = str(f)
+                click.echo(f"   {display}")
 
         # Git commit
         commit_generated_files(commit, config, generated_files, project_path, interactive)
