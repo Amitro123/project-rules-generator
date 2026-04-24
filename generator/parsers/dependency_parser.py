@@ -351,8 +351,22 @@ class DependencyParser:
             content,
         ):
             args_str = match.group(1).strip()
-            # Skip file/url references
-            if args_str.startswith(("-r ", "--requirement", "git+", "http")):
+            
+            # Special check for -r file references
+            req_file_match = re.search(r"(?:-r|--requirement)\s+([a-zA-Z0-9_.-]+)", args_str)
+            if req_file_match:
+                file_name = req_file_match.group(1)
+                deps.append({
+                    "name": file_name,
+                    "version": "referenced-in-readme",
+                    "constraint": "missing",
+                    "raw": args_str,
+                    "source": "readme_ref"
+                })
+                continue
+
+            # Skip other file/url references
+            if args_str.startswith(("git+", "http")):
                 continue
 
             for token in args_str.split():

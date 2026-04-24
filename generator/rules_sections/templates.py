@@ -27,7 +27,10 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
     languages = metadata.get("languages", [])
 
     deps = ctx.get("dependencies", {})
-    python_deps = [d["name"] for d in deps.get("python", [])]
+    python_deps_raw = deps.get("python", [])
+    python_deps = [d["name"] for d in python_deps_raw if d.get("constraint") != "missing"]
+    missing_files = [d["name"] for d in python_deps_raw if d.get("constraint") == "missing"]
+    
     node_deps = [d["name"] for d in deps.get("node", [])]
 
     structure = ctx.get("structure", {})
@@ -77,7 +80,7 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
         priorities.append(defaults[len(priorities)])
 
     test_section = _build_test_section(test_framework, test_files, test_info, python_deps, node_deps)
-    dep_section = _build_dep_section(python_deps, node_deps)
+    dep_section = _build_dep_section(python_deps, node_deps, missing_files)
     file_structure = _build_file_structure(structure, entry_points, patterns)
     workflow_section = _build_workflow_section(installation, usage, troubleshooting, test_framework, tech_stack)
     context_strategy = _build_context_strategy(structure, entry_points, project_type, test_info)

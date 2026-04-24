@@ -5,17 +5,22 @@ from __future__ import annotations
 from typing import Dict, List
 
 
-def _build_dep_section(python_deps: List[str], node_deps: List[str]) -> str:
+def _build_dep_section(python_deps: List[str], node_deps: List[str], missing_files: List[str] = None) -> str:
     """Build dependency section from parsed deps."""
     lines = []
     if python_deps:
         lines.append(f"**Python** ({len(python_deps)} packages): {', '.join(python_deps[:15])}")
         if len(python_deps) > 15:
             lines.append(f"  ... and {len(python_deps) - 15} more")
+    
     if node_deps:
         lines.append(f"**Node** ({len(node_deps)} packages): {', '.join(node_deps[:15])}")
         if len(node_deps) > 15:
             lines.append(f"  ... and {len(node_deps) - 15} more")
+
+    if missing_files:
+        lines.append(f"\n> [!WARNING]\n> **Missing Files (referenced in README)**: {', '.join(f'`{f}`' for f in missing_files)}")
+
     if not lines:
         lines.append("No dependency files found.")
     return "\n".join(lines)

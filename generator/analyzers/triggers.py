@@ -81,14 +81,25 @@ class SkillTriggerDetector:
         """
         matches = []
 
-        # 1. Keywords (Tech Stack or file content?)
-        # Let's match against Tech Stack for now
+        # 1. Keywords (matched against project context, primarily README)
         if "keywords" in group:
             tech_stack_lower = self._get_tech_stack_set()
-
             for kw in group["keywords"]:
-                if kw.lower() not in tech_stack_lower:
-                    return False  # Fail
+                kw_lower = kw.lower()
+                # Check against tech stack (exact match)
+                if kw_lower in tech_stack_lower:
+                    matches.append(f"Keyword: {kw}")
+                    continue
+                
+                # Check against other context (README, path, type) using word boundaries
+                found = False
+                for context_val in self.context.values():
+                    if isinstance(context_val, str) and re.search(r'\b' + re.escape(kw_lower) + r'\b', context_val.lower()):
+                        found = True
+                        break
+                
+                if not found:
+                    return False
                 matches.append(f"Keyword: {kw}")
 
         # 2. File Patterns

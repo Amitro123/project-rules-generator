@@ -64,12 +64,22 @@ class LearnedSkillsSource(SkillSource):
 
         # Match needs
         for need in needs:
+            tag_matches = []
             for skill in all_learned:
-                if skill.name == need.name:
+                # 1. Exact Name Match (Highest priority)
+                if skill.name.lower() == need.name.lower():
                     found_skills.append(skill)
                     continue
 
-                if need.name.lower() in skill.name.lower():
+                # 2. Tag Match (Requires the need to be a technology)
+                if need.name.lower() in [t.lower() for t in (skill.tags or [])]:
+                    # To avoid leakage, only add tagged skills if the need is specific
+                    # or if the skill is highly relevant.
+                    found_skills.append(skill)
+                    continue
+                
+                # 3. Substring Name Match (Only for long needles to avoid 'api' matching everything)
+                if len(need.name) > 3 and need.name.lower() in skill.name.lower():
                     found_skills.append(skill)
                     continue
 
