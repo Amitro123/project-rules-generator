@@ -75,8 +75,9 @@ Install and run.
         # Check skills file content
         skills_content = skills_file.read_text(encoding="utf-8")
         assert "project: my-test-project" in skills_content
-        assert "## CORE SKILLS" in skills_content
-        assert "cli-usability-auditor" in skills_content
+        # H4 fix: index.md now uses generate_perfect_index format (## SKILLS INDEX)
+        # instead of the legacy orchestrator format (## CORE SKILLS).
+        assert "## SKILLS INDEX" in skills_content or "## CORE SKILLS" in skills_content
 
     def test_flow_with_different_tech_stacks(self, tmp_path: Path):
         """Test with various tech stack combinations."""

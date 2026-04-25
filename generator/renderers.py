@@ -132,17 +132,17 @@ version: {skill_file.version}
         content += """## USAGE
 
 ### In IDE Agent (Claude/Gemini/Cursor/Antigravity)
-Load skills from {project}-skills.md
+Load `.clinerules/skills/index.md` or reference individual skill files under `.clinerules/skills/`.
 
 ### In OpenClaw
 ```bash
-/skills load {project}-skills.md
+/skills load .clinerules/skills/index.md
 ```
 
 ### Manual Reference
-Read this file before working on the project.
+Read `.clinerules/skills/index.md` before working on the project.
 """
-        return content.format(project=skill_file.project_name)
+        return content
 
 
 @register_renderer("json")

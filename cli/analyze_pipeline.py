@@ -219,6 +219,21 @@ def run_generation_pipeline(
             generated_files=generated_files,
         )
 
+        # H4 fix: overwrite skills/index.md with generate_perfect_index so it
+        # lists exactly the same skills as clinerules.yaml.  The legacy
+        # _run_skill_orchestration above uses its own skill-selection logic
+        # (independent of enhanced_selected_skills) causing the two files to
+        # diverge.  generate_perfect_index with include_only= fixes that.
+        project_type_label = (enhanced_context or {}).get("metadata", {}).get("project_type", "")
+        index_path = skills_manager.generate_perfect_index(
+            project_type=project_type_label,
+            include_only=enhanced_selected_skills if with_skills else None,
+        )
+        # Replace the stale path already appended by _run_skill_orchestration
+        stale = output_dir / "skills" / "index.md"
+        if stale in generated_files and index_path and index_path != stale:
+            generated_files[generated_files.index(stale)] = index_path
+
     return generated_files
 
 

@@ -291,23 +291,16 @@ class EnhancedProjectParser:
                 except OSError:
                     pass
         if raw_readme:
-            from generator.utils.tech_detector import detect_from_readme
+            # R3 fix: use detect_tech_stack (the full infrastructure-aware
+            # detector) instead of the narrow detect_from_readme + hardcoded
+            # allow-list. detect_tech_stack already includes CDN/canvas techs
+            # AND promotes infrastructure-category techs (docker, telegram,
+            # linux, yaml, vite) from README when no dep files are present,
+            # which is exactly what ops-heavy / agent-skills projects need.
+            from generator.utils.tech_detector import detect_tech_stack as _detect_tech_full
 
-            readme_tech = detect_from_readme(raw_readme)
-            # Only add specialized techs that wouldn't be in dep files
-            readme_primary = {
-                "konva",
-                "canvas",
-                "dxf",
-                "threejs",
-                "babylon",
-                "supabase",
-                "reportlab",
-                "pdf",
-            }
-            for tech in readme_tech:
-                if tech in readme_primary:
-                    tech_stack.add(tech)
+            for tech in _detect_tech_full(self.path, readme_content=raw_readme):
+                tech_stack.add(tech)
 
         # Detect docker
         has_docker = (self.path / "Dockerfile").exists() or (self.path / "docker-compose.yml").exists()
@@ -362,9 +355,20 @@ class EnhancedProjectParser:
             # that happens to call Gemini is still a CLI, not an "agent".
             _newer_only_uncertain = {"agent", "generator", "web-app"}
 
+            # R2 fix: agent-skills is a structurally distinct project type
+            # (repo whose primary content is SKILL.md files, no Python/JS
+            # sources). StructureAnalyzer can never detect this — it always
+            # falls back to `python-cli` or `library` on weak signals.
+            # When the newer detector is highly confident (>= 0.8) that this
+            # is an agent-skills collection, let it win unconditionally.
+            _always_override = {"agent-skills"}
+
             if _newer_type == "python-api":
                 # Always trust the newer detector for API classification — the
                 # old one misclassified `main.py + fastapi` as `python-cli`.
+                project_type = _newer_type
+            elif _newer_type in _always_override and _newer_confidence >= 0.8:
+                # agent-skills: override regardless of StructureAnalyzer result.
                 project_type = _newer_type
             elif (
                 structure_type in ("library", "unknown")

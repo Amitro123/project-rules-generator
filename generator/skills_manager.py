@@ -183,7 +183,7 @@ class SkillsManager:
         """Delegate to SkillParser."""
         return SkillParser.build_guidelines(tech, context_lines)
 
-    def generate_perfect_index(self, project_type: Optional[str] = None):
+    def generate_perfect_index(self, project_type: Optional[str] = None, include_only: Optional[Set[str]] = None):
         """
         Auto-generate .clinerules/skills/index.md from all available skills.
         Follows the Perfect Format: Name, Description, Triggers, When to use, Tools, Command, I/O.
@@ -192,6 +192,10 @@ class SkillsManager:
             project_type: Optional project type string (e.g. "python-api", "react-app").
                           When supplied, skills irrelevant to this type are excluded so
                           agents don't see e.g. React skills in a Python CLI project.
+            include_only: Optional set of skill refs (e.g. {"builtin/code-review",
+                          "project/gemini-api"}) to include. When supplied only those
+                          skills are listed so index.md matches clinerules.yaml exactly.
+                          Project-local skills are always included regardless.
         """
         from generator.skill_generator import SkillGenerator
 
@@ -201,10 +205,23 @@ class SkillsManager:
         all_skills = self.discovery.list_skills()
 
         # 2. Sort skills by type and then name for consistent output; apply exclusions
+        # H4 fix: build a name-only lookup from include_only so that a skill
+        # selected as "builtin/code-review" still matches when list_skills()
+        # returns it as "learned/code-review" (learned layer shadows builtin).
+        include_names: Optional[Set[str]] = None
+        if include_only is not None:
+            include_names = {ref.rsplit("/", 1)[-1] for ref in include_only}
+
         sorted_skills = []
         for name, data in all_skills.items():
             if name in excluded:
                 continue
+            skill_type = data.get("type", "")
+            # Project-local skills are always shown — they were just generated
+            # for this project and should always be visible in the index.
+            if include_names is not None and skill_type != "project":
+                if name not in include_names:
+                    continue
             sorted_skills.append((name, data))
         sorted_skills.sort(key=lambda x: (x[1]["type"], x[0]))
 

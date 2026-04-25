@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any, Dict, List
 
 from generator.rules_creator import append_mandatory_anti_patterns
@@ -74,7 +75,12 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
     dont_rules = _build_dont_rules(tech_stack, python_deps, project_type, structure)
 
     features = project_data.get("features", [])
-    priorities = features[:7] if features else []
+    # R1 fix: exclude port-number lines that the README scanner picks up from
+    # "Key Service Ports" tables (e.g. "**8642**: Hermes Gateway + API").
+    # A genuine priority step is never just a bold integer followed by a colon.
+    _port_re = re.compile(r"^\*{0,2}\d+\*{0,2}\s*:")
+    filtered_features = [f for f in features if not _port_re.match(f.strip())]
+    priorities = filtered_features[:7] if filtered_features else []
     while len(priorities) < 3:
         defaults = ["Code quality", "Test coverage", "Documentation clarity"]
         priorities.append(defaults[len(priorities)])
