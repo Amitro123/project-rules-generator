@@ -5,6 +5,38 @@ from pathlib import Path
 import pytest
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _isolated_global_dir(tmp_path_factory):
+    """Redirect SkillPathManager global dirs to a temp dir for the entire test session.
+
+    Without this fixture, tests that exercise skill creation write to the real
+    ~/.project-rules-generator/learned/ directory, polluting it with test
+    artifacts (b.md, ai-test-skill/, existing-skill/, etc.).  By monkeypatching
+    the three class-level path attributes on SkillPathManager we guarantee all
+    SkillDiscovery / SkillsManager instances created during tests read from and
+    write to the isolated tmp dir, leaving the user's real global cache untouched.
+    """
+    from generator.storage.skill_paths import SkillPathManager
+
+    global_tmp = tmp_path_factory.mktemp("prg_global")
+    (global_tmp / "builtin").mkdir()
+    (global_tmp / "learned").mkdir()
+
+    original_dir = SkillPathManager.GLOBAL_DIR
+    original_builtin = SkillPathManager.GLOBAL_BUILTIN
+    original_learned = SkillPathManager.GLOBAL_LEARNED
+
+    SkillPathManager.GLOBAL_DIR = global_tmp
+    SkillPathManager.GLOBAL_BUILTIN = global_tmp / "builtin"
+    SkillPathManager.GLOBAL_LEARNED = global_tmp / "learned"
+
+    yield global_tmp
+
+    SkillPathManager.GLOBAL_DIR = original_dir
+    SkillPathManager.GLOBAL_BUILTIN = original_builtin
+    SkillPathManager.GLOBAL_LEARNED = original_learned
+
+
 @pytest.fixture
 def sample_project_path():
     """Return path to sample project for testing."""

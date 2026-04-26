@@ -1,6 +1,9 @@
 """Tests for AI-powered skill generation."""
 
+import os
 import shutil
+import stat
+import sys
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -8,11 +11,37 @@ from unittest.mock import MagicMock, patch
 from generator.skills_manager import SkillsManager
 
 
+def _robust_rmtree(path: Path) -> None:
+    """Remove a directory tree, clearing read-only flags on Windows as needed.
+
+    Windows raises WinError 5 (access denied) on read-only files and WinError 32
+    (sharing violation) on locked files.  The onerror/onexc callback handles the
+    former by stripping the read-only flag and retrying.  For sharing violations
+    we simply swallow the error — setUp cleans up any leftovers on the next run.
+    """
+    if not path.exists():
+        return
+
+    def _handle_error(func, p, exc):
+        try:
+            os.chmod(p, stat.S_IWRITE)
+            func(p)
+        except Exception:
+            pass  # best-effort; setUp handles stale dirs on the next run
+
+    import sys as _sys
+
+    if _sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=_handle_error)
+    else:
+        # onerror receives (func, path, exc_info) in 3.8-3.11
+        shutil.rmtree(path, onerror=lambda f, p, e: _handle_error(f, p, e))
+
+
 class TestAISkillGeneration(unittest.TestCase):
     def setUp(self):
         self.test_dir = Path("tests/temp_ai_skills")
-        if self.test_dir.exists():
-            shutil.rmtree(self.test_dir)
+        _robust_rmtree(self.test_dir)
         self.test_dir.mkdir(parents=True)
 
         # Mock global directory for SkillPathManager to prevent pollution
@@ -28,8 +57,7 @@ class TestAISkillGeneration(unittest.TestCase):
         self.patcher1.stop()
         self.patcher2.stop()
         self.patcher3.stop()
-        if self.test_dir.exists():
-            shutil.rmtree(self.test_dir)
+        _robust_rmtree(self.test_dir)
 
     def test_create_skill_with_ai(self):
         """Test create_skill invokes AIStrategy when use_ai=True.

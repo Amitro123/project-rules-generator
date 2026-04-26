@@ -114,8 +114,19 @@ class SkillDiscovery:
                 pass
             return idx
 
-        self._skills_cache["builtin"] = _scan(self.global_builtin)
-        self._skills_cache["learned"] = _scan(self.global_learned)
+        def _merge_scans(*roots: Optional[Path]):
+            idx: Dict[str, Dict[str, Path]] = {"by_rel": {}, "by_name": {}}
+            for r in reversed(roots):  # project overwrites global
+                if not r or not r.exists(): continue
+                res = _scan(r)
+                for res_rel, res_path in res["by_rel"].items():
+                    idx["by_rel"][res_rel] = res_path
+                for res_name, res_path in res["by_name"].items():
+                    idx["by_name"][res_name] = res_path
+            return idx
+
+        self._skills_cache["builtin"] = _merge_scans(self.project_builtin_link, self.global_builtin)
+        self._skills_cache["learned"] = _merge_scans(self.project_learned_link, self.global_learned)
         if self.project_local_dir:
             self._skills_cache["project"] = _scan(self.project_local_dir)
 
@@ -149,9 +160,12 @@ class SkillDiscovery:
         # 1. Create local overrides dir
         self.project_local_dir.mkdir(parents=True, exist_ok=True)
 
-        # 2. Link/Copy Builtin & Learned
-        self._link_or_copy(self.global_builtin, self.project_builtin_link)
-        self._link_or_copy(self.global_learned, self.project_learned_link)
+        # 2. Create specific layer directories
+        # We no longer link/copy the entire global cache here.
+        # This prevents leaking irrelevant global skills into the project.
+        # Skills are explicitly copied during `_copy_skill_files` based on relevance.
+        self.project_builtin_link.mkdir(parents=True, exist_ok=True)
+        self.project_learned_link.mkdir(parents=True, exist_ok=True)
 
     def _link_or_copy(self, source: Path, target: Path):
         """Try to symlink, fallback to copy."""

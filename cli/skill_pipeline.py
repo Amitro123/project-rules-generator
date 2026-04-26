@@ -61,10 +61,34 @@ def _auto_generate_skills(
 
         # Always include existing project-local skills (e.g. created via --create-skill
         # or --ai) so they appear in clinerules.yaml and skills/index.md.
-        if skills_manager and hasattr(skills_manager, "discovery") and skills_manager.discovery.project_local_dir:
+        if skills_manager and hasattr(skills_manager, "discovery") and skills_manager.discovery.project_skills_root:
             all_discovered = skills_manager.discovery.list_skills()
             for skill_name, skill_data in all_discovered.items():
-                if skill_data.get("type") == "project":
+                s_type = skill_data.get("type")
+                if s_type == "project":
+                    enhanced_selected_skills.add(f"project/{skill_name}")
+                    continue
+                
+                # For agent-skills projects, preserve ALL skills (learned/builtin) that already exist in the project directory
+                if project_type == "agent-skills":
+                    s_path = skill_data.get("path")
+                    if s_path:
+                        try:
+                            Path(s_path).resolve().relative_to(skills_manager.discovery.project_skills_root.resolve())
+                            if s_type == "learned":
+                                enhanced_selected_skills.add(f"learned/{skill_name}")
+                            elif s_type == "builtin":
+                                enhanced_selected_skills.add(f"builtin/{skill_name}")
+                        except (ValueError, OSError):
+                            pass
+
+        # For agent-skills projects, the project's own repository IS the skills directory.
+        # Find all SKILL.md files (excluding infra dirs) and add them as project skills.
+        if project_type == "agent-skills":
+            _infra_dirs = {".clinerules", ".venv", "__pycache__", "node_modules", ".git"}
+            for p in project_path.rglob("SKILL.md"):
+                if not any(part in _infra_dirs for part in p.parts):
+                    skill_name = p.parent.name
                     enhanced_selected_skills.add(f"project/{skill_name}")
 
         if verbose:
