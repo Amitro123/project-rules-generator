@@ -154,6 +154,57 @@ prg skills show <NAME_OR_PATH> [PATH]
 
 Pretty-prints a skill's frontmatter as a table and body as a panel.
 
+### `prg skills create`
+
+```bash
+prg skills create <SKILL_NAME> [PATH] [OPTIONS]
+```
+
+Creates a new skill and writes it to the skill library. Equivalent to
+`prg analyze . --create-skill <name>` but usable outside the full pipeline.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `SKILL_NAME` | — | Name of the skill to create |
+| `PATH` | `.` | Project root |
+| `--from-readme FILE` | — | Use README as context instead of full project parse |
+| `--ai` | false | Use LLM to generate skill content |
+| `--provider` | auto | `gemini`, `groq`, `anthropic`, or `openai` |
+| `--api-key` | env | Override env var key |
+| `--force` | false | Overwrite if skill already exists |
+| `--strategy` | `auto` | Router strategy: `auto`, `speed`, `quality`, or `provider:<name>` |
+| `--scope` | `learned` | Where to write the skill: `learned`, `builtin`, or `project` |
+| `--output DIR` | `.clinerules` | Output directory (for auto-triggers refresh) |
+
+```bash
+prg skills create pytest-workflow
+prg skills create my-skill --from-readme README.md
+prg skills create my-skill --ai --provider groq
+prg skills create deploy-checklist --scope project
+```
+
+### `prg skills purge`
+
+```bash
+prg skills purge [OPTIONS]
+```
+
+Removes low-quality stub skills from the global learned store
+(`~/.project-rules-generator/learned/`). A skill is treated as a stub
+if it has no YAML frontmatter, contains bracket placeholder text, or
+declares zero triggers.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--stubs` | true | Remove stub skills (default mode) |
+| `--dry-run` | false | Preview candidates without deleting |
+| `--yes / -y` | false | Skip confirmation prompt |
+
+```bash
+prg skills purge --stubs --dry-run   # preview
+prg skills purge --stubs --yes       # delete without prompting
+```
+
 See [skills.md](skills.md) for the full skill authoring guide.
 
 ---
@@ -257,3 +308,76 @@ prg providers benchmark --prompts 5   # More prompts for accuracy
 ```
 
 See [llm-router.md](llm-router.md) for routing configuration and `~/.prg/ai_strategy.yaml` defaults.
+
+---
+
+## `prg manager` & `prg spec` — Spec Generation
+
+| Command | Description |
+|---------|-------------|
+| `prg manager .` | Bootstraps PRG memory artifacts. Auto-generates `spec.md` if missing. |
+| `prg spec . --generate` | Generates a structured `spec.md` (Overview, Goals, User Stories) via LLM. |
+
+---
+
+## `prg review` — Self-Review
+
+```bash
+prg review <FILE> [OPTIONS]
+```
+
+Critiques a generated artifact (PLAN.md, DESIGN.md, SKILL.md) for quality issues and LLM hallucinations.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--project-path` | `.` | Project root for README context |
+| `--output / -o` | `CRITIQUE.md` | Output file for the critique |
+| `--tasks` | false | Generate an actionable task list from findings |
+
+---
+
+## `prg watch` — Watch Mode
+
+```bash
+prg watch [PROJECT_PATH] [OPTIONS]
+```
+
+Monitors project files (README, tests, dependencies) and auto-runs `prg analyze --incremental` on save.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--delay` | `2.0` | Seconds to debounce/coalesce rapid saves |
+| `--ide` | — | Target a specific IDE |
+| `--quiet` | false | Suppress non-error output |
+
+---
+
+## `prg feature` & `prg ralph` — Autonomous Loop
+
+```bash
+prg feature "Description of feature"
+prg ralph run <FEATURE_ID>
+```
+
+Sets up and executes a feature-scoped autonomous iteration loop.
+
+| Command | Description |
+|---------|-------------|
+| `prg feature "<desc>"` | Generates `PLAN.md`, `TASKS.yaml`, `STATE.json` and creates a branch. |
+| `prg ralph run <ID>` | Starts the autonomous execution loop. |
+| `prg ralph status <ID>`| Shows loop iteration progress and state. |
+| `prg ralph stop <ID>` | Emergency stop the loop. |
+| `prg ralph resume <ID>`| Resumes a stopped loop. |
+| `prg ralph approve <ID>`| Approves and merges the feature branch. |
+
+---
+
+## `prg skills feedback` & `prg skills stale`
+
+Track skill quality via a persistent feedback loop (`skill-usage.json`).
+
+| Command | Description |
+|---------|-------------|
+| `prg skills feedback <NAME> --useful` | Vote a skill as useful |
+| `prg skills feedback <NAME> --not-useful` | Vote a skill as unhelpful |
+| `prg skills stale` | List skills with low scores (candidates for regeneration) |

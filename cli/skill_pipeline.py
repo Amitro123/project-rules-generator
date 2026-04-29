@@ -69,8 +69,12 @@ def _auto_generate_skills(
                     enhanced_selected_skills.add(f"project/{skill_name}")
                     continue
                 
-                # For agent-skills projects, preserve ALL skills (learned/builtin) that already exist in the project directory
-                if project_type == "agent-skills":
+                # For non-agent-skills projects: preserve learned/builtin skills that were
+                # explicitly generated into the project-local dir (e.g. via --ai or --create-skill).
+                # Excluded for agent-skills: their native SKILL.md files are discovered by the
+                # rglob scan below, and global learned skills must not be bulk-included just
+                # because they're physically present from a pre-Bug-I run.
+                if project_type != "agent-skills":
                     s_path = skill_data.get("path")
                     if s_path:
                         try:

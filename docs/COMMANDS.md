@@ -22,8 +22,12 @@ Here is a comprehensive list of all `prg` commands available categorized by thei
 | `prg analyze . --create-skill "skill-name" --scope project` | Create a project-specific skill pattern |
 | `prg skills list` | List all available skills |
 | `prg skills list --all` | List all available skills including global builtins |
-| `prg skills validate <skill-name>` | Run quality checker on a skill (score must be ≥ 90) |
+| `prg skills validate <skill-name>` | Run quality checker on a skill (score must be ≥ 70) |
 | `prg skills show <skill-name>` | Inspect a skill's content and metadata |
+| `prg skills create <skill-name>` | Dedicated command to create a new skill |
+| `prg skills remove <skill-name>` | Remove a learned skill |
+| `prg skills purge` | Remove low-quality stub skills from the global learned store |
+| `prg skills index` | Generate index.md for all available skills |
 | `prg skills feedback <skill-name> --useful` | Record a successful usage vote for a skill |
 | `prg skills stale` | List skills scoring below the 30% useful threshold |
 
@@ -34,7 +38,8 @@ Here is a comprehensive list of all `prg` commands available categorized by thei
 | `prg design "Auth system"` | Stage 1: Generate architectural design (`DESIGN.md`) including data models and API contracts |
 | `prg plan "Auth system"` | Stage 2: Generate detailed implementation plan (`PLAN.md`) into tasks |
 | `prg plan --from-design DESIGN.md` | Create an implementation plan generated directly from an existing design |
-| `prg manager .` | Generate a structured `spec.md` for project specifications |
+| `prg manager .` | Bootstrap PRG memory artifacts |
+| `prg spec . --generate` | Generate a structured `spec.md` with LLM for project specifications |
 
 ## 🤖 Execution & Autonomous Orchestration
 
@@ -47,16 +52,20 @@ Here is a comprehensive list of all `prg` commands available categorized by thei
 | `prg query` | Query tasks by their status |
 | `prg feature "Add OAuth login"` | Set up feature branch and workspace specifically for Ralph |
 | `prg ralph run FEATURE-001` | Ralph: Execute the autonomous feature loop |
+| `prg ralph status FEATURE-001` | Ralph: Show loop iteration progress and state |
+| `prg ralph stop FEATURE-001` | Ralph: Emergency stop the loop |
+| `prg ralph resume FEATURE-001` | Ralph: Resume a stopped loop |
 | `prg ralph approve FEATURE-001` | Ralph: Complete the loop by approving and creating a PR |
 | `prg agent "fix a bug"` | Smart Orchestrator simulation (finds which skill best matches) |
 | `prg review PLAN.md` | Self-Review artifact for AI Hallucinations / inconsistencies |
+| `prg gaps` | Show spec-task gaps and traceability matrix |
 
 ## ⚙️ Project Watch & AI Providers
 
 | Command | Description |
 |---------|-------------|
 | `prg watch .` | Constant directory monitoring to sync files with `.clinerules` |
-| `prg watch . --delay 5.0` | Watch directory with a bespoke 5 second debounce string |
+| `prg watch . --delay 5.0` | Watch directory with a bespoke 5 second debounce delay |
 | `prg providers list` | Check all configured AI Providers and their status |
 | `prg providers test` | Send a test prompt to verify connectivity and print latency |
 | `prg providers benchmark` | Run benchmarking standard prompts and rank by latency/quality |

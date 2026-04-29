@@ -61,6 +61,28 @@ class TestLooksTruncated:
         text = "Here are the next steps: " + ("context " * 50) + "files:"
         assert looks_truncated(text) is True
 
+    def test_incomplete_python_identifier_is_truncated(self):
+        # Simulates: "- Import `get_" cut off mid-identifier
+        body = "## Changes\n\n- Create `database.py`.\n- Import `get_"
+        text = body + ("x" * 200)  # pad past min_length, then replace tail
+        text = ("x" * 200) + body
+        assert looks_truncated(text) is True
+
+    def test_complete_identifier_not_truncated(self):
+        # A line ending in a complete identifier (no trailing _) is fine
+        text = ("x" * 200) + "\n- Import `get_settings` from config."
+        assert looks_truncated(text) is False
+
+    def test_unclosed_single_backtick_in_tail_is_truncated(self):
+        # Tail has one open backtick (odd count) — inline code cut off
+        text = ("x" * 200) + "\n- Import `get_"
+        assert looks_truncated(text) is True
+
+    def test_balanced_single_backticks_in_tail_not_truncated(self):
+        # Two backticks in tail → balanced → not truncated
+        text = ("x" * 200) + "\n- Use `my_func` here."
+        assert looks_truncated(text) is False
+
 
 # ---------------------------------------------------------------------------
 # generate_with_validator
@@ -455,11 +477,16 @@ class TestSkillGeneratorRetry:
     """The skill generator should retry once when the LLM returns
     placeholder-laden output, feeding back a repair prompt."""
 
+    # Fixtures must include ## Process so the truncation guard doesn't
+    # fire before the placeholder check.  A valid SKILL.md always has
+    # ## Process; anything missing it is treated as truncated output.
+    _COMPLETE_PREFIX = "## Process\n\nStep 1: do the thing.\n\n"
+
     def test_retries_when_placeholders_detected(self, monkeypatch):
         from generator import llm_skill_generator
 
-        bad = "## Purpose\n\n[One sentence: what problem does this solve]\n"
-        good = "## Purpose\n\nWithout this skill, CI runs fail.\n" + ("x" * 200)
+        bad = self._COMPLETE_PREFIX + "## Purpose\n\n[One sentence: what problem does this solve]\n"
+        good = self._COMPLETE_PREFIX + "## Purpose\n\nWithout this skill, CI runs fail.\n" + ("x" * 200)
 
         # Simulate: client init succeeds, first generate returns bad, second returns good.
         calls: List[str] = []
@@ -499,7 +526,7 @@ class TestSkillGeneratorRetry:
     def test_no_retry_when_output_is_clean(self, monkeypatch):
         from generator import llm_skill_generator
 
-        good = "## Purpose\n\nWithout this skill, CI runs fail.\n" + ("x" * 200)
+        good = self._COMPLETE_PREFIX + "## Purpose\n\nWithout this skill, CI runs fail.\n" + ("x" * 200)
         calls: List[str] = []
 
         def fake_generate_content(self, prompt, max_tokens=2000):  # noqa: ARG001
@@ -531,3 +558,55 @@ class TestSkillGeneratorRetry:
         )
 
         assert len(calls) == 1, "clean output should NOT trigger a retry"
+
+    def test_truncated_output_retried_then_empty_on_second_truncation(self, monkeypatch):
+        """When both LLM attempts return truncated output (missing ## Process),
+        generate_skill returns '' so the strategy chain falls back to READMEStrategy
+        or StubStrategy instead of writing a broken SKILL.md to disk."""
+        from generator import llm_skill_generator
+
+        truncated = "## Purpose\n\nWithout a clear understanding of"
+
+        calls: List[str] = []
+
+        def fake_generate_content(self, prompt, max_tokens=2000):  # noqa: ARG001
+            calls.append(prompt)
+            return truncated
+
+        monkeypatch.setattr(llm_skill_generator.LLMSkillGenerator, "generate_content", fake_generate_content)
+        monkeypatch.setattr(llm_skill_generator, "create_ai_client", lambda *a, **kw: object())
+
+        gen = llm_skill_generator.LLMSkillGenerator(provider="groq", api_key="fake")
+        result = gen.generate_skill(
+            "reportlab-pdf",
+            {"readme": "# project\n", "project_name": "proj", "tech_stack": {}, "structure": {}, "key_files": {}},
+        )
+
+        assert len(calls) == 2, "truncated output should trigger exactly one retry"
+        assert result == "", "double-truncation must return '' so next strategy is tried"
+
+    def test_truncated_first_attempt_ok_second_succeeds(self, monkeypatch):
+        """When the first attempt is truncated but the retry produces a complete
+        SKILL.md, generate_skill returns the good content."""
+        from generator import llm_skill_generator
+
+        truncated = "## Purpose\n\nWithout a clear understanding of"
+        good = "## Process\n\nStep 1: run tests.\n\n## Purpose\n\nWithout this skill things break.\n"
+
+        calls: List[str] = []
+
+        def fake_generate_content(self, prompt, max_tokens=2000):  # noqa: ARG001
+            calls.append(prompt)
+            return truncated if len(calls) == 1 else good
+
+        monkeypatch.setattr(llm_skill_generator.LLMSkillGenerator, "generate_content", fake_generate_content)
+        monkeypatch.setattr(llm_skill_generator, "create_ai_client", lambda *a, **kw: object())
+
+        gen = llm_skill_generator.LLMSkillGenerator(provider="groq", api_key="fake")
+        result = gen.generate_skill(
+            "reportlab-pdf",
+            {"readme": "# project\n", "project_name": "proj", "tech_stack": {}, "structure": {}, "key_files": {}},
+        )
+
+        assert len(calls) == 2
+        assert result == good

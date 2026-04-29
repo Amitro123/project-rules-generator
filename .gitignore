@@ -100,6 +100,7 @@ _bmad-output/
 .claude/
 .agent/
 .agents/
+.qodo/
 capture_terminal.py
 capture_ralph_terminal.py
 

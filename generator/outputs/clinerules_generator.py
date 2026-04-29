@@ -38,11 +38,21 @@ def generate_clinerules(
     learned_skills = []
     project_skills = []
 
+    # Track emitted names per tier to prevent duplicate entries when multiple
+    # category-prefixed refs (e.g. learned/fastapi/async-patterns and
+    # learned/pytest/async-patterns) resolve to the same terminal skill name.
+    seen_builtin: set = set()
+    seen_learned: set = set()
+    seen_project: set = set()
+
     for skill in sorted(selected_skills):
         parts = skill.split("/")
 
         if skill.startswith("builtin/"):
             name = parts[-1]
+            if name in seen_builtin:
+                continue
+            seen_builtin.add(name)
 
             if output_dir:
                 rel_path = f"skills/builtin/{name}/SKILL.md"
@@ -75,6 +85,10 @@ def generate_clinerules(
                 category = "general"
                 name = parts[-1]
 
+            if name in seen_learned:
+                continue
+            seen_learned.add(name)
+
             if output_dir:
                 rel_path = f"skills/learned/{name}/SKILL.md"
             else:
@@ -97,6 +111,9 @@ def generate_clinerules(
         elif skill.startswith("project/"):
             # Project-local skills live under .clinerules/skills/project/<name>/SKILL.md
             name = "/".join(parts[1:])  # preserve sub-path, e.g. "gemini-api"
+            if name in seen_project:
+                continue
+            seen_project.add(name)
             if output_dir:
                 rel_path = f"skills/project/{name}/SKILL.md"
             else:

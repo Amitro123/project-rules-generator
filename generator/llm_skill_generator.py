@@ -163,6 +163,19 @@ class LLMSkillGenerator:
         from generator.ai.hardening import contains_unfilled_placeholders
 
         result = self.generate_content(prompt, max_tokens=4000)
+
+        # Truncation detection: a valid SKILL.md must contain at least ## Process.
+        # When it's absent the provider stopped early (safety filter, rate-limit,
+        # or early STOP signal) and wrote only the frontmatter + a stub of the
+        # Purpose section. Retry once; if still truncated, return "" so the
+        # strategy chain falls back to READMEStrategy / StubStrategy instead of
+        # saving the broken file to disk.
+        _REQUIRED_SECTION = "## Process"
+        if result and _REQUIRED_SECTION not in result:
+            result = self.generate_content(prompt, max_tokens=4000)
+            if not result or _REQUIRED_SECTION not in result:
+                return ""
+
         if contains_unfilled_placeholders(result):
             repair_prompt = (
                 prompt + "\n\n---\n"

@@ -277,3 +277,101 @@ file-lock flake in `tearDown` (WinError 32 on `shutil.rmtree`).
 
 **Verified:** Full pytest run — **1394 passed, 11 skipped, 0 failed**. No new
 artifacts written to real `~/.project-rules-generator/learned/` after the run.
+
+
+---
+
+## Bug I — Global learned/ skills leaked into every project unconditionally
+
+**Symptom:**
+After `prg analyze`, `.clinerules/skills/learned/` contained 29+ unrelated
+skills (fastapi, pytest, gitpython, etc.) copied from the global registry —
+even when `rules.md` correctly reported `learned: 0`.
+
+**Root cause:**
+`setup_project_structure()` in `generator/skill_discovery.py` called
+`_link_or_copy()` to bulk-copy the entire
+`~/.project-rules-generator/learned/` into every project unconditionally,
+regardless of relevance.
+
+**Fix:** Removed the bulk-copy call from `setup_project_structure()`.
+Now only skills explicitly present in `enhanced_selected_skills` are
+copied via `_copy_skill_files()`.
+
+**Verified:** After fix, `skills/learned/` is empty when `learned: 0`
+in rules.md.
+
+---
+
+## Bug J — PRG ignored existing SKILL.md files in analyzed project
+
+**Symptom:**
+`hermes-skills` contained explicit skill folders (docker-maintenance,
+service-health-check, telegram-debug, etc.) with SKILL.md files.
+PRG ignored all of them and generated only 2 generic skills from
+tech stack inference.
+
+**Root cause:**
+`_build_cache` only scanned global paths (builtin + global learned).
+Local project skills were never discovered.
+
+**Fix:**
+- `_build_cache` now merges local + global caches (local overrides global)
+- For `project_type: agent-skills`, `skill_pipeline.py` adds a pre-analysis
+  scan of `<project_path>` — any directory containing a SKILL.md is added
+  directly to `enhanced_selected_skills` as `project/<name>`, skipping LLM
+  regeneration entirely
+
+**Verified on hermes-skills:**
+docker-maintenance, hermes-config-editor, ops-logs, service-health-check
+all appear in rules.md under `project:`.
+
+**Regression suite:** 1394 passed (3 new tests).
+
+---
+
+## Bug K — Stale leaked learned skills re-included on every re-run for agent-skills
+
+**Symptom:**
+After Bug I's fix, re-running `prg analyze` on `hermes-skills` still produced
+36 learned skills in `clinerules.yaml` (fastapi, pytest, pydantic, etc.) —
+even though `tech_stack` contained no Python.
+
+**Root cause:**
+Bug I removed the bulk-copy from `setup_project_structure()`, but projects
+that had already been analyzed before the fix retained a populated
+`.clinerules/skills/learned/` directory. On the next run, `_auto_generate_skills`
+in `cli/skill_pipeline.py` had a block (lines 72-83) that for `agent-skills`
+projects preserved ALL learned/builtin skills whose path was relative to
+`project_skills_root`. Since the stale leaked files were inside
+`.clinerules/skills/learned/`, the `relative_to()` check passed and all 36
+skills were re-added to `enhanced_selected_skills`, re-including them in
+`clinerules.yaml` and copying them back.
+
+**Fix (`cli/skill_pipeline.py:72`):**
+Changed `if project_type == "agent-skills":` → `if project_type != "agent-skills":`.
+For `agent-skills` projects the native SKILL.md discovery rglob (lines 87-92)
+is the authoritative source; no learned preservation is needed. Stale
+`.clinerules/skills/learned/` was deleted from hermes-skills.
+
+**Verified:**
+- `clinerules.yaml` now shows `learned: 0, total: 12` (10 project + 2 builtin)
+- `skills/learned/` directory is empty after re-run
+- 1394 passed, 11 skipped — 0 regressions
+
+---
+
+## Bug B — Regression check after Bug I/J fixes ✅
+
+**Concern:** The revert of `_link_or_copy` in `skill_creator.py` could
+have re-opened Bug B.
+
+**Verification:**
+- Snapshotted `~/.project-rules-generator/learned/` mtimes
+- Deleted `.clinerules/` in gravity-claw-hub
+- Ran `prg analyze . --ai` — 7 skills generated project-local
+- Diff of global learned/ before/after → empty, exit 0
+
+**Conclusion:** Bug B remains fixed. The revert was safe because
+`_link_or_copy` is now an isolated utility — the bulk-call that caused
+the leak was removed separately.

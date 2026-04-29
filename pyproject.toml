@@ -10,6 +10,7 @@ authors = [
   { name = "Amitro123", email = "101516903+Amitro123@users.noreply.github.com" },
 ]
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.10"
 keywords = ["ai", "agents", "rules", "skills", "scaffolding", "claude", "cursor", "windsurf"]
 classifiers = [

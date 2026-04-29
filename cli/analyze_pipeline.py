@@ -461,21 +461,10 @@ def _build_unified_content(
         unified_content += "\n"
 
     if enhanced_selected_skills:
-        lightweight_yaml = generate_clinerules(
-            project_name,
-            enhanced_selected_skills,
-            enhanced_context,
-            output_dir=output_dir,
-        )
-        unified_content += f"\n\n<!-- Lightweight Skill References\n{lightweight_yaml}-->\n"
-
-        lightweight_path = output_dir / "clinerules.yaml"
-        lightweight_path.write_text(lightweight_yaml, encoding="utf-8")
-        generated_files.append(lightweight_path)
-        if verbose:
-            click.echo(f"   Generated clinerules.yaml ({len(enhanced_selected_skills)} skills)")
-
-        # Generate project-specific skills from README
+        # Bug 1 fix: generate README-based project skills FIRST so they are counted in
+        # clinerules.yaml. Previously generate_clinerules() was called before
+        # generate_from_readme(), so the 9 generated project skills never appeared in
+        # enhanced_selected_skills when the YAML was written → project: 0.
         if readme_path and readme_path.exists():
             readme_text = readme_path.read_text(encoding="utf-8", errors="replace")
             project_tech = project_data.get("tech_stack", [])
@@ -502,7 +491,52 @@ def _build_unified_content(
                 for s in generated_skills:
                     click.echo(f"     - {s}")
 
-        # Copy skill files into output_dir/skills/
+            # Register generated project skills so clinerules.yaml counts them.
+            # Strip display suffixes like " (reused)" and " (adapted)".
+            for raw in generated_skills:
+                skill_name = raw.split(" (")[0]
+                enhanced_selected_skills.add(f"project/{skill_name}")
+
+        # Bug 4 fix: drop learned refs (2-part OR 3-part) whose terminal name matches
+        # a project ref of the same name. The matcher emits 3-part refs like
+        # "learned/fastapi/pydantic-validation", so matching on f"learned/{n}" (2-part)
+        # silently missed them. We now compare by ref.split("/")[-1] instead.
+        project_names = {ref.split("/")[-1] for ref in enhanced_selected_skills if ref.startswith("project/")}
+        enhanced_selected_skills -= {
+            ref for ref in set(enhanced_selected_skills)
+            if ref.startswith("learned/") and ref.split("/")[-1] in project_names
+        }
+
+        lightweight_yaml = generate_clinerules(
+            project_name,
+            enhanced_selected_skills,
+            enhanced_context,
+            output_dir=output_dir,
+        )
+
+        # Bug 2 fix: add a visible skill listing so agents can read active skills
+        # without having to parse the hidden YAML comment below.
+        project_refs = sorted(r for r in enhanced_selected_skills if r.startswith("project/"))
+        learned_refs = sorted(r for r in enhanced_selected_skills if r.startswith("learned/"))
+        builtin_refs = sorted(r for r in enhanced_selected_skills if r.startswith("builtin/"))
+        if project_refs or learned_refs or builtin_refs:
+            unified_content += "## Active Skills\n"
+            for ref in project_refs + learned_refs + builtin_refs:
+                name = ref.split("/")[-1]
+                tier = ref.split("/")[0]
+                unified_content += f"- **{name}** ({tier}): `skills/{tier}/{name}/SKILL.md`\n"
+            unified_content += "\n"
+
+        unified_content += f"\n\n<!-- Lightweight Skill References\n{lightweight_yaml}-->\n"
+
+        lightweight_path = output_dir / "clinerules.yaml"
+        lightweight_path.write_text(lightweight_yaml, encoding="utf-8")
+        generated_files.append(lightweight_path)
+        if verbose:
+            click.echo(f"   Generated clinerules.yaml ({len(enhanced_selected_skills)} skills)")
+
+        # Copy skill files into output_dir/skills/ (builtin and learned only;
+        # project skills are already written by generate_from_readme above).
         _copy_skill_files(
             enhanced_selected_skills=enhanced_selected_skills,
             output_dir=output_dir,

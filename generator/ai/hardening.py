@@ -44,7 +44,11 @@ _TRUNCATION_TAIL_PATTERNS = (
     re.compile(r"\b(and|or|but|the|a|an|to|for|with|of|in|on)\s*$", re.IGNORECASE),
     re.compile(r"```[a-z]*\s*$", re.IGNORECASE),  # open code fence never closed
     re.compile(r"\[\s*$"),  # open bracket list
+    re.compile(r"\b[a-zA-Z]\w*_\s*$"),  # incomplete Python identifier (e.g. "get_" cut off)
 )
+
+# Matches a lone single backtick that is NOT part of a double/triple backtick sequence.
+_SINGLE_BACKTICK = re.compile(r"(?<!`)`(?!`)")
 
 
 def looks_truncated(text: str, *, min_length: int = 100) -> bool:
@@ -56,6 +60,8 @@ def looks_truncated(text: str, *, min_length: int = 100) -> bool:
     * Ends with a stop-word / conjunction the LLM was clearly continuing from
     * Contains an odd number of triple-backtick fences (unclosed code block)
     * Exact length under ``min_length`` characters (too short to be complete)
+    * Ends with an incomplete Python identifier (word ending in ``_``)
+    * Tail has an odd number of single backticks (unclosed inline code span)
 
     Not a guarantee of truncation, but good enough to trigger a retry.
     """
@@ -73,6 +79,12 @@ def looks_truncated(text: str, *, min_length: int = 100) -> bool:
     for pattern in _TRUNCATION_TAIL_PATTERNS:
         if pattern.search(tail):
             return True
+
+    # Unclosed single-backtick inline code span in the last 200 chars.
+    # An odd count means the LLM was mid-inline-code when it stopped.
+    tail_200 = stripped[-200:]
+    if len(_SINGLE_BACKTICK.findall(tail_200)) % 2 == 1:
+        return True
 
     return False
 
