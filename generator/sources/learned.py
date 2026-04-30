@@ -64,7 +64,6 @@ class LearnedSkillsSource(SkillSource):
 
         # Match needs
         for need in needs:
-            tag_matches = []
             for skill in all_learned:
                 # 1. Exact Name Match (Highest priority)
                 if skill.name.lower() == need.name.lower():
@@ -77,7 +76,7 @@ class LearnedSkillsSource(SkillSource):
                     # or if the skill is highly relevant.
                     found_skills.append(skill)
                     continue
-                
+
                 # 3. Substring Name Match (Only for long needles to avoid 'api' matching everything)
                 if len(need.name) > 3 and need.name.lower() in skill.name.lower():
                     found_skills.append(skill)

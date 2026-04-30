@@ -38,7 +38,7 @@ This directory is consumed by Cline and any agent that reads `.clinerules/`. It 
 ## File Descriptions
 
 - **`rules.md`**: The core human-readable rules file. Contains critical "DOs" and "DON'T's", testing instructions, dependency information, and architectural overview. Always generated in `.clinerules/`.
-- **`.agents/rules/<project-name>.md`**: Auto-loaded project rules for Claude Code / Windsurf. A copy of `rules.md` used for automatic context injection. Generated when `--ide antigravity` is passed to `prg analyze`.
+- **`.agents/rules/<project-name>.md`**: Copy of `rules.md` written when `--ide antigravity` is passed to `prg analyze`. Used by the [Antigravity](https://antigravity.dev) Claude Code setup. Not automatically loaded by Claude Code or Windsurf without that specific setup.
 - **`rules.json`**: Machine-readable version of rules, used by `prg plan` and `prg design` for task decomposition.
 - **`auto-triggers.json`**: Lookup table mapping phrases to skill names. Used by `prg agent` for smart skill routing.
 - **`constitution.md`**: High-level coding philosophy and non-negotiable principles. Generated with the `--constitution` flag.

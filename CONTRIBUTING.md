@@ -179,3 +179,48 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`
 - One feature or fix per PR.
 - All tests must pass and formatters must be clean.
 - Describe what changed and why in the PR body.
+
+---
+
+## Good first issues
+
+New to the project? These are well-scoped, low-risk starting points:
+
+### 1. Add Cursor IDE registration
+**File:** `cli/analyze_cmd.py` → `_register_ide_rules()`
+**What:** When `--ide cursor` is passed, write `.cursor/rules/<project>.md`
+mirroring the `antigravity` branch. The pattern is already there — copy it,
+change the target path, add a test in `tests/test_analyze_cmd.py`.
+**Docs to update:** `docs/structure.md`, `README.md` integrations table.
+
+### 2. Add a new builtin skill
+**File:** add a directory `generator/skills/builtin/<your-skill>/SKILL.md`
+**What:** Pick a common workflow (e.g. `docker-compose-debugging`,
+`github-actions-ci`, `openapi-design`) and author a skill following the
+canonical frontmatter in this guide. Run `pytest tests/test_quality_checker_triggers.py`
+to confirm quality gates pass.
+**Effort:** ~1–2 hours. No Python needed.
+
+### 3. Improve trigger matching test coverage
+**File:** `generator/analyzers/triggers.py` and `tests/test_triggers.py`
+**What:** The trigger-matching logic is the core of `prg agent`. It currently
+has basic tests but needs parametrized cases for edge inputs (empty context,
+unicode skill names, overlapping keywords). Add 5–10 new parametrized test
+cases using `@pytest.mark.parametrize`.
+
+### 4. Add `--format json` output to `prg skills list`
+**File:** `cli/skills_cmd.py` → `skills_list()`
+**What:** Add `--format [table|json]` option. `json` outputs a JSON array of
+`{name, layer, path, trigger_count}` objects to stdout. Useful for scripting.
+Add a test asserting valid JSON is produced.
+
+### 5. Fix a docs inconsistency you find
+Browse `docs/` and `README.md`. If a command option is wrong, an example
+doesn't work, or a section is unclear — open a PR. Docs PRs are always
+welcome and reviewed fast.
+
+---
+
+**How to claim an issue:** Comment on the GitHub issue (or open one if it
+doesn't exist yet) and say you're working on it. We'll assign it to you within
+24 hours so there's no duplicate effort.

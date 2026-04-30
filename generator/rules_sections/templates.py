@@ -31,7 +31,7 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
     python_deps_raw = deps.get("python", [])
     python_deps = [d["name"] for d in python_deps_raw if d.get("constraint") != "missing"]
     missing_files = [d["name"] for d in python_deps_raw if d.get("constraint") == "missing"]
-    
+
     node_deps = [d["name"] for d in deps.get("node", [])]
 
     structure = ctx.get("structure", {})

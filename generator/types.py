@@ -23,6 +23,7 @@ class Skill:
     description: str
     content: str = ""  # Full markdown content
     category: str = "general"  # core, tech, ml_pipeline, agent, etc.
+    tags: List[str] = field(default_factory=list)  # Searchable labels for tag-based matching
     triggers: List[str] = field(default_factory=list)  # Manual legacy triggers
     auto_triggers: List[Dict[str, Any]] = field(default_factory=list)  # Smart auto-triggers
     tools: List[str] = field(default_factory=list)

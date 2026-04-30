@@ -24,7 +24,6 @@ from cli.analyze_helpers import normalize_analyze_options
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator, _is_meaningful_skill_content
 
-
 # ---------------------------------------------------------------------------
 # Bug A — `--ai` must trigger auto_generate_skills even without --provider
 # ---------------------------------------------------------------------------
@@ -105,9 +104,7 @@ def test_bug_b_create_branch_does_not_pollute_global_learned(tmp_path: Path):
         "_run_strategy_chain",
         return_value="# Skill: Pytest Testing\n\nproject-specific pytest guidance\n",
     ):
-        with patch.object(
-            SkillGenerator, "check_global_skill_reuse", return_value={"pytest-testing": "create"}
-        ):
+        with patch.object(SkillGenerator, "check_global_skill_reuse", return_value={"pytest-testing": "create"}):
             generated = generator.generate_from_readme(
                 readme_content="# MyProject\nUses pytest.\n",
                 tech_stack=["pytest"],
@@ -123,12 +120,10 @@ def test_bug_b_create_branch_does_not_pollute_global_learned(tmp_path: Path):
 
     # Global learned must be UNTOUCHED — Bug B regression guard
     assert not (global_learned / "pytest-testing").exists(), (
-        "Bug B regression: generate_from_readme wrote project-specific skill "
-        "to ~/.project-rules-generator/learned/"
+        "Bug B regression: generate_from_readme wrote project-specific skill " "to ~/.project-rules-generator/learned/"
     )
     assert list(global_learned.iterdir()) == [], (
-        f"Bug B regression: global_learned was touched — contents: "
-        f"{list(global_learned.iterdir())}"
+        f"Bug B regression: global_learned was touched — contents: " f"{list(global_learned.iterdir())}"
     )
 
 
@@ -159,9 +154,7 @@ def test_bug_c_is_meaningful_skill_content_accepts_real_skills():
     # StubStrategy-style output
     assert _is_meaningful_skill_content("# Skill: Pytest Testing\n\n## Purpose\n\nFoo.\n")
     # Jinja2-style frontmatter + body
-    assert _is_meaningful_skill_content(
-        "---\nname: foo\n---\n\n# Skill: Foo\n\nBody.\n"
-    )
+    assert _is_meaningful_skill_content("---\nname: foo\n---\n\n# Skill: Foo\n\nBody.\n")
 
 
 # ---------------------------------------------------------------------------
@@ -182,9 +175,9 @@ def test_bug_h_placeholder_content_rejected():
         "## Anti-patterns\n"
         "- [What NOT to do]\n"
     )
-    assert not _is_meaningful_skill_content(content), (
-        "Bug H regression: bracketed-placeholder template passed the guard"
-    )
+    assert not _is_meaningful_skill_content(
+        content
+    ), "Bug H regression: bracketed-placeholder template passed the guard"
 
 
 def test_bug_h_placeholder_guard_ignores_code_block_examples():
@@ -204,9 +197,9 @@ def test_bug_h_placeholder_guard_ignores_code_block_examples():
         "```\n\n"
         "More real content after the example.\n"
     )
-    assert _is_meaningful_skill_content(content), (
-        "Bug H regression: code-block bracket examples incorrectly triggered the guard"
-    )
+    assert _is_meaningful_skill_content(
+        content
+    ), "Bug H regression: code-block bracket examples incorrectly triggered the guard"
 
 
 def test_bug_h_is_stub_catches_placeholder_density(tmp_path: Path):
@@ -225,16 +218,12 @@ def test_bug_h_is_stub_catches_placeholder_density(tmp_path: Path):
     )
 
     # String-level guard
-    assert is_stub_content(stale), (
-        "Bug H regression: is_stub_content() missed placeholder-heavy stale file"
-    )
+    assert is_stub_content(stale), "Bug H regression: is_stub_content() missed placeholder-heavy stale file"
 
     # File-level guard (what check_global_skill_reuse actually calls)
     stale_file = tmp_path / "gemini-api.md"
     stale_file.write_text(stale, encoding="utf-8")
-    assert is_stub(stale_file), (
-        "Bug H regression: is_stub() missed placeholder-heavy stale file on disk"
-    )
+    assert is_stub(stale_file), "Bug H regression: is_stub() missed placeholder-heavy stale file on disk"
 
 
 def test_bug_c_create_skill_refuses_empty_content(tmp_path: Path, monkeypatch):
@@ -264,9 +253,9 @@ def test_bug_c_create_skill_refuses_empty_content(tmp_path: Path, monkeypatch):
         generator.create_skill("real-skill-name")
 
     # And the skill dir must not linger as a hollow ghost
-    assert not (discovery.global_learned / "real-skill-name").exists(), (
-        "Bug C regression: empty skill dir was left behind after guard rejected content"
-    )
+    assert not (
+        discovery.global_learned / "real-skill-name"
+    ).exists(), "Bug C regression: empty skill dir was left behind after guard rejected content"
 
 
 def test_bug_c_sync_skips_blacklisted_names(tmp_path: Path, monkeypatch):
@@ -297,9 +286,5 @@ def test_bug_c_sync_skips_blacklisted_names(tmp_path: Path, monkeypatch):
 
     assert (target / "real-skill.md").exists()
     assert not (target / "b.md").exists(), "Bug C regression: 'b.md' leaked through sync"
-    assert not (target / "conflict-skill.md").exists(), (
-        "Bug C regression: 'conflict-skill.md' leaked through sync"
-    )
-    assert not (target / "test-skill.md").exists(), (
-        "Bug C regression: 'test-skill.md' leaked through sync"
-    )
+    assert not (target / "conflict-skill.md").exists(), "Bug C regression: 'conflict-skill.md' leaked through sync"
+    assert not (target / "test-skill.md").exists(), "Bug C regression: 'test-skill.md' leaked through sync"

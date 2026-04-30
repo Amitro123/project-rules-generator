@@ -255,7 +255,7 @@ class SkillGenerator(ArtifactGenerator):
                 f"Skill '{safe_name}' was not written: content is empty or missing "
                 f"a markdown heading (at least one `# …` line is required)."
             )
-        skill_file.write_text(content, encoding="utf-8")
+        skill_file.write_text(content or "", encoding="utf-8")
 
         # DESIGN-1 fix: invalidate the cache so list_skills() / skill_exists() see
         # the newly-created skill immediately instead of stale pre-creation data.

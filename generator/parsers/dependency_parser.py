@@ -351,18 +351,20 @@ class DependencyParser:
             content,
         ):
             args_str = match.group(1).strip()
-            
+
             # Special check for -r file references
             req_file_match = re.search(r"(?:-r|--requirement)\s+([a-zA-Z0-9_.-]+)", args_str)
             if req_file_match:
                 file_name = req_file_match.group(1)
-                deps.append({
-                    "name": file_name,
-                    "version": "referenced-in-readme",
-                    "constraint": "missing",
-                    "raw": args_str,
-                    "source": "readme_ref"
-                })
+                deps.append(
+                    {
+                        "name": file_name,
+                        "version": "referenced-in-readme",
+                        "constraint": "missing",
+                        "raw": args_str,
+                        "source": "readme_ref",
+                    }
+                )
                 continue
 
             # Skip other file/url references

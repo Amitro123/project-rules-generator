@@ -146,9 +146,7 @@ class SkillsManager:
                 # Skill keys in all_skills['learned'] are the names, e.g. 'fastapi'
                 # include_only set contains refs, e.g. 'learned/fastapi'
                 learned_filtered = {
-                    name: data
-                    for name, data in all_skills["learned"].items()
-                    if f"learned/{name}" in include_only
+                    name: data for name, data in all_skills["learned"].items() if f"learned/{name}" in include_only
                 }
                 project_only["learned"] = learned_filtered
             else:

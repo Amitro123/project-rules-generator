@@ -53,9 +53,11 @@ PRG writes to two locations depending on which agent you use:
 
 ### Why two locations?
 
-**`.agents/rules/<project-name>.md`** is picked up automatically by Claude Code and Windsurf as an "Always On" workspace rule — no configuration needed. The agent receives your project's stack, architecture, and conventions at the start of every session without you having to paste anything.
+**`.clinerules/`** is the primary output and works with any agent that reads project context (Cline, Cursor, Windsurf, Copilot). It also powers the full skill system (`prg design`, `prg plan`, `prg agent`).
 
-**`.clinerules/`** is consumed by Cline and agents that follow the `.clinerules` convention. It also powers the full skill system (`prg design`, `prg plan`, `prg agent`).
+**`.agents/rules/<project-name>.md`** is generated when you pass `--ide antigravity` to `prg analyze`. This is a convention used by the [Antigravity](https://antigravity.dev) Claude Code setup — it is **not** automatically loaded by Claude Code or Windsurf without that setup.
+
+> **IDE integration status:** `.clinerules/` works everywhere. Per-IDE registration (writing rules to the location each IDE monitors) is currently implemented for `antigravity` only. Cursor, Windsurf, and VS Code users can point their IDE at `.clinerules/rules.md` manually, or open a PR to add native support — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 See [`docs/structure.md`](docs/structure.md) for a full breakdown of every file.
 
@@ -124,6 +126,32 @@ On macOS/Linux: `find . -type d -name __pycache__ -exec rm -rf {} +`.
 prg feature "Add OAuth2 login"         # Set up feature branch + state
 prg ralph run FEATURE-001              # Autonomous loop (no per-task prompts)
 prg ralph approve FEATURE-001          # Human approval → merge to main
+```
+
+---
+
+## See It In Action
+
+```
+$ cd my-fastapi-project
+$ prg init .
+✓ Detected stack: Python · FastAPI · pytest · Docker
+✓ Generated .clinerules/rules.md          (21 rules)
+✓ Generated .clinerules/clinerules.yaml
+→ Next: run `prg analyze . --ai` to add skills (free Groq key)
+
+$ export GROQ_API_KEY=gsk_...
+$ prg analyze . --ai
+Analyzing project context...
+✓ Rules updated                            (24 rules)
+✓ Skills matched: test-driven-development, code-review, systematic-debugging
+✓ Skill generated: fastapi-endpoints       (.clinerules/skills/learned/)
+✓ Skill generated: pydantic-validation     (.clinerules/skills/learned/)
+✓ Wrote .clinerules/clinerules.yaml        (project: 2 · learned: 2 · builtin: 3)
+
+Your AI agent now loads project rules + skills automatically.
+Ask it to "add a login endpoint" — it will use async SQLAlchemy,
+Pydantic response models, and place the route in the right module.
 ```
 
 ---
@@ -329,6 +357,29 @@ prg --version
 ```
 
 **Requirements:** Python 3.10+, Git
+
+---
+
+## Project Status
+
+**Alpha** — core analysis, rules generation, and skill management are stable. The planning pipeline (`prg plan`, `prg design`) and autonomous loop (`prg ralph`) are in active development.
+
+| Area | Status |
+|------|--------|
+| `prg init` / `prg analyze` / `prg create-rules` | ✅ Stable |
+| `prg skills *` / `prg agent` | ✅ Stable |
+| `prg plan` / `prg design` / `prg review` | 🚧 Beta |
+| `prg ralph` / `prg feature` | 🚧 Experimental |
+| IDE registration (`--ide antigravity`) | ✅ Implemented |
+| IDE registration (cursor / windsurf / vscode) | 📋 Planned — PRs welcome |
+
+**Known limitations:**
+- `--ide` flag only has a registration implementation for `antigravity`; other values are accepted but write no extra files beyond `.clinerules/`
+- `prg ralph` requires existing PRG artifacts and a clean git state — run `prg analyze` first
+- LLM-dependent commands (`--ai`, `prg plan`, `prg design`) require an API key; all other commands work offline
+- AI skill generation quality varies by provider — Groq (free, fast) produces shorter output; Anthropic/OpenAI produce richer SKILL.md content
+- `prg watch` uses polling on Windows; latency may be higher than on Linux/macOS with inotify
+- Skill auto-triggers are matched by keyword heuristics, not semantic search — complex queries may miss the best skill
 
 ---
 

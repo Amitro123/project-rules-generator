@@ -46,6 +46,7 @@ class TestAISkillGeneration(unittest.TestCase):
 
         # Mock global directory for SkillPathManager to prevent pollution
         from generator.storage.skill_paths import SkillPathManager
+
         self.patcher1 = patch.object(SkillPathManager, "GLOBAL_DIR", self.test_dir)
         self.patcher2 = patch.object(SkillPathManager, "GLOBAL_LEARNED", self.test_dir / "learned")
         self.patcher3 = patch.object(SkillPathManager, "GLOBAL_BUILTIN", self.test_dir / "builtin")

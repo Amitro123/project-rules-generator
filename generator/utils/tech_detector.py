@@ -176,9 +176,7 @@ def detect_tech_stack(project_path: Path, readme_content: str = "") -> List[str]
         try:
             from generator.tech.lookups import TECH_CATEGORIES
 
-            readme_primary_techs.update(
-                name for name, cat in TECH_CATEGORIES.items() if cat == "infrastructure"
-            )
+            readme_primary_techs.update(name for name, cat in TECH_CATEGORIES.items() if cat == "infrastructure")
         except Exception:  # noqa: BLE001 — guard against import issues at startup
             readme_primary_techs.update({"docker", "docker-compose", "telegram", "yaml", "linux", "vite"})
 

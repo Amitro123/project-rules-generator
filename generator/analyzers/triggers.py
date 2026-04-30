@@ -1,5 +1,6 @@
 import fnmatch
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Set
 
@@ -90,14 +91,16 @@ class SkillTriggerDetector:
                 if kw_lower in tech_stack_lower:
                     matches.append(f"Keyword: {kw}")
                     continue
-                
+
                 # Check against other context (README, path, type) using word boundaries
                 found = False
                 for context_val in self.context.values():
-                    if isinstance(context_val, str) and re.search(r'\b' + re.escape(kw_lower) + r'\b', context_val.lower()):
+                    if isinstance(context_val, str) and re.search(
+                        r"\b" + re.escape(kw_lower) + r"\b", context_val.lower()
+                    ):
                         found = True
                         break
-                
+
                 if not found:
                     return False
                 matches.append(f"Keyword: {kw}")

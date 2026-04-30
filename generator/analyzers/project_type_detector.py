@@ -75,14 +75,8 @@ def _detect_agent_skills_signals(scores: Dict[str, float], tech_stack: Tuple[str
     _infra_dirs = {".clinerules", ".venv", "__pycache__", "node_modules", ".git"}
 
     # Only count SKILL.md files that live outside infrastructure directories
-    skill_md_files = [
-        p for p in path.glob("**/SKILL.md")
-        if not any(part in _infra_dirs for part in p.parts)
-    ]
-    py_sources = [
-        p for p in path.glob("**/*.py")
-        if ".venv" not in p.parts and "__pycache__" not in p.parts
-    ]
+    skill_md_files = [p for p in path.glob("**/SKILL.md") if not any(part in _infra_dirs for part in p.parts)]
+    py_sources = [p for p in path.glob("**/*.py") if ".venv" not in p.parts and "__pycache__" not in p.parts]
     package_json = (path / "package.json").exists()
 
     if not skill_md_files:

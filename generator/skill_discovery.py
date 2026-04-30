@@ -117,7 +117,8 @@ class SkillDiscovery:
         def _merge_scans(*roots: Optional[Path]):
             idx: Dict[str, Dict[str, Path]] = {"by_rel": {}, "by_name": {}}
             for r in reversed(roots):  # project overwrites global
-                if not r or not r.exists(): continue
+                if not r or not r.exists():
+                    continue
                 res = _scan(r)
                 for res_rel, res_path in res["by_rel"].items():
                     idx["by_rel"][res_rel] = res_path

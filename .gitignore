@@ -123,6 +123,7 @@ tests/test_samples/sample-project/.clinerules/
 
 # Internal developer notes — not for end users
 bugs_docs/
+docs/PRE-OSS-AUDIT.md
 # Excludes a root-level constitution.md (scratch/temp); .clinerules/constitution.md
 # is intentionally tracked — it is self-dogfooding of PRG's own output.
 constitution.md

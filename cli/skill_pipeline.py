@@ -68,7 +68,7 @@ def _auto_generate_skills(
                 if s_type == "project":
                     enhanced_selected_skills.add(f"project/{skill_name}")
                     continue
-                
+
                 # For non-agent-skills projects: preserve learned/builtin skills that were
                 # explicitly generated into the project-local dir (e.g. via --ai or --create-skill).
                 # Excluded for agent-skills: their native SKILL.md files are discovered by the

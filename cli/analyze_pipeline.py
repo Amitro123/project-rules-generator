@@ -176,11 +176,9 @@ def run_generation_pipeline(
         pbar.set_description("Unified Export (.clinerules/)")
         unified_content = _build_unified_content(
             rules_content=rules_content,
-            triggers_dict=skills_manager.extract_project_triggers(
-                include_only=enhanced_selected_skills
-            )
-            if with_skills
-            else {},
+            triggers_dict=(
+                skills_manager.extract_project_triggers(include_only=enhanced_selected_skills) if with_skills else {}
+            ),
             skills_manager=skills_manager,
             enhanced_selected_skills=enhanced_selected_skills,
             project_name=project_name,
@@ -503,7 +501,8 @@ def _build_unified_content(
         # silently missed them. We now compare by ref.split("/")[-1] instead.
         project_names = {ref.split("/")[-1] for ref in enhanced_selected_skills if ref.startswith("project/")}
         enhanced_selected_skills -= {
-            ref for ref in set(enhanced_selected_skills)
+            ref
+            for ref in set(enhanced_selected_skills)
             if ref.startswith("learned/") and ref.split("/")[-1] in project_names
         }
 

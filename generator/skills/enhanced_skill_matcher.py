@@ -50,9 +50,6 @@ class EnhancedSkillMatcher:
         """
         selected: Set[str] = set()
 
-        # Track whether ANY dependency-based trigger fired
-        any_trigger_fired = False
-
         for tech in detected_tech:
             tech_key = self._normalize_tech_key(tech)
             tech_skills = self.index.get("skills", {}).get(tech_key, {})
@@ -68,7 +65,6 @@ class EnhancedSkillMatcher:
             triggers = tech_skills.get("triggers", [])
             if self._check_any_trigger(triggers, project_context):
                 logger.debug(f"Trigger fired for tech: {tech} (key: {tech_key})")
-                any_trigger_fired = True
                 for skill_path in tech_skills.get("learned", []):
                     selected.add(f"learned/{skill_path}")
             else:
