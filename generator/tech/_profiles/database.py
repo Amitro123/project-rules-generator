@@ -68,4 +68,44 @@ DATABASE: List[TechProfile] = [
         packages=["supabase"],
         readme_keywords=["supabase"],
     ),
+    TechProfile(
+        name="chromadb",
+        display_name="ChromaDB",
+        category="database",
+        skill_name="chromadb-rag",
+        packages=["chromadb"],
+        readme_keywords=["chromadb", "chroma", "vector store", "vector database"],
+        rules={
+            "high": [
+                "Use persistent client (chromadb.PersistentClient) in production — never in-memory for data that must survive restarts",
+                "Always specify the embedding function explicitly; don't rely on the default",
+                "Use collection.get() to check for existing documents before upserting to avoid duplicates",
+            ],
+            "medium": [
+                "Prefer upsert() over add() when document IDs may already exist",
+                "Set n_results to a small value (3-10) and filter by distance threshold before returning to LLM",
+                "Index on metadata fields used in where= filters for large collections",
+            ],
+        },
+    ),
+    TechProfile(
+        name="qdrant",
+        display_name="Qdrant",
+        category="database",
+        skill_name="qdrant-vector-search",
+        packages=["qdrant-client"],
+        readme_keywords=["qdrant", "vector search"],
+        rules={
+            "high": [
+                "Create collections with explicit vector size matching your embedding model output dimension",
+                "Use payload filtering in search() to narrow results before vector scoring",
+                "Handle QdrantException with retry logic — Qdrant Cloud may throttle on cold starts",
+            ],
+            "medium": [
+                "Batch upsert payloads in chunks of 100-500 for large datasets",
+                "Use named vectors when storing multiple embedding types per document",
+                "Store the source document ID and chunk index in payload for retrieval traceability",
+            ],
+        },
+    ),
 ]

@@ -32,6 +32,15 @@ SKIP_DIRS = {
 class StructureAnalyzer:
     """Detect architecture patterns from file/folder structure."""
 
+    # Per-pattern minimum score threshold.  The default is 2 (any two signals).
+    # Framework patterns that require stronger evidence (e.g. flask-app, django-app)
+    # need at least 4 points so that a single helper-file import doesn't mis-classify
+    # a project whose primary framework is something else entirely.
+    PATTERN_THRESHOLDS: Dict[str, int] = {
+        "flask-app": 4,    # Requires folder evidence OR multiple file imports
+        "django-app": 4,   # Same — manage.py alone isn't enough
+    }
+
     PATTERNS = {
         "python-cli": {
             "markers": ["__main__.py", "argparse", "click", "typer", "fire"],
@@ -152,7 +161,8 @@ class StructureAnalyzer:
 
         for pattern_name, pattern_def in self.PATTERNS.items():
             score = self._score_pattern(pattern_def)
-            if score >= 2:  # Need at least 2 signals to confirm
+            threshold = self.PATTERN_THRESHOLDS.get(pattern_name, 2)
+            if score >= threshold:
                 detected.append(pattern_name)
 
         return detected
@@ -188,7 +198,10 @@ class StructureAnalyzer:
             # 'library' is a generic fallback that matches packaging files
             # (setup.py, pyproject.toml) which most Python projects have.
             if best == "library":
-                app_types = {k: v for k, v in scores.items() if k != "library" and v >= 2}
+                app_types = {
+                    k: v for k, v in scores.items()
+                    if k != "library" and v >= self.PATTERN_THRESHOLDS.get(k, 2)
+                }
                 if app_types:
                     best = max(app_types, key=lambda k: app_types[k])
                     max_score = scores[best]
@@ -220,9 +233,24 @@ class StructureAnalyzer:
 
         return result
 
+    def _has_js_or_ts_files(self) -> bool:
+        """Return True if the project contains any .js or .ts source files."""
+        for ext in ("*.js", "*.ts", "*.jsx", "*.tsx"):
+            if any(self.project_path.rglob(ext)):
+                return True
+        return (self.project_path / "package.json").exists()
+
     def detect_test_framework(self) -> Optional[str]:
         """Detect which test framework is in use."""
         for framework, definition in self.TEST_PATTERNS.items():
+            # jest and mocha are JavaScript-only frameworks.  Checking their
+            # import patterns against Python test files produces false positives
+            # (e.g. `it(` matches inline comments or helper calls in .py files).
+            # Guard: only consider JS/TS frameworks when the project actually has
+            # JS or TS files (or a package.json).
+            if framework in ("jest", "mocha") and not self._has_js_or_ts_files():
+                continue
+
             # Check for config files
             for fname in definition.get("files", []):
                 if (self.project_path / fname).exists():

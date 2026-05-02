@@ -100,7 +100,7 @@ def _register_ide_rules(ide: str, project_path: Path, project_name: str, output_
     help="Explicit mode (manual=no AI, ai=auto-generate+AI, constitution=adds constitution.md)",
 )
 @click.option("--incremental", is_flag=True, help="Only regenerate changed sections (skip if nothing changed)")
-@click.option("--ide", help="Register rules with IDE (antigravity, cline, cursor, vscode)")
+@click.option("--ide", help="Register rules with IDE (antigravity)")
 @click.option(
     "--provider",
     type=click.Choice(["gemini", "groq", "anthropic", "openai"]),

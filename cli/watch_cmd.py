@@ -197,7 +197,7 @@ class _PRGHandler:
 @click.option("--delay", default=2.0, type=float, show_default=True, help="Debounce delay in seconds.")
 @click.option(
     "--ide",
-    type=click.Choice(["antigravity", "cursor", "windsurf", "vscode", "none"]),
+    type=click.Choice(["antigravity", "none"]),
     default=None,
     help="IDE target (passed to analyze).",
 )

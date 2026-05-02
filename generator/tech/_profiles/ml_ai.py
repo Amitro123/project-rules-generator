@@ -95,8 +95,29 @@ ML_AI: List[TechProfile] = [
         display_name="LangChain",
         category="ai",
         skill_name="langchain-chains",
-        packages=["langchain"],
+        packages=["langchain", "langchain-core", "langchain-openai", "langchain-community"],
         readme_keywords=["langchain"],
         tools=["pytest", "ruff"],
+    ),
+    TechProfile(
+        name="langgraph",
+        display_name="LangGraph",
+        category="ai",
+        skill_name="langgraph-workflow",
+        packages=["langgraph"],
+        readme_keywords=["langgraph", "stategraph", "langgraph workflow"],
+        tools=["pytest", "ruff"],
+        rules={
+            "high": [
+                "Define graph state with a TypedDict — never mutate state in-place",
+                "Use conditional edges for routing; avoid branching inside node functions",
+                "Each node must return a dict that is a subset of the State TypedDict",
+            ],
+            "medium": [
+                "Compile the graph once and reuse the compiled object across invocations",
+                "Use MemorySaver for stateful multi-turn agents; prefer thread_id per user",
+                "Add interrupt_before/interrupt_after for human-in-the-loop approval steps",
+            ],
+        },
     ),
 ]

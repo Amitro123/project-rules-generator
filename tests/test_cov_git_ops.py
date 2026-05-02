@@ -52,15 +52,17 @@ class TestStageFiles:
         with patch("subprocess.run", return_value=mock_result):
             stage_files(["file.py"], tmp_path)
 
-    def test_gitignored_file_prints_message(self, tmp_path, capsys):
+    def test_gitignored_file_is_silently_skipped(self, tmp_path, capsys):
+        # .gitignore-blocked files should be skipped without printing noise.
+        # Previously printed "[IGNORED] ..." — now silent to keep CLI output clean.
         import subprocess
 
         err = subprocess.CalledProcessError(1, "git")
         err.stderr = "The following paths are ignored by git"
         with patch("subprocess.run", side_effect=err):
-            stage_files(["ignored.py"], tmp_path)
+            stage_files(["ignored.py"], tmp_path)  # must not raise
         captured = capsys.readouterr()
-        assert "IGNORED" in captured.out
+        assert captured.out == ""  # no noise output
 
     def test_real_error_is_raised(self, tmp_path):
         import subprocess

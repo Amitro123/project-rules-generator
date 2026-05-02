@@ -134,6 +134,17 @@ class EnhancedProjectParser:
             result["node"] = parsed.get("dependencies", [])
             result["node_dev"] = parsed.get("dev_dependencies", [])
 
+        # Spec file: merge dependencies declared in spec.yml / spec.yaml
+        from generator.utils.readme_bridge import parse_spec_file
+
+        spec_data = parse_spec_file(self.path)
+        if spec_data["dependencies"]:
+            existing_names = {d["name"].lower() for d in result["python"]}
+            for dep_name in spec_data["dependencies"]:
+                if dep_name not in existing_names:
+                    result["python"].append({"name": dep_name, "version": "", "extras": []})
+                    existing_names.add(dep_name)
+
         # Fallback: extract from README pip install commands when no deps found
         if not result["python"]:
             from generator.utils.readme_bridge import find_readme
@@ -229,6 +240,11 @@ class EnhancedProjectParser:
             "anthropic": "anthropic",
             "langchain": "langchain",
             "langchain-core": "langchain",
+            "langchain-openai": "langchain",
+            "langchain-community": "langchain",
+            "langgraph": "langgraph",
+            "chromadb": "chromadb",
+            "qdrant-client": "qdrant",
             "websockets": "websocket",
             "httpx": "httpx",
             "aiohttp": "aiohttp",
@@ -307,6 +323,18 @@ class EnhancedProjectParser:
         if has_docker:
             tech_stack.add("docker")
 
+        # Enrich from spec.yml / spec.yaml when present
+        from generator.utils.readme_bridge import parse_spec_file as _parse_spec
+
+        _spec = _parse_spec(self.path)
+        for _tech in _spec.get("extra_tech", []):
+            tech_stack.add(_tech)
+        # spec.yml overrides the test framework when structure_analyzer guessed wrong
+        _spec_framework = _spec.get("test_framework")
+        if _spec_framework:
+            tests = dict(tests)  # don't mutate the original
+            tests["framework"] = _spec_framework
+
         # Add test framework
         test_framework = tests.get("framework")
         if test_framework:
@@ -382,6 +410,15 @@ class EnhancedProjectParser:
                 project_type = _newer_type
         except Exception:  # noqa: BLE001 — type override is best-effort; old detector result is still valid
             pass
+
+        # Remove generic tokens that are not real package/framework identifiers.
+        # These appear when the README parser does keyword extraction from prose
+        # (e.g. "GPT" in a description → "gpt") but they pollute skill matching
+        # with false-positive tech signals that have no corresponding package.
+        # "jest" is also removed here when it leaked from Python test-file
+        # pattern matching (guarded separately in structure_analyzer, but belt+suspenders).
+        _noise_tokens = {"gpt", "jest"} - {test_framework} if test_framework != "jest" else {"gpt"}
+        tech_stack -= _noise_tokens
 
         return {
             "project_name": project_name,

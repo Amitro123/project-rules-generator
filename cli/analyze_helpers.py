@@ -263,9 +263,37 @@ def commit_generated_files(
             click.echo("\nWARNING: Not a git repository, skipping commit")
         return
 
-    commit_msg = config.get("git", {}).get("commit_message", "Auto-generated rules and skills")
+    commit_msg = config.get("git", {}).get(
+        "commit_message", "chore: regenerate .clinerules rules and skills"
+    )
     user_name = config.get("git", {}).get("commit_user_name")
     user_email = config.get("git", {}).get("commit_user_email")
+
+    # Detect projects that use a commit-msg hook enforcing conventional commits.
+    # When a hook is present, warn clearly instead of letting the commit fail silently.
+    hook_path = project_path / ".git" / "hooks" / "commit-msg"
+    if hook_path.exists() and hook_path.stat().st_size > 0:
+        # Check if the hook enforces conventional commits format
+        try:
+            hook_content = hook_path.read_text(encoding="utf-8", errors="replace")
+            if "conventional" in hook_content.lower() or "<type>" in hook_content or "feat|fix" in hook_content:
+                import re as _re
+                # Validate our message matches the pattern
+                _cc_pattern = _re.compile(
+                    r"^(feat|fix|refactor|docs|test|chore|perf|ci|build|style|revert)(\(.+\))?: .+",
+                    _re.IGNORECASE,
+                )
+                if not _cc_pattern.match(commit_msg):
+                    click.echo(
+                        "\n⚠️  Skipping auto-commit: this project's commit-msg hook enforces conventional commits "
+                        f"but the configured message {commit_msg!r} would fail it.\n"
+                        "   Set git.commit_message in config.yaml to a conventional commit, "
+                        "e.g. 'chore: regenerate .clinerules'."
+                    )
+                    return
+        except OSError:
+            pass
+
     try:
         result = commit_files(generated_files, commit_msg, project_path, user_name, user_email)
         click.echo("\nCommitted to git")

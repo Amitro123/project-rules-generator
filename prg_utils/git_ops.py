@@ -40,7 +40,8 @@ def stage_files(paths: Sequence[Union[str, Path]], repo_path: Union[str, Path] =
             # Check if failure is due to .gitignore
             # git usually returns 1 and prints "The following paths are ignored..." to stderr
             if "paths are ignored by" in e.stderr:
-                print(f"[IGNORED] Files generated successfully (ignored by .gitignore): {path}")
+                # File is intentionally in .gitignore — silently skip staging.
+                # This is expected when .clinerules/ or .agents/ are git-ignored.
                 continue
             # Re-raise real errors
             raise e

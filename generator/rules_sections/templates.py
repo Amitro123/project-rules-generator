@@ -43,6 +43,15 @@ def _generate_enhanced_rules(project_data: Dict[str, Any], config: Dict[str, Any
     test_framework = test_info.get("framework", "")
     test_files = test_info.get("test_files", 0)
 
+    # Tech-stack fallback: structure_analyzer may miss the framework when dep files
+    # don't explicitly list it (e.g. pytest installed globally / via spec.yml only).
+    # If the enhanced parser already put a known test framework in tech_stack, use it.
+    if not test_framework:
+        for _fw in ("pytest", "unittest", "jest", "mocha", "vitest"):
+            if _fw in tech_stack:
+                test_framework = _fw
+                break
+
     readme_data = ctx.get("readme", {})
     installation = readme_data.get("installation", "")
     usage = readme_data.get("usage", "")

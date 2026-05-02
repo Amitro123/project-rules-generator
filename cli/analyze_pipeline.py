@@ -135,6 +135,16 @@ def run_generation_pipeline(
         enhanced_context = _phase_enhanced_parse(project_path, _run_enhanced, verbose)
         pbar.update(1)
 
+        # Sync project_data tech_stack with the enhanced parser result.
+        # resolve_readme() uses a README-only detector that can include noisy tokens
+        # (e.g. "gpt" from prose, "jest" from Python test files).  The enhanced
+        # parser runs a richer, filtered pipeline and is the authoritative source;
+        # overwriting here ensures rules.md and clinerules.yaml stay consistent.
+        if enhanced_context:
+            _meta_tech = enhanced_context.get("metadata", {}).get("tech_stack", [])
+            if _meta_tech:
+                project_data["tech_stack"] = _meta_tech
+
         _phase_constitution(
             project_name,
             enhanced_context,

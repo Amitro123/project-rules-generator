@@ -1,3 +1,4 @@
+import io
 import logging
 import sys
 
@@ -28,7 +29,8 @@ def ensure_utf8_streams() -> None:
         pass
     for stream in (sys.stdout, sys.stderr):
         try:
-            stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+            if isinstance(stream, io.TextIOWrapper):
+                stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, OSError):
             pass
 
