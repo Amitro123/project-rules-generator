@@ -68,8 +68,8 @@ INFRASTRUCTURE: List[TechProfile] = [
         display_name="Git",
         category="infrastructure",
         skill_name="",
-        packages=[],
-        readme_keywords=["git"],
+        packages=["gitpython", "gitdb"],
+        readme_keywords=[],
         tools=["git"],
     ),
     TechProfile(

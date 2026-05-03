@@ -99,7 +99,7 @@ class StructureAnalyzer:
         },
         "ml-pipeline": {
             "markers": ["pytorch", "tensorflow", "sklearn", "transformers"],
-            "folders": ["models", "data", "notebooks", "training", "inference"],
+            "folders": ["models", "notebooks", "training", "inference"],
             "files": ["train.py", "model.py", "dataset.py", "predict.py"],
             "imports": [
                 r"import torch",

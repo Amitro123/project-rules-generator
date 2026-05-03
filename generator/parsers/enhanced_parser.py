@@ -381,7 +381,7 @@ class EnhancedProjectParser:
             # uncertain label (`library`/`unknown`). We don't steal confident
             # `python-cli`/`fastapi-api`/etc. classifications — a Python CLI
             # that happens to call Gemini is still a CLI, not an "agent".
-            _newer_only_uncertain = {"agent", "generator", "web-app"}
+            _newer_only_uncertain = {"generator", "web-app"}
 
             # R2 fix: agent-skills is a structurally distinct project type
             # (repo whose primary content is SKILL.md files, no Python/JS
@@ -389,14 +389,25 @@ class EnhancedProjectParser:
             # falls back to `python-cli` or `library` on weak signals.
             # When the newer detector is highly confident (>= 0.8) that this
             # is an agent-skills collection, let it win unconditionally.
-            _always_override = {"agent-skills"}
+            # "agent" is also in this set: StructureAnalyzer has no agent
+            # pattern, so it falls back to generic types (library, ml-pipeline)
+            # even for clearly LLM-driven chatbot/RAG projects.  When the
+            # newer detector is confident (>= 0.7), trust it over SA's guess.
+            _always_override = {"agent-skills", "agent"}
 
             if _newer_type == "python-api":
                 # Always trust the newer detector for API classification — the
                 # old one misclassified `main.py + fastapi` as `python-cli`.
                 project_type = _newer_type
-            elif _newer_type in _always_override and _newer_confidence >= 0.8:
+            elif _newer_type == "agent-skills" and _newer_confidence >= 0.8:
                 # agent-skills: override regardless of StructureAnalyzer result.
+                project_type = _newer_type
+            elif _newer_type == "agent" and _newer_confidence >= 0.7 and float(structure.get("confidence", 1.0)) < 0.5:
+                # agent: StructureAnalyzer has no agent pattern and misclassifies
+                # LLM/chatbot/RAG projects (e.g. as ml-pipeline when a data/
+                # folder exists) when its own confidence is low (weak signals).
+                # Don't override a high-confidence SA classification like
+                # python-cli — a CLI that calls an LLM is still a CLI.
                 project_type = _newer_type
             elif (
                 structure_type in ("library", "unknown")

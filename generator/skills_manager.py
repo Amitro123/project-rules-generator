@@ -1,9 +1,50 @@
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
 from generator.skill_parser import SkillParser
+
+# Project types that have no JS/frontend stack.  Learned skills whose triggers
+# exclusively mention JS frameworks (jest, UI, React) are hidden for these types
+# to prevent global-cache bleed from unrelated projects.
+_PYTHON_ONLY_PROJECT_TYPES: frozenset = frozenset(
+    {
+        "agent",
+        "ml-pipeline",
+        "ml_pipeline",
+        "python-api",
+        "python_api",
+        "python-cli",
+        "cli_tool",
+        "library",
+        "agent-skills",
+        "generator",
+    }
+)
+
+# Trigger phrases that only make sense in a JS/frontend project.
+_JS_TRIGGER_RE = re.compile(
+    r"\bjest\b|ui\s+change|react\s+component|angular|vue\s+component|\bdom\b|\.jsx?\b",
+    re.IGNORECASE,
+)
+
+
+def _learned_skill_has_js_only_triggers(content: str) -> bool:
+    """Return True if every trigger phrase in the skill is JS/frontend-specific."""
+    # Extract only the Triggers line(s) to avoid false matches in code examples.
+    triggers_text = ""
+    for line in content.splitlines():
+        if line.strip().lower().startswith("**triggers**") or line.strip().lower().startswith("triggers:"):
+            triggers_text += line + " "
+    if not triggers_text:
+        return False
+    # Only suppress when ALL extracted trigger text matches JS-only terms —
+    # a skill with mixed Python/JS triggers is kept.
+    return bool(_JS_TRIGGER_RE.search(triggers_text)) and not re.search(
+        r"\bpytest\b|\basync\s+python\b|\bpython\b|\bfixture\b", triggers_text, re.IGNORECASE
+    )
 
 
 class SkillsManager:
@@ -210,6 +251,8 @@ class SkillsManager:
         if include_only is not None:
             include_names = {ref.rsplit("/", 1)[-1] for ref in include_only}
 
+        _filter_js_triggers = (project_type or "") in _PYTHON_ONLY_PROJECT_TYPES
+
         sorted_skills = []
         for name, data in all_skills.items():
             if name in excluded:
@@ -219,6 +262,18 @@ class SkillsManager:
             # for this project and should always be visible in the index.
             if include_names is not None and skill_type != "project":
                 if name not in include_names:
+                    continue
+            # Suppress learned skills whose triggers are entirely JS/frontend-
+            # specific (e.g. "jest", "ui change") in Python-only projects.
+            # These leak from global caches populated by frontend projects.
+            if _filter_js_triggers and skill_type == "learned":
+                content = data.get("content", "")
+                if not content and "path" in data:
+                    try:
+                        content = Path(data["path"]).read_text(encoding="utf-8")
+                    except OSError:
+                        content = ""
+                if _learned_skill_has_js_only_triggers(content):
                     continue
             sorted_skills.append((name, data))
         sorted_skills.sort(key=lambda x: (x[1]["type"], x[0]))
