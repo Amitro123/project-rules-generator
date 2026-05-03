@@ -254,6 +254,35 @@ def _extract_section(content: str, keywords: List[str]) -> str:
     return content[start_pos:end_pos].strip()
 
 
+# Heading slugs that are generic instructions, not project names.
+# When the H1 normalises to one of these, fall back to the directory name.
+_GENERIC_HEADING_SLUGS: frozenset = frozenset(
+    {
+        "clone",
+        "clone-repository",
+        "clone-repo",
+        "clone-the-repository",
+        "clone-the-repo",
+        "getting-started",
+        "get-started",
+        "quickstart",
+        "quick-start",
+        "installation",
+        "install",
+        "setup",
+        "set-up",
+        "readme",
+        "documentation",
+        "docs",
+        "overview",
+        "introduction",
+        "welcome",
+        "table-of-contents",
+        "contents",
+    }
+)
+
+
 def _extract_project_name(content: str, path: Path) -> str:
     """Extract project name from first H1 heading, normalized to slug."""
     match = TITLE_RE.search(content)
@@ -264,7 +293,10 @@ def _extract_project_name(content: str, path: Path) -> str:
         name = re.sub(r"[\U0001F3AF\U0001F680\u2728\U0001F525\U0001F4A1]", "", name)  # Remove emojis
         name = re.sub(r"[^\w\s-]", "", name).lower().strip()
         name = re.sub(r"\s+", "-", name)
-        return name
+        # Reject generic instruction-style headings \u2014 they describe a setup
+        # step, not the project itself (e.g. "# Clone Repository").
+        if name and name not in _GENERIC_HEADING_SLUGS:
+            return name
 
     # Fallback: use directory name
     return path.parent.name.lower().replace(" ", "-")

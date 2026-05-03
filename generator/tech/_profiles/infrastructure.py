@@ -64,6 +64,34 @@ INFRASTRUCTURE: List[TechProfile] = [
         readme_keywords=["uvicorn"],
     ),
     TechProfile(
+        name="aws",
+        display_name="AWS",
+        category="infrastructure",
+        skill_name="aws-deployment",
+        packages=["boto3", "botocore", "aws-cdk-lib", "awscli"],
+        readme_keywords=[
+            "amazon web services",
+            "s3 bucket",
+            "lambda function",
+            "ec2 instance",
+            "dynamodb",
+            "cloudwatch logs",
+        ],
+        tools=["aws"],
+        rules={
+            "high": [
+                "Never hardcode AWS credentials — use IAM roles or environment variables via boto3 session",
+                "Always scope IAM permissions to the minimum required (principle of least privilege)",
+                "Use boto3 resource/client context managers to avoid connection leaks",
+            ],
+            "medium": [
+                "Use AWS_REGION environment variable; don't hardcode region strings",
+                "Wrap boto3 calls with botocore.exceptions.ClientError retry logic for transient failures",
+                "Tag all created AWS resources (project, env, owner) for cost tracking",
+            ],
+        },
+    ),
+    TechProfile(
         name="git",
         display_name="Git",
         category="infrastructure",
