@@ -263,9 +263,7 @@ def commit_generated_files(
             click.echo("\nWARNING: Not a git repository, skipping commit")
         return
 
-    commit_msg = config.get("git", {}).get(
-        "commit_message", "chore: regenerate .clinerules rules and skills"
-    )
+    commit_msg = config.get("git", {}).get("commit_message", "chore: regenerate .clinerules rules and skills")
     user_name = config.get("git", {}).get("commit_user_name")
     user_email = config.get("git", {}).get("commit_user_email")
 
@@ -278,6 +276,7 @@ def commit_generated_files(
             hook_content = hook_path.read_text(encoding="utf-8", errors="replace")
             if "conventional" in hook_content.lower() or "<type>" in hook_content or "feat|fix" in hook_content:
                 import re as _re
+
                 # Validate our message matches the pattern
                 _cc_pattern = _re.compile(
                     r"^(feat|fix|refactor|docs|test|chore|perf|ci|build|style|revert)(\(.+\))?: .+",

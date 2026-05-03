@@ -37,8 +37,8 @@ class StructureAnalyzer:
     # need at least 4 points so that a single helper-file import doesn't mis-classify
     # a project whose primary framework is something else entirely.
     PATTERN_THRESHOLDS: Dict[str, int] = {
-        "flask-app": 4,    # Requires folder evidence OR multiple file imports
-        "django-app": 4,   # Same — manage.py alone isn't enough
+        "flask-app": 4,  # Requires folder evidence OR multiple file imports
+        "django-app": 4,  # Same — manage.py alone isn't enough
     }
 
     PATTERNS = {
@@ -199,8 +199,7 @@ class StructureAnalyzer:
             # (setup.py, pyproject.toml) which most Python projects have.
             if best == "library":
                 app_types = {
-                    k: v for k, v in scores.items()
-                    if k != "library" and v >= self.PATTERN_THRESHOLDS.get(k, 2)
+                    k: v for k, v in scores.items() if k != "library" and v >= self.PATTERN_THRESHOLDS.get(k, 2)
                 }
                 if app_types:
                     best = max(app_types, key=lambda k: app_types[k])

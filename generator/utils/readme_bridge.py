@@ -193,13 +193,20 @@ def parse_spec_file(project_path: Path) -> Dict[str, Any]:
     component_names: List[str] = []
     extra_tech: List[str] = []
     _tech_keywords = {
-        "chroma": "chromadb", "chromadb": "chromadb",
-        "qdrant": "qdrant", "vector": None,
-        "openai": "openai", "vllm": "vllm",
-        "docker": "docker", "lambda": "aws-lambda",
-        "webhook": None, "telegram": "telegram",
-        "langchain": "langchain", "langgraph": "langgraph",
-        "opik": None, "cloudwatch": None,
+        "chroma": "chromadb",
+        "chromadb": "chromadb",
+        "qdrant": "qdrant",
+        "vector": None,
+        "openai": "openai",
+        "vllm": "vllm",
+        "docker": "docker",
+        "lambda": "aws-lambda",
+        "webhook": None,
+        "telegram": "telegram",
+        "langchain": "langchain",
+        "langgraph": "langgraph",
+        "opik": None,
+        "cloudwatch": None,
     }
     for comp in components:
         if not isinstance(comp, dict):
