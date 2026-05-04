@@ -26,6 +26,7 @@ SKIP_DIRS = {
     "*.egg-info",
     "htmlcov",
     ".coverage",
+    ".web",  # Reflex framework generated Next.js output — not user-authored code
 }
 
 
@@ -74,6 +75,12 @@ class StructureAnalyzer:
             "folders": ["templates", "static", "blueprints"],
             "files": [],
             "imports": [r"from flask import", r"import flask", r"Flask\(__name__\)"],
+        },
+        "reflex-app": {
+            "markers": ["rxconfig.py", "reflex"],
+            "folders": [],
+            "files": ["rxconfig.py"],
+            "imports": [r"import reflex", r"from reflex", r"as rx"],
         },
         "react-app": {
             "markers": ["App.jsx", "App.tsx", "react"],

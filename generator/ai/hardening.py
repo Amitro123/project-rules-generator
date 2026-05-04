@@ -200,6 +200,7 @@ _SOURCE_DIR_BLOCKLIST = frozenset(
         "doc",
         "examples",
         "example",
+        ".web",  # Reflex framework generated Next.js output
     }
 )
 

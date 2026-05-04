@@ -24,6 +24,7 @@ SKIP_DIRS = {
     ".mypy_cache",
     ".eggs",
     "htmlcov",
+    ".web",  # Reflex framework generated Next.js output
 }
 
 

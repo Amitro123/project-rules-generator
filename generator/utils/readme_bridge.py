@@ -46,6 +46,7 @@ _TREE_EXCLUDE = {
     ".venv",
     "venv",
     "node_modules",
+    ".web",
     ".pytest_cache",
     "dist",
     "build",

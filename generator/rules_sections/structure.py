@@ -80,6 +80,7 @@ def _build_context_strategy(structure: Dict, entry_points: List[str], project_ty
         "`**/__pycache__/**`",
         "`**/.venv/**`",
         "`**/node_modules/**`",
+        "`**/.web/**`",
         "`**/*-skills.md`",
         "`**/*-skills.json`",
         "`**/.clinerules*`",

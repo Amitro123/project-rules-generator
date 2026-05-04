@@ -341,6 +341,7 @@ def _detect_relevant_files(skill_topic: str, context: Dict[str, Any], project_pa
         "**/__pycache__/**",
         "**/.venv/**",
         "**/node_modules/**",
+        "**/.web/**",
     ]
 
     structure = context.get("structure", {})

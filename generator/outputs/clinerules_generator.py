@@ -188,6 +188,7 @@ def _build_context_config(project_context: Optional[Dict[str, Any]] = None) -> D
         "**/__pycache__/**",
         "**/.venv/**",
         "**/node_modules/**",
+        "**/.web/**",
         "**/*-skills.md",
         "**/*-skills.json",
         "**/.clinerules*",

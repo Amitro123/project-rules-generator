@@ -196,15 +196,28 @@ def detect_tech_stack(project_path: Path, readme_content: str = "") -> List[str]
     return list(detected)
 
 
+_FILE_SCAN_EXCLUDE: frozenset = frozenset(
+    {".web", "node_modules", ".venv", "venv", "__pycache__", ".git", "dist", "build"}
+)
+
+
+def _rglob_excluding(project_path: Path, pattern: str) -> bool:
+    """Return True if any file matching pattern exists outside excluded directories."""
+    for p in project_path.rglob(pattern):
+        if not any(part in _FILE_SCAN_EXCLUDE for part in p.parts):
+            return True
+    return False
+
+
 def _detect_from_files(project_path: Path) -> Set[str]:
-    """Detect tech from actual project files."""
+    """Detect tech from actual project files, skipping generated/vendor directories."""
     detected = set()
 
-    if any(project_path.rglob("*.py")):
+    if _rglob_excluding(project_path, "*.py"):
         detected.add("python")
-    if any(project_path.rglob("*.ts")) or any(project_path.rglob("*.tsx")):
+    if _rglob_excluding(project_path, "*.ts") or _rglob_excluding(project_path, "*.tsx"):
         detected.add("typescript")
-    if any(project_path.rglob("*.jsx")):
+    if _rglob_excluding(project_path, "*.jsx"):
         detected.add("react")
     if (project_path / "Dockerfile").exists():
         detected.add("docker")

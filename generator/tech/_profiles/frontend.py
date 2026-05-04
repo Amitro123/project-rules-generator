@@ -6,6 +6,28 @@ from generator.tech.profile import TechProfile
 
 FRONTEND: List[TechProfile] = [
     TechProfile(
+        name="reflex",
+        display_name="Reflex",
+        category="frontend",
+        skill_name="reflex-framework",
+        packages=["reflex"],
+        readme_keywords=["reflex", "rxconfig"],
+        detection_files=["rxconfig.py"],
+        tools=["reflex"],
+        rules={
+            "high": [
+                "Define all UI state in rx.State subclasses — never mutate state outside event handlers",
+                "Use rx.var for computed properties; never call Python functions directly in component trees",
+                "Run `reflex init` before `reflex run` — the .web/ directory is auto-generated, never edit it",
+            ],
+            "medium": [
+                "Split large pages into component functions in separate files under components/",
+                "Use rx.background for long-running async tasks to avoid blocking the event loop",
+                "Store secrets in environment variables, not in rx.State or rxconfig.py",
+            ],
+        },
+    ),
+    TechProfile(
         name="react",
         display_name="React",
         category="frontend",

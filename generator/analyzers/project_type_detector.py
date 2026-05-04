@@ -170,6 +170,7 @@ def _detect_web_app_signals(
         "angular",
         "nextjs",
         "svelte",
+        "reflex",
     }
     web_keywords = {"server", "port", "localhost", "http", "api"}
 

@@ -431,6 +431,12 @@ class EnhancedProjectParser:
         _noise_tokens = {"gpt", "jest"} - {test_framework} if test_framework != "jest" else {"gpt"}
         tech_stack -= _noise_tokens
 
+        # Reflex uses React + Next.js internally but developers write pure Python.
+        # Strip the JS ecosystem tokens that leak from README prerequisites
+        # ("Node.js 16+") or from the generated .web/ directory being scanned.
+        if "reflex" in tech_stack:
+            tech_stack -= {"react", "node", "javascript", "typescript", "nextjs"}
+
         return {
             "project_name": project_name,
             "tech_stack": sorted(tech_stack),
