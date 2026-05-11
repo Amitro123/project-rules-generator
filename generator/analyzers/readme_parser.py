@@ -483,14 +483,37 @@ def _extract_features(content: str, max_features: int = 10) -> List[str]:
             cut = newline_pos + 1  # snap to line boundary
         early_content = content[:cut]
         features = _parse_list_items(early_content)
-        features = [f for f in features if 5 < len(f) < 200]
+        features = [f for f in features if 5 < len(f) < 200 and not _is_stack_bullet(f)]
 
         # For short READMEs the midpoint may precede all list items — retry on full content.
         if not features:
             features = _parse_list_items(content)
-            features = [f for f in features if 5 < len(f) < 200]
+            features = [f for f in features if 5 < len(f) < 200 and not _is_stack_bullet(f)]
 
     return features[:max_features]
+
+
+# Matches lines that are stack/dependency specs rather than feature descriptions:
+# e.g. "Python 3.11+", "FastAPI 0.100+", "pip install fastapi", "requires-python>=3.8"
+_STACK_BULLET_RE = re.compile(
+    r"""
+    ^\s*
+    (
+        pip\s+install       |   # installation command
+        requires?[-\s]      |   # requires-python / requires xyz
+        \w[\w\-\.]*\s*[>=<!\^~]{1,2}\s*\d  |   # TechName >= version
+        \w[\w\-\.]*\s+\d+\.\d      |   # TechName X.Y (e.g. "Python 3.11")
+        https?://                   |   # bare URL
+        \$\s                            # shell prompt
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def _is_stack_bullet(text: str) -> bool:
+    """Return True for bullets that look like stack/dep specs, not feature descriptions."""
+    return bool(_STACK_BULLET_RE.match(text))
 
 
 def _parse_list_items(text: str) -> List[str]:

@@ -75,7 +75,7 @@ def quality_cmd(
         click.echo("💡 Run 'prg analyze .' first to generate .clinerules files.")
         raise SystemExit(1)
 
-    resolved_provider: str = detect_provider(provider, api_key) or ""
+    resolved_provider: Optional[str] = detect_provider(provider, api_key) or None
     set_api_key_env(resolved_provider, api_key)
 
     run_quality_check(

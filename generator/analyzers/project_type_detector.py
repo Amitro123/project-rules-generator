@@ -228,9 +228,13 @@ def _detect_cli_tool_signals(
     if any(lib in tech_stack for lib in cli_libs):
         scores["cli_tool"] += 0.5
 
-    # main.py without API structure
+    # main.py without API structure (also check routers/ — FastAPI projects commonly use that)
     has_main = Path(project_path, "main.py").exists()
-    has_api = any(Path(project_path).glob("**/api/**"))
+    has_api = (
+        any(Path(project_path).glob("**/api/**"))
+        or any(Path(project_path).glob("**/routers/**"))
+        or any(Path(project_path).glob("**/endpoints/**"))
+    )
     if has_main and not has_api:
         scores["cli_tool"] += 0.3
 

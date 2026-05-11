@@ -91,6 +91,8 @@ amitro_todo.md
 
 # Auto-generated project skills (created by prg analyze)
 .clinerules/skills/project/
+# Learned skills contain project-local LLM output and may include personal paths
+.clinerules/skills/learned/
 
 # BMAD
 _bmad/

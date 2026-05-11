@@ -399,6 +399,11 @@ class EnhancedProjectParser:
                 # Always trust the newer detector for API classification — the
                 # old one misclassified `main.py + fastapi` as `python-cli`.
                 project_type = _newer_type
+            elif _newer_type == "web-app" and _newer_confidence >= 0.7 and structure_type == "python-cli":
+                # StructureAnalyzer over-eagerly labels FastAPI/Django/Flask projects
+                # as python-cli when they have main.py + click but no api/ directory.
+                # Trust the newer detector when it's confident this is a web-app.
+                project_type = _newer_type
             elif _newer_type == "agent-skills" and _newer_confidence >= 0.8:
                 # agent-skills: override regardless of StructureAnalyzer result.
                 project_type = _newer_type

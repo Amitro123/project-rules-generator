@@ -85,7 +85,7 @@ class ContentAnalyzer:
         allowed_base_path: Optional[Path] = None,
         client=None,
     ):
-        self.client = client or create_ai_client(provider=provider, api_key=api_key)
+        self.client = client or (create_ai_client(provider=provider, api_key=api_key) if provider else None)
         self.config = config or AnalyzerConfig()
         self.allowed_base_path = allowed_base_path.resolve() if allowed_base_path else Path.cwd().resolve()
         self.opik = OpikEvaluator() if getattr(self.config, "enable_opik", False) else None

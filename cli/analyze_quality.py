@@ -9,7 +9,7 @@ import click
 def run_quality_check(
     output_dir: Path,
     project_path: Path,
-    provider: str,
+    provider: Optional[str],
     api_key: Optional[str],
     eval_opik: bool,
     auto_fix: bool,
