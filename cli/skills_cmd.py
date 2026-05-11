@@ -7,6 +7,7 @@ from typing import List, Optional, Tuple
 
 import click
 
+from generator.skill_constants import SKILL_FILENAME, SkillScope
 from generator.skills_manager import SkillsManager
 
 logger = logging.getLogger(__name__)
@@ -102,7 +103,7 @@ def skills_list(path, show_all):
 
     # Filter out builtin unless --all
     if not show_all:
-        skills = {k: v for k, v in skills.items() if v["type"] != "builtin"}
+        skills = {k: v for k, v in skills.items() if v["type"] != SkillScope.BUILTIN}
 
     if not skills:
         click.echo("No project or learned skills found. Use --all to include builtins.")
@@ -409,7 +410,7 @@ def _find_stub_skills(learned_dir: Path) -> List[Tuple[Path, str]]:
     skill_files: List[Tuple[Path, bool]] = []  # (file_path, is_dir_layout)
     for item in sorted(learned_dir.iterdir()):
         if item.is_dir():
-            skill_md = item / "SKILL.md"
+            skill_md = item / SKILL_FILENAME
             if skill_md.exists():
                 skill_files.append((skill_md, True))
         elif item.is_file() and item.suffix == ".md":
@@ -536,8 +537,8 @@ def skills_purge(mode, yes, dry_run):
 )
 @click.option(
     "--scope",
-    type=click.Choice(["learned", "builtin", "project"], case_sensitive=False),
-    default="learned",
+    type=click.Choice(list(SkillScope.ALL), case_sensitive=False),
+    default=SkillScope.LEARNED,
     show_default=True,
     help="Where to write the skill: learned (global reusable), builtin, or project",
 )

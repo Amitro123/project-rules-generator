@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from generator.skill_doc_loader import SkillDocLoader
 from generator.skill_metadata_builder import SkillMetadataBuilder
+from generator.tech_registry import BACKEND_TECH, DATABASE_TECH, FRONTEND_TECH
 
 if TYPE_CHECKING:
     from generator.skill_creator import SkillMetadata
@@ -60,9 +61,9 @@ class SkillContentRenderer:
                 generator = LLMSkillGenerator(provider=provider)
 
                 tech_list = self._scanner.detect_tech_stack(readme_content)
-                _backend = {"fastapi", "flask", "django", "python", "express", "node", "fastapi"}
-                _frontend = {"react", "vue", "angular", "typescript", "javascript", "nextjs"}
-                _database = {"postgresql", "mysql", "mongodb", "redis", "sqlalchemy", "sqlite"}
+                _backend = BACKEND_TECH
+                _frontend = FRONTEND_TECH
+                _database = DATABASE_TECH
 
                 signals = set(metadata.project_signals)
                 context = {

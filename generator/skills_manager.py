@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
+from generator.skill_constants import SkillScope
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
 from generator.skill_parser import SkillParser
@@ -100,7 +101,7 @@ class SkillsManager:
         provider: str = "groq",
         force: bool = False,
         strategy: Optional[str] = None,
-        scope: str = "learned",
+        scope: str = SkillScope.LEARNED,
     ) -> Path:
         """Create a new skill in the requested scope.
 
@@ -178,20 +179,22 @@ class SkillsManager:
 
         project_only = {}
         # Always include project-local skills
-        if "project" in all_skills:
-            project_only["project"] = all_skills["project"]
+        if SkillScope.PROJECT in all_skills:
+            project_only[SkillScope.PROJECT] = all_skills[SkillScope.PROJECT]
 
         # Filter learned skills by include_only if provided
-        if "learned" in all_skills:
+        if SkillScope.LEARNED in all_skills:
             if include_only is not None:
                 # Skill keys in all_skills['learned'] are the names, e.g. 'fastapi'
                 # include_only set contains refs, e.g. 'learned/fastapi'
                 learned_filtered = {
-                    name: data for name, data in all_skills["learned"].items() if f"learned/{name}" in include_only
+                    name: data
+                    for name, data in all_skills[SkillScope.LEARNED].items()
+                    if f"{SkillScope.LEARNED}/{name}" in include_only
                 }
-                project_only["learned"] = learned_filtered
+                project_only[SkillScope.LEARNED] = learned_filtered
             else:
-                project_only["learned"] = all_skills["learned"]
+                project_only[SkillScope.LEARNED] = all_skills[SkillScope.LEARNED]
 
         return SkillParser.extract_all_triggers(project_only)
 
@@ -260,13 +263,13 @@ class SkillsManager:
             skill_type = data.get("type", "")
             # Project-local skills are always shown — they were just generated
             # for this project and should always be visible in the index.
-            if include_names is not None and skill_type != "project":
+            if include_names is not None and skill_type != SkillScope.PROJECT:
                 if name not in include_names:
                     continue
             # Suppress learned skills whose triggers are entirely JS/frontend-
             # specific (e.g. "jest", "ui change") in Python-only projects.
             # These leak from global caches populated by frontend projects.
-            if _filter_js_triggers and skill_type == "learned":
+            if _filter_js_triggers and skill_type == SkillScope.LEARNED:
                 content = data.get("content", "")
                 if not content and "path" in data:
                     try:

@@ -19,6 +19,7 @@ from cli.analyze_helpers import (  # noqa: E402
 from cli.analyze_pipeline import run_generation_pipeline
 from cli.analyze_readme import resolve_readme
 from generator.pack_manager import load_external_packs
+from generator.skill_constants import SkillScope
 from generator.skills_manager import SkillsManager
 from prg_utils.config_schema import validate_config
 from prg_utils.exceptions import InvalidREADMEError, ProjectRulesGeneratorError, READMENotFoundError
@@ -127,8 +128,8 @@ def _register_ide_rules(ide: str, project_path: Path, project_name: str, output_
 @click.option("--force", is_flag=True, default=False, help="Overwrite existing skill when using --create-skill")
 @click.option(
     "--scope",
-    type=click.Choice(["learned", "builtin", "project"], case_sensitive=False),
-    default="learned",
+    type=click.Choice(list(SkillScope.ALL), case_sensitive=False),
+    default=SkillScope.LEARNED,
     show_default=True,
     help="Destination for --create-skill (learned=global reusable, builtin=universal, project=local)",
 )

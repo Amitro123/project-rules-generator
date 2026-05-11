@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import click
 
+from generator.skill_constants import SkillScope
+
 
 def normalize_analyze_options(
     mode: Optional[str],
@@ -114,24 +116,24 @@ def _handle_skill_management(
 
     if list_skills:
         skills = skills_manager.list_skills()
-        display_groups = {"project": [], "learned": [], "builtin": []}
+        display_groups = {SkillScope.PROJECT: [], SkillScope.LEARNED: [], SkillScope.BUILTIN: []}
         for name, data in skills.items():
             stype = data["type"]
             if stype in display_groups:
                 display_groups[stype].append(name)
         total = len(skills)
         click.echo(f"\nAvailable Skills ({total}):")
-        if display_groups["project"]:
-            click.echo(f"\n\U0001f4c1 Project Overrides ({len(display_groups['project'])}):")
-            for s in sorted(display_groups["project"]):
+        if display_groups[SkillScope.PROJECT]:
+            click.echo(f"\n\U0001f4c1 Project Overrides ({len(display_groups[SkillScope.PROJECT])}):")
+            for s in sorted(display_groups[SkillScope.PROJECT]):
                 click.echo(f"  - {s} (Local)")
-        if display_groups["learned"]:
-            click.echo(f"\n\U0001f9e0 Learned Skills (Global & Local) ({len(display_groups['learned'])}):")
-            for s in sorted(display_groups["learned"]):
+        if display_groups[SkillScope.LEARNED]:
+            click.echo(f"\n\U0001f9e0 Learned Skills (Global & Local) ({len(display_groups[SkillScope.LEARNED])}):")
+            for s in sorted(display_groups[SkillScope.LEARNED]):
                 click.echo(f"  - {s}")
-        if display_groups["builtin"]:
-            click.echo(f"\n\U0001f6e0\ufe0f  Global Builtin ({len(display_groups['builtin'])}):")
-            for s in sorted(display_groups["builtin"]):
+        if display_groups[SkillScope.BUILTIN]:
+            click.echo(f"\n\U0001f6e0\ufe0f  Global Builtin ({len(display_groups[SkillScope.BUILTIN])}):")
+            for s in sorted(display_groups[SkillScope.BUILTIN]):
                 click.echo(f"  - {s}")
         if not total:
             click.echo("  No skills found.")

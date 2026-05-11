@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 from generator.quality_validators import SkillQualityValidator
+from generator.skill_constants import SKILL_FILENAME, SkillScope
 from generator.skill_content_renderer import SkillContentRenderer
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_doc_loader import SkillDocLoader
@@ -37,7 +38,7 @@ class SkillMetadata:
     auto_triggers: List[str] = field(default_factory=list)
     project_signals: List[str] = field(default_factory=list)
     tools: List[str] = field(default_factory=list)
-    category: str = "project"
+    category: str = SkillScope.PROJECT
     priority: int = 50  # 0-100, higher = more priority
     negative_triggers: List[str] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
@@ -102,7 +103,7 @@ class CoworkSkillCreator:
         Delegates to SkillDiscovery.skill_exists() — single source of truth.
         Checks both flat file (<name>.md) and directory (<name>/SKILL.md) formats.
         """
-        return self.discovery.skill_exists(skill_name, scope="learned")
+        return self.discovery.skill_exists(skill_name, scope=SkillScope.LEARNED)
 
     def save_to_learned(self, skill_name: str, content: str, category: str = "general") -> Path:
         """Save skill to global learned cache using the standard subfolder layout.
@@ -137,7 +138,7 @@ class CoworkSkillCreator:
             target_dir.mkdir(parents=True, exist_ok=True)
 
             # Always make SKILL.md available at top-level <name>.md for convenience
-            src_md = source_dir / "SKILL.md"
+            src_md = source_dir / SKILL_FILENAME
             if src_md.exists():
                 self.discovery._link_or_copy(src_md, self.discovery.project_local_dir / f"{skill_name}.md")
 

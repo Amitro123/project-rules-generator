@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from generator.base_generator import ArtifactGenerator
+from generator.skill_constants import SKILL_FILENAME, SkillScope
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_parser import SkillParser
 from generator.tech_registry import TECH_SKILL_NAMES as _TECH_SKILL_NAMES
@@ -158,7 +159,7 @@ class SkillGenerator(ArtifactGenerator):
         provider: str = "groq",
         force: bool = False,
         strategy: Optional[str] = None,
-        scope: str = "learned",
+        scope: str = SkillScope.LEARNED,
     ) -> Path:
         """Create a new skill in the requested scope.
 
@@ -205,15 +206,15 @@ class SkillGenerator(ArtifactGenerator):
             )
 
         # ── Resolve target root from scope ───────────────────────────────────
-        if scope == "builtin":
+        if scope == SkillScope.BUILTIN:
             target_root = self.discovery.global_builtin
-        elif scope == "project":
+        elif scope == SkillScope.PROJECT:
             target_root = self.discovery.project_local_dir or self.discovery.global_learned
         else:  # "learned" (default)
             target_root = self.discovery.global_learned
 
         # ── Duplicate guard ──────────────────────────────────────────────────
-        _check_scope = scope if (scope != "project" or self.discovery.project_local_dir) else "learned"
+        _check_scope = scope if (scope != SkillScope.PROJECT or self.discovery.project_local_dir) else SkillScope.LEARNED
         if self.discovery.skill_exists(safe_name, scope=_check_scope) and not force:
             import click
 
@@ -228,7 +229,7 @@ class SkillGenerator(ArtifactGenerator):
         target_dir = target_root / safe_name
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        skill_file = target_dir / "SKILL.md"
+        skill_file = target_dir / SKILL_FILENAME
 
         content = self._run_strategy_chain(
             safe_name, from_readme, project_path, use_ai=use_ai, provider=provider, strategy=strategy
@@ -377,7 +378,7 @@ class SkillGenerator(ArtifactGenerator):
             if result.get(skill_name):
                 continue  # already classified via another tech alias
 
-            if self.discovery.skill_exists(skill_name, scope="learned"):
+            if self.discovery.skill_exists(skill_name, scope=SkillScope.LEARNED):
                 resolved = self.discovery.resolve_skill(skill_name)
                 if resolved and resolved.exists():
                     if self._is_generic_stub(resolved):
@@ -433,7 +434,7 @@ class SkillGenerator(ArtifactGenerator):
         for skill_name in skill_names:
             action = reuse_map.get(skill_name, "create")
             # Always use the subfolder/SKILL.md layout
-            dest = target_dir / skill_name / "SKILL.md"
+            dest = target_dir / skill_name / SKILL_FILENAME
             dest.parent.mkdir(parents=True, exist_ok=True)
 
             if action == "reuse":

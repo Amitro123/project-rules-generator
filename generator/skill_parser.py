@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from typing import Dict, List
 
+from generator.skill_constants import SkillScope
 from generator.utils.tech_detector import extract_context as _extract_context
 
 logger = logging.getLogger(__name__)
@@ -118,7 +119,7 @@ class SkillParser:
         triggers = {}
 
         # We iterate in reverse priority so higher priority overwrites lower if names collide
-        for category in ["builtin", "learned", "project"]:
+        for category in SkillScope.MERGE_ORDER:
             if category not in all_skills_content:
                 continue
 

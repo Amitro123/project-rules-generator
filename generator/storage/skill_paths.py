@@ -5,6 +5,8 @@ import shutil
 from pathlib import Path
 from typing import Dict, Optional
 
+from generator.skill_constants import SKILL_FILENAME, SkillScope
+
 logger = logging.getLogger(__name__)
 
 # Bug C guard: reject tiny / test-named files so stale pollution in the
@@ -136,7 +138,7 @@ class SkillPathManager:
         # Always write in the standard subfolder/SKILL.md layout
         skill_dir = category_dir / skill_name
         skill_dir.mkdir(parents=True, exist_ok=True)
-        skill_path = skill_dir / "SKILL.md"
+        skill_path = skill_dir / SKILL_FILENAME
 
         if not cls._within_base(skill_path, cls.GLOBAL_LEARNED):
             raise ValueError(f"Skill path {skill_path} escapes learned skills directory")
@@ -177,11 +179,11 @@ class SkillPathManager:
 
         source_type = parts[0]
 
-        if source_type == "builtin":
+        if source_type == SkillScope.BUILTIN:
             name = parts[-1]
             base = cls.GLOBAL_BUILTIN
             # Prefer subfolder layout (name/SKILL.md) — matches the canonical export format
-            dir_path = base / name / "SKILL.md"
+            dir_path = base / name / SKILL_FILENAME
             if cls._within_base(dir_path, base) and dir_path.exists():
                 return dir_path
             # Fallback: flat file layout (legacy)
@@ -190,7 +192,7 @@ class SkillPathManager:
                 if cls._within_base(path, base) and path.exists():
                     return path
 
-        elif source_type == "learned":
+        elif source_type == SkillScope.LEARNED:
             if len(parts) >= 3:
                 category = parts[1]
                 name = parts[2]
@@ -201,7 +203,7 @@ class SkillPathManager:
             base = cls.GLOBAL_LEARNED
             if category:
                 # Prefer subfolder layout (category/name/SKILL.md) — matches save_learned_skill output
-                subfolder = base / category / name / "SKILL.md"
+                subfolder = base / category / name / SKILL_FILENAME
                 if cls._within_base(subfolder, base) and subfolder.exists():
                     return subfolder
                 # Fallback: flat file layout (category/name.md)
@@ -214,7 +216,7 @@ class SkillPathManager:
                 for cat_dir in base.iterdir():
                     if cat_dir.is_dir():
                         # Prefer subfolder layout first
-                        subfolder = cat_dir / name / "SKILL.md"
+                        subfolder = cat_dir / name / SKILL_FILENAME
                         if cls._within_base(subfolder, base) and subfolder.exists():
                             return subfolder
                         for ext in (".md", ".yaml", ".yml"):
@@ -223,3 +225,17 @@ class SkillPathManager:
                                 return path
 
         return None
+
+    @staticmethod
+    def output_skill_path(output_dir: Path, tier: str, name: str) -> Path:
+        """Return the canonical output path for a skill inside a .clinerules directory.
+
+        Args:
+            output_dir: Root .clinerules directory (e.g. project/.clinerules).
+            tier: Skill layer — one of SkillScope.BUILTIN / LEARNED / PROJECT.
+            name: Skill directory stem (e.g. "fastapi-endpoints").
+
+        Returns:
+            ``output_dir / "skills" / tier / name / SKILL_FILENAME``
+        """
+        return output_dir / "skills" / tier / name / SKILL_FILENAME

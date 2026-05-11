@@ -11,6 +11,7 @@ if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
 
 from generator.project_analyzer import ProjectAnalyzer
+from generator.skill_constants import SkillScope
 from generator.skills_manager import SkillsManager
 from prg_utils.logger import setup_logging
 
@@ -68,8 +69,8 @@ def migrate_project(project_path: Path, dry_run: bool = False):
     try:
         # 2. Setup new structure
         skills_dir = project_path / "skills"
-        builtin_dir = skills_dir / "builtin"
-        learned_dir = skills_dir / "learned"
+        builtin_dir = skills_dir / SkillScope.BUILTIN
+        learned_dir = skills_dir / SkillScope.LEARNED
 
         logger.info(f"Creating local skills structure: {skills_dir}")
         if not dry_run:

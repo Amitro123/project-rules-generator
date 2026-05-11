@@ -59,3 +59,13 @@ DIR_DETECTION_MAP: Dict[str, str] = {}
 for _p in _PROFILES:
     for _d in _p.detection_dirs:
         DIR_DETECTION_MAP[_d] = _p.name
+
+# All known canonical tech names — use for membership tests instead of hardcoded strings
+TECH_NAMES: frozenset = frozenset(p.name for p in _PROFILES)
+
+# Tech names grouped by TechProfile.category — use instead of inline set literals
+BACKEND_TECH: frozenset = frozenset(p.name for p in _PROFILES if p.category == "backend")
+FRONTEND_TECH: frozenset = frozenset(p.name for p in _PROFILES if p.category == "frontend")
+DATABASE_TECH: frozenset = frozenset(p.name for p in _PROFILES if p.category == "database")
+INFRASTRUCTURE_TECH: frozenset = frozenset(p.name for p in _PROFILES if p.category == "infrastructure")
+ML_AI_TECH: frozenset = frozenset(p.name for p in _PROFILES if p.category in ("ml", "ai"))

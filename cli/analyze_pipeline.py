@@ -17,6 +17,7 @@ from generator.incremental_analyzer import IncrementalAnalyzer
 from generator.outputs.clinerules_generator import generate_clinerules
 from generator.parsers.enhanced_parser import EnhancedProjectParser
 from generator.rules_generator import generate_rules, rules_to_json
+from generator.skill_constants import SKILL_FILENAME, SkillScope
 from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
 from generator.storage.skill_paths import SkillPathManager
 from prg_utils.file_ops import save_markdown
@@ -525,15 +526,15 @@ def _build_unified_content(
 
         # Bug 2 fix: add a visible skill listing so agents can read active skills
         # without having to parse the hidden YAML comment below.
-        project_refs = sorted(r for r in enhanced_selected_skills if r.startswith("project/"))
-        learned_refs = sorted(r for r in enhanced_selected_skills if r.startswith("learned/"))
-        builtin_refs = sorted(r for r in enhanced_selected_skills if r.startswith("builtin/"))
+        project_refs = sorted(r for r in enhanced_selected_skills if r.startswith(f"{SkillScope.PROJECT}/"))
+        learned_refs = sorted(r for r in enhanced_selected_skills if r.startswith(f"{SkillScope.LEARNED}/"))
+        builtin_refs = sorted(r for r in enhanced_selected_skills if r.startswith(f"{SkillScope.BUILTIN}/"))
         if project_refs or learned_refs or builtin_refs:
             unified_content += "## Active Skills\n"
             for ref in project_refs + learned_refs + builtin_refs:
                 name = ref.split("/")[-1]
                 tier = ref.split("/")[0]
-                unified_content += f"- **{name}** ({tier}): `skills/{tier}/{name}/SKILL.md`\n"
+                unified_content += f"- **{name}** ({tier}): `skills/{tier}/{name}/{SKILL_FILENAME}`\n"
             unified_content += "\n"
 
         unified_content += f"\n\n<!-- Lightweight Skill References\n{lightweight_yaml}-->\n"

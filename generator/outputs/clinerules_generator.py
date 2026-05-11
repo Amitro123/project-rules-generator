@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Set
 import yaml
 
 from generator.prompts.skill_generation import detect_project_tools
+from generator.skill_constants import SKILL_FILENAME, SkillScope
 from generator.storage.skill_paths import SkillPathManager
 
 logger = logging.getLogger(__name__)
@@ -48,14 +49,14 @@ def generate_clinerules(
     for skill in sorted(selected_skills):
         parts = skill.split("/")
 
-        if skill.startswith("builtin/"):
+        if skill.startswith(f"{SkillScope.BUILTIN}/"):
             name = parts[-1]
             if name in seen_builtin:
                 continue
             seen_builtin.add(name)
 
             if output_dir:
-                rel_path = f"skills/builtin/{name}/SKILL.md"
+                rel_path = SkillPathManager.output_skill_path(output_dir, SkillScope.BUILTIN, name).relative_to(output_dir).as_posix()
             else:
                 global_path = SkillPathManager.GLOBAL_BUILTIN / f"{name}.md"
                 if not global_path.exists():
@@ -65,7 +66,7 @@ def generate_clinerules(
                             global_path = alt
                             break
                 if not global_path.exists():
-                    dir_path = SkillPathManager.GLOBAL_BUILTIN / name / "SKILL.md"
+                    dir_path = SkillPathManager.GLOBAL_BUILTIN / name / SKILL_FILENAME
                     if dir_path.exists():
                         global_path = dir_path
                 rel_path = str(global_path)
@@ -77,7 +78,7 @@ def generate_clinerules(
                 }
             )
 
-        elif skill.startswith("learned/"):
+        elif skill.startswith(f"{SkillScope.LEARNED}/"):
             if len(parts) >= 3:
                 category = parts[1]
                 name = parts[2]
@@ -90,7 +91,7 @@ def generate_clinerules(
             seen_learned.add(name)
 
             if output_dir:
-                rel_path = f"skills/learned/{name}/SKILL.md"
+                rel_path = SkillPathManager.output_skill_path(output_dir, SkillScope.LEARNED, name).relative_to(output_dir).as_posix()
             else:
                 global_path = SkillPathManager.GLOBAL_LEARNED / category / f"{name}.md"
                 if not global_path.exists():
@@ -108,16 +109,14 @@ def generate_clinerules(
                 }
             )
 
-        elif skill.startswith("project/"):
+        elif skill.startswith(f"{SkillScope.PROJECT}/"):
             # Project-local skills live under .clinerules/skills/project/<name>/SKILL.md
             name = "/".join(parts[1:])  # preserve sub-path, e.g. "gemini-api"
             if name in seen_project:
                 continue
             seen_project.add(name)
-            if output_dir:
-                rel_path = f"skills/project/{name}/SKILL.md"
-            else:
-                rel_path = f"skills/project/{name}/SKILL.md"
+            # Project skills always use a relative path (same regardless of output_dir)
+            rel_path = f"skills/{SkillScope.PROJECT}/{name}/{SKILL_FILENAME}"
 
             project_skills.append(
                 {
