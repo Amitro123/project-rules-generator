@@ -142,9 +142,13 @@ def run_generation_pipeline(
         # parser runs a richer, filtered pipeline and is the authoritative source;
         # overwriting here ensures rules.md and clinerules.yaml stay consistent.
         if enhanced_context:
-            _meta_tech = enhanced_context.get("metadata", {}).get("tech_stack", [])
+            _meta = enhanced_context.get("metadata", {})
+            _meta_tech = _meta.get("tech_stack", [])
             if _meta_tech:
                 project_data["tech_stack"] = _meta_tech
+            _meta_type = _meta.get("project_type", "")
+            if _meta_type:
+                project_data["project_type"] = _meta_type
 
         _phase_constitution(
             project_name,

@@ -93,6 +93,11 @@ amitro_todo.md
 .clinerules/skills/project/
 # Learned skills contain project-local LLM output and may include personal paths
 .clinerules/skills/learned/
+# Builtin skills are shipped from generator/templates/ — .clinerules/ copies are generated artifacts
+.clinerules/skills/builtin/
+# Generated index and rules.json are regenerated on every run
+.clinerules/skills/index.md
+.clinerules/rules.json
 
 # BMAD
 _bmad/

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.1] — 2026-05-12
+
+### Fixed
+- `prg init <new-path>` no longer fails with a confusing Click validation error; it now prompts to create the directory.
+- `prg quality` with no API provider no longer crashes (regression guard added).
+- `constitution.md` quality score now correctly recognises its own section headings (`Code Quality Principles`, `Testing Standards`, `Architecture Decisions`).
+- `project_type` from the enhanced parser is now synced into `project_data` so `rules.md` frontmatter stays consistent with auto-detection.
+- Zero-trigger skills are now flagged as hard issues (−20 pts) instead of warnings — agents can never auto-activate them.
+- Cleaned up `.clinerules/` git tracking: generated builtin skill copies, `rules.json`, `skills/index.md`, and project skills are now gitignored and untracked.
+- Tech-stack strings centralised in `generator/tech/` registry; skill layer names replaced with `SkillScope` constants (shipped in `b732909`).
+
 ## [Unreleased]
 
 ### Pre-open-source hardening (Batches A–D + OSS audit)

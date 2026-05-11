@@ -324,12 +324,14 @@ class ContentAnalyzer:
         )
         has_guidelines = bool(
             re.search(
-                r"^##\s+(guidelines|best practices|code quality)",
+                r"^##\s+(guidelines|best practices|code quality|principles|architecture)",
                 text,
                 flags=re.IGNORECASE | re.MULTILINE,
             )
         )
-        has_testing = bool(re.search(r"^##\s+(testing|tests)", text, flags=re.IGNORECASE | re.MULTILINE))
+        has_testing = bool(
+            re.search(r"^##\s+(testing|tests|testing standards)", text, flags=re.IGNORECASE | re.MULTILINE)
+        )
         consistency_score = 6 + (4 if has_overview else 0) + (4 if has_guidelines else 0) + (4 if has_testing else 0)
         consistency_score = max(0, min(20, consistency_score))
 

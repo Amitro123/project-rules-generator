@@ -31,7 +31,7 @@ def _key_available(provider: str, explicit_key: Optional[str]) -> bool:
 
 
 @click.command(name="init")
-@click.argument("project_path", type=click.Path(exists=True, file_okay=False), default=".")
+@click.argument("project_path", type=click.Path(file_okay=False), default=".")
 @click.option("--yes", "-y", is_flag=True, default=False, help="Skip confirmation prompts")
 @click.option(
     "--provider",
@@ -47,6 +47,13 @@ def init(project_path, yes, provider, api_key):
     from generator.skills_manager import SkillsManager
 
     project_path = Path(project_path).resolve()
+
+    if not project_path.exists():
+        if click.confirm(f"Directory '{project_path}' does not exist. Create it?", default=True):
+            project_path.mkdir(parents=True)
+        else:
+            click.echo("Aborted.")
+            raise SystemExit(0)
 
     click.echo(f"Project Rules Generator v{__version__} — Init")
     click.echo(f"Project: {project_path}")

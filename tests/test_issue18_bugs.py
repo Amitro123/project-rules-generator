@@ -500,11 +500,11 @@ class TestAutoTriggerParsing:
         assert not trigger_warnings, f"YAML + body triggers should combine to 3+: {trigger_warnings}"
 
     def test_no_triggers_still_penalised(self):
-        """A skill with no triggers at all must still get the trigger warning."""
+        """A skill with no triggers at all must still be penalised (now as a hard issue)."""
         content = "## Auto-Trigger\n\nActivate for relevant tasks.\n\n" + self._SECTIONS
         report = validate_quality(content)
-        trigger_warnings = [w for w in report.warnings if "trigger" in w.lower()]
-        assert trigger_warnings, "Missing triggers should still produce a warning"
+        trigger_issues = [i for i in report.issues if "trigger" in i.lower()]
+        assert trigger_issues, "Zero triggers should produce a hard issue, not just a warning"
 
     def test_systematic_debugging_format_counted(self):
         """The exact format used in systematic-debugging/SKILL.md must count triggers."""

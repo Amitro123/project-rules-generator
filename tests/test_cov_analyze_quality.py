@@ -188,3 +188,36 @@ class TestRunQualityCheck:
         top_issue_in_row = [r for r in captured_table_rows if isinstance(r, str) and "A" * 3 in r]
         if top_issue_in_row:
             assert len(top_issue_in_row[0]) <= 40
+
+
+class TestNoProviderQuality:
+    """Regression: prg quality with no API provider must not crash."""
+
+    def test_no_provider_does_not_raise(self, tmp_path):
+        output_dir = tmp_path / ".clinerules"
+        output_dir.mkdir()
+        (output_dir / "rules.md").write_text("# Rules\n\n- Rule 1\n")
+
+        mock_report = SimpleNamespace(
+            score=80,
+            status="Good",
+            suggestions=[],
+            breakdown=None,
+            quick_check=None,
+        )
+        mock_analyzer = MagicMock()
+        mock_analyzer.analyze_file.return_value = mock_report
+        mock_analyzer.generate_report.return_value = mock_report
+
+        with patch.dict("os.environ", {}, clear=False):
+            for key in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "GROQ_API_KEY"):
+                import os
+
+                os.environ.pop(key, None)
+
+            with patch("generator.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
+                with patch("generator.config.AnalyzerConfig"):
+                    with patch("rich.console.Console"):
+                        with patch("rich.table.Table", return_value=MagicMock()):
+                            # provider=None, api_key=None — must exit 0, not crash
+                            run_quality_check(output_dir, tmp_path, None, None, False, False, False)

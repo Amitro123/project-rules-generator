@@ -387,9 +387,12 @@ def validate_quality(
 
     # Check triggers
     triggers = metadata_triggers or []
-    if len(triggers) < 2:
+    if len(triggers) == 0:
+        score -= 20
+        issues.append("No auto-triggers defined — agents can never activate this skill automatically")
+    elif len(triggers) < 2:
         score -= 10
-        warnings.append(f"Only {len(triggers)} auto-triggers (recommend 3+)")
+        warnings.append(f"Only {len(triggers)} auto-trigger (recommend 3+)")
     elif len(triggers) < 3:
         suggestions.append("Consider adding more trigger variations")
 
