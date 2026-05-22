@@ -1,0 +1,11 @@
+name: any-newer-on-fallback
+match_newer: "*"
+predicate:
+  type: structure_unreliable_and_newer_confident
+  fallback_structure_types:
+    - library
+    - unknown
+  newer_min: 0.5
+reason: |
+  Final fallback: when SA gave up (library/unknown), trust any confident
+  newer-detector result rather than emitting the generic fallback.

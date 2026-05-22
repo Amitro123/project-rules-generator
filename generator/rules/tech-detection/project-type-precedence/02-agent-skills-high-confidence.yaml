@@ -1,0 +1,8 @@
+name: agent-skills-high-confidence
+match_newer: agent-skills
+predicate:
+  type: newer_min_confidence
+  threshold: 0.8
+reason: |
+  StructureAnalyzer has no agent-skills pattern. Override regardless of
+  structure when the newer detector is highly confident (>= 0.8).

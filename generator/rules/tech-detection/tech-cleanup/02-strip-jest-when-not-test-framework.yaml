@@ -1,0 +1,11 @@
+name: strip-jest-when-not-test-framework
+predicate:
+  type: context_key_not_equal
+  key: test_framework
+  value: jest
+strip:
+  - jest
+reason: |
+  'jest' in tech_stack without it being the project's test framework
+  indicates leakage from the global learned-skill library (skill names
+  containing 'jest' polluted detection). See Bug4 in ListOfBugs/.

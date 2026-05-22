@@ -535,68 +535,12 @@ def _structure_unreliable_and_newer_confident(
     return _pred
 
 
-# The default precedence table — order matters, first match wins. Each rule's
-# `reason` field explains the historical bug or behaviour it preserves.
-#
-# Values like "python-api" and "agent-skills" here are DATA describing the
-# detection vocabulary. The function that consumes them (reconcile_project_type)
-# is generic and doesn't know what these strings mean.
-DEFAULT_PROJECT_TYPE_PRECEDENCE: Tuple[PrecedenceRule, ...] = (
-    PrecedenceRule(
-        name="python-api-always-wins",
-        match_newer="python-api",
-        predicate=_always_match,
-        reason=(
-            "StructureAnalyzer misclassifies main.py+fastapi as python-cli; "
-            "the newer detector is strictly more accurate for API projects."
-        ),
-    ),
-    PrecedenceRule(
-        name="agent-skills-high-confidence",
-        match_newer="agent-skills",
-        predicate=_newer_min_confidence(0.8),
-        reason=(
-            "StructureAnalyzer has no agent-skills pattern. Override "
-            "regardless of structure when the newer detector is highly "
-            "confident (>= 0.8)."
-        ),
-    ),
-    PrecedenceRule(
-        name="agent-when-structure-unsure",
-        match_newer="agent",
-        predicate=_newer_confident_structure_uncertain(newer_min=0.7, structure_max=0.5),
-        reason=(
-            "StructureAnalyzer has no agent pattern. Override only when "
-            "SA is itself uncertain (<0.5); don't steal a confident "
-            "python-cli classification just because the project uses an LLM."
-        ),
-    ),
-    PrecedenceRule(
-        name="generator-or-webapp-on-fallback",
-        match_newer=frozenset({"generator", "web-app"}),
-        predicate=_structure_unreliable_and_newer_confident(
-            fallback_structure_types=frozenset({"library", "unknown"}),
-            newer_min=0.5,
-        ),
-        reason=(
-            "These project_types StructureAnalyzer can't produce. Override "
-            "only when SA gave the generic 'library'/'unknown' fallback."
-        ),
-    ),
-    PrecedenceRule(
-        name="any-newer-on-fallback",
-        match_newer=NEWER_TYPE_ANY,
-        predicate=_structure_unreliable_and_newer_confident(
-            fallback_structure_types=frozenset({"library", "unknown"}),
-            newer_min=0.5,
-        ),
-        reason=(
-            "Final fallback: when SA gave up (library/unknown), trust any "
-            "confident newer-detector result rather than emitting the "
-            "generic fallback."
-        ),
-    ),
-)
+# DEFAULT_PROJECT_TYPE_PRECEDENCE is assigned at the bottom of this module
+# (after all dataclasses the loader depends on are defined). Pre-declared
+# here as an empty tuple so any tooling that references the name during
+# import sees a valid value rather than NameError. The real value is loaded
+# from generator/rules/tech-detection/project-type-precedence/ YAML files.
+DEFAULT_PROJECT_TYPE_PRECEDENCE: Tuple[PrecedenceRule, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -615,7 +559,7 @@ def reconcile_project_type(
     structure_confidence: float,
     newer_type: str,
     newer_confidence: float,
-    rules: Tuple[PrecedenceRule, ...] = DEFAULT_PROJECT_TYPE_PRECEDENCE,
+    rules: Optional[Tuple[PrecedenceRule, ...]] = None,
 ) -> ReconciliationResult:
     """Resolve the canonical project_type given two detectors' outputs.
 
@@ -648,6 +592,11 @@ def reconcile_project_type(
     s_conf = max(0.0, min(1.0, float(structure_confidence or 0.0)))
     n_type = (newer_type or "").strip()
     n_conf = max(0.0, min(1.0, float(newer_confidence or 0.0)))
+
+    # Default to the module-level table, evaluated at CALL time so YAML
+    # rules loaded at the bottom of this module are picked up correctly.
+    if rules is None:
+        rules = DEFAULT_PROJECT_TYPE_PRECEDENCE
 
     if not n_type:
         return ReconciliationResult(
@@ -752,47 +701,17 @@ def _when_context_key_not_equal(key: str, value: Any) -> CleanupPredicate:
     return _pred
 
 
-# The default cleanup rule set — order matters; each rule sees the result
-# of all earlier rules. Each rule preserves a historical bug-fix patch
-# from `enhanced_parser.py` but lifts it from code into data.
-DEFAULT_TECH_CLEANUP_RULES: Tuple[TechCleanupRule, ...] = (
-    TechCleanupRule(
-        name="strip-gpt-vague-token",
-        predicate=_always_apply,
-        strip=frozenset({"gpt"}),
-        reason=(
-            "'gpt' is a model nickname, not a package. It enters the tech_stack "
-            "via README keyword extraction (e.g. 'Powered by GPT-4') and "
-            "pollutes skill matching with no corresponding dependency."
-        ),
-    ),
-    TechCleanupRule(
-        name="strip-jest-when-not-test-framework",
-        predicate=_when_context_key_not_equal("test_framework", "jest"),
-        strip=frozenset({"jest"}),
-        reason=(
-            "'jest' in tech_stack without it being the project's test framework "
-            "indicates leakage from the global learned-skill library (skill names "
-            "containing 'jest' polluted detection). See Bug4 in ListOfBugs/."
-        ),
-    ),
-    TechCleanupRule(
-        name="strip-reflex-js-build-artifacts",
-        predicate=_when_stack_contains("reflex"),
-        strip=frozenset({"react", "node", "javascript", "typescript", "nextjs"}),
-        reason=(
-            "Reflex compiles Python to React/Next.js in a generated .web/ "
-            "directory. Those JS deps are build artifacts, not project tech. "
-            "See Bug8 in ListOfBugs/."
-        ),
-    ),
-)
+# DEFAULT_TECH_CLEANUP_RULES is assigned at the bottom of this module (same
+# reason as DEFAULT_PROJECT_TYPE_PRECEDENCE: the loader needs all dataclasses
+# defined before it can run). Real value comes from
+# generator/rules/tech-detection/tech-cleanup/ YAML files.
+DEFAULT_TECH_CLEANUP_RULES: Tuple[TechCleanupRule, ...] = ()
 
 
 def apply_tech_cleanup_rules(
     tech_stack: FrozenSet[str],
     context: Optional[Dict[str, Any]] = None,
-    rules: Tuple[TechCleanupRule, ...] = DEFAULT_TECH_CLEANUP_RULES,
+    rules: Optional[Tuple[TechCleanupRule, ...]] = None,
 ) -> Tuple[FrozenSet[str], Tuple[CleanupTrace, ...]]:
     """Apply each cleanup rule in order; return the post-cleanup tech_stack
     plus a trace of which rules actually changed anything.
@@ -823,6 +742,11 @@ def apply_tech_cleanup_rules(
     current = frozenset(tech_stack)
     traces: List[CleanupTrace] = []
 
+    # Default to the module-level table, evaluated at CALL time so YAML
+    # rules loaded at the bottom of this module are picked up correctly.
+    if rules is None:
+        rules = DEFAULT_TECH_CLEANUP_RULES
+
     for rule in rules:
         if not rule.predicate(current, ctx):
             continue
@@ -842,3 +766,37 @@ def apply_tech_cleanup_rules(
         )
 
     return current, tuple(traces)
+
+
+# --- Load declarative rule files at import time -----------------------------
+#
+# This runs AFTER all dataclasses (PrecedenceRule, TechCleanupRule, etc.) are
+# defined, so the loader can import them without circular-dependency issues.
+# Failure to load is non-fatal: the contract layer still works (with empty
+# tables), but the default reconciliation/cleanup behaviour is unavailable.
+# Functions that take a `rules` parameter look up the module-level default
+# at call time, so reassignment here propagates correctly.
+
+
+def _load_rules_at_import() -> None:
+    """Populate DEFAULT_PROJECT_TYPE_PRECEDENCE and DEFAULT_TECH_CLEANUP_RULES
+    from the YAML rule files. Logs and continues on failure."""
+    global DEFAULT_PROJECT_TYPE_PRECEDENCE, DEFAULT_TECH_CLEANUP_RULES
+    try:
+        from generator.rules.tech_detection_loader import load_cleanup_rules, load_precedence_rules
+
+        DEFAULT_PROJECT_TYPE_PRECEDENCE = load_precedence_rules()
+        DEFAULT_TECH_CLEANUP_RULES = load_cleanup_rules()
+    except Exception as exc:  # noqa: BLE001 — must never break module import
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "project_profile: failed to load YAML rule files: %s. "
+            "DEFAULT_PROJECT_TYPE_PRECEDENCE and DEFAULT_TECH_CLEANUP_RULES "
+            "remain empty; reconcile_project_type / apply_tech_cleanup_rules "
+            "will be no-ops until rule files are restored.",
+            exc,
+        )
+
+
+_load_rules_at_import()

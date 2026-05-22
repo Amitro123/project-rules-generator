@@ -1,0 +1,10 @@
+name: agent-when-structure-unsure
+match_newer: agent
+predicate:
+  type: newer_confident_structure_uncertain
+  newer_min: 0.7
+  structure_max: 0.5
+reason: |
+  StructureAnalyzer has no agent pattern. Override only when SA is itself
+  uncertain (<0.5); don't steal a confident python-cli classification just
+  because the project uses an LLM.

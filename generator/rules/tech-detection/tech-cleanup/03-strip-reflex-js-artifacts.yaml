@@ -1,0 +1,14 @@
+name: strip-reflex-js-build-artifacts
+predicate:
+  type: stack_contains
+  token: reflex
+strip:
+  - react
+  - node
+  - javascript
+  - typescript
+  - nextjs
+reason: |
+  Reflex compiles Python to React/Next.js in a generated .web/ directory.
+  Those JS deps are build artifacts, not project tech. See Bug8 in
+  ListOfBugs/.

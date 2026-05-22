@@ -1,0 +1,13 @@
+name: generator-or-webapp-on-fallback
+match_newer:
+  - generator
+  - web-app
+predicate:
+  type: structure_unreliable_and_newer_confident
+  fallback_structure_types:
+    - library
+    - unknown
+  newer_min: 0.5
+reason: |
+  These project_types StructureAnalyzer can't produce. Override only when
+  SA gave the generic 'library'/'unknown' fallback.

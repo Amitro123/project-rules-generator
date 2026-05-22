@@ -1,0 +1,7 @@
+name: python-api-always-wins
+match_newer: python-api
+predicate:
+  type: always
+reason: |
+  StructureAnalyzer misclassifies main.py+fastapi as python-cli; the newer
+  detector is strictly more accurate for API projects.

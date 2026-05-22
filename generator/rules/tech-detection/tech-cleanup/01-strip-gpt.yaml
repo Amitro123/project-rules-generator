@@ -1,0 +1,9 @@
+name: strip-gpt-vague-token
+predicate:
+  type: always
+strip:
+  - gpt
+reason: |
+  'gpt' is a model nickname, not a package. It enters the tech_stack via
+  README keyword extraction (e.g. 'Powered by GPT-4') and pollutes skill
+  matching with no corresponding dependency.
