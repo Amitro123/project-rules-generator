@@ -384,20 +384,20 @@ class EnhancedProjectParser:
         except Exception:  # noqa: BLE001 — type override is best-effort; old detector result is still valid
             pass
 
-        # Remove generic tokens that are not real package/framework identifiers.
-        # These appear when the README parser does keyword extraction from prose
-        # (e.g. "GPT" in a description → "gpt") but they pollute skill matching
-        # with false-positive tech signals that have no corresponding package.
-        # "jest" is also removed here when it leaked from Python test-file
-        # pattern matching (guarded separately in structure_analyzer, but belt+suspenders).
-        _noise_tokens = {"gpt", "jest"} - {test_framework} if test_framework != "jest" else {"gpt"}
-        tech_stack -= _noise_tokens
+        # Apply declarative tech-stack cleanup rules. See
+        # `generator/project_profile.py:DEFAULT_TECH_CLEANUP_RULES` for the
+        # list (gpt/jest noise-token strips, Reflex JS-artifact strip) and
+        # Plans/prg-systemic-bug-refactor.md (Phase 3a) for the rationale.
+        #
+        # The function is generic — same code regardless of which rules exist.
+        # Per-tech policy lives in the rule data, not in branches here.
+        from generator.project_profile import apply_tech_cleanup_rules
 
-        # Reflex uses React + Next.js internally but developers write pure Python.
-        # Strip the JS ecosystem tokens that leak from README prerequisites
-        # ("Node.js 16+") or from the generated .web/ directory being scanned.
-        if "reflex" in tech_stack:
-            tech_stack -= {"react", "node", "javascript", "typescript", "nextjs"}
+        _cleaned, _cleanup_traces = apply_tech_cleanup_rules(
+            tech_stack=frozenset(tech_stack),
+            context={"test_framework": test_framework},
+        )
+        tech_stack = set(_cleaned)
 
         return {
             "project_name": project_name,

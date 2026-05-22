@@ -672,3 +672,173 @@ def reconcile_project_type(
         rule_fired=None,
         reason="No precedence rule matched; kept structure_type as the default.",
     )
+
+
+# --- Phase 3a: declarative tech-stack cleanup rules ------------------------
+#
+# Replaces the post-detection patches at enhanced_parser.py:431-438
+# (`_noise_tokens` strip + `if "reflex" in tech_stack` block) with a list of
+# declarative records. The function `apply_tech_cleanup_rules` is generic —
+# it iterates rule records and strips the configured techs whenever a
+# rule's predicate fires.
+#
+# Phase 3b will move DEFAULT_TECH_CLEANUP_RULES into YAML/markdown files in
+# `generator/rules/tech-detection/` so non-Python contributors can add new
+# cleanup rules without editing this module.
+
+
+# A predicate takes (current tech_stack, cleanup_context) → True when the
+# rule's strip set should be applied. The context carries auxiliary signal
+# (e.g. ``test_framework``) that the predicate may need.
+CleanupPredicate = Callable[[FrozenSet[str], Dict[str, Any]], bool]
+
+
+@dataclass(frozen=True)
+class TechCleanupRule:
+    """One declarative rule for removing techs from a detected stack.
+
+    Fields
+    ------
+    name : human label; surfaces in shadow logs and CleanupTrace.
+    predicate : callable returning True when this rule's strip set applies.
+        Receives a snapshot of the *current* tech_stack (after earlier rules
+        have already run) plus a context dict (typically ``{"test_framework":
+        "pytest"}`` or similar).
+    strip : the techs this rule removes if the predicate fires.
+    reason : prose explanation. Used in shadow logs so users can see *why*
+        a tech was removed without reading the code.
+    """
+
+    name: str
+    predicate: CleanupPredicate
+    strip: FrozenSet[str]
+    reason: str
+
+
+@dataclass(frozen=True)
+class CleanupTrace:
+    """One rule's effect on the tech_stack, recorded for diagnostics."""
+
+    rule_name: str
+    stripped: FrozenSet[str]
+    reason: str
+
+
+# Predicate factories — closures over the values they test, keeping the rule
+# table itself terse and declarative.
+
+
+def _always_apply(_techs: FrozenSet[str], _ctx: Dict[str, Any]) -> bool:
+    return True
+
+
+def _when_stack_contains(token: str) -> CleanupPredicate:
+    """Fire when `token` is currently present in the tech_stack."""
+
+    def _pred(techs: FrozenSet[str], _ctx: Dict[str, Any]) -> bool:
+        return token in techs
+
+    return _pred
+
+
+def _when_context_key_not_equal(key: str, value: Any) -> CleanupPredicate:
+    """Fire unless context[key] equals value. Used to strip a leaked
+    framework keyword UNLESS that framework is actually the project's
+    test framework."""
+
+    def _pred(_techs: FrozenSet[str], ctx: Dict[str, Any]) -> bool:
+        return ctx.get(key) != value
+
+    return _pred
+
+
+# The default cleanup rule set — order matters; each rule sees the result
+# of all earlier rules. Each rule preserves a historical bug-fix patch
+# from `enhanced_parser.py` but lifts it from code into data.
+DEFAULT_TECH_CLEANUP_RULES: Tuple[TechCleanupRule, ...] = (
+    TechCleanupRule(
+        name="strip-gpt-vague-token",
+        predicate=_always_apply,
+        strip=frozenset({"gpt"}),
+        reason=(
+            "'gpt' is a model nickname, not a package. It enters the tech_stack "
+            "via README keyword extraction (e.g. 'Powered by GPT-4') and "
+            "pollutes skill matching with no corresponding dependency."
+        ),
+    ),
+    TechCleanupRule(
+        name="strip-jest-when-not-test-framework",
+        predicate=_when_context_key_not_equal("test_framework", "jest"),
+        strip=frozenset({"jest"}),
+        reason=(
+            "'jest' in tech_stack without it being the project's test framework "
+            "indicates leakage from the global learned-skill library (skill names "
+            "containing 'jest' polluted detection). See Bug4 in ListOfBugs/."
+        ),
+    ),
+    TechCleanupRule(
+        name="strip-reflex-js-build-artifacts",
+        predicate=_when_stack_contains("reflex"),
+        strip=frozenset({"react", "node", "javascript", "typescript", "nextjs"}),
+        reason=(
+            "Reflex compiles Python to React/Next.js in a generated .web/ "
+            "directory. Those JS deps are build artifacts, not project tech. "
+            "See Bug8 in ListOfBugs/."
+        ),
+    ),
+)
+
+
+def apply_tech_cleanup_rules(
+    tech_stack: FrozenSet[str],
+    context: Optional[Dict[str, Any]] = None,
+    rules: Tuple[TechCleanupRule, ...] = DEFAULT_TECH_CLEANUP_RULES,
+) -> Tuple[FrozenSet[str], Tuple[CleanupTrace, ...]]:
+    """Apply each cleanup rule in order; return the post-cleanup tech_stack
+    plus a trace of which rules actually changed anything.
+
+    Pure function. No I/O, no globals, no project-specific branches —
+    rule data drives behaviour. Adding a new cleanup rule = appending to
+    DEFAULT_TECH_CLEANUP_RULES (or passing a custom tuple at call site).
+
+    Parameters
+    ----------
+    tech_stack : the set of detected techs to clean.
+    context : auxiliary signal predicates may consult (e.g.
+        ``{"test_framework": "pytest"}``). ``None`` is treated as ``{}``.
+    rules : ordered tuple of TechCleanupRule. Defaults to
+        ``DEFAULT_TECH_CLEANUP_RULES``. Passing a custom tuple lets
+        callers (especially tests) drive arbitrary policy with no code
+        changes.
+
+    Returns
+    -------
+    (cleaned_stack, traces) :
+        * cleaned_stack : a new frozenset; original is not mutated.
+        * traces : tuple of CleanupTrace records — one per rule that
+          actually stripped something. Empty when nothing was removed.
+          Useful for shadow logs ("why did 'react' disappear?").
+    """
+    ctx = context or {}
+    current = frozenset(tech_stack)
+    traces: List[CleanupTrace] = []
+
+    for rule in rules:
+        if not rule.predicate(current, ctx):
+            continue
+        # Only strip what's actually there; CleanupTrace records the
+        # intersection (so traces never claim to have removed something
+        # that wasn't present).
+        stripped_here = rule.strip & current
+        if not stripped_here:
+            continue
+        current = current - stripped_here
+        traces.append(
+            CleanupTrace(
+                rule_name=rule.name,
+                stripped=stripped_here,
+                reason=rule.reason,
+            )
+        )
+
+    return current, tuple(traces)
