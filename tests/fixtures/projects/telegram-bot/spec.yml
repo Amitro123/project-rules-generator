@@ -1,0 +1,26 @@
+name: telegram-customer-support-agent
+python_version: "3.11"
+description: |
+  Telegram-driven customer support agent. Uses LangGraph for orchestration,
+  ChromaDB for RAG, and OpenAI for responses.
+
+routes:
+  webhook: /telegram/webhook
+  health: /health
+
+components:
+  - workflow
+  - rag
+  - telegram_handler
+
+dependencies:
+  - langgraph
+  - chromadb
+  - python-telegram-bot
+
+test_types:
+  - unit_tests
+  - integration_tests
+
+deployment:
+  platform: aws-lambda

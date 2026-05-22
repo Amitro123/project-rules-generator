@@ -245,6 +245,20 @@ def run_generation_pipeline(
         # M3: ensure .clinerules/.gitignore suppresses .bak and .tmp files
         _ensure_clinerules_gitignore(output_dir)
 
+        # Phase 1 shadow validation — observational only, never fails the run.
+        # Builds a ProjectProfile from the live pipeline state, runs every
+        # contract invariant, writes <output_dir>/.prg-invariants.json. See
+        # Plans/prg-systemic-bug-refactor.md and cli/profile_shadow.py.
+        from cli.profile_shadow import shadow_validate
+
+        shadow_validate(
+            enhanced_context=enhanced_context,
+            project_path=project_path,
+            selected_skill_refs=enhanced_selected_skills,
+            output_dir=output_dir,
+            verbose=verbose,
+        )
+
     return generated_files
 
 
@@ -257,7 +271,7 @@ def _ensure_clinerules_gitignore(output_dir: Path) -> None:
     (or extends) a minimal .gitignore so users never have to think about it.
     """
     gitignore_path = output_dir / ".gitignore"
-    required_lines = {"*.bak", "*.tmp"}
+    required_lines = {"*.bak", "*.tmp", ".prg-invariants.json"}
 
     existing: set[str] = set()
     header_present = False
