@@ -31,7 +31,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, FrozenSet, List, Optional, Tuple
+from typing import Any, Callable, Dict, FrozenSet, List, Optional, Tuple, Union
 
 # --- Constants ---------------------------------------------------------------
 
@@ -441,3 +441,234 @@ def _parse_skill_refs(refs: List[str]) -> Tuple[SkillRef, ...]:
     # Stable order: by scope precedence, then alphabetical
     scope_order = {s: i for i, s in enumerate(SKILL_SCOPES)}
     return tuple(sorted(seen.values(), key=lambda sr: (scope_order.get(sr.scope, 99), sr.name)))
+
+
+# --- Phase 2: declarative project_type reconciliation -----------------------
+#
+# Replaces the 60-line if/elif cascade at enhanced_parser.py:363-423 (two
+# project_type detectors with hardcoded thresholds) with a precedence TABLE
+# evaluated in order. The function `reconcile_project_type` is fully generic —
+# it iterates rule records and applies whichever first matches. Per-tech
+# decisions live in the rule data, not in branching code, so new rules can be
+# added without touching reconcile_project_type itself.
+#
+# Phase 3 will move DEFAULT_PROJECT_TYPE_PRECEDENCE into a YAML/markdown
+# rules directory so non-Python contributors can extend the precedence table.
+
+
+# Sentinel meaning "any newer_type matches this rule".
+NEWER_TYPE_ANY = "*"
+
+
+@dataclass(frozen=True)
+class PrecedenceRule:
+    """One row in the project_type precedence table.
+
+    A rule fires when ``match_newer`` matches the newer-detector's output AND
+    ``predicate`` (given the two detectors' types + confidences) returns True.
+    The first rule that fires wins; its newer_type becomes the resolved
+    project_type. If no rule fires, the structure_type wins.
+
+    Fields
+    ------
+    name : human label for debugging / log lines
+    match_newer : either a specific newer_type, a frozenset of acceptable
+        newer_types, or the sentinel ``NEWER_TYPE_ANY`` ("*") which matches
+        any non-empty newer_type
+    predicate : callable taking (structure_type, structure_confidence,
+        newer_type, newer_confidence) and returning True when the rule
+        should fire
+    reason : prose explanation, surfaced in shadow logs to make the
+        precedence transparent in real runs
+    """
+
+    name: str
+    match_newer: Union[str, FrozenSet[str]]
+    predicate: Callable[[str, float, str, float], bool]
+    reason: str
+
+    def matches_newer(self, newer_type: str) -> bool:
+        """Type-side match, before evaluating the predicate."""
+        if self.match_newer == NEWER_TYPE_ANY:
+            return bool(newer_type)
+        if isinstance(self.match_newer, frozenset):
+            return newer_type in self.match_newer
+        return newer_type == self.match_newer
+
+
+# Predicate factories — closures over numeric thresholds and structure
+# vocabularies. Using factories keeps the table itself terse and lets future
+# rule additions stay declarative.
+
+
+def _always_match(*_args, **_kwargs) -> bool:
+    return True
+
+
+def _newer_min_confidence(min_conf: float) -> Callable[[str, float, str, float], bool]:
+    def _pred(_structure_type: str, _structure_conf: float, _newer_type: str, newer_conf: float) -> bool:
+        return newer_conf >= min_conf
+
+    return _pred
+
+
+def _newer_confident_structure_uncertain(
+    newer_min: float, structure_max: float
+) -> Callable[[str, float, str, float], bool]:
+    def _pred(_structure_type: str, structure_conf: float, _newer_type: str, newer_conf: float) -> bool:
+        return newer_conf >= newer_min and structure_conf < structure_max
+
+    return _pred
+
+
+def _structure_unreliable_and_newer_confident(
+    fallback_structure_types: FrozenSet[str],
+    newer_min: float,
+) -> Callable[[str, float, str, float], bool]:
+    """When the structural detector gave a generic fallback (library/unknown)
+    AND the newer detector is reasonably confident, prefer the newer result.
+    """
+
+    def _pred(structure_type: str, _structure_conf: float, _newer_type: str, newer_conf: float) -> bool:
+        return structure_type in fallback_structure_types and newer_conf >= newer_min
+
+    return _pred
+
+
+# The default precedence table — order matters, first match wins. Each rule's
+# `reason` field explains the historical bug or behaviour it preserves.
+#
+# Values like "python-api" and "agent-skills" here are DATA describing the
+# detection vocabulary. The function that consumes them (reconcile_project_type)
+# is generic and doesn't know what these strings mean.
+DEFAULT_PROJECT_TYPE_PRECEDENCE: Tuple[PrecedenceRule, ...] = (
+    PrecedenceRule(
+        name="python-api-always-wins",
+        match_newer="python-api",
+        predicate=_always_match,
+        reason=(
+            "StructureAnalyzer misclassifies main.py+fastapi as python-cli; "
+            "the newer detector is strictly more accurate for API projects."
+        ),
+    ),
+    PrecedenceRule(
+        name="agent-skills-high-confidence",
+        match_newer="agent-skills",
+        predicate=_newer_min_confidence(0.8),
+        reason=(
+            "StructureAnalyzer has no agent-skills pattern. Override "
+            "regardless of structure when the newer detector is highly "
+            "confident (>= 0.8)."
+        ),
+    ),
+    PrecedenceRule(
+        name="agent-when-structure-unsure",
+        match_newer="agent",
+        predicate=_newer_confident_structure_uncertain(newer_min=0.7, structure_max=0.5),
+        reason=(
+            "StructureAnalyzer has no agent pattern. Override only when "
+            "SA is itself uncertain (<0.5); don't steal a confident "
+            "python-cli classification just because the project uses an LLM."
+        ),
+    ),
+    PrecedenceRule(
+        name="generator-or-webapp-on-fallback",
+        match_newer=frozenset({"generator", "web-app"}),
+        predicate=_structure_unreliable_and_newer_confident(
+            fallback_structure_types=frozenset({"library", "unknown"}),
+            newer_min=0.5,
+        ),
+        reason=(
+            "These project_types StructureAnalyzer can't produce. Override "
+            "only when SA gave the generic 'library'/'unknown' fallback."
+        ),
+    ),
+    PrecedenceRule(
+        name="any-newer-on-fallback",
+        match_newer=NEWER_TYPE_ANY,
+        predicate=_structure_unreliable_and_newer_confident(
+            fallback_structure_types=frozenset({"library", "unknown"}),
+            newer_min=0.5,
+        ),
+        reason=(
+            "Final fallback: when SA gave up (library/unknown), trust any "
+            "confident newer-detector result rather than emitting the "
+            "generic fallback."
+        ),
+    ),
+)
+
+
+@dataclass(frozen=True)
+class ReconciliationResult:
+    """Outcome of project_type reconciliation. The resolved type plus a
+    machine-readable trace so shadow logs / debug output can show which
+    rule fired (if any)."""
+
+    project_type: str
+    rule_fired: Optional[str]  # PrecedenceRule.name, or None if no rule applied
+    reason: str  # the rule's reason, or a default when no rule fired
+
+
+def reconcile_project_type(
+    structure_type: str,
+    structure_confidence: float,
+    newer_type: str,
+    newer_confidence: float,
+    rules: Tuple[PrecedenceRule, ...] = DEFAULT_PROJECT_TYPE_PRECEDENCE,
+) -> ReconciliationResult:
+    """Resolve the canonical project_type given two detectors' outputs.
+
+    Replaces the if/elif cascade in ``enhanced_parser._extract_metadata``.
+    Pure function — no I/O, no globals, no project-specific code paths.
+    The precedence is data; this function is generic.
+
+    Parameters
+    ----------
+    structure_type : output of ``StructureAnalyzer.detect_project_type()``
+        (typically one of python-cli, fastapi-api, library, unknown, …).
+    structure_confidence : confidence in [0.0, 1.0] from the same detector.
+    newer_type : output of ``project_type_detector.detect_project_type()``,
+        already translated through TYPE_LABEL_MAP. May be ``""`` when the
+        detector produced no opinion.
+    newer_confidence : confidence in [0.0, 1.0] from the newer detector.
+    rules : ordered precedence table. Defaults to
+        ``DEFAULT_PROJECT_TYPE_PRECEDENCE``. Passing a custom tuple lets
+        callers (especially tests) override the policy without monkey-patching.
+
+    Returns
+    -------
+    ReconciliationResult with the resolved project_type plus the rule that
+    fired (or ``None`` when no rule matched and structure_type was kept).
+    """
+    # Normalize inputs — guards against detectors that return None or float
+    # confidences outside [0, 1]. The contract here is "tolerate ugly input
+    # from upstream detectors during the migration; clamp and proceed".
+    s_type = (structure_type or "unknown").strip() or "unknown"
+    s_conf = max(0.0, min(1.0, float(structure_confidence or 0.0)))
+    n_type = (newer_type or "").strip()
+    n_conf = max(0.0, min(1.0, float(newer_confidence or 0.0)))
+
+    if not n_type:
+        return ReconciliationResult(
+            project_type=s_type,
+            rule_fired=None,
+            reason="newer_type was empty; kept structure_type unchanged.",
+        )
+
+    for rule in rules:
+        if not rule.matches_newer(n_type):
+            continue
+        if rule.predicate(s_type, s_conf, n_type, n_conf):
+            return ReconciliationResult(
+                project_type=n_type,
+                rule_fired=rule.name,
+                reason=rule.reason,
+            )
+
+    # No rule fired — structure detector wins by default.
+    return ReconciliationResult(
+        project_type=s_type,
+        rule_fired=None,
+        reason="No precedence rule matched; kept structure_type as the default.",
+    )

@@ -343,82 +343,44 @@ class EnhancedProjectParser:
         # Determine project name
         project_name = readme_data.get("name", "") or self.path.name
 
-        # Reconcile the two detectors.
+        # Reconcile the two detectors via the declarative precedence table.
+        # See ``generator/project_profile.py`` for the rules and
+        # ``Plans/prg-systemic-bug-refactor.md`` (Phase 2) for the rationale.
         #
-        # StructureAnalyzer matches file/folder patterns and returns types like
-        #   python-cli, fastapi-api, django-app, flask-app, react-app, vue-app,
-        #   node-api, ml-pipeline, library.
+        # The function reconcile_project_type() is generic — it iterates rule
+        # records and applies whichever matches first. Per-type policy lives
+        # in DEFAULT_PROJECT_TYPE_PRECEDENCE; this call site only translates
+        # detector outputs into the function's parameter shape.
         #
-        # project_type_detector scores dependencies + README keywords and
-        # returns a superset (with python-api also covering Flask/Django REST,
-        # plus agent / generator / web-app that StructureAnalyzer can't reach).
-        #
-        # Override rule: prefer the newer detector's type when (a) it has
-        # reasonable confidence (>= 0.5) AND (b) StructureAnalyzer either
-        # returned the generic `library` fallback or a type the newer detector
-        # would have distinguished further. For `python-api` specifically,
-        # override regardless of confidence — the newer detector is strictly
-        # more accurate there (main.py + fastapi was previously misclassified
-        # as python-cli).
+        # Default-asymmetry preserved from the original cascade:
+        #   * missing structure_confidence  → assume confident (1.0)
+        #     (don't override SA unless it explicitly says it's uncertain)
+        #   * missing newer_confidence      → assume uncertain (0.0)
+        #     (don't trust the newer detector unless it explicitly says so)
         structure_type = structure.get("type", "unknown")
         project_type = structure_type
         try:
             from generator.analyzers.project_type_detector import TYPE_LABEL_MAP as _PT_LABEL_MAP
             from generator.analyzers.project_type_detector import detect_project_type as _detect_pt
+            from generator.project_profile import reconcile_project_type
 
             _readme_content = readme_data.get("raw_readme", "")
             _pt_meta = {"name": self.path.name, "tech_stack": list(tech_stack), "raw_readme": _readme_content}
             _newer = _detect_pt(_pt_meta, str(self.path))
             _newer_raw = _newer.get("primary_type", "")
             # Translate the detector's snake_case score key to the hyphenated
-            # vocabulary StructureAnalyzer uses (python-api, ml-pipeline, …),
-            # so the override comparison below works uniformly.
+            # vocabulary StructureAnalyzer uses so the rule table works uniformly.
             _newer_type = _PT_LABEL_MAP.get(_newer_raw, _newer_raw)
             _newer_confidence = float(_newer.get("confidence", 0.0) or 0.0)
+            _structure_confidence = float(structure.get("confidence", 1.0))
 
-            # Types the newer detector identifies that StructureAnalyzer cannot.
-            # These override StructureAnalyzer ONLY when it returned an
-            # uncertain label (`library`/`unknown`). We don't steal confident
-            # `python-cli`/`fastapi-api`/etc. classifications — a Python CLI
-            # that happens to call Gemini is still a CLI, not an "agent".
-            _newer_only_uncertain = {"generator", "web-app"}
-
-            # R2 fix: agent-skills is a structurally distinct project type
-            # (repo whose primary content is SKILL.md files, no Python/JS
-            # sources). StructureAnalyzer can never detect this — it always
-            # falls back to `python-cli` or `library` on weak signals.
-            # When the newer detector is highly confident (>= 0.8) that this
-            # is an agent-skills collection, let it win unconditionally.
-            # "agent" is also in this set: StructureAnalyzer has no agent
-            # pattern, so it falls back to generic types (library, ml-pipeline)
-            # even for clearly LLM-driven chatbot/RAG projects.  When the
-            # newer detector is confident (>= 0.7), trust it over SA's guess.
-            _always_override = {"agent-skills", "agent"}
-
-            if _newer_type == "python-api":
-                # Always trust the newer detector for API classification — the
-                # old one misclassified `main.py + fastapi` as `python-cli`.
-                project_type = _newer_type
-            elif _newer_type == "agent-skills" and _newer_confidence >= 0.8:
-                # agent-skills: override regardless of StructureAnalyzer result.
-                project_type = _newer_type
-            elif _newer_type == "agent" and _newer_confidence >= 0.7 and float(structure.get("confidence", 1.0)) < 0.5:
-                # agent: StructureAnalyzer has no agent pattern and misclassifies
-                # LLM/chatbot/RAG projects (e.g. as ml-pipeline when a data/
-                # folder exists) when its own confidence is low (weak signals).
-                # Don't override a high-confidence SA classification like
-                # python-cli — a CLI that calls an LLM is still a CLI.
-                project_type = _newer_type
-            elif (
-                structure_type in ("library", "unknown")
-                and _newer_type in _newer_only_uncertain
-                and _newer_confidence >= 0.5
-            ):
-                project_type = _newer_type
-            elif structure_type in ("library", "unknown") and _newer_confidence >= 0.5 and _newer_type:
-                # StructureAnalyzer gave up — let any confident newer-detector
-                # type (e.g. `ml-pipeline`, `cli-tool`) take over.
-                project_type = _newer_type
+            _result = reconcile_project_type(
+                structure_type=structure_type,
+                structure_confidence=_structure_confidence,
+                newer_type=_newer_type,
+                newer_confidence=_newer_confidence,
+            )
+            project_type = _result.project_type
         except Exception:  # noqa: BLE001 — type override is best-effort; old detector result is still valid
             pass
 
