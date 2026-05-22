@@ -59,6 +59,32 @@ def _auto_generate_skills(
             project_context=enhanced_context,
         )
 
+        # Phase 4b: tag ∩ tech_stack filter. Drops learned skills whose
+        # declared tags have zero overlap with the project's tech_stack —
+        # the missing invariant from Bug4 / Bug6 / Bugs.md (jest skills in
+        # pure-Python projects, react skills in non-React projects, etc.).
+        #
+        # Generic: the filter primitive in project_profile.filter_skills_by_tech_overlap
+        # has no project-specific knowledge; the resolver in
+        # skill_tag_resolver reads SKILL.md frontmatter via SkillPathManager.
+        # builtin and project skills bypass by default.
+        from generator.project_profile import filter_skills_by_tech_overlap
+        from generator.skill_tag_resolver import default_tag_resolver
+
+        _tag_resolver = default_tag_resolver()
+        _filtered, _filter_traces = filter_skills_by_tech_overlap(
+            selected_refs=enhanced_selected_skills,
+            tech_stack=set(detected_tech),
+            tag_resolver=_tag_resolver,
+        )
+        # Replace with the filtered set (preserving mutable Set[str] for the
+        # downstream .add() calls).
+        enhanced_selected_skills = set(_filtered)
+        if verbose and _filter_traces:
+            click.echo(f"   Filtered out {len(_filter_traces)} learned skill(s) with no tag overlap:")
+            for trace in _filter_traces:
+                click.echo(f"     - {trace.skill_ref}  tags={sorted(trace.skill_tags)}")
+
         # Always include existing project-local skills (e.g. created via --create-skill
         # or --ai) so they appear in clinerules.yaml and skills/index.md.
         if skills_manager and hasattr(skills_manager, "discovery") and skills_manager.discovery.project_skills_root:
