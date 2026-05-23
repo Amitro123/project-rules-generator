@@ -21,7 +21,6 @@ from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
 from generator.sources.learned import LearnedSkillsSource
 from generator.storage.skill_paths import SkillPathManager
 from generator.types import SkillFile
-from prg_utils.file_ops import save_markdown
 
 
 def _auto_generate_skills(
@@ -467,10 +466,14 @@ def _run_skill_orchestration(
         description=project_data.get("description", ""),
     )
 
-    skills_content = get_renderer("markdown").render(skill_file)
-    skills_index_path = output_dir / "skills" / "index.md"
-    save_markdown(skills_index_path, skills_content)
-    generated_files.append(skills_index_path)
+    # Phase 4e: the markdown index.md write previously here was always
+    # overwritten downstream by skills_manager.generate_perfect_index
+    # (the "H4 fix" comment in analyze_pipeline.py documented the
+    # double-write). _run_skill_orchestration no longer writes index.md
+    # — the orchestrator's role is now just to feed the JSON/YAML
+    # exporters and (optionally) the LearnedSkillsSource.save side
+    # effect above. index.md is written exactly once downstream, by
+    # generate_perfect_index, with the canonical selected-skills set.
 
     if export_json:
         json_content = get_renderer("json").render(skill_file)
