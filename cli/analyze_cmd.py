@@ -1,6 +1,7 @@
 """Analyzer module for project rules generator."""
 
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import click
@@ -44,6 +45,48 @@ def cleanup_awesome_skills():
             shutil.rmtree(awesome_dir)
     except OSError:
         pass
+
+
+@contextmanager
+def _analyze_error_boundary(verbose: bool):
+    """Centralised exception dispatch for the ``analyze`` command.
+
+    Catches the well-known user-facing error classes with friendly
+    messages + remediation tips, lets ``click.exceptions.Exit``
+    propagate (a Click-internal flow-control signal, not a real error),
+    and surfaces unexpected errors with a traceback ONLY in verbose
+    mode. Every handler translates to ``sys.exit(1)`` so the CLI returns
+    a non-zero status without dumping a Python stack to ordinary users.
+
+    Moving the six handlers here drops the cyclomatic complexity of
+    ``analyze`` itself by ~6 points; each except is +1 CC. Now ``analyze``
+    only sees one ``with`` block.
+    """
+    try:
+        yield
+    except READMENotFoundError as e:
+        click.echo(f"❌ Error: {e}", err=True)
+        click.echo("💡 Tip: Make sure README.md exists in the project root.")
+        sys.exit(1)
+    except InvalidREADMEError as e:
+        click.echo(f"❌ Error: {e}", err=True)
+        click.echo("💡 Tip: README should have at least a title and description.")
+        sys.exit(1)
+    except ValidationError as e:
+        click.echo(f"❌ Configuration Error: {e}", err=True)
+        sys.exit(1)
+    except ProjectRulesGeneratorError as e:
+        click.echo(f"❌ Error: {e}", err=True)
+        sys.exit(1)
+    except click.exceptions.Exit:
+        raise
+    except Exception as e:  # noqa: BLE001 — CLI boundary: friendly catch-all
+        if verbose:
+            import traceback
+
+            traceback.print_exc()
+        click.echo(f"❌ Unexpected Error: {e}", err=True)
+        sys.exit(1)
 
 
 def _apply_save_learned(config: dict, save_learned: bool) -> dict:
@@ -385,7 +428,7 @@ def analyze(
         click.echo(f"Target: {project_path}")
     provider = setup_logging_and_provider(verbose, provider, api_key, __version__)
 
-    try:
+    with _analyze_error_boundary(verbose):
         _run_analysis_body(
             project_path=project_path,
             output_dir=output_dir,
@@ -408,35 +451,6 @@ def analyze(
             provider=provider,
             strategy=strategy,
         )
-
-    except READMENotFoundError as e:
-        click.echo(f"❌ Error: {e}", err=True)
-        click.echo("💡 Tip: Make sure README.md exists in the project root.")
-        sys.exit(1)
-
-    except InvalidREADMEError as e:
-        click.echo(f"❌ Error: {e}", err=True)
-        click.echo("💡 Tip: README should have at least a title and description.")
-        sys.exit(1)
-
-    except ValidationError as e:
-        click.echo(f"❌ Configuration Error: {e}", err=True)
-        sys.exit(1)
-
-    except ProjectRulesGeneratorError as e:
-        click.echo(f"❌ Error: {e}", err=True)
-        sys.exit(1)
-
-    except click.exceptions.Exit:
-        raise
-
-    except Exception as e:  # noqa: BLE001 — CLI boundary: catch all errors to show user-friendly message
-        if verbose:
-            import traceback
-
-            traceback.print_exc()
-        click.echo(f"❌ Unexpected Error: {e}", err=True)
-        sys.exit(1)
 
 
 if __name__ == "__main__":
