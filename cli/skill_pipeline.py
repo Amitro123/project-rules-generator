@@ -165,6 +165,38 @@ def _resolve_readme_path(
     return candidate
 
 
+def _readme_text_for_skill_gen(
+    output_dir: Optional[Path],
+    skills_manager: Any,
+    readme_path: Optional[Path],
+    enhanced_context: Dict[str, Any],
+) -> Optional[str]:
+    """Collapse the six early-exit guards for README-driven skill generation
+    into one return value.
+
+    Returns the README content as a string when ALL of:
+      * output_dir is provided
+      * skills_manager exposes ``generate_from_readme``
+      * a README path can be resolved (explicit or via enhanced_context)
+      * the README file is readable
+      * the README is non-empty
+
+    Otherwise returns ``None`` so the caller can short-circuit with one
+    guard instead of six."""
+    if output_dir is None:
+        return None
+    if skills_manager is None or not hasattr(skills_manager, "generate_from_readme"):
+        return None
+    resolved = _resolve_readme_path(readme_path, enhanced_context)
+    if resolved is None:
+        return None
+    try:
+        text = resolved.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    return text or None
+
+
 def _log_global_skill_reuse(skills_manager: Any, detected_tech: List[str]) -> None:
     """Verbose-only side effect: ask the SkillsManager whether any global
     skills would be reused/adapted/created for the detected tech, and
@@ -238,26 +270,14 @@ def _phase_readme_driven_gen(
     documented the symptom). Here it is the single construction site —
     _build_unified_content becomes a pure consumer with no mutation.
 
-    The body is intentionally a thin orchestrator over three helpers
-    (``_resolve_readme_path``, ``_log_global_skill_reuse``,
-    ``_invoke_readme_skill_generator``) so that each sub-step is testable
-    in isolation and the cyclomatic complexity stays in radon's B band.
+    The body is intentionally a thin orchestrator over four helpers
+    (``_readme_text_for_skill_gen``, ``_resolve_readme_path``,
+    ``_log_global_skill_reuse``, ``_invoke_readme_skill_generator``) so
+    that each sub-step is testable in isolation and the cyclomatic
+    complexity stays in radon's B band.
     """
-    # Cheap guards first
-    if output_dir is None:
-        return selected_refs
-    if skills_manager is None or not hasattr(skills_manager, "generate_from_readme"):
-        return selected_refs
-
-    resolved_readme = _resolve_readme_path(readme_path, enhanced_context)
-    if resolved_readme is None:
-        return selected_refs
-
-    try:
-        readme_text = resolved_readme.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return selected_refs
-    if not readme_text:
+    readme_text = _readme_text_for_skill_gen(output_dir, skills_manager, readme_path, enhanced_context)
+    if readme_text is None:
         return selected_refs
 
     if verbose:
