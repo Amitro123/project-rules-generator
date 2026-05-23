@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Protocol, Tu
 from generator.utils.readme_bridge import bridge_missing_context, is_readme_sufficient
 
 if TYPE_CHECKING:  # import for typing only to avoid circular import costs at runtime
-    from generator.skill_creator import CoworkSkillCreator  # pragma: no cover
+    from generator.skills.skill_creator import CoworkSkillCreator  # pragma: no cover
 
 
 class _QualityProtocol(Protocol):
@@ -78,7 +78,7 @@ class CoworkStrategy:
         import-time coupling.
         """
         # Lazy import to avoid circular imports at module import time
-        from generator.skill_creator import CoworkSkillCreator
+        from generator.skills.skill_creator import CoworkSkillCreator
 
         return CoworkSkillCreator(project_path)  # type: ignore[return-value]
 

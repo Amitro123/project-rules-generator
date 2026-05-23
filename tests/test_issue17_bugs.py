@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from generator.skill_creator import CoworkSkillCreator, SkillMetadata
+from generator.skills.skill_creator import CoworkSkillCreator, SkillMetadata
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
 
@@ -213,7 +213,7 @@ def test_cowork_strategy_does_not_force_use_ai(tmp_path):
 def test_quality_report_single_source():
     """DESIGN-1: skill_creator.QualityReport and quality_checker.QualityReport
     must be the SAME class (no duplicate definition)."""
-    from generator.skill_creator import QualityReport as CreatorReport
+    from generator.skills.skill_creator import QualityReport as CreatorReport
     from generator.utils.quality_checker import QualityReport as CheckerReport
 
     assert CreatorReport is CheckerReport, (

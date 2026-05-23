@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
-from generator.skill_creator import CoworkSkillCreator
+from generator.skills.skill_creator import CoworkSkillCreator
 from generator.skill_generator import SkillGenerator
 
 
@@ -34,7 +34,7 @@ class TestAutoGenerateSkillsNames:
 
         def fake_create_skill(skill_name, readme_content, **kwargs):
             captured_names.append(skill_name)
-            from generator.skill_creator import SkillMetadata
+            from generator.skills.skill_creator import SkillMetadata
             from generator.utils.quality_checker import QualityReport
 
             meta = SkillMetadata(name=skill_name, description="stub")
@@ -61,7 +61,7 @@ class TestAutoGenerateSkillsNames:
 
         def fake_create(name, readme, **kwargs):
             captured.append(name)
-            from generator.skill_creator import SkillMetadata
+            from generator.skills.skill_creator import SkillMetadata
             from generator.utils.quality_checker import QualityReport
 
             meta = SkillMetadata(name=name, description="stub")
@@ -87,7 +87,7 @@ class TestAutoGenerateSkillsNames:
 
         def fake_create(name, readme, **kwargs):
             captured.append(name)
-            from generator.skill_creator import SkillMetadata
+            from generator.skills.skill_creator import SkillMetadata
             from generator.utils.quality_checker import QualityReport
 
             meta = SkillMetadata(name=name, description="stub")
@@ -113,7 +113,7 @@ class TestAutoGenerateSkillsNames:
 
         def fake_create(name, readme, **kwargs):
             captured.append(name)
-            from generator.skill_creator import SkillMetadata
+            from generator.skills.skill_creator import SkillMetadata
             from generator.utils.quality_checker import QualityReport
 
             meta = SkillMetadata(name=name, description="stub")
@@ -137,7 +137,7 @@ class TestAutoGenerateSkillsNames:
 
         def fake_create(name, readme, **kwargs):
             captured.append(name)
-            from generator.skill_creator import SkillMetadata
+            from generator.skills.skill_creator import SkillMetadata
             from generator.utils.quality_checker import QualityReport
 
             meta = SkillMetadata(name=name, description="stub")

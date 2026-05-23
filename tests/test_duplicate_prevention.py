@@ -160,7 +160,7 @@ class TestExistsInLearned:
 
     def test_delegates_to_skill_exists(self, tmp_path):
         """exists_in_learned uses SkillDiscovery.skill_exists() under the hood."""
-        from generator.skill_creator import CoworkSkillCreator
+        from generator.skills.skill_creator import CoworkSkillCreator
 
         discovery = _make_discovery(tmp_path)
         discovery.ensure_global_structure()
@@ -176,7 +176,7 @@ class TestExistsInLearned:
 
     def test_detects_directory_format(self, tmp_path):
         """exists_in_learned detects directory/SKILL.md format."""
-        from generator.skill_creator import CoworkSkillCreator
+        from generator.skills.skill_creator import CoworkSkillCreator
 
         discovery = _make_discovery(tmp_path)
         discovery.ensure_global_structure()

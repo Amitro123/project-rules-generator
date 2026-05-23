@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from generator.skill_creator import CoworkSkillCreator, SkillMetadata
+from generator.skills.skill_creator import CoworkSkillCreator, SkillMetadata
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
 from generator.strategies.readme_strategy import READMEStrategy
@@ -180,7 +180,7 @@ def test_jinja2_source_has_no_quality_score_95():
     """Verify at the source level that quality_score: 95 assignment is gone."""
     import inspect
 
-    from generator.skill_creator import CoworkSkillCreator
+    from generator.skills.skill_creator import CoworkSkillCreator
 
     source = inspect.getsource(CoworkSkillCreator._generate_with_jinja2)
     # The dict assignment `"quality_score": 95` must not exist.

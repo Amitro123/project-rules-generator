@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, List, Set
 from generator.tech import TECH_TOOLS as _TECH_TOOLS
 
 if TYPE_CHECKING:
-    from generator.skill_creator import SkillMetadata
+    from generator.skills.skill_creator import SkillMetadata
 
 
 class SkillMetadataBuilder:
@@ -80,7 +80,7 @@ class SkillMetadataBuilder:
             tech_stack: Already-detected tech stack (caller owns detection + caching)
             project_signals: Already-detected project signals (has_docker, etc.)
         """
-        from generator.skill_creator import SkillMetadata
+        from generator.skills.skill_creator import SkillMetadata
 
         triggers = self._generate_triggers(skill_name, readme_content, tech_stack)
         tools = self._select_tools(skill_name, tech_stack)

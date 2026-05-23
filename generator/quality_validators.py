@@ -18,9 +18,9 @@ from typing import TYPE_CHECKING, Dict, List
 from generator.utils.quality_checker import QualityReport, validate_quality
 
 if TYPE_CHECKING:
-    from generator.rules_creator import QualityReport as RulesQualityReport
-    from generator.rules_creator import Rule, RulesMetadata
-    from generator.skill_creator import SkillMetadata
+    from generator.rules import QualityReport as RulesQualityReport
+    from generator.rules import Rule, RulesMetadata
+    from generator.skills.skill_creator import SkillMetadata
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +109,7 @@ class RulesQualityValidator:
         rules_by_category: Dict[str, List["Rule"]],
     ) -> "RulesQualityReport":
         """Validate rules quality with Cowork standards."""
-        from generator.rules_creator import QualityReport as RulesQR
+        from generator.rules import QualityReport as RulesQR
 
         issues: List[str] = []
         warnings: List[str] = []

@@ -10,7 +10,7 @@ from generator.skills.skill_doc_loader import SkillDocLoader
 from generator.skills.skill_metadata_builder import SkillMetadataBuilder
 
 if TYPE_CHECKING:
-    from generator.skill_creator import SkillMetadata
+    from generator.skills.skill_creator import SkillMetadata
 
 try:
     from jinja2 import Environment, FileSystemLoader, select_autoescape

@@ -232,7 +232,7 @@ class TestGenerateCriticalRules:
 
 class TestRenderFrontmatter:
     def _meta(self, tmp_path, name="fastapi-workflow", triggers=None, tags=None, negatives=None):
-        from generator.skill_creator import SkillMetadata
+        from generator.skills.skill_creator import SkillMetadata
 
         return SkillMetadata(
             name=name,
@@ -257,7 +257,7 @@ class TestRenderFrontmatter:
 
     def test_description_truncated_at_1024(self, tmp_path):
         b = SkillMetadataBuilder(project_path=tmp_path)
-        from generator.skill_creator import SkillMetadata
+        from generator.skills.skill_creator import SkillMetadata
 
         meta = SkillMetadata(
             name="x",
