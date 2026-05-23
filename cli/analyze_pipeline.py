@@ -193,15 +193,12 @@ def run_generation_pipeline(
             skills_manager=skills_manager,
             enhanced_selected_skills=enhanced_selected_skills,
             project_name=project_name,
-            project_data=project_data,
             readme_path=readme_path,
             output_dir=output_dir,
             merge=merge,
             verbose=verbose,
             generated_files=generated_files,
             enhanced_context=enhanced_context,
-            use_ai=ai,
-            provider=provider,
         )
 
         _phase_write_rules(
@@ -465,17 +462,22 @@ def _build_unified_content(
     skills_manager: Any,
     enhanced_selected_skills: Set[str],
     project_name: str,
-    project_data: Dict[str, Any],
     readme_path: Optional[Path],
     output_dir: Path,
     merge: bool,
     verbose: bool,
     generated_files: List[Path],
     enhanced_context: Optional[Dict[str, Any]] = None,
-    use_ai: bool = False,
-    provider: str = "groq",
 ) -> str:
-    """Assemble the unified rules + skills content string."""
+    """Assemble the unified rules + skills content string.
+
+    Phase 4c moved README-skill generation into _phase_skills, so this
+    function is now a pure consumer: it receives an immutable
+    enhanced_selected_skills set, renders content, and writes
+    clinerules.yaml. No skill-set mutation, no AI provider calls, no
+    project_data lookup. The dead parameters (project_data, use_ai,
+    provider) were dropped in the Phase 4 cleanup commit.
+    """
     unified_content = rules_content + "\n\n# 🧠 Agent Skills\n\n"
 
     if triggers_dict:
