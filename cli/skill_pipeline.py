@@ -202,20 +202,15 @@ def _auto_generate_skills(
                             _skill_name = _raw.split(" (")[0]
                             enhanced_selected_skills.add(f"project/{_skill_name}")
 
-        # Cross-scope dedup: when the same terminal skill name exists in
-        # both project/ and learned/, the project entry wins (it's
-        # specifically tailored). This was previously inline in
-        # _build_unified_content (the "Bug 4 fix" comment). Moving it
-        # here ensures _build_unified_content sees a clean set.
-        #
-        # The matcher emits 3-part refs like "learned/fastapi/pydantic-validation",
-        # so we compare by ref.split("/")[-1] rather than f"learned/{name}".
-        _project_names = {ref.split("/")[-1] for ref in enhanced_selected_skills if ref.startswith("project/")}
-        enhanced_selected_skills -= {
-            ref
-            for ref in set(enhanced_selected_skills)
-            if ref.startswith("learned/") and ref.split("/")[-1] in _project_names
-        }
+        # Phase 4d: single canonical dedup. Replaces the inline cross-scope
+        # block that handled only learned-vs-project; the generic
+        # dedupe_skill_refs additionally collapses same-terminal-name
+        # collisions in learned-vs-builtin and across category prefixes
+        # (e.g. learned/fastapi/X vs learned/pytest/X) using the default
+        # scope precedence (project > learned > builtin).
+        from generator.project_profile import dedupe_skill_refs
+
+        enhanced_selected_skills = set(dedupe_skill_refs(enhanced_selected_skills))
 
         return enhanced_selected_skills
 
