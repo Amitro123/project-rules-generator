@@ -62,12 +62,30 @@ def detect_from_readme(readme_content: str) -> Set[str]:
     """
     Detect tech stack from README content (keyword-based).
     Less reliable than detect_from_dependencies - use as confirmation only.
+
+    Each keyword match is checked via the shared negation helper
+    (``generator.utils.negation.keyword_has_non_negated_mention``) so
+    prose like *"This is not a Python application"* does not cause
+    ``python`` to leak into the detected set. A tech is included only
+    when at least one of its keywords matches in a non-negated context.
     """
+    from generator.utils.negation import keyword_has_non_negated_mention
+
     detected = set()
     content_lower = readme_content.lower()
 
     for tech, keywords in TECH_README_KEYWORDS.items():
-        if any(kw in content_lower for kw in keywords):
+        # Multi-word keywords like "fast api" need permissive (substring)
+        # matching; single-word keywords like "python" should be
+        # word-bounded to avoid 'jython' -> python false positives.
+        if any(
+            keyword_has_non_negated_mention(
+                kw,
+                content_lower,
+                word_boundary=(" " not in kw),
+            )
+            for kw in keywords
+        ):
             detected.add(tech)
 
     return detected

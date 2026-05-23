@@ -216,8 +216,7 @@ def test_bugs_md_no_mass_python_framework_leakage():
     """The actual Bugs.md complaint was about 49 Python-frame skills being
     selected for an agent-skills repo. This test asserts the detection
     result doesn't include any Python *framework* tech (fastapi/django/
-    flask/pydantic/sqlalchemy/etc.) — bare ``python`` from README prose
-    is a separate, smaller issue not in scope here."""
+    flask/pydantic/sqlalchemy/etc.)."""
     profile = _build_profile("agent-skills-repo")
     tech = profile.tech_names()
     leaked_frameworks = {"fastapi", "django", "flask", "pydantic", "sqlalchemy", "pytest", "click"} & tech
@@ -225,6 +224,22 @@ def test_bugs_md_no_mass_python_framework_leakage():
         f"Bugs.md regression: Python-framework tech leaked into an "
         f"agent-skills repo's tech_stack: {sorted(leaked_frameworks)}. "
         f"The original bug was 49 such skills polluting the project."
+    )
+
+
+def test_bugs_md_python_not_leaked_from_negated_readme_mention():
+    """Follow-up to the README over-matching bug surfaced during Phase 5.
+    The agent-skills-repo README explicitly says 'This is not a Python
+    application'. The negation-aware tech extractor
+    (generator/analyzers/readme_parser.py:_tech_has_non_negated_mention)
+    must drop 'python' rather than treating the negated phrase as
+    evidence."""
+    profile = _build_profile("agent-skills-repo")
+    assert "python" not in profile.tech_names(), (
+        "README-over-matching regression: 'python' leaked into the "
+        "tech_stack of a Python-free repo whose README explicitly "
+        "disclaims being a Python application. The negation-aware "
+        "extractor in readme_parser.py should have dropped it."
     )
 
 

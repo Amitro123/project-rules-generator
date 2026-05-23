@@ -168,7 +168,7 @@ def extract_tech_stack(content: str, project_path: Optional[Path] = None) -> Lis
     content_cleaned = BADGE_LINKED_RE.sub("", content_cleaned)
 
     content_lower = content_cleaned.lower()
-    found = [tech for tech in TECH_KEYWORDS if re.search(rf"\b{re.escape(tech)}\b", content_lower)]
+    found = [tech for tech in TECH_KEYWORDS if _tech_has_non_negated_mention(tech, content_lower)]
 
     # Cross-reference with actual dependencies if project_path is provided
     if project_path:
@@ -176,6 +176,16 @@ def extract_tech_stack(content: str, project_path: Optional[Path] = None) -> Lis
 
     # Remove duplicates, preserve order
     return list(dict.fromkeys(found))
+
+
+def _tech_has_non_negated_mention(tech: str, content_lower: str) -> bool:
+    """Thin wrapper over the shared negation helper. Kept as a module-level
+    name so tests can import ``_tech_has_non_negated_mention`` from
+    ``generator.analyzers.readme_parser`` without coupling to the utils
+    layout."""
+    from generator.utils.negation import keyword_has_non_negated_mention
+
+    return keyword_has_non_negated_mention(tech, content_lower)
 
 
 def extract_conventions(content: str) -> List[str]:
