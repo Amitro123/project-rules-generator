@@ -180,6 +180,7 @@ def run_generation_pipeline(
             auto_generate_skills,
             _run_skills_gen,
             output_dir,
+            readme_path=readme_path,
         )
         pbar.update(1)
 
@@ -393,6 +394,7 @@ def _phase_skills(
     auto_generate_skills: bool,
     run_skills_gen: bool,
     output_dir: Optional[Path] = None,
+    readme_path: Optional[Path] = None,
 ) -> Set[str]:
     """Phase 4: optionally auto-generate skills.
 
@@ -415,6 +417,7 @@ def _phase_skills(
         skills_manager=skills_manager,
         strategy=strategy,
         output_dir=output_dir,
+        readme_path=readme_path,
     )
 
 
@@ -483,52 +486,11 @@ def _build_unified_content(
         unified_content += "\n"
 
     if enhanced_selected_skills:
-        # Bug 1 fix: generate README-based project skills FIRST so they are counted in
-        # clinerules.yaml. Previously generate_clinerules() was called before
-        # generate_from_readme(), so the 9 generated project skills never appeared in
-        # enhanced_selected_skills when the YAML was written → project: 0.
-        if readme_path and readme_path.exists():
-            readme_text = readme_path.read_text(encoding="utf-8", errors="replace")
-            project_tech = project_data.get("tech_stack", [])
-
-            if verbose:
-                reuse_map = skills_manager.check_global_skill_reuse(project_tech)
-                if reuse_map:
-                    click.echo("\n   Global skill reuse check:")
-                    for skill_name, action in sorted(reuse_map.items()):
-                        icon = {"reuse": "♻️ ", "adapt": "🔧", "create": "✨"}.get(action, "  ")
-                        click.echo(f"     {icon} {skill_name}: {action}")
-
-            generated_skills = skills_manager.generate_from_readme(
-                readme_content=readme_text,
-                tech_stack=project_tech,
-                output_dir=output_dir,
-                project_name=project_name,
-                project_path=skills_manager.project_path,
-                use_ai=use_ai,
-                provider=provider,
-            )
-            if generated_skills and verbose:
-                click.echo(f"   Generated {len(generated_skills)} project-specific skills:")
-                for s in generated_skills:
-                    click.echo(f"     - {s}")
-
-            # Register generated project skills so clinerules.yaml counts them.
-            # Strip display suffixes like " (reused)" and " (adapted)".
-            for raw in generated_skills:
-                skill_name = raw.split(" (")[0]
-                enhanced_selected_skills.add(f"project/{skill_name}")
-
-        # Bug 4 fix: drop learned refs (2-part OR 3-part) whose terminal name matches
-        # a project ref of the same name. The matcher emits 3-part refs like
-        # "learned/fastapi/pydantic-validation", so matching on f"learned/{n}" (2-part)
-        # silently missed them. We now compare by ref.split("/")[-1] instead.
-        project_names = {ref.split("/")[-1] for ref in enhanced_selected_skills if ref.startswith("project/")}
-        enhanced_selected_skills -= {
-            ref
-            for ref in set(enhanced_selected_skills)
-            if ref.startswith("learned/") and ref.split("/")[-1] in project_names
-        }
+        # Phase 4c: README-driven project-skill generation and the
+        # cross-scope dedup moved into cli/skill_pipeline.py:
+        # _auto_generate_skills, so enhanced_selected_skills arrives here
+        # already-complete and de-duplicated. _build_unified_content is
+        # now a pure consumer — no mutation.
 
         lightweight_yaml = generate_clinerules(
             project_name,

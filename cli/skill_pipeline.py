@@ -34,6 +34,7 @@ def _auto_generate_skills(
     skills_manager: Any,
     strategy: str,
     output_dir: Optional[Path] = None,
+    readme_path: Optional[Path] = None,
 ) -> Set[str]:
     """Auto-detect and optionally LLM-generate matched skills. Returns selected skill refs."""
     try:
@@ -140,6 +141,81 @@ def _auto_generate_skills(
                 skills_manager=skills_manager,
                 output_dir=output_dir,
             )
+
+        # Phase 4c: README-driven project-skill generation moved here from
+        # _build_unified_content. Previously this block ran during content
+        # assembly and MUTATED enhanced_selected_skills after the rest of
+        # the pipeline had already snapshotted it (the "Bug 1 fix" comment
+        # in _build_unified_content documented the symptom). Moving it
+        # into _auto_generate_skills makes _phase_skills the single
+        # construction site for selected_skills — _build_unified_content
+        # becomes a pure consumer with no mutation.
+        if output_dir is not None:
+            # Prefer the explicit readme_path parameter (threaded from
+            # run_generation_pipeline); fall back to enhanced_context for
+            # call sites that don't pass it.
+            _readme_path: Optional[Path] = readme_path
+            if _readme_path is None:
+                _readme_path_str = enhanced_context.get("readme", {}).get("readme_path") if enhanced_context else None
+                if _readme_path_str:
+                    _readme_path = Path(_readme_path_str)
+            if _readme_path is not None:
+                if (
+                    _readme_path.exists()
+                    and skills_manager is not None
+                    and hasattr(skills_manager, "generate_from_readme")
+                ):
+                    try:
+                        _readme_text = _readme_path.read_text(encoding="utf-8", errors="replace")
+                    except OSError:
+                        _readme_text = ""
+                    if _readme_text:
+                        if verbose and hasattr(skills_manager, "check_global_skill_reuse"):
+                            try:
+                                _reuse_map = skills_manager.check_global_skill_reuse(detected_tech)
+                                if _reuse_map:
+                                    click.echo("\n   Global skill reuse check:")
+                                    for _skill_name, _action in sorted(_reuse_map.items()):
+                                        _icon = {"reuse": "♻️ ", "adapt": "🔧", "create": "✨"}.get(_action, "  ")
+                                        click.echo(f"     {_icon} {_skill_name}: {_action}")
+                            except Exception:  # noqa: BLE001 — verbose info only
+                                pass
+                        try:
+                            _generated = skills_manager.generate_from_readme(
+                                readme_content=_readme_text,
+                                tech_stack=detected_tech,
+                                output_dir=output_dir,
+                                project_name=project_name,
+                                project_path=getattr(skills_manager, "project_path", project_path),
+                                use_ai=ai,
+                                provider=provider,
+                            )
+                        except Exception as exc:  # noqa: BLE001 — README-skill gen is optional
+                            if verbose:
+                                click.echo(f"   Warning: README-driven skill generation failed: {exc}")
+                            _generated = []
+                        if _generated and verbose:
+                            click.echo(f"   Generated {len(_generated)} project-specific skills:")
+                            for _s in _generated:
+                                click.echo(f"     - {_s}")
+                        for _raw in _generated or []:
+                            _skill_name = _raw.split(" (")[0]
+                            enhanced_selected_skills.add(f"project/{_skill_name}")
+
+        # Cross-scope dedup: when the same terminal skill name exists in
+        # both project/ and learned/, the project entry wins (it's
+        # specifically tailored). This was previously inline in
+        # _build_unified_content (the "Bug 4 fix" comment). Moving it
+        # here ensures _build_unified_content sees a clean set.
+        #
+        # The matcher emits 3-part refs like "learned/fastapi/pydantic-validation",
+        # so we compare by ref.split("/")[-1] rather than f"learned/{name}".
+        _project_names = {ref.split("/")[-1] for ref in enhanced_selected_skills if ref.startswith("project/")}
+        enhanced_selected_skills -= {
+            ref
+            for ref in set(enhanced_selected_skills)
+            if ref.startswith("learned/") and ref.split("/")[-1] in _project_names
+        }
 
         return enhanced_selected_skills
 
