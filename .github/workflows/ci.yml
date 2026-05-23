@@ -51,6 +51,24 @@ jobs:
           GROQ_API_KEY: ""
         run: pytest --cov=generator --cov=prg_utils --cov-report=term-missing -q
 
+      - name: Skill quality gates
+        # Explicit, named step so the quality gate is visible in PR checks.
+        # These test files all run as part of the full suite above too,
+        # but surfacing them here means a reviewer sees "Skill quality
+        # gates" pass/fail at a glance without scanning the 1600-test log.
+        # See manus CR.md recommendation #4 and
+        # tests/test_builtin_skill_quality_gates.py for the gate that
+        # parametrizes validate_quality() over every shipped builtin skill.
+        env:
+          GEMINI_API_KEY: ""
+          GROQ_API_KEY: ""
+        run: |
+          pytest \
+            tests/test_builtin_skill_quality_gates.py \
+            tests/test_quality_checker_triggers.py \
+            tests/test_readme_to_skill_quality.py \
+            -v
+
   build:
     name: Build & smoke-test package
     runs-on: ubuntu-latest
