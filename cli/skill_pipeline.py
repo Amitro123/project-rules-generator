@@ -7,7 +7,7 @@ stub creation, and orchestration of the skill layer.
 
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import click
 
@@ -21,6 +21,274 @@ from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
 from generator.sources.learned import LearnedSkillsSource
 from generator.storage.skill_paths import SkillPathManager
 from generator.types import SkillFile
+
+# ---------------------------------------------------------------------------
+# Phase helpers for _auto_generate_skills
+# ---------------------------------------------------------------------------
+
+
+def _phase_detect_and_log(
+    project_path: Path,
+    enhanced_context: Optional[Dict[str, Any]],
+    verbose: bool,
+) -> Tuple[Dict[str, Any], List[str], str]:
+    """Phase 1: Ensure context exists and log verbose diagnostics.
+
+    Returns (enhanced_context, detected_tech, project_type).
+    """
+    if enhanced_context is None:
+        enhanced_context = EnhancedProjectParser(project_path).extract_full_context()
+
+    detected_tech: List[str] = enhanced_context.get("metadata", {}).get("tech_stack", [])
+    project_type: str = enhanced_context.get("metadata", {}).get("project_type", "unknown")
+
+    if verbose:
+        click.echo("\n   Enhanced Analysis:")
+        click.echo(f"   Project Type: {project_type}")
+        click.echo(f"   Tech Stack: {', '.join(detected_tech)}")
+        dep_count = len(enhanced_context.get("dependencies", {}).get("python", []))
+        dep_count += len(enhanced_context.get("dependencies", {}).get("node", []))
+        click.echo(f"   Dependencies: {dep_count} parsed")
+        test_info = enhanced_context.get("test_patterns", {})
+        if test_info.get("framework"):
+            click.echo(f"   Tests: {test_info['framework']} ({test_info.get('test_files', 0)} files)")
+
+    return enhanced_context, detected_tech, project_type
+
+
+def _phase_filter_by_tags(
+    selected_refs: Set[str],
+    detected_tech: List[str],
+    verbose: bool,
+) -> Set[str]:
+    """Phase 2: Drop learned skills whose tags have zero overlap with the tech stack.
+
+    Bug4/Bug6 fix: prevents jest skills in Python projects, react skills in
+    non-React projects, etc.
+    """
+    from generator.project_profile import filter_skills_by_tech_overlap
+    from generator.skill_tag_resolver import default_tag_resolver
+
+    tag_resolver = default_tag_resolver()
+    filtered, filter_traces = filter_skills_by_tech_overlap(
+        selected_refs=selected_refs,
+        tech_stack=set(detected_tech),
+        tag_resolver=tag_resolver,
+    )
+    result = set(filtered)
+
+    if verbose and filter_traces:
+        click.echo(f"   Filtered out {len(filter_traces)} learned skill(s) with no tag overlap:")
+        for trace in filter_traces:
+            click.echo(f"     - {trace.skill_ref}  tags={sorted(trace.skill_tags)}")
+
+    return result
+
+
+def _phase_include_project_skills(
+    selected_refs: Set[str],
+    skills_manager: Any,
+    project_type: str,
+) -> Set[str]:
+    """Phase 3: Always include existing project-local skills.
+
+    Ensures skills created via --create-skill or --ai appear in
+    clinerules.yaml and skills/index.md even without being re-matched.
+    """
+    if not (skills_manager and hasattr(skills_manager, "discovery") and skills_manager.discovery.project_skills_root):
+        return selected_refs
+
+    result = set(selected_refs)
+    all_discovered = skills_manager.discovery.list_skills()
+
+    for skill_name, skill_data in all_discovered.items():
+        s_type = skill_data.get("type")
+        if s_type == "project":
+            result.add(f"project/{skill_name}")
+            continue
+
+        # For non-agent-skills projects: preserve learned/builtin skills that were
+        # explicitly generated into the project-local dir (e.g. via --ai or --create-skill).
+        # Excluded for agent-skills: their native SKILL.md files are discovered by the
+        # rglob scan below, and global learned skills must not be bulk-included just
+        # because they're physically present from a pre-Bug-I run.
+        if project_type != "agent-skills":
+            s_path = skill_data.get("path")
+            if s_path:
+                try:
+                    Path(s_path).resolve().relative_to(skills_manager.discovery.project_skills_root.resolve())
+                    if s_type == "learned":
+                        result.add(f"learned/{skill_name}")
+                    elif s_type == "builtin":
+                        result.add(f"builtin/{skill_name}")
+                except (ValueError, OSError):
+                    pass
+
+    return result
+
+
+def _phase_include_agent_skills(
+    selected_refs: Set[str],
+    project_path: Path,
+    project_type: str,
+) -> Set[str]:
+    """Phase 4: For agent-skills projects, rglob all SKILL.md files as project skills.
+
+    The project's own repository IS the skills directory in this case.
+    """
+    if project_type != "agent-skills":
+        return selected_refs
+
+    result = set(selected_refs)
+    _infra_dirs = {".clinerules", ".venv", "__pycache__", "node_modules", ".git"}
+    for p in project_path.rglob("SKILL.md"):
+        if not any(part in _infra_dirs for part in p.parts):
+            result.add(f"project/{p.parent.name}")
+
+    return result
+
+
+def _resolve_readme_path(
+    explicit: Optional[Path],
+    enhanced_context: Dict[str, Any],
+) -> Optional[Path]:
+    """Pick the right README path. Prefer the explicit parameter; fall back
+    to ``enhanced_context['readme']['readme_path']``. Returns the Path only
+    if it points at an existing file, otherwise ``None``."""
+    candidate = explicit
+    if candidate is None and enhanced_context:
+        as_str = enhanced_context.get("readme", {}).get("readme_path")
+        if as_str:
+            candidate = Path(as_str)
+    if candidate is None or not candidate.exists():
+        return None
+    return candidate
+
+
+def _log_global_skill_reuse(skills_manager: Any, detected_tech: List[str]) -> None:
+    """Verbose-only side effect: ask the SkillsManager whether any global
+    skills would be reused/adapted/created for the detected tech, and
+    print the verdict for each. Swallowed on any failure — this is
+    info, never blocking."""
+    if not hasattr(skills_manager, "check_global_skill_reuse"):
+        return
+    try:
+        reuse_map = skills_manager.check_global_skill_reuse(detected_tech)
+    except Exception:  # noqa: BLE001 — verbose info only
+        return
+    if not reuse_map:
+        return
+    click.echo("\n   Global skill reuse check:")
+    icons = {"reuse": "♻️ ", "adapt": "🔧", "create": "✨"}
+    for skill_name, action in sorted(reuse_map.items()):
+        click.echo(f"     {icons.get(action, '  ')} {skill_name}: {action}")
+
+
+def _invoke_readme_skill_generator(
+    skills_manager: Any,
+    readme_text: str,
+    detected_tech: List[str],
+    output_dir: Path,
+    project_name: str,
+    project_path: Path,
+    ai: bool,
+    provider: str,
+    verbose: bool,
+) -> List[str]:
+    """Call ``skills_manager.generate_from_readme`` and return the raw
+    skill-name list. Swallows any error (README-driven generation is
+    optional) and prints a warning under verbose mode."""
+    try:
+        return (
+            skills_manager.generate_from_readme(
+                readme_content=readme_text,
+                tech_stack=detected_tech,
+                output_dir=output_dir,
+                project_name=project_name,
+                project_path=getattr(skills_manager, "project_path", project_path),
+                use_ai=ai,
+                provider=provider,
+            )
+            or []
+        )
+    except Exception as exc:  # noqa: BLE001 — README-skill gen is optional
+        if verbose:
+            click.echo(f"   Warning: README-driven skill generation failed: {exc}")
+        return []
+
+
+def _phase_readme_driven_gen(
+    selected_refs: Set[str],
+    output_dir: Optional[Path],
+    readme_path: Optional[Path],
+    enhanced_context: Dict[str, Any],
+    detected_tech: List[str],
+    project_path: Path,
+    project_name: str,
+    skills_manager: Any,
+    ai: bool,
+    provider: str,
+    verbose: bool,
+) -> Set[str]:
+    """Phase 5: README-driven project-skill generation.
+
+    Previously this block ran during content assembly and MUTATED
+    enhanced_selected_skills after the rest of the pipeline had already
+    snapshotted it (the 'Bug 1 fix' comment in _build_unified_content
+    documented the symptom). Here it is the single construction site —
+    _build_unified_content becomes a pure consumer with no mutation.
+
+    The body is intentionally a thin orchestrator over three helpers
+    (``_resolve_readme_path``, ``_log_global_skill_reuse``,
+    ``_invoke_readme_skill_generator``) so that each sub-step is testable
+    in isolation and the cyclomatic complexity stays in radon's B band.
+    """
+    # Cheap guards first
+    if output_dir is None:
+        return selected_refs
+    if skills_manager is None or not hasattr(skills_manager, "generate_from_readme"):
+        return selected_refs
+
+    resolved_readme = _resolve_readme_path(readme_path, enhanced_context)
+    if resolved_readme is None:
+        return selected_refs
+
+    try:
+        readme_text = resolved_readme.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return selected_refs
+    if not readme_text:
+        return selected_refs
+
+    if verbose:
+        _log_global_skill_reuse(skills_manager, detected_tech)
+
+    generated = _invoke_readme_skill_generator(
+        skills_manager=skills_manager,
+        readme_text=readme_text,
+        detected_tech=detected_tech,
+        output_dir=output_dir,
+        project_name=project_name,
+        project_path=project_path,
+        ai=ai,
+        provider=provider,
+        verbose=verbose,
+    )
+
+    if generated and verbose:
+        click.echo(f"   Generated {len(generated)} project-specific skills:")
+        for s in generated:
+            click.echo(f"     - {s}")
+
+    result = set(selected_refs)
+    for raw in generated:
+        result.add(f"project/{raw.split(' (')[0]}")
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Public orchestrator
+# ---------------------------------------------------------------------------
 
 
 def _auto_generate_skills(
@@ -37,181 +305,64 @@ def _auto_generate_skills(
 ) -> Set[str]:
     """Auto-detect and optionally LLM-generate matched skills. Returns selected skill refs."""
     try:
-        if enhanced_context is None:
-            enhanced_context = EnhancedProjectParser(project_path).extract_full_context()
+        # Phase 1: resolve context and log diagnostics
+        enhanced_context, detected_tech, project_type = _phase_detect_and_log(project_path, enhanced_context, verbose)
 
-        detected_tech = enhanced_context.get("metadata", {}).get("tech_stack", [])
-        project_type = enhanced_context.get("metadata", {}).get("project_type", "unknown")
-
-        if verbose:
-            click.echo("\n   Enhanced Analysis:")
-            click.echo(f"   Project Type: {project_type}")
-            click.echo(f"   Tech Stack: {', '.join(detected_tech)}")
-            dep_count = len(enhanced_context.get("dependencies", {}).get("python", []))
-            dep_count += len(enhanced_context.get("dependencies", {}).get("node", []))
-            click.echo(f"   Dependencies: {dep_count} parsed")
-            test_info = enhanced_context.get("test_patterns", {})
-            if test_info.get("framework"):
-                click.echo(f"   Tests: {test_info['framework']} ({test_info.get('test_files', 0)} files)")
-
-        enhanced_selected_skills = EnhancedSkillMatcher().match_skills(
+        # Initial skill matching
+        selected_skills: Set[str] = EnhancedSkillMatcher().match_skills(
             detected_tech=detected_tech,
             project_context=enhanced_context,
         )
 
-        # Phase 4b: tag ∩ tech_stack filter. Drops learned skills whose
-        # declared tags have zero overlap with the project's tech_stack —
-        # the missing invariant from Bug4 / Bug6 / Bugs.md (jest skills in
-        # pure-Python projects, react skills in non-React projects, etc.).
-        #
-        # Generic: the filter primitive in project_profile.filter_skills_by_tech_overlap
-        # has no project-specific knowledge; the resolver in
-        # skill_tag_resolver reads SKILL.md frontmatter via SkillPathManager.
-        # builtin and project skills bypass by default.
-        from generator.project_profile import filter_skills_by_tech_overlap
-        from generator.skill_tag_resolver import default_tag_resolver
+        # Phase 2: tag ∩ tech_stack filter (Bug4 / Bug6 fix)
+        selected_skills = _phase_filter_by_tags(selected_skills, detected_tech, verbose)
 
-        _tag_resolver = default_tag_resolver()
-        _filtered, _filter_traces = filter_skills_by_tech_overlap(
-            selected_refs=enhanced_selected_skills,
-            tech_stack=set(detected_tech),
-            tag_resolver=_tag_resolver,
-        )
-        # Replace with the filtered set (preserving mutable Set[str] for the
-        # downstream .add() calls).
-        enhanced_selected_skills = set(_filtered)
-        if verbose and _filter_traces:
-            click.echo(f"   Filtered out {len(_filter_traces)} learned skill(s) with no tag overlap:")
-            for trace in _filter_traces:
-                click.echo(f"     - {trace.skill_ref}  tags={sorted(trace.skill_tags)}")
+        # Phase 3: include already-generated project-local skills
+        selected_skills = _phase_include_project_skills(selected_skills, skills_manager, project_type)
 
-        # Always include existing project-local skills (e.g. created via --create-skill
-        # or --ai) so they appear in clinerules.yaml and skills/index.md.
-        if skills_manager and hasattr(skills_manager, "discovery") and skills_manager.discovery.project_skills_root:
-            all_discovered = skills_manager.discovery.list_skills()
-            for skill_name, skill_data in all_discovered.items():
-                s_type = skill_data.get("type")
-                if s_type == "project":
-                    enhanced_selected_skills.add(f"project/{skill_name}")
-                    continue
-
-                # For non-agent-skills projects: preserve learned/builtin skills that were
-                # explicitly generated into the project-local dir (e.g. via --ai or --create-skill).
-                # Excluded for agent-skills: their native SKILL.md files are discovered by the
-                # rglob scan below, and global learned skills must not be bulk-included just
-                # because they're physically present from a pre-Bug-I run.
-                if project_type != "agent-skills":
-                    s_path = skill_data.get("path")
-                    if s_path:
-                        try:
-                            Path(s_path).resolve().relative_to(skills_manager.discovery.project_skills_root.resolve())
-                            if s_type == "learned":
-                                enhanced_selected_skills.add(f"learned/{skill_name}")
-                            elif s_type == "builtin":
-                                enhanced_selected_skills.add(f"builtin/{skill_name}")
-                        except (ValueError, OSError):
-                            pass
-
-        # For agent-skills projects, the project's own repository IS the skills directory.
-        # Find all SKILL.md files (excluding infra dirs) and add them as project skills.
-        if project_type == "agent-skills":
-            _infra_dirs = {".clinerules", ".venv", "__pycache__", "node_modules", ".git"}
-            for p in project_path.rglob("SKILL.md"):
-                if not any(part in _infra_dirs for part in p.parts):
-                    skill_name = p.parent.name
-                    enhanced_selected_skills.add(f"project/{skill_name}")
+        # Phase 4: agent-skills project rglob
+        selected_skills = _phase_include_agent_skills(selected_skills, project_path, project_type)
 
         if verbose:
-            click.echo(f"   Matched Skills: {len(enhanced_selected_skills)}")
-            for s in sorted(enhanced_selected_skills):
+            click.echo(f"   Matched Skills: {len(selected_skills)}")
+            for s in sorted(selected_skills):
                 click.echo(f"     - {s}")
 
         SkillPathManager.ensure_setup()
 
+        # LLM generation (--ai flag)
         if ai:
             _llm_generate_skills(
                 project_path=project_path,
                 project_name=project_name,
                 enhanced_context=enhanced_context,
                 detected_tech=detected_tech,
-                enhanced_selected_skills=enhanced_selected_skills,
+                enhanced_selected_skills=selected_skills,
                 provider=provider,
                 verbose=verbose,
                 skills_manager=skills_manager,
                 output_dir=output_dir,
             )
 
-        # Phase 4c: README-driven project-skill generation moved here from
-        # _build_unified_content. Previously this block ran during content
-        # assembly and MUTATED enhanced_selected_skills after the rest of
-        # the pipeline had already snapshotted it (the "Bug 1 fix" comment
-        # in _build_unified_content documented the symptom). Moving it
-        # into _auto_generate_skills makes _phase_skills the single
-        # construction site for selected_skills — _build_unified_content
-        # becomes a pure consumer with no mutation.
-        if output_dir is not None:
-            # Prefer the explicit readme_path parameter (threaded from
-            # run_generation_pipeline); fall back to enhanced_context for
-            # call sites that don't pass it.
-            _readme_path: Optional[Path] = readme_path
-            if _readme_path is None:
-                _readme_path_str = enhanced_context.get("readme", {}).get("readme_path") if enhanced_context else None
-                if _readme_path_str:
-                    _readme_path = Path(_readme_path_str)
-            if _readme_path is not None:
-                if (
-                    _readme_path.exists()
-                    and skills_manager is not None
-                    and hasattr(skills_manager, "generate_from_readme")
-                ):
-                    try:
-                        _readme_text = _readme_path.read_text(encoding="utf-8", errors="replace")
-                    except OSError:
-                        _readme_text = ""
-                    if _readme_text:
-                        if verbose and hasattr(skills_manager, "check_global_skill_reuse"):
-                            try:
-                                _reuse_map = skills_manager.check_global_skill_reuse(detected_tech)
-                                if _reuse_map:
-                                    click.echo("\n   Global skill reuse check:")
-                                    for _skill_name, _action in sorted(_reuse_map.items()):
-                                        _icon = {"reuse": "♻️ ", "adapt": "🔧", "create": "✨"}.get(_action, "  ")
-                                        click.echo(f"     {_icon} {_skill_name}: {_action}")
-                            except Exception:  # noqa: BLE001 — verbose info only
-                                pass
-                        try:
-                            _generated = skills_manager.generate_from_readme(
-                                readme_content=_readme_text,
-                                tech_stack=detected_tech,
-                                output_dir=output_dir,
-                                project_name=project_name,
-                                project_path=getattr(skills_manager, "project_path", project_path),
-                                use_ai=ai,
-                                provider=provider,
-                            )
-                        except Exception as exc:  # noqa: BLE001 — README-skill gen is optional
-                            if verbose:
-                                click.echo(f"   Warning: README-driven skill generation failed: {exc}")
-                            _generated = []
-                        if _generated and verbose:
-                            click.echo(f"   Generated {len(_generated)} project-specific skills:")
-                            for _s in _generated:
-                                click.echo(f"     - {_s}")
-                        for _raw in _generated or []:
-                            _skill_name = _raw.split(" (")[0]
-                            enhanced_selected_skills.add(f"project/{_skill_name}")
+        # Phase 5: README-driven project-skill generation
+        selected_skills = _phase_readme_driven_gen(
+            selected_refs=selected_skills,
+            output_dir=output_dir,
+            readme_path=readme_path,
+            enhanced_context=enhanced_context,
+            detected_tech=detected_tech,
+            project_path=project_path,
+            project_name=project_name,
+            skills_manager=skills_manager,
+            ai=ai,
+            provider=provider,
+            verbose=verbose,
+        )
 
-        # Phase 4d: single canonical dedup. Replaces the inline cross-scope
-        # block that handled only learned-vs-project; the generic
-        # dedupe_skill_refs additionally collapses same-terminal-name
-        # collisions in learned-vs-builtin and across category prefixes
-        # (e.g. learned/fastapi/X vs learned/pytest/X) using the default
-        # scope precedence (project > learned > builtin).
+        # Phase 6: canonical dedup (project > learned > builtin)
         from generator.project_profile import dedupe_skill_refs
 
-        enhanced_selected_skills = set(dedupe_skill_refs(enhanced_selected_skills))
-
-        return enhanced_selected_skills
+        return set(dedupe_skill_refs(selected_skills))
 
     except Exception as e:  # noqa: BLE001 — CLI boundary: enhanced generation is optional
         click.echo(f"Warning: Enhanced auto-generation failed: {e}")

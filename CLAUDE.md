@@ -43,14 +43,14 @@ generator/
 
 prg_utils/               # Shared utilities (non-generator)
 cli/                     # CLI entry points
-tests/                   # pytest tests (380+ passing)
+tests/                   # pytest tests (1,650+ passing)
 ```
 
 **Strategy chain order**: AIStrategy (if `--ai`) → READMEStrategy (if `--from-readme`) → CoworkStrategy (default) → StubStrategy (fallback).
 
 ## Coding Conventions
 - **Line length**: 120 (black + ruff)
-- **Python**: 3.8+ compatible
+- **Python**: 3.10+ required
 - **No React** — this is a CLI tool only
 - **Pydantic v2** for data models
 - **Click** for CLI commands — update both decorator AND function signature when adding options
