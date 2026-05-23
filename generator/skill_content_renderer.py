@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from generator.skill_creator import SkillMetadata
 
 try:
-    from jinja2 import Environment, FileSystemLoader
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
 
     HAS_JINJA2 = True
 except ImportError:
@@ -114,7 +114,27 @@ class SkillContentRenderer:
         if not template_path.exists():
             raise FileNotFoundError(f"Template not found: {template_path}")
 
-        env = Environment(loader=FileSystemLoader(str(template_dir)))
+        # Bandit B701: the template renders Markdown (SKILL.md.jinja2 → a
+        # .clinerules/skills/*/SKILL.md file consumed by AI agents), not
+        # HTML served to a browser. Naive autoescape=True would escape
+        # `<` `>` `&` `"` `'` in template variables and silently corrupt
+        # code blocks, JSON snippets, and comparison operators in the
+        # rendered markdown. The project's own tech-profile rule at
+        # generator/tech/_profiles/backend.py:161 documents this
+        # explicitly: "Use Environment(autoescape=False) for markdown
+        # templates (not HTML)".
+        #
+        # select_autoescape with an HTML-only enabled list is the
+        # documented Jinja2 best practice: autoescape stays OFF for
+        # markdown today, and silently turns ON if a contributor later
+        # adds an .html.jinja2 template — no future-bug landmine.
+        env = Environment(
+            loader=FileSystemLoader(str(template_dir)),
+            autoescape=select_autoescape(
+                enabled_extensions=("html", "htm", "xml"),
+                default_for_string=False,
+            ),
+        )
         template = env.get_template("SKILL.md.jinja2")
 
         base_desc = metadata.description.rstrip(".")
