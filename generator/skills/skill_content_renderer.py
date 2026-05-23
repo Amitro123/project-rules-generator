@@ -6,8 +6,8 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-from generator.skill_doc_loader import SkillDocLoader
-from generator.skill_metadata_builder import SkillMetadataBuilder
+from generator.skills.skill_doc_loader import SkillDocLoader
+from generator.skills.skill_metadata_builder import SkillMetadataBuilder
 
 if TYPE_CHECKING:
     from generator.skill_creator import SkillMetadata

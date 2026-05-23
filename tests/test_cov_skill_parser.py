@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from generator.skill_parser import SkillParser
+from generator.skills.skill_parser import SkillParser
 
 SAMPLE_SKILL_MD = """---
 name: fastapi-workflow

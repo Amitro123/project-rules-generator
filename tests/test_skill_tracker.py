@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from generator.skill_tracker import MIN_FEEDBACK_FOR_FLAG, SkillTracker
+from generator.skills.skill_tracker import MIN_FEEDBACK_FOR_FLAG, SkillTracker
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -213,7 +213,7 @@ class TestFeedbackCommand:
         from cli.skills_cmd import skills_feedback
 
         data_path = tmp_path / "usage.json"
-        monkeypatch.setattr("generator.skill_tracker._DEFAULT_PATH", data_path)
+        monkeypatch.setattr("generator.skills.skill_tracker._DEFAULT_PATH", data_path)
 
         runner = CliRunner()
         result = runner.invoke(skills_feedback, ["my-skill", "--useful"])
@@ -227,7 +227,7 @@ class TestFeedbackCommand:
         from cli.skills_cmd import skills_feedback
 
         data_path = tmp_path / "usage.json"
-        monkeypatch.setattr("generator.skill_tracker._DEFAULT_PATH", data_path)
+        monkeypatch.setattr("generator.skills.skill_tracker._DEFAULT_PATH", data_path)
 
         runner = CliRunner()
         result = runner.invoke(skills_feedback, ["my-skill", "--not-useful"])
@@ -249,10 +249,10 @@ class TestStaleCommand:
         from click.testing import CliRunner
 
         from cli.skills_cmd import skills_stale
-        from generator.skill_tracker import SkillTracker
+        from generator.skills.skill_tracker import SkillTracker
 
         data_path = tmp_path / "usage.json"
-        monkeypatch.setattr("generator.skill_tracker._DEFAULT_PATH", data_path)
+        monkeypatch.setattr("generator.skills.skill_tracker._DEFAULT_PATH", data_path)
 
         # Seed a low-scoring skill with enough votes
         t = SkillTracker(data_path=data_path)
@@ -271,7 +271,7 @@ class TestStaleCommand:
         from cli.skills_cmd import skills_stale
 
         data_path = tmp_path / "usage.json"
-        monkeypatch.setattr("generator.skill_tracker._DEFAULT_PATH", data_path)
+        monkeypatch.setattr("generator.skills.skill_tracker._DEFAULT_PATH", data_path)
 
         runner = CliRunner()
         result = runner.invoke(skills_stale, [])

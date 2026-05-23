@@ -110,7 +110,7 @@ def skills_list(path, show_all):
 
     # Load usage stats once
     try:
-        from generator.skill_tracker import SkillTracker
+        from generator.skills.skill_tracker import SkillTracker
 
         tracker = SkillTracker()
         all_stats = tracker.all_stats()
@@ -271,7 +271,7 @@ def skills_feedback(skill_name, vote):
     except Exception:  # noqa: BLE001 — SkillsManager lookup is optional; never block feedback recording
         pass
 
-    from generator.skill_tracker import SkillTracker
+    from generator.skills.skill_tracker import SkillTracker
 
     tracker = SkillTracker()
     is_useful = vote == "useful"
@@ -302,7 +302,7 @@ def skills_stale(threshold):
 
       prg analyze . --create-skill <name>
     """
-    from generator.skill_tracker import MIN_FEEDBACK_FOR_FLAG, SkillTracker
+    from generator.skills.skill_tracker import MIN_FEEDBACK_FOR_FLAG, SkillTracker
 
     tracker = SkillTracker()
     low = tracker.get_low_scoring(threshold=threshold)

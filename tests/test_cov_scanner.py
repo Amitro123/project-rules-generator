@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from generator.skill_project_scanner import ProjectContextScanner
+from generator.skills.skill_project_scanner import ProjectContextScanner
 
 
 class TestDetectProjectSignals:
@@ -43,13 +43,13 @@ class TestDetectProjectSignals:
 class TestDetectTechStack:
     def test_returns_list(self, tmp_path):
         scanner = ProjectContextScanner(project_path=tmp_path)
-        with patch("generator.skill_project_scanner._detect_tech_stack_util", return_value=["python"]):
+        with patch("generator.skills.skill_project_scanner._detect_tech_stack_util", return_value=["python"]):
             result = scanner.detect_tech_stack("")
         assert "python" in result
 
     def test_cache_skips_re_detection(self, tmp_path):
         scanner = ProjectContextScanner(project_path=tmp_path)
-        with patch("generator.skill_project_scanner._detect_tech_stack_util", return_value=["react"]) as mock_fn:
+        with patch("generator.skills.skill_project_scanner._detect_tech_stack_util", return_value=["react"]) as mock_fn:
             scanner.detect_tech_stack("first call")
             scanner.detect_tech_stack("second call")
         # Should only be called once due to caching
@@ -57,7 +57,7 @@ class TestDetectTechStack:
 
     def test_empty_readme_returns_list(self, tmp_path):
         scanner = ProjectContextScanner(project_path=tmp_path)
-        with patch("generator.skill_project_scanner._detect_tech_stack_util", return_value=[]):
+        with patch("generator.skills.skill_project_scanner._detect_tech_stack_util", return_value=[]):
             result = scanner.detect_tech_stack("")
         assert isinstance(result, list)
 
@@ -145,7 +145,9 @@ class TestDetectSkillNeeds:
 class TestIsReadmeSufficient:
     def test_delegates_to_utility(self, tmp_path):
         scanner = ProjectContextScanner(project_path=tmp_path)
-        with patch("generator.skill_project_scanner.ProjectContextScanner.is_readme_sufficient", return_value=True):
+        with patch(
+            "generator.skills.skill_project_scanner.ProjectContextScanner.is_readme_sufficient", return_value=True
+        ):
             result = scanner.is_readme_sufficient("# Good README\n\nLots of content here.")
         assert result is True
 

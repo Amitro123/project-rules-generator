@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from generator.skill_content_renderer import SkillContentRenderer
+from generator.skills.skill_content_renderer import SkillContentRenderer
 
 
 def _make_metadata(name="fastapi-workflow", description="A FastAPI skill"):
@@ -89,7 +89,7 @@ class TestGenerateContentWithJinja2:
     def test_jinja2_failure_falls_back_to_inline(self, tmp_path):
         renderer = _make_renderer(tmp_path)
         metadata = _make_metadata()
-        with patch("generator.skill_content_renderer.HAS_JINJA2", True):
+        with patch("generator.skills.skill_content_renderer.HAS_JINJA2", True):
             with patch.object(renderer, "_generate_with_jinja2", side_effect=RuntimeError("template error")):
                 content = renderer.generate_content("fastapi-workflow", "", metadata)
         # Falls back to inline, must still produce content

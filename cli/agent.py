@@ -42,7 +42,7 @@ def start(task_description, project_path, provider, api_key, verbose):
     # Track skill usage for the matched skill (if any) before the full workflow runs
     try:
         from generator.planning.agent_executor import AgentExecutor
-        from generator.skill_tracker import SkillTracker
+        from generator.skills.skill_tracker import SkillTracker
 
         matched = AgentExecutor(Path(project_path).resolve()).match_skill(task_description)
         if matched:

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from generator.skill_metadata_builder import SkillMetadataBuilder
+from generator.skills.skill_metadata_builder import SkillMetadataBuilder
 
 # ---------------------------------------------------------------------------
 # SkillMetadataBuilder
@@ -288,7 +288,7 @@ class TestRenderFrontmatter:
 # ---------------------------------------------------------------------------
 # SkillDocLoader
 # ---------------------------------------------------------------------------
-from generator.skill_doc_loader import SkillDocLoader
+from generator.skills.skill_doc_loader import SkillDocLoader
 
 
 class TestSkillDocLoaderScoreDoc:

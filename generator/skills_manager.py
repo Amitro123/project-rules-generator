@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Set
 
 from generator.skill_discovery import SkillDiscovery
 from generator.skill_generator import SkillGenerator
-from generator.skill_parser import SkillParser
+from generator.skills.skill_parser import SkillParser
 
 # Project types that have no JS/frontend stack.  Learned skills whose triggers
 # exclusively mention JS frameworks (jest, UI, React) are hidden for these types

@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List
 
-from ..skill_templates import load_skill_from_yaml
+from ..skills.skill_templates import load_skill_from_yaml
 from ..types import Skill, SkillNeed
 from .base import SkillSource
 

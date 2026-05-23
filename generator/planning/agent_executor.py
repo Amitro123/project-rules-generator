@@ -203,7 +203,7 @@ class AgentExecutor:
                 self.rules_dir,
             )
         try:
-            from generator.skill_tracker import SkillTracker
+            from generator.skills.skill_tracker import SkillTracker
 
             SkillTracker().record_match(skill)
         except (

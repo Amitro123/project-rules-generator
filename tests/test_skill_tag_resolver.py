@@ -14,7 +14,7 @@ from typing import Optional
 
 import pytest
 
-from generator.skill_tag_resolver import _tags_from_file, clear_tag_cache, default_tag_resolver
+from generator.skills.tag_resolver import _tags_from_file, clear_tag_cache, default_tag_resolver
 
 
 @pytest.fixture(autouse=True)

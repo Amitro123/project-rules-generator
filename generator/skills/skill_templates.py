@@ -7,7 +7,7 @@ from typing import List
 
 import yaml
 
-from .types import Skill
+from ..types import Skill
 
 logger = logging.getLogger(__name__)
 

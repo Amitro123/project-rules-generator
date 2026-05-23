@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Set
 
-from generator.tech_registry import TECH_TOOLS as _TECH_TOOLS
+from generator.tech import TECH_TOOLS as _TECH_TOOLS
 
 if TYPE_CHECKING:
     from generator.skill_creator import SkillMetadata

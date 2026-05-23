@@ -67,7 +67,7 @@ def _phase_filter_by_tags(
     non-React projects, etc.
     """
     from generator.project_profile import filter_skills_by_tech_overlap
-    from generator.skill_tag_resolver import default_tag_resolver
+    from generator.skills.tag_resolver import default_tag_resolver
 
     tag_resolver = default_tag_resolver()
     filtered, filter_traces = filter_skills_by_tech_overlap(

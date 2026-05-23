@@ -129,7 +129,7 @@ def test_skill_trigger_blocklist():
     """Generic single-word triggers should be filtered out."""
     from pathlib import Path
 
-    from generator.skill_metadata_builder import SkillMetadataBuilder
+    from generator.skills.skill_metadata_builder import SkillMetadataBuilder
 
     builder = SkillMetadataBuilder(Path("."))
     triggers = builder._generate_triggers("fix-skill", "", [])
@@ -144,7 +144,7 @@ def test_skill_minimum_three_triggers():
     """Skill metadata builder should always produce at least 3 triggers."""
     from pathlib import Path
 
-    from generator.skill_metadata_builder import SkillMetadataBuilder
+    from generator.skills.skill_metadata_builder import SkillMetadataBuilder
 
     builder = SkillMetadataBuilder(Path("."))
     triggers = builder._generate_triggers("x", "", [])
@@ -263,7 +263,7 @@ def test_detect_test_framework_from_files():
 
 def test_skill_doc_loader_finds_relevant_files(tmp_path):
     """_find_relevant_files should score .py files by token overlap with skill name."""
-    from generator.skill_doc_loader import SkillDocLoader
+    from generator.skills.skill_doc_loader import SkillDocLoader
 
     # High-relevance: imports the token AND mentions it in body
     (tmp_path / "git_ops.py").write_text("import git\nrepo = git.Repo('.')\n", encoding="utf-8")
@@ -281,7 +281,7 @@ def test_skill_doc_loader_finds_relevant_files(tmp_path):
 
 def test_skill_doc_loader_relevant_files_body_signal(tmp_path):
     """_find_relevant_files picks up files that mention the skill tokens in body (no import)."""
-    from generator.skill_doc_loader import SkillDocLoader
+    from generator.skills.skill_doc_loader import SkillDocLoader
 
     (tmp_path / "fastapi_routes.py").write_text(
         "from fastapi import APIRouter\nrouter = APIRouter()\n", encoding="utf-8"
@@ -301,7 +301,7 @@ def test_skill_frontmatter_when_phrases():
     from pathlib import Path
     from unittest.mock import MagicMock
 
-    from generator.skill_metadata_builder import SkillMetadataBuilder
+    from generator.skills.skill_metadata_builder import SkillMetadataBuilder
 
     builder = SkillMetadataBuilder(Path("."))
     metadata = MagicMock()

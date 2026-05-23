@@ -17,12 +17,12 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 from generator.quality_validators import SkillQualityValidator
-from generator.skill_content_renderer import SkillContentRenderer
 from generator.skill_discovery import SkillDiscovery
-from generator.skill_doc_loader import SkillDocLoader
-from generator.skill_metadata_builder import SkillMetadataBuilder
-from generator.skill_project_scanner import ProjectContextScanner
-from generator.tech_registry import TECH_TOOLS as _TECH_TOOLS
+from generator.skills.skill_content_renderer import SkillContentRenderer
+from generator.skills.skill_doc_loader import SkillDocLoader
+from generator.skills.skill_metadata_builder import SkillMetadataBuilder
+from generator.skills.skill_project_scanner import ProjectContextScanner
+from generator.tech import TECH_TOOLS as _TECH_TOOLS
 from generator.utils.quality_checker import QualityReport
 
 logger = logging.getLogger(__name__)
