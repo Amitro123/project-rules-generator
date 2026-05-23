@@ -171,3 +171,58 @@ skip = [
     "build",
     "dist"
 ]
+
+
+# Bandit security-scan configuration.
+#
+# The five `skips` below cover patterns that are unavoidable / safe for
+# a CLI tool of this shape. Each is documented with the reason it's
+# silenced; reviewers can audit the policy in one place instead of
+# chasing 90+ inline `# nosec` comments.
+#
+# Disabling these IDs leaves Bandit free to flag genuinely-new issues
+# (XSS, hardcoded credentials, weak crypto, etc.) — the actually
+# dangerous classes. The CI step that runs `bandit` should treat any
+# remaining finding as a hard failure.
+[tool.bandit]
+exclude_dirs = [
+    "tests",                    # test files use `assert` heavily (B101)
+    ".clinerules",              # generated artifacts, not source
+    ".claude",
+    ".venv",
+    "build",
+    "dist",
+    "node_modules",
+    "_bmad",
+    "site-packages",
+]
+skips = [
+    # B101 — assert used. Acceptable in tests; bandit's concern is
+    # production code where -O strips asserts. The exclude_dirs above
+    # already removes test files; this keeps the ID silenced for any
+    # incidental production assert too (we use explicit raises for
+    # runtime checks).
+    "B101",
+    # B404 — `import subprocess`. PRG is a CLI tool that legitimately
+    # invokes git, npm, pytest, etc. The import itself isn't a risk;
+    # B603/B607 below cover the specific call sites.
+    "B404",
+    # B603 — subprocess.{call,run,Popen} without shell=True validation.
+    # Every PRG subprocess call passes args as a LIST (never a single
+    # shell string), so shell injection is not possible. shell=True
+    # is never used in this codebase.
+    "B603",
+    # B607 — starting a process with a partial executable path
+    # (e.g. `git` rather than `/usr/bin/git`). Standard for CLI tools
+    # that resolve commands via PATH; tightening to absolute paths
+    # would break cross-platform support (Windows / macOS / Linux
+    # install binaries in different places).
+    "B607",
+    # B110 — try/except/pass. Every occurrence in this codebase is a
+    # documented best-effort side effect (observability, skill
+    # tracking, webbrowser.open failures) annotated with
+    # `# noqa: BLE001` and a reason at the call site. The pattern is
+    # the right shape; silencing the rule project-wide avoids 9
+    # redundant inline annotations on top of the existing ruff noqa.
+    "B110",
+]

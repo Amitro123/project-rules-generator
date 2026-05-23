@@ -29,6 +29,18 @@ jobs:
       - name: Type check (mypy)
         run: mypy generator/ cli/ prg_utils/ --ignore-missing-imports
 
+      - name: Security scan (bandit)
+        # Scans for medium+ severity findings. The five LOW-severity IDs
+        # that arose from PRG's CLI-tool shape (B101 assert, B404/B603/B607
+        # subprocess, B110 try-except-pass) are silenced via [tool.bandit]
+        # in pyproject.toml with documented reasons. Any unsilenced
+        # finding here fails the build — this is the gate that catches
+        # genuinely new security regressions (XSS, hardcoded secrets,
+        # weak crypto, etc.).
+        run: |
+          pip install bandit
+          bandit -c pyproject.toml -r generator/ cli/ prg_utils/
+
   test:
     name: Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
