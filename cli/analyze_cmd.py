@@ -46,6 +46,157 @@ def cleanup_awesome_skills():
         pass
 
 
+def _apply_save_learned(config: dict, save_learned: bool) -> dict:
+    """Toggle ``skill_sources.learned.auto_save`` in the config when
+    --save-learned is set. Pure function; mutates and returns config so
+    callers can chain or ignore."""
+    if not save_learned:
+        return config
+    if "skill_sources" not in config:
+        config["skill_sources"] = {}
+    if "learned" not in config["skill_sources"]:
+        config["skill_sources"]["learned"] = {}
+    config["skill_sources"]["learned"]["auto_save"] = True
+    return config
+
+
+def _maybe_load_external_packs(config: dict, include_pack, external_packs_dir, verbose: bool) -> None:
+    """Load external skill packs if either --include-pack was given OR
+    config opts into pack loading. No-op otherwise."""
+    if not (include_pack or (config.get("packs") and config["packs"].get("enabled"))):
+        return
+    load_external_packs(
+        include_packs=include_pack,
+        config_packs=config.get("packs"),
+        external_packs_dir=external_packs_dir,
+        verbose=verbose,
+    )
+
+
+def _confirm_interactive_or_exit(project_name: str) -> None:
+    """When running interactively, prompt before generation and exit 0
+    if the user says no. Pure UX helper; isolated so the body function
+    doesn't have to import rich at top level."""
+    from rich.prompt import Confirm
+
+    from generator.utils import flush_input
+
+    flush_input()
+    if not Confirm.ask(
+        f"Continue generating .clinerules for [bold]{project_name}[/bold]?",
+        default=True,
+    ):
+        click.echo("Aborted.")
+        sys.exit(0)
+
+
+def _present_generated_files(
+    generated_files: list,
+    project_path: Path,
+    interactive: bool,
+) -> None:
+    """Show the list of generated files. Interactive mode delegates to the
+    rich-backed rendering; otherwise we print one path per line, relative
+    to the project root when possible (Bug G)."""
+    if interactive:
+        from generator.interactive import show_generated_files
+
+        skills_stats = {"learned": 0, "builtin": 0, "generated": 0}
+        show_generated_files(generated_files, skills_stats)
+        return
+
+    click.echo("\nGenerated files:")
+    for f in generated_files:
+        try:
+            display = Path(f).resolve().relative_to(Path(project_path).resolve()).as_posix()
+        except (ValueError, OSError):
+            display = str(f)
+        click.echo(f"   {display}")
+
+
+def _save_incremental_hash(inc_analyzer, verbose: bool) -> None:
+    """Persist the cached project hash so the next run can skip work.
+    Reuses the hash already computed by detect_changes() to avoid a
+    second full re-read."""
+    if not inc_analyzer:
+        return
+    inc_analyzer.save_hash(inc_analyzer._current_hash or inc_analyzer.compute_project_hash())
+    if verbose:
+        click.echo("   Saved incremental cache")
+
+
+def _run_analysis_body(
+    *,
+    project_path: Path,
+    output_dir: Path,
+    skills_manager,
+    inc_analyzer,
+    commit: bool,
+    interactive: bool,
+    verbose: bool,
+    export_json: bool,
+    export_yaml: bool,
+    save_learned: bool,
+    include_pack,
+    external_packs_dir,
+    ai: bool,
+    with_skills: bool,
+    auto_generate_skills: bool,
+    constitution: bool,
+    merge: bool,
+    ide: str,
+    provider: str,
+    strategy: str,
+) -> None:
+    """Body of the ``analyze`` command, extracted so the click entrypoint
+    stays small and the radon grade for ``analyze`` drops out of the
+    danger zone.
+
+    Sequential phases — config, pipeline call, IDE register, output
+    presentation, git commit, incremental save. Exceptions propagate to
+    the caller; the ``analyze`` orchestrator owns the user-facing
+    except-handler dispatch."""
+    config = _apply_save_learned(load_config(), save_learned)
+    _maybe_load_external_packs(config, include_pack, external_packs_dir, verbose)
+
+    readme_path, project_data, project_name = resolve_readme(project_path, interactive, ai, verbose)
+
+    if interactive:
+        _confirm_interactive_or_exit(project_name)
+
+    generated_files = run_generation_pipeline(
+        project_path=project_path,
+        project_name=project_name,
+        project_data=project_data,
+        readme_path=readme_path,
+        config=config,
+        provider=provider,
+        skills_manager=skills_manager,
+        output_dir=output_dir,
+        verbose=verbose,
+        ai=ai,
+        auto_generate_skills=auto_generate_skills,
+        constitution=constitution,
+        with_skills=with_skills,
+        merge=merge,
+        save_learned=save_learned,
+        export_json=export_json,
+        export_yaml=export_yaml,
+        inc_analyzer=inc_analyzer,
+        strategy=strategy,
+    )
+
+    if ide:
+        ide_file = _register_ide_rules(ide, project_path, project_name, output_dir, verbose)
+        if ide_file:
+            generated_files.append(str(ide_file))
+
+    _present_generated_files(generated_files, project_path, interactive)
+    commit_generated_files(commit, config, generated_files, project_path, interactive)
+    _save_incremental_hash(inc_analyzer, verbose)
+    click.echo("\nDone!")
+
+
 def _register_ide_rules(ide: str, project_path: Path, project_name: str, output_dir: Path, verbose: bool):
     """Write generated rules to IDE-specific location. Returns the written Path or None."""
     ide = ide.lower().strip()
@@ -235,93 +386,28 @@ def analyze(
     provider = setup_logging_and_provider(verbose, provider, api_key, __version__)
 
     try:
-        config = load_config()
-        if save_learned:
-            if "skill_sources" not in config:
-                config["skill_sources"] = {}
-            if "learned" not in config["skill_sources"]:
-                config["skill_sources"]["learned"] = {}
-            config["skill_sources"]["learned"]["auto_save"] = True
-
-        if include_pack or (config.get("packs") and config["packs"].get("enabled")):
-            load_external_packs(
-                include_packs=include_pack,
-                config_packs=config.get("packs"),
-                external_packs_dir=external_packs_dir,
-                verbose=verbose,
-            )
-
-        readme_path, project_data, project_name = resolve_readme(project_path, interactive, ai, verbose)
-
-        # Interactive confirmation before generation
-        if interactive:
-            from rich.prompt import Confirm
-
-            from generator.utils import flush_input
-
-            flush_input()
-            if not Confirm.ask(
-                f"Continue generating .clinerules for [bold]{project_name}[/bold]?",
-                default=True,
-            ):
-                click.echo("Aborted.")
-                sys.exit(0)
-
-        generated_files = run_generation_pipeline(
+        _run_analysis_body(
             project_path=project_path,
-            project_name=project_name,
-            project_data=project_data,
-            readme_path=readme_path,
-            config=config,
-            provider=provider,
-            skills_manager=skills_manager,
             output_dir=output_dir,
+            skills_manager=skills_manager,
+            inc_analyzer=inc_analyzer,
+            commit=commit,
+            interactive=interactive,
             verbose=verbose,
-            ai=ai,
-            auto_generate_skills=auto_generate_skills,
-            constitution=constitution,
-            with_skills=with_skills,
-            merge=merge,
-            save_learned=save_learned,
             export_json=export_json,
             export_yaml=export_yaml,
-            inc_analyzer=inc_analyzer,
+            save_learned=save_learned,
+            include_pack=include_pack,
+            external_packs_dir=external_packs_dir,
+            ai=ai,
+            with_skills=with_skills,
+            auto_generate_skills=auto_generate_skills,
+            constitution=constitution,
+            merge=merge,
+            ide=ide,
+            provider=provider,
             strategy=strategy,
         )
-
-        # IDE registration — write rules to IDE-specific location
-        if ide:
-            ide_file = _register_ide_rules(ide, project_path, project_name, output_dir, verbose)
-            if ide_file:
-                generated_files.append(str(ide_file))
-
-        if interactive:
-            from generator.interactive import show_generated_files
-
-            skills_stats = {"learned": 0, "builtin": 0, "generated": 0}
-            # skills list is inside orchestration; best-effort count from generated_files
-            show_generated_files(generated_files, skills_stats)
-        else:
-            click.echo("\nGenerated files:")
-            for f in generated_files:
-                # Bug G: print paths relative to the analyzed project root when possible
-                try:
-                    rel = Path(f).resolve().relative_to(Path(project_path).resolve())
-                    display = rel.as_posix()
-                except (ValueError, OSError):
-                    display = str(f)
-                click.echo(f"   {display}")
-
-        # Git commit
-        commit_generated_files(commit, config, generated_files, project_path, interactive)
-
-        if inc_analyzer:
-            # Reuse the hash already computed by detect_changes(); avoids a second full re-read
-            inc_analyzer.save_hash(inc_analyzer._current_hash or inc_analyzer.compute_project_hash())
-            if verbose:
-                click.echo("   Saved incremental cache")
-
-        click.echo("\nDone!")
 
     except READMENotFoundError as e:
         click.echo(f"❌ Error: {e}", err=True)
