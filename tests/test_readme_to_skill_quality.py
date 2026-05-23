@@ -23,8 +23,8 @@ from pathlib import Path
 
 import pytest
 
-from generator.skill_discovery import SkillDiscovery
-from generator.skill_generator import SkillGenerator
+from generator.skills.skill_discovery import SkillDiscovery
+from generator.skills.skill_generator import SkillGenerator
 from generator.strategies.readme_strategy import READMEStrategy
 from generator.utils.quality_checker import QualityReport, validate_quality
 

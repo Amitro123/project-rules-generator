@@ -96,7 +96,7 @@ class TestSkillsListCommand:
         )
 
         runner = CliRunner()
-        with patch("generator.skill_discovery.SkillDiscovery.ensure_global_structure"):
+        with patch("generator.skills.skill_discovery.SkillDiscovery.ensure_global_structure"):
             result = runner.invoke(skills_group, ["list", str(tmp_path)])
 
         assert result.exit_code == 0

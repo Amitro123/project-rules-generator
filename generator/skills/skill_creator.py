@@ -17,8 +17,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 from generator.quality_validators import SkillQualityValidator
-from generator.skill_discovery import SkillDiscovery
 from generator.skills.skill_content_renderer import SkillContentRenderer
+from generator.skills.skill_discovery import SkillDiscovery
 from generator.skills.skill_doc_loader import SkillDocLoader
 from generator.skills.skill_metadata_builder import SkillMetadataBuilder
 from generator.skills.skill_project_scanner import ProjectContextScanner
@@ -75,7 +75,7 @@ class CoworkSkillCreator:
         the tech→skill mapping (covers 40+ technologies).
         """
         # Lazy import to avoid circular dependency
-        from generator.skill_generator import SkillGenerator
+        from generator.skills.skill_generator import SkillGenerator
 
         readme_path = project_path / "README.md"
         readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
@@ -228,7 +228,7 @@ class CoworkSkillCreator:
             skill_names.append(f"{self.project_path.name}-workflow")
         else:
             # Use SkillGenerator.TECH_SKILL_NAMES as the single source of truth (BUG-1 fix)
-            from generator.skill_generator import SkillGenerator
+            from generator.skills.skill_generator import SkillGenerator
 
             for tech in tech_stack:
                 name = SkillGenerator.TECH_SKILL_NAMES.get(tech.lower())

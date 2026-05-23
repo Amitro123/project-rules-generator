@@ -206,7 +206,7 @@ class TestSkillDiscoveryUsesLogging:
 
     def test_no_print_for_warnings_in_source(self):
         """The skill_discovery.py source file must not contain print([Warning] calls."""
-        source_path = Path(__file__).parent.parent / "generator" / "skill_discovery.py"
+        source_path = Path(__file__).parent.parent / "generator" / "skills" / "skill_discovery.py"
         assert source_path.exists(), f"Source file not found: {source_path}"
         source = source_path.read_text(encoding="utf-8")
         # Look for print calls that contain "[Warning]" text
@@ -217,12 +217,12 @@ class TestSkillDiscoveryUsesLogging:
 
     def test_logging_imported_in_skill_discovery(self):
         """skill_discovery.py must import logging."""
-        source_path = Path(__file__).parent.parent / "generator" / "skill_discovery.py"
+        source_path = Path(__file__).parent.parent / "generator" / "skills" / "skill_discovery.py"
         source = source_path.read_text(encoding="utf-8")
         assert "import logging" in source, "logging not imported in skill_discovery.py"
 
     def test_logger_getlogger_used(self):
         """A module-level logger must be created via logging.getLogger."""
-        source_path = Path(__file__).parent.parent / "generator" / "skill_discovery.py"
+        source_path = Path(__file__).parent.parent / "generator" / "skills" / "skill_discovery.py"
         source = source_path.read_text(encoding="utf-8")
         assert "logging.getLogger" in source, "logging.getLogger not found in skill_discovery.py"

@@ -20,8 +20,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from generator.skills.skill_creator import CoworkSkillCreator, SkillMetadata
-from generator.skill_discovery import SkillDiscovery
-from generator.skill_generator import SkillGenerator
+from generator.skills.skill_discovery import SkillDiscovery
+from generator.skills.skill_generator import SkillGenerator
 
 # ---------------------------------------------------------------------------
 # BUG-1: f-string missing — warning must show actual count, not literal text
@@ -368,8 +368,8 @@ class TestFromReadmeContentNotPath:
 
     def test_raw_content_does_not_raise(self, tmp_path):
         """Passing raw README content (not a path) must not raise OSError."""
-        from generator.skill_discovery import SkillDiscovery
-        from generator.skill_generator import SkillGenerator
+        from generator.skills.skill_discovery import SkillDiscovery
+        from generator.skills.skill_generator import SkillGenerator
 
         discovery = SkillDiscovery(project_path=tmp_path)
         generator = SkillGenerator(discovery)
@@ -388,8 +388,8 @@ class TestFromReadmeContentNotPath:
 
     def test_file_path_still_works(self, tmp_path):
         """Passing an actual file path must still be read correctly."""
-        from generator.skill_discovery import SkillDiscovery
-        from generator.skill_generator import SkillGenerator
+        from generator.skills.skill_discovery import SkillDiscovery
+        from generator.skills.skill_generator import SkillGenerator
 
         readme = tmp_path / "README.md"
         readme.write_text("# Test Project\n\nA project for testing.\n", encoding="utf-8")
@@ -421,8 +421,8 @@ class TestStrategyChainFallback:
         """If the first strategy raises, the chain should fall back to StubStrategy."""
         from unittest.mock import MagicMock, patch
 
-        from generator.skill_discovery import SkillDiscovery
-        from generator.skill_generator import SkillGenerator
+        from generator.skills.skill_discovery import SkillDiscovery
+        from generator.skills.skill_generator import SkillGenerator
 
         discovery = SkillDiscovery(project_path=tmp_path)
         generator = SkillGenerator(discovery)
@@ -434,7 +434,9 @@ class TestStrategyChainFallback:
         stub_strategy = MagicMock()
         stub_strategy.generate.return_value = stub_content
 
-        with patch("generator.skill_generator.SkillGenerator._run_strategy_chain", wraps=generator._run_strategy_chain):
+        with patch(
+            "generator.skills.skill_generator.SkillGenerator._run_strategy_chain", wraps=generator._run_strategy_chain
+        ):
             # Inject the two strategies directly to avoid importing real ones
             original = generator._run_strategy_chain
 
@@ -460,8 +462,8 @@ class TestStrategyChainFallback:
         """Chain must reach StubStrategy even if several earlier strategies raise."""
         from unittest.mock import MagicMock
 
-        from generator.skill_discovery import SkillDiscovery
-        from generator.skill_generator import SkillGenerator
+        from generator.skills.skill_discovery import SkillDiscovery
+        from generator.skills.skill_generator import SkillGenerator
         from generator.strategies import StubStrategy
 
         discovery = SkillDiscovery(project_path=tmp_path)
@@ -490,8 +492,8 @@ class TestStrategyChainFallback:
         """_run_strategy_chain itself must catch per-strategy errors and fall through."""
         from unittest.mock import MagicMock, patch
 
-        from generator.skill_discovery import SkillDiscovery
-        from generator.skill_generator import SkillGenerator
+        from generator.skills.skill_discovery import SkillDiscovery
+        from generator.skills.skill_generator import SkillGenerator
 
         discovery = SkillDiscovery(project_path=tmp_path)
         generator = SkillGenerator(discovery)
@@ -528,8 +530,8 @@ class TestAutoReadProjectReadme:
         """README.md in project_path is read even when from_readme=None."""
         from unittest.mock import patch
 
-        from generator.skill_discovery import SkillDiscovery
-        from generator.skill_generator import SkillGenerator
+        from generator.skills.skill_discovery import SkillDiscovery
+        from generator.skills.skill_generator import SkillGenerator
 
         readme = tmp_path / "README.md"
         readme.write_text("# My Project\n\n" + "Details about the project.\n" * 10, encoding="utf-8")
@@ -552,8 +554,8 @@ class TestAutoReadProjectReadme:
         """bridge_missing_context IS called when project has no README."""
         from unittest.mock import patch
 
-        from generator.skill_discovery import SkillDiscovery
-        from generator.skill_generator import SkillGenerator
+        from generator.skills.skill_discovery import SkillDiscovery
+        from generator.skills.skill_generator import SkillGenerator
 
         discovery = SkillDiscovery(project_path=tmp_path)
         generator = SkillGenerator(discovery)

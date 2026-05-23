@@ -40,7 +40,7 @@ class ProjectContextScanner:
         """
         # Lazy import to avoid circular dependency
         # (skill_generator → strategies → cowork_strategy → skill_creator)
-        from generator.skill_generator import SkillGenerator
+        from generator.skills.skill_generator import SkillGenerator
 
         readme_path = project_path / "README.md"
         readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""

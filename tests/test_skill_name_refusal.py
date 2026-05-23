@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from generator.skill_discovery import SkillDiscovery
-from generator.skill_generator import SkillGenerator
+from generator.skills.skill_discovery import SkillDiscovery
+from generator.skills.skill_generator import SkillGenerator
 
 
 def _make_generator(tmp_path: Path) -> SkillGenerator:

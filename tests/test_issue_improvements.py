@@ -156,7 +156,7 @@ def test_skill_minimum_three_triggers():
 
 def test_project_type_skill_exclusions_defined():
     """PROJECT_TYPE_SKILL_EXCLUSIONS should cover all main project types."""
-    from generator.skill_generator import SkillGenerator
+    from generator.skills.skill_generator import SkillGenerator
 
     exclusions = SkillGenerator.PROJECT_TYPE_SKILL_EXCLUSIONS
     # Python projects should exclude frontend skills

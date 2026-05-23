@@ -21,8 +21,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from cli.analyze_helpers import normalize_analyze_options
-from generator.skill_discovery import SkillDiscovery
-from generator.skill_generator import SkillGenerator, _is_meaningful_skill_content
+from generator.skills.skill_discovery import SkillDiscovery
+from generator.skills.skill_generator import SkillGenerator, _is_meaningful_skill_content
 
 # ---------------------------------------------------------------------------
 # Bug A — `--ai` must trigger auto_generate_skills even without --provider

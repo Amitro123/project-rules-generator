@@ -2,8 +2,8 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
-from generator.skill_discovery import SkillDiscovery
-from generator.skill_generator import SkillGenerator
+from generator.skills.skill_discovery import SkillDiscovery
+from generator.skills.skill_generator import SkillGenerator
 from generator.skills.skill_parser import SkillParser
 
 # Project types that have no JS/frontend stack.  Learned skills whose triggers
@@ -236,7 +236,7 @@ class SkillsManager:
                           skills are listed so index.md matches clinerules.yaml exactly.
                           Project-local skills are always included regardless.
         """
-        from generator.skill_generator import SkillGenerator
+        from generator.skills.skill_generator import SkillGenerator
 
         excluded: frozenset = SkillGenerator.PROJECT_TYPE_SKILL_EXCLUSIONS.get(project_type or "", frozenset())
 

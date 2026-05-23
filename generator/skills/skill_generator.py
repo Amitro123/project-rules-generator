@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from generator.base_generator import ArtifactGenerator
-from generator.skill_discovery import SkillDiscovery
+from generator.skills.skill_discovery import SkillDiscovery
 from generator.skills.skill_parser import SkillParser
 from generator.tech import TECH_SKILL_NAMES as _TECH_SKILL_NAMES
 from generator.utils.quality_checker import is_stub as _check_is_stub

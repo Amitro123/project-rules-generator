@@ -19,8 +19,8 @@ from unittest.mock import patch
 import pytest
 
 from generator.skills.skill_creator import CoworkSkillCreator
-from generator.skill_discovery import SkillDiscovery
-from generator.skill_generator import SkillGenerator
+from generator.skills.skill_discovery import SkillDiscovery
+from generator.skills.skill_generator import SkillGenerator
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 

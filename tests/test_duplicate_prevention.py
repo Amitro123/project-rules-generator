@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from generator.skill_discovery import SkillDiscovery
-from generator.skill_generator import SkillGenerator
+from generator.skills.skill_discovery import SkillDiscovery
+from generator.skills.skill_generator import SkillGenerator
 from generator.skills_manager import SkillsManager
 
 # ─── SkillDiscovery.skill_exists() ────────────────────────────────────────────

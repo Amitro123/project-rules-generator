@@ -6,7 +6,7 @@ Equivalent functionality is now in SkillDiscovery.
 
 import pytest
 
-from generator.skill_discovery import SkillDiscovery
+from generator.skills.skill_discovery import SkillDiscovery
 
 
 @pytest.fixture
