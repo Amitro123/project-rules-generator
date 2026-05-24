@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from generator.skills_manager import SkillsManager
+from generator.skills.manager import SkillsManager
 from generator.storage.skill_paths import SkillPathManager
 
 

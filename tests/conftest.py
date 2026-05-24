@@ -95,6 +95,6 @@ def mock_ai_client(monkeypatch):
         return MockClient()
 
     monkeypatch.setattr("generator.ai.ai_client.create_ai_client", mock_factory)
-    monkeypatch.setattr("generator.llm_skill_generator.create_ai_client", mock_factory)
+    monkeypatch.setattr("generator.skills.llm_skill_generator.create_ai_client", mock_factory)
     monkeypatch.setattr("generator.design_generator.create_ai_client", mock_factory)
     return MockClient()

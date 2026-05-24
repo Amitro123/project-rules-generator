@@ -11,7 +11,7 @@ if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
 
 from generator.project_analyzer import ProjectAnalyzer
-from generator.skills_manager import SkillsManager
+from generator.skills.manager import SkillsManager
 from prg_utils.logger import setup_logging
 
 setup_logging(verbose=True)

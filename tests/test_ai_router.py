@@ -289,20 +289,20 @@ class TestProviderStatus:
 
 class TestLLMSkillGeneratorStrategyMode:
     def test_strategy_mode_does_not_create_client(self):
-        from generator.llm_skill_generator import LLMSkillGenerator
+        from generator.skills.llm_skill_generator import LLMSkillGenerator
 
         gen = LLMSkillGenerator(provider="groq", strategy="auto")
         assert gen.client is None
         assert gen.strategy == "auto"
 
     def test_direct_mode_has_no_strategy(self):
-        from generator.llm_skill_generator import LLMSkillGenerator
+        from generator.skills.llm_skill_generator import LLMSkillGenerator
 
         with pytest.raises(RuntimeError):  # GROQ_API_KEY not set → RuntimeError
             gen = LLMSkillGenerator(provider="groq", strategy=None)
 
     def test_generate_content_uses_router_in_strategy_mode(self):
-        from generator.llm_skill_generator import LLMSkillGenerator
+        from generator.skills.llm_skill_generator import LLMSkillGenerator
 
         gen = LLMSkillGenerator(provider="groq", strategy="auto")
 

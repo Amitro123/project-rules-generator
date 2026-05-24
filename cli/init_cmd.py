@@ -44,7 +44,7 @@ def init(project_path, yes, provider, api_key):
     """First-run wizard: detect stack, generate rules.md, print next steps."""
     from generator.analyzers.readme_parser import parse_readme
     from generator.rules_generator import generate_rules
-    from generator.skills_manager import SkillsManager
+    from generator.skills.manager import SkillsManager
 
     project_path = Path(project_path).resolve()
 

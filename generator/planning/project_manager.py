@@ -129,8 +129,8 @@ class ProjectManager:
 
     def _generate_rules_and_skills(self) -> None:
         """Run the same analysis pipeline as `prg analyze` to produce rules + skills."""
-        from generator.rules_creator import CoworkRulesCreator
-        from generator.skills_manager import SkillsManager
+        from generator.rules import CoworkRulesCreator
+        from generator.skills.manager import SkillsManager
         from generator.utils.readme_bridge import find_readme
 
         output_dir = self.project_path / ".clinerules"

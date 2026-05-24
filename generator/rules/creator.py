@@ -12,7 +12,7 @@ from generator.quality_validators import RulesQualityValidator
 from generator.rules.models import QualityReport, Rule, RulesMetadata
 from generator.rules_git_miner import RulesGitMiner
 from generator.rules_renderer import RulesContentRenderer
-from generator.tech_registry import TECH_RULES as _TECH_RULES
+from generator.tech import TECH_RULES as _TECH_RULES
 from generator.utils.readme_bridge import build_project_tree
 from generator.utils.tech_detector import detect_tech_stack as _detect_tech_stack_util
 
@@ -256,7 +256,7 @@ class CoworkRulesCreator(ArtifactGenerator):
         prompt = self._build_prompt(metadata, readme_content)
 
         try:
-            from generator.llm_skill_generator import LLMSkillGenerator
+            from generator.skills.llm_skill_generator import LLMSkillGenerator
 
             generator = LLMSkillGenerator(provider=self.provider)
             response = generator.generate_content(prompt, max_tokens=600)

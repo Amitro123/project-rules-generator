@@ -38,8 +38,8 @@ class AIStrategy:
             return None
 
         try:
-            from generator.llm_skill_generator import LLMSkillGenerator
             from generator.project_analyzer import ProjectAnalyzer
+            from generator.skills.llm_skill_generator import LLMSkillGenerator
 
             logger.info("Analyzing project context in %s...", project_path)
             analyzer = ProjectAnalyzer(Path(project_path))

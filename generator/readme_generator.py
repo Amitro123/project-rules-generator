@@ -50,7 +50,7 @@ def generate_readme_with_llm(
 ) -> str:
     """Generate README using AI."""
     try:
-        from generator.llm_skill_generator import LLMSkillGenerator
+        from generator.skills.llm_skill_generator import LLMSkillGenerator
 
         # Format tech stack
         tech_detected = []

@@ -50,7 +50,7 @@ class TestReadmeGenerator(unittest.TestCase):
         p.write_text(content, encoding="utf-8")
         self.assertFalse(is_readme_minimal(p))
 
-    @patch("generator.llm_skill_generator.LLMSkillGenerator")
+    @patch("generator.skills.llm_skill_generator.LLMSkillGenerator")
     def test_generate_readme_with_llm_success(self, mock_llm_gen_cls):
         """Test successful AI README generation."""
         # Setup mock
@@ -98,7 +98,7 @@ class TestReadmeGenerator(unittest.TestCase):
         self.assertIn("# Generate Professional README.md", prompt)
 
     @patch("generator.readme_generator.generate_readme_template")
-    @patch("generator.llm_skill_generator.LLMSkillGenerator")
+    @patch("generator.skills.llm_skill_generator.LLMSkillGenerator")
     def test_generate_readme_with_llm_failure(self, mock_llm_gen_cls, mock_fallback):
         """Test fallback to template on AI failure."""
         # Setup mock to raise exception

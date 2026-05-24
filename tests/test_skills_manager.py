@@ -4,7 +4,7 @@ import pytest
 from click.testing import CliRunner
 
 from cli.cli import cli as main
-from generator.skills_manager import SkillsManager
+from generator.skills.manager import SkillsManager
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ def test_create_skill(temp_skills_dir, mock_manager):
     llm_output = "# Skill: New Skill\n\n## Purpose\nTest skill.\n"
     with (
         patch("cli.skills_cmd.SkillsManager", side_effect=mock_manager),
-        patch("generator.llm_skill_generator.LLMSkillGenerator.generate_skill", return_value=llm_output),
+        patch("generator.skills.llm_skill_generator.LLMSkillGenerator.generate_skill", return_value=llm_output),
     ):
         result = runner.invoke(main, ["skills", "create", "new-skill", str(temp_skills_dir)])
 

@@ -10,7 +10,7 @@ import pytest
 
 from generator.skills.skill_discovery import SkillDiscovery
 from generator.skills.skill_generator import SkillGenerator
-from generator.skills_manager import SkillsManager
+from generator.skills.manager import SkillsManager
 
 # ─── SkillDiscovery.skill_exists() ────────────────────────────────────────────
 

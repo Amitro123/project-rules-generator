@@ -4,7 +4,7 @@ import os
 import re
 from typing import Dict, List, Optional
 
-from .ai.factory import create_ai_client
+from generator.ai.factory import create_ai_client
 
 
 def _parse_python_deps_from_files(key_files: Dict[str, str]) -> List[str]:

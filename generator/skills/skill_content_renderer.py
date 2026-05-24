@@ -55,7 +55,7 @@ class SkillContentRenderer:
         # 1. AI Generation (if requested)
         if use_ai:
             try:
-                from generator.llm_skill_generator import LLMSkillGenerator
+                from generator.skills.llm_skill_generator import LLMSkillGenerator
 
                 generator = LLMSkillGenerator(provider=provider)
 

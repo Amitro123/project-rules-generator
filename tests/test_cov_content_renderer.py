@@ -157,7 +157,7 @@ class TestGenerateContentAI:
         renderer = _make_renderer(tmp_path)
         metadata = _make_metadata()
 
-        with patch("generator.llm_skill_generator.LLMSkillGenerator", side_effect=ImportError("no llm")):
+        with patch("generator.skills.llm_skill_generator.LLMSkillGenerator", side_effect=ImportError("no llm")):
             content = renderer.generate_content("fastapi-workflow", "", metadata, use_ai=True)
 
         assert isinstance(content, str)

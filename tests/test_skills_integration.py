@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from generator.skills_manager import SkillsManager
+from generator.skills.manager import SkillsManager
 
 
 class TestSkillsIntegration(unittest.TestCase):

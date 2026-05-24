@@ -483,7 +483,7 @@ class TestSkillGeneratorRetry:
     _COMPLETE_PREFIX = "## Process\n\nStep 1: do the thing.\n\n"
 
     def test_retries_when_placeholders_detected(self, monkeypatch):
-        from generator import llm_skill_generator
+        from generator.skills import llm_skill_generator
 
         bad = self._COMPLETE_PREFIX + "## Purpose\n\n[One sentence: what problem does this solve]\n"
         good = self._COMPLETE_PREFIX + "## Purpose\n\nWithout this skill, CI runs fail.\n" + ("x" * 200)
@@ -524,7 +524,7 @@ class TestSkillGeneratorRetry:
         assert result == good
 
     def test_no_retry_when_output_is_clean(self, monkeypatch):
-        from generator import llm_skill_generator
+        from generator.skills import llm_skill_generator
 
         good = self._COMPLETE_PREFIX + "## Purpose\n\nWithout this skill, CI runs fail.\n" + ("x" * 200)
         calls: List[str] = []
@@ -563,7 +563,7 @@ class TestSkillGeneratorRetry:
         """When both LLM attempts return truncated output (missing ## Process),
         generate_skill returns '' so the strategy chain falls back to READMEStrategy
         or StubStrategy instead of writing a broken SKILL.md to disk."""
-        from generator import llm_skill_generator
+        from generator.skills import llm_skill_generator
 
         truncated = "## Purpose\n\nWithout a clear understanding of"
 
@@ -588,7 +588,7 @@ class TestSkillGeneratorRetry:
     def test_truncated_first_attempt_ok_second_succeeds(self, monkeypatch):
         """When the first attempt is truncated but the retry produces a complete
         SKILL.md, generate_skill returns the good content."""
-        from generator import llm_skill_generator
+        from generator.skills import llm_skill_generator
 
         truncated = "## Purpose\n\nWithout a clear understanding of"
         good = "## Process\n\nStep 1: run tests.\n\n## Purpose\n\nWithout this skill things break.\n"

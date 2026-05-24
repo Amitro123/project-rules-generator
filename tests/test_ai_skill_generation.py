@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from generator.skills_manager import SkillsManager
+from generator.skills.manager import SkillsManager
 
 
 def _robust_rmtree(path: Path) -> None:
@@ -84,7 +84,7 @@ class TestAISkillGeneration(unittest.TestCase):
             self.assertIn("AI Generated", content)
 
     @patch(
-        "generator.llm_skill_generator.create_ai_client",
+        "generator.skills.llm_skill_generator.create_ai_client",
         side_effect=ImportError("No provider"),
     )
     def test_create_skill_ai_missing_dependency(self, mock_create):

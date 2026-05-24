@@ -104,7 +104,7 @@ class TestSkillsListCommand:
 
     def test_skills_list_no_skills_message(self, tmp_path):
         runner = CliRunner()
-        with patch("generator.skills_manager.SkillsManager.list_skills", return_value={}):
+        with patch("generator.skills.manager.SkillsManager.list_skills", return_value={}):
             result = runner.invoke(skills_group, ["list", str(tmp_path)])
         assert result.exit_code == 0
         # Either "No skills found" or "No project or learned skills"

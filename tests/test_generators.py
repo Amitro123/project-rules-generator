@@ -6,7 +6,7 @@ from generator.rules_generator import generate_rules
 # Skills generation is now done via SkillsManager.create_skill() or SkillGenerator.
 # The TestSkillsGenerator tests below are kept for historical reference but
 # are now integration tests via SkillsManager.
-from generator.skills_manager import SkillsManager
+from generator.skills.manager import SkillsManager
 
 
 class TestRulesGenerator:

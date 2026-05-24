@@ -7,7 +7,7 @@ from typing import List, Optional, Tuple
 
 import click
 
-from generator.skills_manager import SkillsManager
+from generator.skills.manager import SkillsManager
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def _resolve_skill(name_or_path: str, project_path: Path):
 
     # 2. Name resolution via SkillsManager
     try:
-        from generator.skills_manager import SkillsManager
+        from generator.skills.manager import SkillsManager
 
         sm = SkillsManager(project_path=project_path)
         skills = sm.list_skills()
@@ -255,7 +255,7 @@ def skills_feedback(skill_name, vote):
 
     # Warn if the skill name doesn't match any known skill (prevents zombie entries)
     try:
-        from generator.skills_manager import SkillsManager
+        from generator.skills.manager import SkillsManager
 
         sm = SkillsManager(project_path=Path.cwd())
         known = sm.list_skills()

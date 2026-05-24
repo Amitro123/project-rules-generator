@@ -171,7 +171,7 @@ def test_generate_perfect_index_filters_by_project_type(tmp_path):
     """generate_perfect_index should omit skills excluded for the given project type."""
     from unittest.mock import MagicMock, patch
 
-    from generator.skills_manager import SkillsManager
+    from generator.skills.manager import SkillsManager
 
     mgr = SkillsManager(project_path=tmp_path)
 
@@ -198,7 +198,7 @@ def test_generate_perfect_index_no_filter_when_no_type(tmp_path):
     """Without project_type, generate_perfect_index includes all skills."""
     from unittest.mock import patch
 
-    from generator.skills_manager import SkillsManager
+    from generator.skills.manager import SkillsManager
 
     mgr = SkillsManager(project_path=tmp_path)
 
@@ -230,21 +230,21 @@ def test_test_coverage_skill_mentions_all_frameworks():
 
 def test_extract_readme_description_skips_headings():
     """_extract_readme_description returns first prose line, not the H1."""
-    from generator.llm_skill_generator import _extract_readme_description
+    from generator.skills.llm_skill_generator import _extract_readme_description
 
     readme = "# My Project\nA Python CLI tool that generates rules.\n## Usage\npip install x"
     assert _extract_readme_description(readme) == "A Python CLI tool that generates rules."
 
 
 def test_extract_readme_description_empty():
-    from generator.llm_skill_generator import _extract_readme_description
+    from generator.skills.llm_skill_generator import _extract_readme_description
 
     assert _extract_readme_description("") == ""
     assert _extract_readme_description("# Only a heading") == ""
 
 
 def test_parse_python_deps_from_requirements():
-    from generator.llm_skill_generator import _parse_python_deps_from_files
+    from generator.skills.llm_skill_generator import _parse_python_deps_from_files
 
     key_files = {"requirements.txt": "click>=8.0\npytest>=7\nrequests\n# comment\n"}
     deps = _parse_python_deps_from_files(key_files)
@@ -254,7 +254,7 @@ def test_parse_python_deps_from_requirements():
 
 
 def test_detect_test_framework_from_files():
-    from generator.llm_skill_generator import _detect_test_framework_from_files
+    from generator.skills.llm_skill_generator import _detect_test_framework_from_files
 
     assert _detect_test_framework_from_files({"pyproject.toml": "[tool.pytest.ini_options]"}) == "pytest"
     assert _detect_test_framework_from_files({"package.json": '{"devDependencies": {"jest": "^29"}}'}) == "jest"

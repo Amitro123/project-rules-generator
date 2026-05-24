@@ -464,7 +464,7 @@ def _llm_generate_skills(
                 # Lazy init on the first skill that needs generation. Keeps
                 # runs that skip every learned skill (all cached) zero-cost
                 # and emits the provider warning at most once.
-                from generator.llm_skill_generator import LLMSkillGenerator
+                from generator.skills.llm_skill_generator import LLMSkillGenerator
 
                 llm_gen = LLMSkillGenerator(provider=provider)
             skill_content = llm_gen.generate_content(prompt, max_tokens=4000)
