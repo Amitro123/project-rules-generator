@@ -174,6 +174,21 @@ def extract_tech_stack(content: str, project_path: Optional[Path] = None) -> Lis
     if project_path:
         found = _validate_tech_with_deps(found, Path(project_path))
 
+    # Apply the declarative tech-cleanup rules here too. The same rules
+    # already run inside EnhancedProjectParser._extract_metadata, but
+    # this code path (resolve_readme → project_data['tech_stack']) feeds
+    # the user-visible "Detected:" output BEFORE the enhanced parser runs.
+    # Without applying cleanup here, noise tokens like 'gpt' show up in
+    # the displayed stack even though they're stripped from the rules.md
+    # frontmatter. Surfaced by the ultimate-doc-researcher e2e.
+    from generator.project_profile import apply_tech_cleanup_rules
+
+    cleaned, _ = apply_tech_cleanup_rules(
+        tech_stack=frozenset(found),
+        context={},  # no test_framework signal at this level
+    )
+    found = [t for t in found if t in cleaned]  # preserve original order
+
     # Remove duplicates, preserve order
     return list(dict.fromkeys(found))
 
@@ -295,6 +310,10 @@ _GENERIC_HEADING_SLUGS: frozenset = frozenset(
 
 def _extract_project_name(content: str, path: Path) -> str:
     """Extract project name from first H1 heading, normalized to slug."""
+    # Lazy import \u2014 avoids a circular dependency when ProjectProfile imports
+    # readme_parser via some chain. Used only for the oversize guard below.
+    from generator.project_profile import looks_like_concatenated_heading_slug
+
     match = TITLE_RE.search(content)
     if match:
         name = match.group(1).strip()
@@ -305,7 +324,12 @@ def _extract_project_name(content: str, path: Path) -> str:
         name = re.sub(r"\s+", "-", name)
         # Reject generic instruction-style headings \u2014 they describe a setup
         # step, not the project itself (e.g. "# Clone Repository").
-        if name and name not in _GENERIC_HEADING_SLUGS:
+        # Also reject oversized concatenated slugs \u2014 when the parser picks up
+        # an H1 that's a full-sentence project description ("# Archives papers,
+        # clears stale data, resets prompt cache, updates topic ..."), the
+        # resulting slug is multi-segment and meaningless as a name.
+        # See ListOfBugs (Bug7) and the ultimate-doc-researcher e2e finding.
+        if name and name not in _GENERIC_HEADING_SLUGS and not looks_like_concatenated_heading_slug(name):
             return name
 
     # Fallback: use directory name

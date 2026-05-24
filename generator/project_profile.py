@@ -105,6 +105,35 @@ GENERIC_PROJECT_NAME_SLUGS: FrozenSet[str] = frozenset(
     }
 )
 
+# A project name from an H1 should be short and few-segment. When the
+# README parser concatenates multiple H1 lines (or a single very long
+# title) the result becomes a multi-segment slug that's clearly not a
+# real package/repo name. Real project names are typically 1-4 segments
+# and under ~40 characters (django, fastapi, project-rules-generator,
+# ultimate-doc-researcher). Anything beyond these bounds is a smell.
+#
+# Surfaced by an e2e run on ultimate-doc-researcher, which produced
+# ``archives-papers-clears-stale-data-resets-prompt-cache-updates-topic``
+# — 10 segments, 65 chars — as the project_name. The directory name
+# (``ultimate-doc-researcher``, 3 segments / 23 chars) was the correct
+# answer.
+PROJECT_NAME_MAX_SEGMENTS = 5
+PROJECT_NAME_MAX_LENGTH = 50
+
+
+def looks_like_concatenated_heading_slug(name: str) -> bool:
+    """Return True when ``name`` looks like a README H1 catenation rather
+    than a real project name.
+
+    Heuristic: more than ``PROJECT_NAME_MAX_SEGMENTS`` dash-separated
+    segments, OR longer than ``PROJECT_NAME_MAX_LENGTH`` characters.
+    Both bounds are generous — real names rarely come close to either.
+    """
+    if not name:
+        return False
+    segments = name.count("-") + 1
+    return segments > PROJECT_NAME_MAX_SEGMENTS or len(name) > PROJECT_NAME_MAX_LENGTH
+
 
 # --- Exceptions --------------------------------------------------------------
 
@@ -244,6 +273,17 @@ class ProjectProfile:
                 f"generic_project_name: {self.project_name!r} looks like a README "
                 "instruction heading, not a project name. Falling back to the "
                 "project directory name is required."
+            )
+
+        if looks_like_concatenated_heading_slug(self.project_name):
+            violations.append(
+                f"oversized_project_name: {self.project_name!r} has "
+                f"{self.project_name.count('-') + 1} segments / "
+                f"{len(self.project_name)} chars — exceeds "
+                f"{PROJECT_NAME_MAX_SEGMENTS} segments or {PROJECT_NAME_MAX_LENGTH} chars. "
+                "Almost certainly a concatenated README H1, not a real project "
+                "name. The name extractor should fall back to the project "
+                "directory name."
             )
 
         seen_tech: Dict[str, str] = {}

@@ -138,6 +138,27 @@ def test_bug4_gpt_not_in_tech_stack():
 # project name, producing project_name='clone-repository'.
 
 
+def test_ultimate_doc_researcher_concatenated_slug_rejected():
+    """E2E smoke-test finding on C:\\Users\\Dana\\cowork\\ultimate-doc-researcher:
+    PRG produced project_name=
+    ``archives-papers-clears-stale-data-resets-prompt-cache-updates-topic``
+    (10 segments / 65 chars) from a README H1 sentence. The correct name
+    was the directory name (``ultimate-doc-researcher``).
+
+    The contract layer's oversize guard
+    (``looks_like_concatenated_heading_slug``) should now catch this
+    shape; the readme_parser falls back to the directory name when an
+    H1 produces an oversized slug."""
+    from generator.project_profile import looks_like_concatenated_heading_slug
+
+    bad = "archives-papers-clears-stale-data-resets-prompt-cache-updates-topic"
+    good = "ultimate-doc-researcher"
+    assert looks_like_concatenated_heading_slug(bad), f"Oversize guard failed to catch the e2e finding {bad!r}"
+    assert not looks_like_concatenated_heading_slug(
+        good
+    ), f"Oversize guard wrongly rejected the legitimate name {good!r}"
+
+
 def test_bug7_project_name_is_not_generic_slug():
     """Bug7 core: the name extractor must reject generic instruction
     headings and fall back to the directory name."""

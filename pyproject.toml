@@ -79,7 +79,7 @@ exclude = ["tests*", "_bmad*"]
 [tool.setuptools.package-data]
 # `py.typed` tells downstream type-checkers (mypy, pyright) that this
 # package ships inline type hints — see PEP 561.
-generator = ["py.typed", "skills/**/*", "templates/**/*"]
+generator = ["py.typed", "skills/**/*", "templates/**/*", "rules/tech-detection/**/*"]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["__pycache__", "*.pyc", "*.pyo"]
