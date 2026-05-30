@@ -37,5 +37,15 @@ TESTING: List[TechProfile] = [
         skill_name="jest-testing",
         packages=["jest"],
         readme_keywords=["jest"],
+        detection_files=["jest.config.js", "jest.config.ts", "jest.config.cjs", "jest.config.mjs"],
+    ),
+    TechProfile(
+        name="vitest",
+        display_name="Vitest",
+        category="testing",
+        skill_name="",
+        packages=["vitest"],
+        readme_keywords=["vitest"],
+        detection_files=["vitest.config.js", "vitest.config.ts", "vitest.config.mjs"],
     ),
 ]

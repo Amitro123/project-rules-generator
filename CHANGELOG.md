@@ -10,6 +10,17 @@ All notable changes to this project will be documented in this file.
 
 - **PyPI v0.3.0 is broken** — the published wheel is missing `generator/utils/`, so `prg --help` fails with `ModuleNotFoundError: No module named 'generator.utils'` on a fresh install. The fix is already in the source tree (a locally-built wheel correctly includes `generator/utils/`), but a new release (v0.3.1) needs to be tagged and published to ship the fix to PyPI users. See [`PROJECT-ROADMAP.md`](PROJECT-ROADMAP.md) "Next release" for the release checklist.
 
+### Tech-detection grounding (#12 — P0)
+
+The detector was the root defect behind cascading content errors (see [`docs/AUDIT-FINDINGS.md`](docs/AUDIT-FINDINGS.md)). On a vanilla Vite + React + TypeScript project it missed the entire modern stack, false-detected Jest, and leaked a notification channel into the build stack. Now grounded in real manifests + config files:
+
+- **`detect_from_dependencies` reads exact `package.json` dependency keys** instead of a hardcoded 10-entry `node_map`. Detection is data-driven via `PKG_MAP` (built from `TechProfile.packages`) plus `NPM_PKG_ALIASES`. This kills the `jest` false positive — `@testing-library/jest-dom` contains the substring `jest` but is a Vitest DOM matcher, and substring matching (still used by `project_analyzer`) mis-fired on it. `project_analyzer._detect_tech_stack` now uses the same exact-key matching.
+- **Config-file presence grounds tooling** — `_detect_from_files` consults `FILE_DETECTION_MAP` / `DIR_DETECTION_MAP`, so `vite.config.ts`, `vitest.config.ts`, `tailwind.config.ts`, `components.json`, `.github/workflows`, etc. are detected even when not a top-level dependency.
+- **New TechProfiles**: `vitest`, `tanstack-query`, `react-router`, `shadcn` (frontend) — the modern Vite ecosystem the old map had no knowledge of.
+- **Communication channels separated from the build stack** — `telegram`/`whatsapp`/`slack`/`discord`/`messenger` are no longer promoted into `tech_stack` from README prose when a real build stack is present. A deps-free ops/bot repo whose README *is* its manifest still surfaces them (preserves the `agent-skills-repo` regression).
+- **Test-runner disambiguation** — `_reconcile_test_runner` never emits both Jest and Vitest; the one whose config file is present wins.
+- 7 new grounding tests in `tests/test_tech_detector_grounding.py` (fixture mirrors `gravity-claw-hub`). Full suite: 1700 passing.
+
 ### Pre-open-source hardening (Batches A–D + OSS audit)
 
 **Packaging**

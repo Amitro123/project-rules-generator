@@ -4,6 +4,7 @@ Re-exports everything from the sub-modules for convenient imports.
 """
 
 from generator.tech.lookups import (
+    NPM_PKG_ALIASES,
     PKG_MAP,
     REGISTRY,
     SKILL_IMPORT_NAMES,
@@ -24,5 +25,6 @@ __all__ = [
     "TECH_RULES",
     "TECH_README_KEYWORDS",
     "PKG_MAP",
+    "NPM_PKG_ALIASES",
     "SKILL_IMPORT_NAMES",
 ]

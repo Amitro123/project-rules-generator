@@ -122,17 +122,25 @@ class ProjectAnalyzer:
                 if pkg.lower() in dep_content:
                     _add_tech(tech_name)
 
-        # 2. package.json (JavaScript / TypeScript)
+        # 2. package.json (JavaScript / TypeScript) — match *exact* dependency keys.
+        # Substring matching previously mis-fired: '@testing-library/jest-dom'
+        # contains 'jest', falsely tagging the Jest runner on Vitest projects.
+        # NPM_PKG_ALIASES covers npm names whose profile carries a different
+        # primary package (e.g. '@types/react' -> react).
+        from generator.tech.lookups import NPM_PKG_ALIASES
+
         pkg_file = self.project_path / "package.json"
         if pkg_file.exists():
             if "JavaScript/TypeScript" not in tech["languages"]:
                 tech["languages"].append("JavaScript/TypeScript")
             try:
-                pkg_content = pkg_file.read_text(encoding="utf-8", errors="replace").lower()
-                for pkg, tech_name in PKG_MAP.items():
-                    if pkg.lower() in pkg_content:
+                pkg_data = json.loads(pkg_file.read_text(encoding="utf-8", errors="replace"))
+                dep_keys = set(pkg_data.get("dependencies", {})) | set(pkg_data.get("devDependencies", {}))
+                for dep_name in dep_keys:
+                    tech_name = PKG_MAP.get(dep_name) or NPM_PKG_ALIASES.get(dep_name)
+                    if tech_name:
                         _add_tech(tech_name)
-            except OSError:
+            except (OSError, ValueError):
                 pass
 
         # 3. File / directory presence (infrastructure tools, config-file signals)

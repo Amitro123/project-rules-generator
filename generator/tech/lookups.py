@@ -31,6 +31,21 @@ for _p in _PROFILES:
     for _pkg in _p.packages:
         PKG_MAP[_pkg] = _p.name
 
+# Supplementary npm dependency-name → tech aliases.
+#
+# These are npm package names that signal a tech whose canonical profile carries
+# a *different* primary package (so adding them to ``TechProfile.packages`` would
+# pollute the Python-oriented PKG_MAP / SKILL_IMPORT_NAMES derivations). They are
+# consulted *only* by the exact-key package.json matchers in tech detection.
+NPM_PKG_ALIASES: Dict[str, str] = {
+    "@types/react": "react",
+    "react-konva": "konva",
+    "three": "threejs",
+    "@react-three/fiber": "threejs",
+    "babylonjs": "babylon",
+    "@babylonjs/core": "babylon",
+}
+
 # skill_name → Python import keyword (for code-usage file search)
 SKILL_IMPORT_NAMES: Dict[str, str] = {}
 for _p in _PROFILES:
