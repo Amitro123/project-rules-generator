@@ -138,9 +138,9 @@ def test_agent_skills_repo_fixture_excludes_python_from_readme():
         pytest.skip(f"Fixture missing: {fx_readme}")
     content = fx_readme.read_text(encoding="utf-8")
     techs = extract_tech_stack(content)
-    assert "python" not in techs, (
-        f"Negation-aware extractor failed on agent-skills-repo README — 'python' still present in {techs}."
-    )
+    assert (
+        "python" not in techs
+    ), f"Negation-aware extractor failed on agent-skills-repo README — 'python' still present in {techs}."
     # Sanity: docker is in TECH_KEYWORDS and is genuinely declared in the
     # README, so it should come through.
     assert "docker" in techs

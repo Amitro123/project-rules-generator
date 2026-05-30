@@ -27,6 +27,11 @@ class TaskDecomposer(ArtifactGenerator):
         else:
             self.api_key = os.getenv(f"{self.provider.upper()}_API_KEY")
         self.model_name = model_name
+        # True after a decompose/from_design call when the LLM produced no usable
+        # output (missing key, auth failure, empty/invalid response) and a
+        # deterministic fallback plan was used instead. Callers inspect this to
+        # warn the user that the plan is not AI-generated.
+        self.llm_used_fallback = False
 
     def decompose(
         self,
@@ -35,6 +40,7 @@ class TaskDecomposer(ArtifactGenerator):
         project_path: Optional[Path] = None,
     ) -> List[SubTask]:
         """Use AI to break down *user_task* into a list of SubTasks."""
+        self.llm_used_fallback = False
         prompt = self._build_prompt(user_task, project_context, project_path)
         raw = self._call_llm(prompt, expect_multiple=True)
         tasks = self._parse_response(raw, user_task)
@@ -75,6 +81,7 @@ class TaskDecomposer(ArtifactGenerator):
         """
         from generator.design_generator import Design
 
+        self.llm_used_fallback = False
         text = Path(design_path).read_text(encoding="utf-8")
         design = Design.from_markdown(text)
 
@@ -379,6 +386,7 @@ Generate the subtasks now:
         increased to 8000 to reduce the chance of mid-task truncation.
         """
         if not self.api_key:
+            self.llm_used_fallback = True
             return ""
         try:
             from generator.ai.factory import create_ai_client
@@ -386,7 +394,7 @@ Generate the subtasks now:
 
             client = create_ai_client(self.provider, api_key=self.api_key)
             validator = require_min_count(r"^###?\s*\d+\.", 3) if expect_multiple else None
-            return (
+            result = (
                 generate_with_validator(
                     client,
                     prompt,
@@ -396,8 +404,12 @@ Generate the subtasks now:
                 )
                 or ""
             )
+            if not result.strip():
+                self.llm_used_fallback = True
+            return result
         except Exception as exc:  # noqa: BLE001 — LLM failures fall back to empty string
             logger.debug("LLM call failed in TaskDecomposer: %s", exc)
+            self.llm_used_fallback = True
             return ""
 
     @staticmethod

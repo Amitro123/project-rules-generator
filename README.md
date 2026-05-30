@@ -210,6 +210,8 @@ A project-level skill overrides the global one. Your patterns win.
 - `--create-skill` → writes to `learned/` by default (explicit capture = reusable)
 - `--create-skill --scope builtin` → writes to `builtin/` for universal patterns
 
+**How project skills are chosen:** `prg analyze` maps your detected tech stack to skill names dynamically. Techs with a curated profile use their authored skill name (e.g. `pytest` → `pytest-testing`); any other skill-worthy tech (a backend, frontend, database, ml, ai, or testing library with no curated name) gets a synthesized `{tech}-workflow` so core stack is never silently dropped. Languages and generic infrastructure (`python`, `git`, `yaml`) produce no skill. See [`docs/skills.md`](docs/skills.md) for the full mapping and prompt template.
+
 ---
 
 ## AI Providers

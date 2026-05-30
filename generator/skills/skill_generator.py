@@ -419,14 +419,11 @@ class SkillGenerator(ArtifactGenerator):
         # Classify skills: reuse / adapt / create
         reuse_map = self.check_global_skill_reuse(tech_stack)
 
-        # Deduplicated list of skill names in tech_stack order
-        seen_names: set = set()
-        skill_names = []
-        for tech in tech_stack:
-            skill_name = self.TECH_SKILL_NAMES.get(tech.lower().strip())
-            if skill_name and skill_name not in seen_names:
-                seen_names.add(skill_name)
-                skill_names.append(skill_name)
+        # Curated profiles win; unmapped-but-skill-worthy techs get a synthesized
+        # "{tech}-workflow" so a project's core stack is never silently dropped.
+        from generator.skills.skill_selection import select_skill_names
+
+        skill_names = select_skill_names(tech_stack, project_name or "project")
 
         generated = []
         project_path_str = str(project_path) if project_path else None

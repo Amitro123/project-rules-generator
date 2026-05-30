@@ -71,30 +71,16 @@ class CoworkSkillCreator:
     def detect_skill_needs(self, project_path: Path) -> List[str]:
         """Detect needed skills based on tech stack and context.
 
-        Uses SkillGenerator.TECH_SKILL_NAMES as the single source of truth for
-        the tech→skill mapping (covers 40+ technologies).
+        Curated profiles win; unmapped-but-skill-worthy techs get a synthesized
+        ``{tech}-workflow`` (see generator.skills.skill_selection).
         """
-        # Lazy import to avoid circular dependency
-        from generator.skills.skill_generator import SkillGenerator
+        from generator.skills.skill_selection import select_skill_names
 
         readme_path = project_path / "README.md"
         readme_content = readme_path.read_text(encoding="utf-8", errors="ignore") if readme_path.exists() else ""
 
         tech_stack = self._detect_tech_stack(readme_content)
-        skill_names = []
-
-        if not tech_stack:
-            skill_names.append(f"{project_path.name}-workflow")
-        else:
-            for tech in tech_stack:
-                skill_name = SkillGenerator.TECH_SKILL_NAMES.get(tech.lower())
-                if skill_name:
-                    skill_names.append(skill_name)
-
-            if not skill_names:
-                skill_names.append(f"{project_path.name}-workflow")
-
-        return list(set(skill_names))
+        return select_skill_names(tech_stack, project_path.name)
 
     def exists_in_learned(self, skill_name: str) -> bool:
         """Check if skill exists in global learned cache.
@@ -221,22 +207,10 @@ class CoworkSkillCreator:
 
         Returns list of generated file paths.
         """
+        from generator.skills.skill_selection import select_skill_names
+
         tech_stack = self._detect_tech_stack(readme_content)
-        skill_names = []
-
-        if not tech_stack:
-            skill_names.append(f"{self.project_path.name}-workflow")
-        else:
-            # Use SkillGenerator.TECH_SKILL_NAMES as the single source of truth (BUG-1 fix)
-            from generator.skills.skill_generator import SkillGenerator
-
-            for tech in tech_stack:
-                name = SkillGenerator.TECH_SKILL_NAMES.get(tech.lower())
-                if name:
-                    skill_names.append(name)
-
-            if not skill_names:
-                skill_names.append(f"{self.project_path.name}-workflow")
+        skill_names = select_skill_names(tech_stack, self.project_path.name)
 
         generated_files = []
         for skill_name in set(skill_names):

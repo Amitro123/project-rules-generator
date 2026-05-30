@@ -175,8 +175,14 @@ def plan(
         subtasks = decomposer.decompose(task_description, project_context=enhanced_context, project_path=project_path)
         user_task_label = task_description
 
-    has_key = _has_api_key(provider, api_key) if provider else False
-    plan_md = decomposer.generate_plan_md(subtasks, user_task=user_task_label, is_template=not has_key)
+    # The api-key gate above guarantees a key is present, but a present key can
+    # still be invalid (auth failure) or the provider can be unreachable. In
+    # that case the decomposer silently falls back to a deterministic plan —
+    # generic boilerplate for `decompose`, or the structural builder for
+    # `from_design`. Surface that so the output is never mistaken for AI work.
+    llm_failed = getattr(decomposer, "llm_used_fallback", False)
+    is_template = llm_failed and not from_design
+    plan_md = decomposer.generate_plan_md(subtasks, user_task=user_task_label, is_template=is_template)
 
     output_file = output or "PLAN.md"
     output_path = Path(output_file)
@@ -191,6 +197,22 @@ def plan(
     click.echo(f"Plan written to: {output_path}")
     click.echo(f"Tasks manifest: {tasks_path}")
     click.echo(f"Estimated time: {sum(t.estimated_minutes for t in subtasks)} minutes")
+
+    if llm_failed:
+        if from_design:
+            click.echo(
+                "\nWARNING: the AI provider call failed — this plan was built from your "
+                "DESIGN.md structure, not AI-refined. Check your API key/provider and re-run "
+                "for a richer breakdown.",
+                err=True,
+            )
+        else:
+            click.echo(
+                "\nWARNING: the AI provider call failed — this is a GENERIC fallback plan, not a "
+                "task-specific one. Verify your API key/provider is valid and re-run for a real "
+                "breakdown.",
+                err=True,
+            )
 
     if interactive:
         run_interactive_mode(subtasks, project_path, auto_execute)
