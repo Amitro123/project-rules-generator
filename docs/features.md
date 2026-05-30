@@ -369,7 +369,7 @@ Suggestion: prg analyze . --create-skill <name>  to regenerate each skill.
 ```bash
 prg watch .
 prg watch . --delay 5.0          # coalesce saves over 5 seconds instead of 2
-prg watch . --ide cursor --quiet # target a specific IDE, suppress non-error output
+prg watch . --ide antigravity --quiet # register Antigravity rules, suppress non-error output
 ```
 
 **Monitored files**:

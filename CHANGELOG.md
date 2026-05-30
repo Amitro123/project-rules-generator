@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Critical: pending re-release
+
+- **PyPI v0.3.0 is broken** — the published wheel is missing `generator/utils/`, so `prg --help` fails with `ModuleNotFoundError: No module named 'generator.utils'` on a fresh install. The fix is already in the source tree (a locally-built wheel correctly includes `generator/utils/`), but a new release (v0.3.1) needs to be tagged and published to ship the fix to PyPI users. See [`PROJECT-ROADMAP.md`](PROJECT-ROADMAP.md) "Next release" for the release checklist.
+
 ### Pre-open-source hardening (Batches A–D + OSS audit)
 
 **Packaging**
@@ -75,7 +79,7 @@ Watches project files and automatically runs `prg analyze --incremental` wheneve
 
 **Usage:**
 ```bash
-prg watch [PATH] [--delay 2.0] [--ide cursor] [--quiet]
+prg watch [PATH] [--delay 2.0] [--ide antigravity] [--quiet]
 ```
 
 ### New dependency

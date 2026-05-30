@@ -49,6 +49,6 @@ This directory is consumed by Cline and any agent that reads `.clinerules/`. It 
 - **`skills/builtin/`**: Battle-tested universal skills shipped with PRG (lowest priority).
 - **`.prg-cache.json`**: Internal incremental cache. Add to `.gitignore` — not meant to be committed.
 
-> **Note:** While `--ide` help text shows other values (`cline`, `cursor`, `vscode`), only `antigravity` has a custom registration implementation today. Other agents can still consume `.clinerules/` directly.
+> **Note:** `--ide` only accepts `antigravity` (or `none`) today — it's a `click.Choice`, so unsupported values are rejected with a clear error rather than silently ignored. `antigravity` is the one IDE with a custom registration implementation; for Cursor, Windsurf, or VS Code, point the IDE at `.clinerules/` directly.
 
 See [`CONTRIBUTING.md`](../CONTRIBUTING.md) § *Where `prg analyze` writes* for details on adding support for other IDE paths.

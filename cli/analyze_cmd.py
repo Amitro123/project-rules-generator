@@ -243,6 +243,9 @@ def _run_analysis_body(
 def _register_ide_rules(ide: str, project_path: Path, project_name: str, output_dir: Path, verbose: bool):
     """Write generated rules to IDE-specific location. Returns the written Path or None."""
     ide = ide.lower().strip()
+    if ide in ("", "none"):
+        # Explicit opt-out: analysis still ran; we just skip IDE registration.
+        return None
     if ide == "antigravity":
         rules_src = output_dir / "rules.md"
         if not rules_src.exists():
@@ -255,10 +258,14 @@ def _register_ide_rules(ide: str, project_path: Path, project_name: str, output_
         dest.write_text(rules_src.read_text(encoding="utf-8"), encoding="utf-8")
         click.echo(f"   Antigravity rules → {dest.relative_to(project_path)}")
         return dest
-    else:
-        if verbose:
-            click.echo(f"⚠️  IDE '{ide}' not yet supported (supported: antigravity)")
-        return None
+    # Unsupported IDE. The CLI restricts --ide via click.Choice, so this branch
+    # is only reachable if the helper is called directly. Warn unconditionally
+    # (not gated on --verbose) so the no-op is never silent.
+    click.echo(
+        f"⚠️  IDE '{ide}' has no native registration yet; "
+        f"point it at .clinerules/ manually. Supported: antigravity."
+    )
+    return None
 
 
 @click.command(name="analyze")
@@ -294,7 +301,14 @@ def _register_ide_rules(ide: str, project_path: Path, project_name: str, output_
     help="Explicit mode (manual=no AI, ai=auto-generate+AI, constitution=adds constitution.md)",
 )
 @click.option("--incremental", is_flag=True, help="Only regenerate changed sections (skip if nothing changed)")
-@click.option("--ide", help="Register rules with IDE (antigravity)")
+@click.option(
+    "--ide",
+    type=click.Choice(["antigravity", "none"]),
+    default=None,
+    help="Register generated rules with a supported IDE. Only 'antigravity' writes "
+    "IDE-specific files today; for Cursor/Windsurf/VS Code point the IDE at "
+    ".clinerules/ manually. 'none' runs analysis but skips IDE registration.",
+)
 @click.option(
     "--provider",
     type=click.Choice(["gemini", "groq", "anthropic", "openai"]),
