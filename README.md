@@ -1,6 +1,6 @@
 # Project Rules Generator
 
-> **Stop re-explaining your project to every AI agent.** PRG scans your repo once and emits `.clinerules/` — structured rules, skills, and conventions that Claude, Cursor, Windsurf, and Copilot read automatically. Works offline; LLM-augmented with a free API key.
+> **Stop re-explaining your project to every AI agent.** PRG scans your repo once and emits `.clinerules/` — structured rules, skills, and conventions as portable Markdown. Cline reads `.clinerules/` natively, `--ide antigravity` auto-registers them for Antigravity, and any agent (Claude, Cursor, Windsurf, Copilot) can load them as context. Works offline; LLM-augmented with a free API key.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -99,7 +99,7 @@ Analyzing project context...
 ✓ Skill generated: pydantic-validation     (.clinerules/skills/learned/)
 ✓ Wrote .clinerules/clinerules.yaml        (project: 2 · learned: 2 · builtin: 3)
 
-Your AI agent now loads project rules + skills automatically.
+Cline & Antigravity load these automatically; point any agent at .clinerules/.
 Ask it to "add a login endpoint" — it will use async SQLAlchemy,
 Pydantic response models, and place the route in the right module.
 ```
