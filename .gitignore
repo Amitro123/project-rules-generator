@@ -47,6 +47,9 @@ spec.md
 TASKS.json
 tasks/
 
+# Internal scratch notes (not part of the published package)
+docs/internal/
+
 # Cache files
 .clinerules/.prg-cache.json
 tests/test_autopilot_flow.py

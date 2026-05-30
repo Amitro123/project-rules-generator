@@ -208,11 +208,7 @@ def detect_tech_stack(project_path: Path, readme_content: str = "") -> List[str]
         # there are no dep/source signals at all, allow_all_from_readme still lets
         # docs-only projects surface their primary language.
         for tech in readme_detected:
-            if (
-                allow_all_from_readme
-                or tech in detected
-                or tech in readme_primary_techs
-            ):
+            if allow_all_from_readme or tech in detected or tech in readme_primary_techs:
                 detected.add(tech)
 
     return list(detected)

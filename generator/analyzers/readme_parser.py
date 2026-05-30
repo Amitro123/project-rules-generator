@@ -336,6 +336,22 @@ def _extract_project_name(content: str, path: Path) -> str:
     return path.parent.name.lower().replace(" ", "-")
 
 
+def _strip_keywords_field(pyproject_lower: str) -> str:
+    """Remove the [project].keywords array from lowercased pyproject content.
+
+    Keywords describe what a project is *about*, not what it *uses*. A tool that
+    documents technologies in its keywords (e.g. ["typescript", "docker"]) must
+    not be detected as depending on them. Handles both single-line and
+    multi-line array forms.
+    """
+    return re.sub(
+        r"^\s*keywords\s*=\s*\[.*?\]",
+        "",
+        pyproject_lower,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+
+
 def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List[str]:
     """Enrich README-detected tech with confirmation from actual dependency files.
 
@@ -399,7 +415,11 @@ def _validate_tech_with_deps(readme_tech: List[str], project_path: Path) -> List
     pyproject = project_path / "pyproject.toml"
     if pyproject.exists():
         try:
-            dep_content += pyproject.read_text(encoding="utf-8", errors="replace").lower() + "\n"
+            raw = pyproject.read_text(encoding="utf-8", errors="replace").lower()
+            # Strip [project].keywords: a project that *documents* a technology
+            # (e.g. keywords = ["typescript", "docker"]) must not be detected as
+            # *using* it. Only real dependency declarations should count.
+            dep_content += _strip_keywords_field(raw) + "\n"
         except OSError:
             pass
 

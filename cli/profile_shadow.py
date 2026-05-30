@@ -90,14 +90,19 @@ def shadow_validate(
     _write_report(output_dir, profile=profile, violations=violations)
 
     if violations:
-        logger.warning(
+        # Shadow validation is observational only (Phase-1 migration aid), so on a
+        # normal run these violations are noise that reads like an error. Keep the
+        # full detail behind --verbose; the .prg-invariants.json report is always
+        # written, so nothing is lost for anyone who wants to inspect it.
+        log = logger.warning if verbose else logger.debug
+        log(
             "shadow_validate: %d invariant violation(s) for project %r — see %s",
             len(violations),
             profile.project_name,
             output_dir / INVARIANTS_REPORT_FILENAME,
         )
         for v in violations:
-            logger.warning("  - %s", v)
+            log("  - %s", v)
     elif verbose:
         logger.info(
             "shadow_validate: clean for %r (%d skills, %d tech)",

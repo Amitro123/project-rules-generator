@@ -90,15 +90,38 @@ def test_shadow_records_tech_source_in_report(tmp_path: Path):
 # --- Violations are surfaced but never raised ------------------------------
 
 
-def test_shadow_disk_mismatch_logged_not_raised(tmp_path: Path, caplog):
-    """The newbug.md case: skills on disk, none in selected_skills.
-    Shadow mode must report it, log a warning, and return — never raise."""
+def _seed_disk_mismatch(tmp_path: Path) -> None:
     project_skills_dir = tmp_path / "skills" / "project"
     project_skills_dir.mkdir(parents=True)
     for name in ("a", "b", "c"):
         sd = project_skills_dir / name
         sd.mkdir()
         (sd / "SKILL.md").write_text("# test", encoding="utf-8")
+
+
+def test_shadow_disk_mismatch_logged_not_raised(tmp_path: Path, caplog):
+    """The newbug.md case: skills on disk, none in selected_skills.
+    Under --verbose, shadow mode reports it, logs a warning, and returns —
+    never raises."""
+    _seed_disk_mismatch(tmp_path)
+
+    with caplog.at_level(logging.WARNING, logger="cli.profile_shadow"):
+        violations = shadow_validate(
+            enhanced_context=_good_context(),
+            project_path=tmp_path,
+            selected_skill_refs=set(),
+            output_dir=tmp_path,
+            verbose=True,
+        )
+
+    assert any("skill_set_disk_mismatch" in v for v in violations)
+    assert any("skill_set_disk_mismatch" in rec.message for rec in caplog.records)
+
+
+def test_shadow_violations_quiet_without_verbose(tmp_path: Path, caplog):
+    """Default (non-verbose) runs must NOT emit WARNING-level noise for
+    observational violations, but must still return them and write the report."""
+    _seed_disk_mismatch(tmp_path)
 
     with caplog.at_level(logging.WARNING, logger="cli.profile_shadow"):
         violations = shadow_validate(
@@ -108,8 +131,11 @@ def test_shadow_disk_mismatch_logged_not_raised(tmp_path: Path, caplog):
             output_dir=tmp_path,
         )
 
+    # Violations are still surfaced via the return value and the JSON report …
     assert any("skill_set_disk_mismatch" in v for v in violations)
-    assert any("skill_set_disk_mismatch" in rec.message for rec in caplog.records)
+    assert (tmp_path / ".prg-invariants.json").exists()
+    # … but they must not surface as WARNING-level console noise.
+    assert not any(rec.levelno >= logging.WARNING for rec in caplog.records)
 
 
 def test_shadow_skill_collision_violation(tmp_path: Path):
