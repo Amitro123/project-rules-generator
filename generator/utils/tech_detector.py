@@ -112,15 +112,14 @@ def detect_from_dependencies(project_path: Path) -> Set[str]:
         except OSError:
             pass
 
-    # Python: pyproject.toml
+    # Python: pyproject.toml (covers PEP 621 [project] and poetry [tool.poetry] deps)
     pyproject = project_path / "pyproject.toml"
     if pyproject.exists():
         try:
             content = pyproject.read_text(encoding="utf-8", errors="ignore").lower()
-            if "fastapi" in content:
-                detected.add("fastapi")
-            if "pytest" in content:
-                detected.add("pytest")
+            for pkg, tech in PKG_MAP.items():
+                if pkg in content:
+                    detected.add(tech)
             detected.add("python")
         except OSError:
             pass
