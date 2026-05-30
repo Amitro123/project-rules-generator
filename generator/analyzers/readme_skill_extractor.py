@@ -245,59 +245,74 @@ def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[P
                 anti_patterns.append(pattern)
 
     # --- Priority 2: negative imperatives in standards/best-practices sections ---
-    _STANDARDS_SECTION_RE = re.compile(
-        r"(?m)^#{1,3}\s+.*(?:coding standards?|best practices?|rules?|standards?|guidelines?)\s*$",
-        re.IGNORECASE,
-    )
-    _NEGATIVE_KEYWORDS = re.compile(
-        r"\b(?:never|do\s+not|don'?t|avoid|must\s+not|no\s+)\b",
-        re.IGNORECASE,
-    )
-
     existing_texts = {ap.lower() for ap in anti_patterns}
-
-    lines = readme.split("\n")
-    in_standards = False
-    section_level = 0
-
-    for line in lines:
-        # Detect a standards/best-practices header
-        if _STANDARDS_SECTION_RE.match(line.strip()):
-            in_standards = True
-            # Track the header level (##, ###, etc.) to detect when the section ends
-            header_match = re.match(r"^(#+)", line.strip())
-            if header_match:
-                section_level = len(header_match.group(1))
-            else:
-                section_level = 0  # Fallback if header format is unexpected
-            continue
-
-        if in_standards:
-            # Stop when we hit another header of same or higher level
-            header_match = re.match(r"^(#+)\s+\S", line)
-            if header_match:
-                this_level = len(header_match.group(1))
-                if this_level <= section_level:
-                    in_standards = False
-                    continue
-
-            stripped = line.strip()
-            # Only process list items (bullet or numbered)
-            list_match = re.match(r"^(?:[-*+]|\d+[\.)]) (.+)", stripped)
-            if list_match:
-                item_text = list_match.group(1).strip()
-                # Only keep items that contain a negative imperative
-                if _NEGATIVE_KEYWORDS.search(item_text):
-                    # Strip inline markdown formatting for cleaner display
-                    clean = re.sub(r"`([^`]+)`", r"\1", item_text)
-                    clean = re.sub(r"\*\*|__|_|\*", "", clean).strip()
-                    if len(clean) > 10 and clean.lower() not in existing_texts:
-                        anti_patterns.append(clean)
-                        existing_texts.add(clean.lower())
+    anti_patterns.extend(_extract_negative_imperatives(readme, existing_texts))
 
     if not project_path:
         return anti_patterns
 
+    project_path = Path(project_path)
+
+    anti_patterns.extend(_structural_anti_patterns(tech, project_path))
+
+    return anti_patterns
+
+
+# Standards/best-practices section header and negative-imperative detectors.
+# Hoisted to module level so they compile once instead of per-call.
+_STANDARDS_SECTION_RE = re.compile(
+    r"(?m)^#{1,3}\s+.*(?:coding standards?|best practices?|rules?|standards?|guidelines?)\s*$",
+    re.IGNORECASE,
+)
+_NEGATIVE_KEYWORDS_RE = re.compile(
+    r"\b(?:never|do\s+not|don'?t|avoid|must\s+not|no\s+)\b",
+    re.IGNORECASE,
+)
+
+
+def _extract_negative_imperatives(readme: str, existing_texts: set) -> List[str]:
+    """Priority 2: negative-imperative list items inside standards/best-practices sections.
+
+    ``existing_texts`` is the running set of already-collected (lowercased) anti-patterns;
+    it is consulted and updated in place so duplicates are not re-emitted.
+    """
+    found: List[str] = []
+    in_standards = False
+    section_level = 0
+
+    for line in readme.split("\n"):
+        if _STANDARDS_SECTION_RE.match(line.strip()):
+            in_standards = True
+            header_match = re.match(r"^(#+)", line.strip())
+            section_level = len(header_match.group(1)) if header_match else 0
+            continue
+
+        if not in_standards:
+            continue
+
+        header_match = re.match(r"^(#+)\s+\S", line)
+        if header_match and len(header_match.group(1)) <= section_level:
+            in_standards = False
+            continue
+
+        list_match = re.match(r"^(?:[-*+]|\d+[\.)]) (.+)", line.strip())
+        if not list_match:
+            continue
+        item_text = list_match.group(1).strip()
+        if not _NEGATIVE_KEYWORDS_RE.search(item_text):
+            continue
+        clean = re.sub(r"`([^`]+)`", r"\1", item_text)
+        clean = re.sub(r"\*\*|__|_|\*", "", clean).strip()
+        if len(clean) > 10 and clean.lower() not in existing_texts:
+            found.append(clean)
+            existing_texts.add(clean.lower())
+
+    return found
+
+
+def _structural_anti_patterns(tech: List[str], project_path: Path) -> List[str]:
+    """Priority 3: structural checks against the actual project on disk."""
+    found: List[str] = []
     project_path = Path(project_path)
 
     if "ffmpeg" in tech:
@@ -307,7 +322,7 @@ def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[P
             try:
                 py_content = py_file.read_text(encoding="utf-8", errors="replace")
                 if "ffmpeg" in py_content and "shutil.which" not in py_content:
-                    anti_patterns.append(
+                    found.append(
                         f"Missing FFmpeg availability check in {py_file.name} \u2192 "
                         "Add: `if not shutil.which('ffmpeg'): raise RuntimeError('ffmpeg not found')`"
                     )
@@ -323,7 +338,7 @@ def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[P
             or (project_path / "pyproject.toml").exists()
         )
         if not has_mypy_config:
-            anti_patterns.append("No type checking config found \u2192 Run: `mypy --install-types --strict .`")
+            found.append("No type checking config found \u2192 Run: `mypy --install-types --strict .`")
 
     if "pytest" in tech:
         has_pytest_config = any(
@@ -334,6 +349,6 @@ def extract_anti_patterns(readme: str, tech: List[str], project_path: Optional[P
             ]
         )
         if not has_pytest_config:
-            anti_patterns.append("No pytest config found \u2192 Run: `pytest --co -q` to verify test discovery")
+            found.append("No pytest config found \u2192 Run: `pytest --co -q` to verify test discovery")
 
-    return anti_patterns
+    return found

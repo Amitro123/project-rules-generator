@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -132,97 +132,18 @@ def parse_spec_file(project_path: Path) -> Dict[str, Any]:
         "extra_tech": [],
     }
 
-    # Try both extensions
-    spec_path: Optional[Path] = None
-    for name in ("spec.yml", "spec.yaml"):
-        candidate = project_path / name
-        if candidate.exists() and candidate.is_file():
-            spec_path = candidate
-            break
-
+    spec_path = _find_spec_file(project_path)
     if spec_path is None:
         return result
 
-    try:
-        import yaml  # PyYAML is a standard PRG dependency
-
-        raw = yaml.safe_load(spec_path.read_text(encoding="utf-8", errors="replace")) or {}
-    except Exception:  # noqa: BLE001 — spec parsing is best-effort
-        logger.debug("Could not parse %s — skipping spec enrichment", spec_path)
-        return result
-
+    raw = _load_spec_yaml(spec_path)
     if not isinstance(raw, dict):
         return result
 
-    # Project name + description
-    proj = raw.get("project", {}) or {}
-    if isinstance(proj, dict):
-        result["project_name"] = str(proj.get("name", "")).strip()
-        result["description"] = str(proj.get("description", "")).strip()
-
-    # Python version
-    env = raw.get("environment", {}) or {}
-    if isinstance(env, dict):
-        py_ver = env.get("python_version", "")
-        if py_ver:
-            result["python_version"] = str(py_ver)
-
-        # Dependencies list from spec
-        raw_deps = env.get("dependencies", []) or []
-        dep_names: List[str] = []
-        for dep in raw_deps:
-            if isinstance(dep, str):
-                # Strip version pins and comments: "fastapi==0.100" → "fastapi"
-                name_part = dep.split("==")[0].split(">=")[0].split("<=")[0].strip()
-                # Skip commented/future deps (lines starting with # in YAML scalars)
-                if name_part and not name_part.startswith("#"):
-                    dep_names.append(name_part.lower())
-        result["dependencies"] = dep_names
-
-    # Test framework from testing section
-    testing = raw.get("testing", {}) or {}
-    if isinstance(testing, dict):
-        # Infer framework from key names: unit_tests → pytest, test_framework key
-        if "test_framework" in testing:
-            result["test_framework"] = str(testing["test_framework"]).lower()
-        elif any(k in testing for k in ("unit_tests", "pytest", "conftest")):
-            result["test_framework"] = "pytest"
-
-    # Architecture component names
-    arch = raw.get("architecture", {}) or {}
-    components = arch.get("components", []) or []
-    component_names: List[str] = []
-    extra_tech: List[str] = []
-    _tech_keywords = {
-        "chroma": "chromadb",
-        "chromadb": "chromadb",
-        "qdrant": "qdrant",
-        "vector": None,
-        "openai": "openai",
-        "vllm": "vllm",
-        "docker": "docker",
-        "lambda": "aws-lambda",
-        "webhook": None,
-        "telegram": "telegram",
-        "langchain": "langchain",
-        "langgraph": "langgraph",
-        "opik": None,
-        "cloudwatch": None,
-    }
-    for comp in components:
-        if not isinstance(comp, dict):
-            continue
-        cname = str(comp.get("name", "")).strip()
-        if cname:
-            component_names.append(cname)
-        # Mine description for extra tech hints
-        desc = str(comp.get("description", "") or comp.get("storage", "") or "").lower()
-        for kw, tech in _tech_keywords.items():
-            if kw in desc and tech:
-                extra_tech.append(tech)
-
-    result["architecture_components"] = component_names
-    result["extra_tech"] = list(dict.fromkeys(extra_tech))  # deduplicate, preserve order
+    result["project_name"], result["description"] = _parse_spec_project(raw)
+    result["python_version"], result["dependencies"] = _parse_spec_environment(raw)
+    result["test_framework"] = _parse_spec_testing(raw)
+    result["architecture_components"], result["extra_tech"] = _parse_spec_architecture(raw)
 
     logger.debug(
         "Parsed %s: name=%r deps=%d components=%d extra_tech=%s",
@@ -233,6 +154,107 @@ def parse_spec_file(project_path: Path) -> Dict[str, Any]:
         result["extra_tech"],
     )
     return result
+
+
+# Component-description keyword -> canonical tech name (None = recognized but not a tagged tech).
+_SPEC_TECH_KEYWORDS: Dict[str, Optional[str]] = {
+    "chroma": "chromadb",
+    "chromadb": "chromadb",
+    "qdrant": "qdrant",
+    "vector": None,
+    "openai": "openai",
+    "vllm": "vllm",
+    "docker": "docker",
+    "lambda": "aws-lambda",
+    "webhook": None,
+    "telegram": "telegram",
+    "langchain": "langchain",
+    "langgraph": "langgraph",
+    "opik": None,
+    "cloudwatch": None,
+}
+
+
+def _find_spec_file(project_path: Path) -> Optional[Path]:
+    """Locate spec.yml / spec.yaml in the project root (first match wins)."""
+    for name in ("spec.yml", "spec.yaml"):
+        candidate = project_path / name
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    return None
+
+
+def _load_spec_yaml(spec_path: Path) -> Any:
+    """Best-effort YAML load; returns an empty dict on any parse failure."""
+    try:
+        import yaml  # PyYAML is a standard PRG dependency
+
+        return yaml.safe_load(spec_path.read_text(encoding="utf-8", errors="replace")) or {}
+    except Exception:  # noqa: BLE001 — spec parsing is best-effort
+        logger.debug("Could not parse %s - skipping spec enrichment", spec_path)
+        return {}
+
+
+def _parse_spec_project(raw: Dict[str, Any]) -> Tuple[str, str]:
+    """Extract (project_name, description) from the spec's ``project`` section."""
+    proj = raw.get("project", {}) or {}
+    if isinstance(proj, dict):
+        return str(proj.get("name", "")).strip(), str(proj.get("description", "")).strip()
+    return "", ""
+
+
+def _parse_spec_environment(raw: Dict[str, Any]) -> Tuple[str, List[str]]:
+    """Extract (python_version, dependency_names) from the spec's ``environment`` section."""
+    env = raw.get("environment", {}) or {}
+    if not isinstance(env, dict):
+        return "", []
+
+    python_version = ""
+    py_ver = env.get("python_version", "")
+    if py_ver:
+        python_version = str(py_ver)
+
+    dep_names: List[str] = []
+    for dep in env.get("dependencies", []) or []:
+        if isinstance(dep, str):
+            # Strip version pins: "fastapi==0.100" -> "fastapi"
+            name_part = dep.split("==")[0].split(">=")[0].split("<=")[0].strip()
+            # Skip commented/future deps (lines starting with # in YAML scalars)
+            if name_part and not name_part.startswith("#"):
+                dep_names.append(name_part.lower())
+    return python_version, dep_names
+
+
+def _parse_spec_testing(raw: Dict[str, Any]) -> Optional[str]:
+    """Infer the test framework from the spec's ``testing`` section."""
+    testing = raw.get("testing", {}) or {}
+    if not isinstance(testing, dict):
+        return None
+    if "test_framework" in testing:
+        return str(testing["test_framework"]).lower()
+    if any(k in testing for k in ("unit_tests", "pytest", "conftest")):
+        return "pytest"
+    return None
+
+
+def _parse_spec_architecture(raw: Dict[str, Any]) -> Tuple[List[str], List[str]]:
+    """Extract (component_names, extra_tech) from the spec's ``architecture`` section."""
+    arch = raw.get("architecture", {}) or {}
+    components = arch.get("components", []) or []
+    component_names: List[str] = []
+    extra_tech: List[str] = []
+    for comp in components:
+        if not isinstance(comp, dict):
+            continue
+        cname = str(comp.get("name", "")).strip()
+        if cname:
+            component_names.append(cname)
+        # Mine description for extra tech hints
+        desc = str(comp.get("description", "") or comp.get("storage", "") or "").lower()
+        for kw, tech in _SPEC_TECH_KEYWORDS.items():
+            if kw in desc and tech:
+                extra_tech.append(tech)
+    return component_names, list(dict.fromkeys(extra_tech))  # deduplicate, preserve order
 
 
 def bridge_missing_context(

@@ -1,7 +1,7 @@
 """High-quality skill generation prompts with project-specific context."""
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 SKILL_GENERATION_PROMPT = """
 You are generating a SPECIFIC, ACTIONABLE skill for project "{project_name}".
@@ -156,50 +156,62 @@ def scan_project_context(project_root: Path) -> str:
 def detect_project_tools(project_path: Optional[Path] = None, tech_stack: Optional[List[str]] = None) -> Dict[str, str]:
     """Detect available tools/linters in the project.
 
+    File-derived commands (from config + requirements) take precedence; tech-stack
+    defaults only fill gaps they leave behind.
+
     Returns dict like:
         {'check': 'ruff check .', 'test': 'pytest', 'lint': 'mypy .', 'format': 'black .'}
     """
     tools: Dict[str, str] = {}
-    tech = set(tech_stack or [])
-
     if project_path:
-        project_path = Path(project_path)
+        tools.update(_detect_tools_from_files(Path(project_path)))
+    _apply_tech_stack_tool_defaults(tools, set(tech_stack or []))
+    return tools
 
-        # Python linting
-        if (project_path / "ruff.toml").exists() or (project_path / ".ruff.toml").exists():
-            tools["check"] = "ruff check ."
-            tools["format"] = "ruff format ."
-        elif (project_path / "pyproject.toml").exists():
+
+def _detect_tools_from_files(project_path: Path) -> Dict[str, str]:
+    """Detect lint/format/test commands from on-disk config and requirements files."""
+    tools: Dict[str, str] = {}
+
+    # Python linting — config files first
+    if (project_path / "ruff.toml").exists() or (project_path / ".ruff.toml").exists():
+        tools["check"] = "ruff check ."
+        tools["format"] = "ruff format ."
+    elif (project_path / "pyproject.toml").exists():
+        try:
+            content = (project_path / "pyproject.toml").read_text(encoding="utf-8", errors="replace")
+            if "ruff" in content:
+                tools["check"] = "ruff check ."
+                tools["format"] = "ruff format ."
+            elif "flake8" in content:
+                tools["check"] = "flake8 ."
+            if "black" in content:
+                tools["format"] = "black ."
+            if "mypy" in content:
+                tools["lint"] = "mypy ."
+        except OSError:
+            pass
+
+    # Fall back to requirements files for anything still unset
+    for req_file in ["requirements.txt", "requirements-dev.txt"]:
+        req_path = project_path / req_file
+        if req_path.exists():
             try:
-                content = (project_path / "pyproject.toml").read_text(encoding="utf-8", errors="replace")
-                if "ruff" in content:
+                content = req_path.read_text(encoding="utf-8", errors="replace").lower()
+                if "ruff" in content and "check" not in tools:
                     tools["check"] = "ruff check ."
-                    tools["format"] = "ruff format ."
-                elif "flake8" in content:
-                    tools["check"] = "flake8 ."
-                if "black" in content:
-                    tools["format"] = "black ."
-                if "mypy" in content:
+                if "mypy" in content and "lint" not in tools:
                     tools["lint"] = "mypy ."
+                if "black" in content and "format" not in tools:
+                    tools["format"] = "black ."
             except OSError:
                 pass
 
-        # Detect from requirements
-        for req_file in ["requirements.txt", "requirements-dev.txt"]:
-            req_path = project_path / req_file
-            if req_path.exists():
-                try:
-                    content = req_path.read_text(encoding="utf-8", errors="replace").lower()
-                    if "ruff" in content and "check" not in tools:
-                        tools["check"] = "ruff check ."
-                    if "mypy" in content and "lint" not in tools:
-                        tools["lint"] = "mypy ."
-                    if "black" in content and "format" not in tools:
-                        tools["format"] = "black ."
-                except OSError:
-                    pass
+    return tools
 
-    # Defaults based on tech stack
+
+def _apply_tech_stack_tool_defaults(tools: Dict[str, str], tech: Set[str]) -> None:
+    """Fill in default commands inferred from the tech stack, never overwriting file-derived ones."""
     if "pytest" in tech:
         tools["test"] = "pytest"
     elif "jest" in tech:
@@ -214,8 +226,6 @@ def detect_project_tools(project_path: Optional[Path] = None, tech_stack: Option
         tools["check"] = "npx tsc --noEmit"
     if ("typescript" in tech or "react" in tech) and "lint" not in tools:
         tools["lint"] = "npx eslint ."
-
-    return tools
 
 
 def build_skill_prompt(

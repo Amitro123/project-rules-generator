@@ -102,99 +102,11 @@ class ContentAnalyzer:
             breakdown = self._heuristic_breakdown(filepath, content)
 
         score = min(100, max(0, breakdown.total))
-
-        suggestions: List[str] = []
-        if is_skills_index:
-            # Specialized suggestions for skills
-            if breakdown.structure < MIN_STRUCTURE:
-                suggestions.append("Ensure specific sections: Project Context, Core Skills, Usage")
-            if breakdown.actionability < MIN_ACTIONABILITY:
-                suggestions.append("Add usage examples and clear 'Triggers' for each skill")
-            if breakdown.project_grounding < MIN_PROJECT_GROUNDING:
-                suggestions.append("Reference specific project tools (e.g. pytest) or paths (src/)")
-            if breakdown.clarity < MIN_CLARITY:
-                suggestions.append("Use concise, clear skill names and descriptions")
-            if breakdown.consistency < MIN_CONSISTENCY:
-                suggestions.append("Ensure all skills follow the same format (e.g. all have triggers)")
-        else:
-            # Generic suggestions
-            if breakdown.structure < MIN_STRUCTURE:
-                suggestions.append("Improve document structure with clear headers")
-            if breakdown.actionability < MIN_ACTIONABILITY:
-                suggestions.append("Add actionable examples or code blocks")
-            if breakdown.project_grounding < MIN_PROJECT_GROUNDING:
-                suggestions.append("Reference specific project files or commands")
-            if breakdown.clarity < MIN_CLARITY:
-                suggestions.append("Clarify explanations and expand details")
-            if breakdown.consistency < MIN_CONSISTENCY:
-                suggestions.append("Ensure consistent formatting and sections")
-
-        # Optionally create a patch proposal (only when clearly below target)
-        patch = None
-        if score < PATCH_THRESHOLD:
-            # If a client is available, we could ask it; otherwise synthesize minimal improved version
-            try:
-                if self.client and hasattr(self.client, "generate"):
-                    # Provide a minimal deterministic prompt; tests replace client with Mock
-                    proposal = self.client.generate("Improve document quality with examples and clear sections.")
-                    if isinstance(proposal, str) and len(proposal.strip()) > 0:
-                        patch = proposal
-            except Exception as exc:  # noqa: BLE001 — LLM patch generation is optional; fallback handles it
-                logger.debug("LLM improvement call failed, using fallback: %s", exc)
-                patch = None
-            if patch is None:
-                # Fallback: add minimal structure to nudge improvement
-                patch = self._fallback_improvement(content)
+        suggestions = self._build_suggestions(breakdown, is_skills_index=is_skills_index)
+        patch = self._maybe_generate_patch(score, content)
 
         if self.opik and getattr(self.opik, "enabled", False):
-            try:
-                # Determine doc_type from filepath
-                filename = Path(filepath).name.lower()
-                if "rules" in filename:
-                    doc_type = "rules"
-                elif "constitution" in filename:
-                    doc_type = "constitution"
-                elif "skill" in filename:
-                    doc_type = "skills"
-                else:
-                    doc_type = "other"
-
-                # Prepare metrics
-                metrics: Dict[str, float] = {
-                    "score_total": float(score),
-                    "score_structure": float(breakdown.structure),
-                    "score_clarity": float(breakdown.clarity),
-                    "score_project_grounding": float(breakdown.project_grounding),
-                    "score_actionability": float(breakdown.actionability),
-                    "score_consistency": float(breakdown.consistency),
-                }
-
-                # Prepare breakdown dict for output
-                import dataclasses
-
-                breakdown_dict = dataclasses.asdict(breakdown)
-
-                output_props = {
-                    "score_total": score,
-                    "score_breakdown": breakdown_dict,
-                    "status": "Good" if score >= 80 else ("Needs Improvement" if score >= 65 else "Poor"),
-                    "top_issue": suggestions[0] if suggestions else None,
-                    "suggestions": suggestions,
-                }
-
-                self.opik.track_evaluation(
-                    content,
-                    "analysis",
-                    metadata={
-                        "filepath": str(filepath),
-                        "doc_type": doc_type,
-                        "score": score,
-                    },
-                    metrics=metrics,
-                    output_props=output_props,
-                )
-            except Exception as exc:  # noqa: BLE001 — Opik tracing is observability-only; never block analysis
-                logger.debug("Opik trace logging skipped: %s", exc)
+            self._track_opik_evaluation(filepath, content, score, breakdown, suggestions)
 
         return QualityReport(
             filepath=str(filepath),
@@ -203,6 +115,105 @@ class ContentAnalyzer:
             suggestions=suggestions,
             patch=patch,
         )
+
+    def _build_suggestions(self, breakdown: QualityBreakdown, *, is_skills_index: bool) -> List[str]:
+        """Map sub-scores that fall below their minimum into actionable suggestions.
+
+        Order is preserved (structure, actionability, project_grounding, clarity,
+        consistency) so callers and tests see a stable, prioritized list.
+        """
+        if is_skills_index:
+            checks = [
+                (breakdown.structure < MIN_STRUCTURE, "Ensure specific sections: Project Context, Core Skills, Usage"),
+                (breakdown.actionability < MIN_ACTIONABILITY, "Add usage examples and clear 'Triggers' for each skill"),
+                (
+                    breakdown.project_grounding < MIN_PROJECT_GROUNDING,
+                    "Reference specific project tools (e.g. pytest) or paths (src/)",
+                ),
+                (breakdown.clarity < MIN_CLARITY, "Use concise, clear skill names and descriptions"),
+                (
+                    breakdown.consistency < MIN_CONSISTENCY,
+                    "Ensure all skills follow the same format (e.g. all have triggers)",
+                ),
+            ]
+        else:
+            checks = [
+                (breakdown.structure < MIN_STRUCTURE, "Improve document structure with clear headers"),
+                (breakdown.actionability < MIN_ACTIONABILITY, "Add actionable examples or code blocks"),
+                (breakdown.project_grounding < MIN_PROJECT_GROUNDING, "Reference specific project files or commands"),
+                (breakdown.clarity < MIN_CLARITY, "Clarify explanations and expand details"),
+                (breakdown.consistency < MIN_CONSISTENCY, "Ensure consistent formatting and sections"),
+            ]
+        return [message for failed, message in checks if failed]
+
+    def _maybe_generate_patch(self, score: int, content: str) -> Optional[str]:
+        """Generate an improvement patch only when the score is clearly below target.
+
+        Prefers an LLM-generated proposal when a client is available; otherwise (or
+        on any failure) falls back to a deterministic minimal-structure improvement.
+        """
+        if score >= PATCH_THRESHOLD:
+            return None
+        try:
+            if self.client and hasattr(self.client, "generate"):
+                # Provide a minimal deterministic prompt; tests replace client with Mock
+                proposal = self.client.generate("Improve document quality with examples and clear sections.")
+                if isinstance(proposal, str) and len(proposal.strip()) > 0:
+                    return proposal
+        except Exception as exc:  # noqa: BLE001 — LLM patch generation is optional; fallback handles it
+            logger.debug("LLM improvement call failed, using fallback: %s", exc)
+        # Fallback: add minimal structure to nudge improvement
+        return self._fallback_improvement(content)
+
+    @staticmethod
+    def _doc_type_for(filepath: str) -> str:
+        """Classify a filepath into an Opik doc_type bucket."""
+        filename = Path(filepath).name.lower()
+        if "rules" in filename:
+            return "rules"
+        if "constitution" in filename:
+            return "constitution"
+        if "skill" in filename:
+            return "skills"
+        return "other"
+
+    def _track_opik_evaluation(
+        self,
+        filepath: str,
+        content: str,
+        score: int,
+        breakdown: QualityBreakdown,
+        suggestions: List[str],
+    ) -> None:
+        """Best-effort Opik observability trace; never blocks or fails analysis."""
+        try:
+            import dataclasses
+
+            doc_type = self._doc_type_for(filepath)
+            metrics: Dict[str, float] = {
+                "score_total": float(score),
+                "score_structure": float(breakdown.structure),
+                "score_clarity": float(breakdown.clarity),
+                "score_project_grounding": float(breakdown.project_grounding),
+                "score_actionability": float(breakdown.actionability),
+                "score_consistency": float(breakdown.consistency),
+            }
+            output_props = {
+                "score_total": score,
+                "score_breakdown": dataclasses.asdict(breakdown),
+                "status": "Good" if score >= 80 else ("Needs Improvement" if score >= 65 else "Poor"),
+                "top_issue": suggestions[0] if suggestions else None,
+                "suggestions": suggestions,
+            }
+            self.opik.track_evaluation(
+                content,
+                "analysis",
+                metadata={"filepath": str(filepath), "doc_type": doc_type, "score": score},
+                metrics=metrics,
+                output_props=output_props,
+            )
+        except Exception as exc:  # noqa: BLE001 — Opik tracing is observability-only; never block analysis
+            logger.debug("Opik trace logging skipped: %s", exc)
 
     def _skills_breakdown(self, content: str) -> QualityBreakdown:
         text = content if isinstance(content, str) else str(content)
