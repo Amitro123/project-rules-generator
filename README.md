@@ -366,6 +366,8 @@ prg --version
 
 **Alpha** — core analysis, rules generation, and skill management are stable. The planning pipeline (`prg plan`, `prg design`) and autonomous loop (`prg ralph`) are in active development.
 
+This is an early public release. The generated output is meant to be reviewed and edited, not used blind, and edge-case bug reports are genuinely welcome — [open an issue](https://github.com/Amitro123/project-rules-generator/issues).
+
 | Area | Status |
 |------|--------|
 | `prg init` / `prg analyze` / `prg create-rules` | ✅ Stable |
@@ -382,6 +384,8 @@ prg --version
 - AI skill generation quality varies by provider — Groq (free, fast) produces shorter output; Anthropic/OpenAI produce richer SKILL.md content
 - `prg watch` uses polling on Windows; latency may be higher than on Linux/macOS with inotify
 - Skill auto-triggers are matched by keyword heuristics, not semantic search — complex queries may miss the best skill
+- Tech detection is heuristic (dependency files + README + source scan), so unusual project layouts can produce a false positive or miss a stack — review the generated `rules.md` before relying on it, and please [open an issue](https://github.com/Amitro123/project-rules-generator/issues) with the case
+- Self-analysis is a known edge case: a project that *documents* technologies (in its README or `pyproject.toml`) may surface those as detected tech
 
 ---
 
