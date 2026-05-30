@@ -1,8 +1,18 @@
 # Project Rules Generator
 
+> **Stop re-explaining your project to every AI agent.** PRG scans your repo once and emits `.clinerules/` — structured rules, skills, and conventions that Claude, Cursor, Windsurf, and Copilot read automatically. Works offline; LLM-augmented with a free API key.
+
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests](https://github.com/Amitro123/project-rules-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/Amitro123/project-rules-generator/actions/workflows/ci.yml)
+
+```bash
+pip install project-rules-generator && cd your-project && prg init .
+```
+
+![Screenshot: `prg analyze` running on a Python project, detecting the tech stack and writing rules.md, clinerules.yaml, and skills/ into .clinerules/](docs/assets/prg-analyze-demo.png)
+
+<!-- TODO(demo): replace the static PNG above with a ~10s asciinema cast of `prg init . && prg analyze .` on a fresh repo. Embed via <a href="https://asciinema.org/a/XXXXX"><img src="https://asciinema.org/a/XXXXX.svg" /></a>. -->
 
 ---
 
@@ -28,60 +38,6 @@ prg init .
 ```
 
 Your `.clinerules/` is now the memory your AI agents never had. Generate the artifacts, then let any agent consume them — or optionally run Ralph to execute autonomously on top of them.
-
----
-
-## What Gets Generated
-
-PRG writes to two locations depending on which agent you use:
-
-```text
-.agents/
-└── rules/
-    └── <project-name>.md     ← Auto-loaded by Claude Code / Windsurf (Always On)
-
-.clinerules/
-├── rules.json                ← Machine-readable rules (used by planning commands)
-├── constitution.md           ← Non-negotiable principles — generated with --constitution
-├── clinerules.yaml           ← Skill index for agents — generated when skills are present
-└── skills/
-    ├── index.md              ← Skills manifest (always generated)
-    ├── project/              ← AI-generated workflows tailored to YOUR project
-    ├── learned/              ← Reusable patterns, shared across projects
-    └── builtin/              ← Battle-tested best practices, bundled
-```
-
-### Why two locations?
-
-**`.clinerules/`** is the primary output and works with any agent that reads project context (Cline, Cursor, Windsurf, Copilot). It also powers the full skill system (`prg design`, `prg plan`, `prg agent`).
-
-**`.agents/rules/<project-name>.md`** is generated when you pass `--ide antigravity` to `prg analyze`. This is a convention used by the [Antigravity](https://antigravity.dev) Claude Code setup — it is **not** automatically loaded by Claude Code or Windsurf without that setup.
-
-> **IDE integration status:** `.clinerules/` works everywhere. Per-IDE registration (writing rules to the location each IDE monitors) is currently implemented for `antigravity` only. Cursor, Windsurf, and VS Code users can point their IDE at `.clinerules/rules.md` manually, or open a PR to add native support — see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-See [`docs/structure.md`](docs/structure.md) for a full breakdown of every file.
-
-**Offline baseline** (`prg analyze` with no API key): generates the agent rules file, `rules.json`, and `skills/index.md`. `constitution.md` requires `--constitution`; `clinerules.yaml` is written when skills are discovered.
-
-**Project Lifecycle Generators (Optional):**
-- `spec.md`: High-level Product Specifications and constraints (Goals, Stories).
-- `DESIGN.md`: Phase 1 Architecture Document detailing technical integrations.
-- `PLAN.md` & `TASKS.json`: Phase 2 AI-driven granular task decomposition.
-
-**Example output for a FastAPI project:**
-
-```markdown
-## FastAPI Rules (High Priority)
-- Use async/await for ALL I/O — never block the event loop
-- Pydantic models for every request/response body, no raw dicts
-- Use Depends() for injection — never pass dependencies manually
-
-## Testing Rules
-- pytest fixtures for all setup; parametrize for edge cases
-- Mock at boundaries only (APIs, DB) — never internal logic
-```
-
-No templates. No hand-holding. Generated from *your actual project.*
 
 ---
 
@@ -112,14 +68,6 @@ prg plan "Add OAuth2 login"     # requires API key
 | `prg review` | — | ✓ |
 | `prg analyze --ai` | — | ✓ |
 
-**Housekeeping** — PRG ships a tiny helper to purge the Python bytecode cache on Windows:
-
-```powershell
-pwsh ./clean.ps1   # removes __pycache__/, *.pyc, *.pyo, .pytest_cache/
-```
-
-On macOS/Linux: `find . -type d -name __pycache__ -exec rm -rf {} +`.
-
 **Optionally, run Ralph** — an autonomous execution loop that reads your generated artifacts and iterates until the feature is done:
 
 ```bash
@@ -127,6 +75,8 @@ prg feature "Add OAuth2 login"         # Set up feature branch + state
 prg ralph run FEATURE-001              # Autonomous loop (no per-task prompts)
 prg ralph approve FEATURE-001          # Human approval → merge to main
 ```
+
+See [`docs/quick-start.md`](docs/quick-start.md) for the full guide.
 
 ---
 
@@ -154,63 +104,28 @@ Ask it to "add a login endpoint" — it will use async SQLAlchemy,
 Pydantic response models, and place the route in the right module.
 ```
 
----
-
-## Real Output Example
-
-**Without PRG:** You ask an AI agent to "add a user login endpoint". It generates synchronous SQLAlchemy queries, uses raw dictionaries for responses, and dumps the route in `main.py`.
-**With PRG:** The agent first reads your `.agents/rules/<project>.md` (or `.clinerules/`). It automatically uses async SQLAlchemy 2.0 syntax, creates a Pydantic response schema, and places the route correctly in `app/api/v1/endpoints/auth.py`.
-
-Here is an example of what `prg analyze` actually generates from a real Python FastAPI + React + PostgreSQL codebase — no templates, just your project's exact reality:
-
-```markdown
-# FastAPI + React Web Stack Rules
-
-## Core Architecture
-- **Backend**: FastAPI 0.100+, SQLAlchemy 2.0 (async), Pydantic V2
-- **Frontend**: React 18, TypeScript, TailwindCSS, Vite
-- **Database**: PostgreSQL 15+ (accessed exclusively via asyncpg)
-
-## Backend Conventions
-- **Asynchronous I/O**: ALL database operations and external requests MUST use `async`/`await`. Never use synchronous `Session`.
-- **Dependency Injection**: Always use FastAPI `Depends()` for database sessions (`get_db_session`) and current user state.
-- **Routing**: API routes must be placed in `app/api/v1/endpoints/`. Organize by domain logic (e.g., `auth.py`, `users.py`).
-- **Validation**: Strict use of Pydantic V2 schemas for all request/response models. No raw `dict` structures.
-
-## Frontend Conventions
-- **Components**: Functional components only, placed in `src/components/`. Enforce `PascalCase.tsx` naming.
-- **Styling**: Tailwind utility classes exclusively. Keep `index.css` minimal.
-- **Data Fetching**: Use React Query (`@tanstack/react-query`) for all backend API integration and caching.
-
-## Testing Guidelines
-- Use `pytest` and `pytest-asyncio` for backend tests in `tests/backend/`.
-- Test against a real PostgreSQL test database using rollback-based transactional fixtures.
-```
-
 **PRG analyzing itself** — real terminal output, no staging:
 
 ![PRG Analyze Demo](docs/assets/prg-analyze-demo.png)
 
 ---
 
-## The 3-Layer Skill System
+## What Gets Generated
 
-Skills are ranked by specificity. More specific always wins:
+PRG writes `.clinerules/` (works with any agent) and optionally `.agents/rules/<project-name>.md` (for Antigravity IDE integration).
 
-| Layer | Location | What It Contains | Written by | Priority |
-|:------|:---------|:----------------|:-----------|:--------:|
-| **Project** | `.clinerules/skills/project/` | Auto-generated by `prg analyze` from this project's README + context | README flow | Highest |
-| **Learned** | `~/.project-rules-generator/learned_skills/` | Reusable skills captured explicitly — default target of `--create-skill` | `--create-skill` (default) | Medium |
-| **Builtin** | `templates/skills/` (package-bundled) | Universal patterns (mypy, git, Python idioms) | `--scope builtin` | Lowest |
+```text
+.clinerules/
+├── rules.json      ← Machine-readable rules
+├── constitution.md  ← Non-negotiable principles (--constitution)
+├── clinerules.yaml  ← Skill index for agents
+└── skills/
+    ├── project/     ← AI-generated, tailored to YOUR project
+    ├── learned/     ← Reusable patterns, shared across projects
+    └── builtin/     ← Battle-tested best practices, bundled
+```
 
-A project-level skill overrides the global one. Your patterns win.
-
-**Skill scope routing:**
-- `prg analyze` → writes to `project/` (project-context-aware, not reusable)
-- `--create-skill` → writes to `learned/` by default (explicit capture = reusable)
-- `--create-skill --scope builtin` → writes to `builtin/` for universal patterns
-
-**How project skills are chosen:** `prg analyze` maps your detected tech stack to skill names dynamically. Techs with a curated profile use their authored skill name (e.g. `pytest` → `pytest-testing`); any other skill-worthy tech (a backend, frontend, database, ml, ai, or testing library with no curated name) gets a synthesized `{tech}-workflow` so core stack is never silently dropped. Languages and generic infrastructure (`python`, `git`, `yaml`) produce no skill. See [`docs/skills.md`](docs/skills.md) for the full mapping and prompt template.
+See [`docs/structure.md`](docs/structure.md) for a full breakdown of every file and location.
 
 ---
 
@@ -225,7 +140,7 @@ PRG auto-detects the best available provider from your environment. Set one key,
 | **Gemini** | Gemini 2.0 Flash | Fast + high quality | `GEMINI_API_KEY` |
 | **Groq** | Llama 3.1 8b | Free tier, fastest | `GROQ_API_KEY` |
 
-No provider? `prg init` and `prg analyze` still work offline — README + file structure analysis is free and surprisingly smart. `prg design`, `prg plan`, and `prg review` require a key.
+No provider? `prg init` and `prg analyze` still work offline. `prg design`, `prg plan`, and `prg review` require a key.
 
 ```bash
 prg providers list       # See what's configured
@@ -235,108 +150,13 @@ prg providers benchmark  # Side-by-side quality ranking
 
 ---
 
-## See Ralph in Action
+## Key Concepts
 
-**PRG is not a chatbot — it is an autonomous loop that runs until the feature is done.**
-
-Here is a 3-step look at Ralph autonomously resolving a feature request:
-1. **Reads Context:** Automatically reads your `.agents/rules/<project>.md` and codebase structure without needing you to copy-paste.
-2. **Executes & Self-Reviews:** Writes the code, tests its own work via your test suite, and refines if it breaks anything.
-3. **Awaits Approval:** Checks the completed code into a branch and awaits human sign-off.
-
-![Ralph Autonomous Demo](docs/assets/ralph-demo.png)
-
----
-
-## All Features & Commands
-
-### 🔍 1. Analysis & Generation
-
-```bash
-prg init .                                    # First-run wizard: detect stack, generate rules
-prg analyze .                                 # Regenerate from README + file structure
-prg analyze . --ai                            # AI-powered analysis (LLM-generated skills)
-prg analyze . --incremental                   # Skip unchanged phases (README/deps/source tracked)
-prg analyze . --constitution                  # Also generate constitution.md
-```
-
-### 🧠 2. Two-Stage Planning & Specs
-
-> Requires an AI provider API key (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY`).
-
-```bash
-prg design "Add OAuth2 login"                 # Stage 1: Generates DESIGN.md architecture document
-prg plan   "Add OAuth2 login"                 # Stage 2: Generates PLAN.md + TASKS.json implementation plan
-```
-
-### 🛠️ 3. Skill Management
-
-```bash
-prg analyze . --create-skill "auth-flow" --ai             # Create a global learned/ reusable skill
-prg analyze . --create-skill "mypy-types" --scope builtin # Create a universal builtin/ skill
-prg skills list --all                                     # List project + learned + builtin skills
-prg skills validate my-skill                              # Run quality checker (score must be ≥ 70)
-prg skills feedback my-skill --useful                     # Record a useful vote for a skill
-prg skills feedback my-skill --not-useful                 # Record a not-useful vote for a skill
-prg skills stale                                          # List skills scoring below 30% with ≥3 votes
-prg skills stale --threshold 0.5                          # Adjust the low-score threshold
-```
-
-Every `prg agent` match silently increments the skill's match count — no user action required. Use `prg skills feedback` after working with a skill, and `prg skills stale` periodically to find skills worth regenerating.
-
-### 👁 4. Watch Mode
-
-```bash
-prg watch .                                   # Watch for changes and auto-run analyze --incremental
-prg watch . --delay 5.0                       # Set debounce delay in seconds (default: 2.0)
-prg watch . --ide cursor --quiet              # Specify IDE target, suppress non-error output
-```
-
-Monitors README.md, dependency manifests (pyproject.toml, package.json, Cargo.toml, go.mod, requirements*.txt), Dockerfile, docker-compose.yml, and all files under `tests/` directories. Uses a 2-second debounce to coalesce rapid saves and a re-entry guard to prevent overlapping runs. Stop with Ctrl+C.
-
-### 🤖 5. Autonomous Orchestration (Optional)
-
-These commands run on top of artifacts already generated by `prg analyze`, `prg design`, and `prg plan`. Generate your memory artifacts first, then optionally invoke an execution loop.
-
-```bash
-prg agent "fix a bug"                         # Smart Orchestration (Maps generic text to an exact skill)
-prg review PLAN.md                            # AI Self-Review mode (Generates CRITIQUE.md scorecard)
-prg feature "Add OAuth2 login"               # Set up feature branch for Ralph
-prg ralph "Add OAuth2 login"                 # Ralph: autonomous feature loop (create + run immediately)
-prg ralph run FEATURE-001                    # Ralph: run loop for an existing feature workspace
-prg ralph approve FEATURE-001               # Human approval → merge to main
-```
-
----
-
-## How Analysis Works
-
-```
-prg analyze . --ai
-        │
-        ▼
-  Read README + file structure
-        │
-        ▼
-  Detect tech stack (45+ technologies)
-  fastapi · react · pytest · sqlalchemy · docker · ...
-        │
-        ▼
-  AIStrategyRouter
-  ┌─────────────────────────────────────────┐
-  │  Has API key?  →  CoworkStrategy (LLM)  │
-  │  Has README?   →  READMEStrategy        │
-  │  Fallback      →  StubStrategy          │
-  └─────────────────────────────────────────┘
-        │
-        ▼
-  Quality gate (score ≥ 85, configurable via --quality-threshold) → auto-retry if needed
-        │
-        ▼
-  .agents/rules/<project-name>.md + .clinerules/ skills/
-```
-
-Rules are **scored** before they're written. Generic filler never makes it through.
+- **3-Layer Skill System** — project > learned > builtin priority. See [`docs/skills.md`](docs/skills.md).
+- **All Commands** — full CLI reference with examples. See [`docs/cli.md`](docs/cli.md).
+- **How Analysis Works** — strategy chain and quality gate. See [`docs/architecture.md`](docs/architecture.md).
+- **Ralph** — autonomous feature loop. See [`docs/ralph.md`](docs/ralph.md).
+- **Two-Stage Planning** — `prg design` + `prg plan`. See [`docs/plan-and-design.md`](docs/plan-and-design.md).
 
 ---
 
@@ -366,8 +186,6 @@ prg --version
 
 **Alpha** — core analysis, rules generation, and skill management are stable. The planning pipeline (`prg plan`, `prg design`) and autonomous loop (`prg ralph`) are in active development.
 
-This is an early public release. The generated output is meant to be reviewed and edited, not used blind, and edge-case bug reports are genuinely welcome — [open an issue](https://github.com/Amitro123/project-rules-generator/issues).
-
 | Area | Status |
 |------|--------|
 | `prg init` / `prg analyze` / `prg create-rules` | ✅ Stable |
@@ -377,15 +195,7 @@ This is an early public release. The generated output is meant to be reviewed an
 | IDE registration (`--ide antigravity`) | ✅ Implemented |
 | IDE registration (cursor / windsurf / vscode) | 📋 Planned — PRs welcome |
 
-**Known limitations:**
-- `--ide` flag only has a registration implementation for `antigravity`; other values are accepted but write no extra files beyond `.clinerules/`
-- `prg ralph` requires existing PRG artifacts and a clean git state — run `prg analyze` first
-- LLM-dependent commands (`--ai`, `prg plan`, `prg design`) require an API key; all other commands work offline
-- AI skill generation quality varies by provider — Groq (free, fast) produces shorter output; Anthropic/OpenAI produce richer SKILL.md content
-- `prg watch` uses polling on Windows; latency may be higher than on Linux/macOS with inotify
-- Skill auto-triggers are matched by keyword heuristics, not semantic search — complex queries may miss the best skill
-- Tech detection is heuristic (dependency files + README + source scan), so unusual project layouts can produce a false positive or miss a stack — review the generated `rules.md` before relying on it, and please [open an issue](https://github.com/Amitro123/project-rules-generator/issues) with the case
-- Self-analysis is a known edge case: a project that *documents* technologies (in its README or `pyproject.toml`) may surface those as detected tech
+**Known limitations:** See [`docs/KNOWN-ISSUES.md`](docs/KNOWN-ISSUES.md).
 
 ---
 
