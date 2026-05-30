@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from generator.utils.tech_detector import detect_from_dependencies
+from generator.utils.tech_detector import detect_from_dependencies, detect_tech_stack
 
 
 def _write_pyproject(tmp_path: Path, body: str) -> None:
@@ -55,3 +55,34 @@ dependencies = ["pydantic>=2.0", "pytest>=8.0"]
 
     assert "pydantic" in detected
     assert "pytest" in detected
+
+
+def test_readme_prose_does_not_inject_unbacked_languages(tmp_path):
+    """A Python project that only *describes* a JS frontend must not detect it.
+
+    Regression: social-pulse's README mentioned "Node.js" / a planned JS frontend,
+    which leaked `javascript` into the detected stack even though no .js/.ts source
+    or package.json existed. Languages must come from real dependency/source files.
+    """
+    (tmp_path / "requirements.txt").write_text("fastapi\npydantic\n", encoding="utf-8")
+    (tmp_path / "app.py").write_text("x = 1\n", encoding="utf-8")
+    readme = "Backend in Python. A JavaScript frontend (Node.js, React) is planned."
+
+    detected = set(detect_tech_stack(tmp_path, readme))
+
+    assert "python" in detected
+    assert "fastapi" in detected
+    assert "javascript" not in detected
+    assert "typescript" not in detected
+
+
+def test_real_typescript_sources_are_still_detected(tmp_path):
+    """Languages backed by real source files must still be detected."""
+    (tmp_path / "requirements.txt").write_text("fastapi\n", encoding="utf-8")
+    frontend = tmp_path / "frontend"
+    frontend.mkdir()
+    (frontend / "App.tsx").write_text("export const App = () => null;\n", encoding="utf-8")
+
+    detected = set(detect_tech_stack(tmp_path, "A FastAPI app with a TS frontend."))
+
+    assert "typescript" in detected

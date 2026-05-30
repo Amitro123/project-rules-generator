@@ -201,11 +201,16 @@ def detect_tech_stack(project_path: Path, readme_content: str = "") -> List[str]
         # for everything (docs-only / agent-skills projects).
         allow_all_from_readme = len(detected) == 0
 
+        # Languages are intentionally NOT confirmed from README prose alone: a
+        # Python project that merely *describes* a planned React/TS frontend must
+        # not pick up javascript/typescript. Languages come from dependency files
+        # (requirements.txt, package.json) and actual source files instead. When
+        # there are no dep/source signals at all, allow_all_from_readme still lets
+        # docs-only projects surface their primary language.
         for tech in readme_detected:
             if (
                 allow_all_from_readme
                 or tech in detected
-                or tech in {"python", "typescript", "javascript"}
                 or tech in readme_primary_techs
             ):
                 detected.add(tech)
