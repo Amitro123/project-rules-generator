@@ -28,7 +28,7 @@ def _create_feature_workspace(
     Returns (feature_id, feature_dir, tasks_total).
     Raises ClickException on unrecoverable errors (e.g. retries exhausted).
     """
-    from generator.ralph_engine import FeatureState, _save_tasks, next_feature_id, slugify
+    from generator.ralph import FeatureState, _save_tasks, next_feature_id, slugify
 
     features_dir = proj / "features"
     features_dir.mkdir(parents=True, exist_ok=True)

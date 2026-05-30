@@ -232,7 +232,7 @@ def _run_analysis_body(
     if ide:
         ide_file = _register_ide_rules(ide, project_path, project_name, output_dir, verbose)
         if ide_file:
-            generated_files.append(str(ide_file))
+            generated_files.append(ide_file)
 
     _present_generated_files(generated_files, project_path, interactive)
     commit_generated_files(commit, config, generated_files, project_path, interactive)

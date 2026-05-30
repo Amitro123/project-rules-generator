@@ -24,6 +24,14 @@ from generator.ai.ai_strategy_router import (
 )
 
 
+def _provider_has_key(provider: str) -> bool:
+    """True if the provider's API key is set. Gemini also accepts GOOGLE_API_KEY."""
+    env_key = PROVIDER_ENV_KEYS.get(provider, f"{provider.upper()}_API_KEY")
+    if os.getenv(env_key):
+        return True
+    return provider == "gemini" and bool(os.getenv("GOOGLE_API_KEY"))
+
+
 @click.group(name="providers")
 def providers_group() -> None:
     """Manage and benchmark AI providers."""
@@ -101,8 +109,7 @@ def providers_test(provider: str | None) -> None:
     any_tested = False
     for p in to_test:
         env_key = PROVIDER_ENV_KEYS.get(p, f"{p.upper()}_API_KEY")
-        has_key = bool(os.getenv(env_key)) or (p == "gemini" and bool(os.getenv("GOOGLE_API_KEY")))
-        if not has_key:
+        if not _provider_has_key(p):
             click.echo(f"⚠️  {p:<12} — no API key ({env_key} not set)")
             continue
 
@@ -142,8 +149,7 @@ def providers_benchmark(prompts: int) -> None:
     results: dict = {}
 
     for provider in PROVIDER_ENV_KEYS:
-        env_key = PROVIDER_ENV_KEYS[provider]
-        if not os.getenv(env_key):
+        if not _provider_has_key(provider):
             continue
 
         click.echo(f"⏳ Benchmarking {provider}...")

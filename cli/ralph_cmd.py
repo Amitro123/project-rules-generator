@@ -146,7 +146,7 @@ def ralph_go(task_description, project_path, max_iterations, provider, api_key, 
             "Run `git init` first, or point --project at a git repo."
         )
 
-    from generator.ralph_engine import RalphEngine
+    from generator.ralph import RalphEngine
 
     # 1. Create feature workspace (plan, STATE.json, branch)
     feature_id, feature_dir, tasks_total = _create_feature_workspace(
@@ -346,7 +346,7 @@ def ralph_run(feature_id, project_path, max_iterations, provider, api_key, verbo
         )
     _set_api_key(provider, api_key)
 
-    from generator.ralph_engine import RalphEngine
+    from generator.ralph import RalphEngine
 
     engine = RalphEngine(
         feature_id=feature_id,
@@ -437,7 +437,7 @@ def ralph_resume(feature_id, project_path, max_iterations, provider, api_key, ve
 
     # Reset stopped status so the loop can re-enter
     if state_dict.get("status") in ("stopped",):
-        from generator.ralph_engine import FeatureState
+        from generator.ralph import FeatureState
 
         state = FeatureState.load(fdir / "STATE.json")
         state.status = "running"
@@ -455,7 +455,7 @@ def ralph_resume(feature_id, project_path, max_iterations, provider, api_key, ve
         )
     _set_api_key(provider, api_key)
 
-    from generator.ralph_engine import RalphEngine
+    from generator.ralph import RalphEngine
 
     engine = RalphEngine(
         feature_id=feature_id,
@@ -493,7 +493,7 @@ def ralph_stop(feature_id, project_path, reason):
     project_path = Path(project_path).resolve()
     fdir = _feature_dir(project_path, feature_id)
 
-    from generator.ralph_engine import FeatureState
+    from generator.ralph import FeatureState
 
     state = FeatureState.load(fdir / "STATE.json")
 
@@ -588,7 +588,7 @@ def ralph_approve(feature_id, project_path, target_branch):
         click.echo(f"✅ Merged {branch} → {target_branch}")
 
         # Update state
-        from generator.ralph_engine import FeatureState
+        from generator.ralph import FeatureState
 
         state = FeatureState.load(fdir / "STATE.json")
         state.status = "success"

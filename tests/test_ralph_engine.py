@@ -1,4 +1,4 @@
-"""Tests for generator/ralph_engine.py — RalphEngine core."""
+"""Tests for generator/ralph/ — RalphEngine core."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
-from generator.ralph_engine import (
+from generator.ralph import (
     FeatureState,
     RalphEngine,
     _load_tasks,
@@ -564,7 +564,7 @@ def test_step6_task_marked_complete_when_tests_pass_and_score_ok(tmp_path):
 
     engine.execute_iteration()
 
-    from generator.ralph_engine import _load_tasks
+    from generator.ralph import _load_tasks
 
     tasks = _load_tasks(engine.tasks_yaml)
     statuses = {t["title"]: t["status"] for t in tasks}

@@ -1,6 +1,7 @@
 """generator.ralph — Ralph engine package.
 
-Re-exports all public names so generator.ralph_engine shim continues to work.
+Canonical home of the Ralph feature-loop engine. Import public names from
+``generator.ralph`` directly (e.g. ``from generator.ralph import RalphEngine``).
 """
 
 from generator.ralph.engine import RalphEngine

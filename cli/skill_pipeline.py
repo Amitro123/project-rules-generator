@@ -277,7 +277,7 @@ def _phase_readme_driven_gen(
     complexity stays in radon's B band.
     """
     readme_text = _readme_text_for_skill_gen(output_dir, skills_manager, readme_path, enhanced_context)
-    if readme_text is None:
+    if readme_text is None or output_dir is None:
         return selected_refs
 
     if verbose:

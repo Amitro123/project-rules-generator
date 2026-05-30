@@ -10,7 +10,7 @@ import pytest
 from click.testing import CliRunner
 
 from cli.feature_cmd import feature
-from generator.ralph_engine import FeatureState, _load_tasks, next_feature_id
+from generator.ralph import FeatureState, _load_tasks, next_feature_id
 
 # ---------------------------------------------------------------------------
 # Fixtures

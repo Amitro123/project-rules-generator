@@ -90,7 +90,7 @@ class RequirementsInferrer:
                     requirements.append(
                         Requirement(
                             id=f"git-{len(requirements) + 1}",
-                            description=log.split(" ", 1)[1],
+                            description=log.split(" ", 1)[1] if " " in log else log,
                             source="Git",
                             priority=3,
                         )

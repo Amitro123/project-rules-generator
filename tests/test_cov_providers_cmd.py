@@ -79,14 +79,16 @@ def test_providers_list_no_ready_providers():
 def test_providers_list_plain_fallback_without_rich():
     """providers list falls back to plain text when rich is unavailable."""
     runner = CliRunner()
+    real_import = __import__
+
+    def fake_import(name, *a, **kw):
+        if name == "rich.console":
+            raise ImportError()
+        return real_import(name, *a, **kw)
+
     with (
         patch("cli.providers_cmd.AIStrategyRouter") as MockRouter,
-        patch(
-            "builtins.__import__",
-            side_effect=lambda name, *a, **kw: (
-                (_ for _ in ()).throw(ImportError()) if name == "rich.console" else __import__(name, *a, **kw)
-            ),
-        ),
+        patch("builtins.__import__", side_effect=fake_import),
     ):
         MockRouter.return_value.provider_status.return_value = _make_statuses()
         # Even if rich fails, the command should not crash
@@ -185,6 +187,29 @@ def test_providers_benchmark_with_key_runs(monkeypatch):
 
     assert result.exit_code == 0
     assert "groq" in result.output.lower() or "Benchmark" in result.output
+
+
+def test_providers_benchmark_gemini_accepts_google_api_key(monkeypatch):
+    """Regression: benchmark must run Gemini when only GOOGLE_API_KEY is set.
+
+    Previously benchmark checked only PROVIDER_ENV_KEYS['gemini'] (GEMINI_API_KEY)
+    and silently skipped Gemini if the user had GOOGLE_API_KEY set instead — even
+    though `providers test` accepted it. Both now share `_provider_has_key`.
+    """
+    for key in ("GEMINI_API_KEY", "GROQ_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+
+    mock_client = MagicMock()
+    mock_client.generate.return_value = "response text"
+
+    runner = CliRunner()
+    with patch("generator.ai.factory.create_ai_client", return_value=mock_client):
+        result = runner.invoke(providers_group, ["benchmark", "--prompts", "1"])
+
+    assert result.exit_code == 0, result.output
+    assert "gemini" in result.output.lower()
+    assert "No providers" not in result.output
 
 
 def test_providers_benchmark_provider_error_continues(monkeypatch):

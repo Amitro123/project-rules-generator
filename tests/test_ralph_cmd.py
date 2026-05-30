@@ -10,7 +10,7 @@ import pytest
 from click.testing import CliRunner
 
 from cli.ralph_cmd import ralph_group
-from generator.ralph_engine import FeatureState, _save_tasks
+from generator.ralph import FeatureState, _save_tasks
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -53,7 +53,7 @@ def test_ralph_run_invokes_engine(runner, tmp_path):
     _setup_feature(tmp_path)
 
     with (
-        patch("generator.ralph_engine.RalphEngine") as MockEngine,
+        patch("generator.ralph.RalphEngine") as MockEngine,
         patch("cli.ralph_cmd._detect_provider", return_value="groq"),
         patch("cli.ralph_cmd._set_api_key"),
         patch("subprocess.run") as mock_git,
@@ -89,7 +89,7 @@ def test_ralph_run_passes_max_iterations(runner, tmp_path):
     _setup_feature(tmp_path)
 
     with (
-        patch("generator.ralph_engine.RalphEngine") as MockEngine,
+        patch("generator.ralph.RalphEngine") as MockEngine,
         patch("cli.ralph_cmd._detect_provider", return_value="groq"),
         patch("cli.ralph_cmd._set_api_key"),
         patch("prg_utils.git_ops.is_git_repo", return_value=True),
@@ -184,7 +184,7 @@ def test_ralph_resume_clears_stopped_status(runner, tmp_path):
     _setup_feature(tmp_path, status="stopped")
 
     with (
-        patch("generator.ralph_engine.RalphEngine") as MockEngine,
+        patch("generator.ralph.RalphEngine") as MockEngine,
         patch("cli.ralph_cmd._detect_provider", return_value="groq"),
         patch("cli.ralph_cmd._set_api_key"),
         patch("prg_utils.git_ops.is_git_repo", return_value=True),
@@ -203,7 +203,7 @@ def test_ralph_resume_non_stopped_still_runs(runner, tmp_path):
     _setup_feature(tmp_path, status="running")
 
     with (
-        patch("generator.ralph_engine.RalphEngine") as MockEngine,
+        patch("generator.ralph.RalphEngine") as MockEngine,
         patch("cli.ralph_cmd._detect_provider", return_value="groq"),
         patch("cli.ralph_cmd._set_api_key"),
         patch("prg_utils.git_ops.is_git_repo", return_value=True),

@@ -73,7 +73,7 @@ py-modules = ["main"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["generator*", "prg_utils*", "cli*", "core*"]
+include = ["generator*", "prg_utils*", "cli*"]
 exclude = ["tests*", "_bmad*"]
 
 [tool.setuptools.package-data]
