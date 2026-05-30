@@ -6,7 +6,7 @@ from click.testing import CliRunner
 
 from cli.cli import cli
 from generator.design_generator import ArchitectureDecision, Design, DesignGenerator
-from generator.task_decomposer import TaskDecomposer
+from generator.tasks import TaskDecomposer
 
 
 class TestTwoStageWorkflow:
@@ -14,7 +14,7 @@ class TestTwoStageWorkflow:
 
     @patch("cli.cmd_plan._has_api_key", return_value=True)
     @patch("cli.cmd_design._has_api_key", return_value=True)
-    @patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="")
+    @patch("generator.tasks.TaskDecomposer._call_llm", return_value="")
     @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
     def test_design_then_plan(self, mock_design_llm, mock_plan_llm, mock_design_key, mock_plan_key, tmp_path):
         """Stage 1: design, Stage 2: plan from design."""
@@ -183,7 +183,7 @@ class TestDesignGeneratorIntegration:
 
     @patch("cli.cmd_plan._has_api_key", return_value=True)
     @patch("cli.cmd_design._has_api_key", return_value=True)
-    @patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="")
+    @patch("generator.tasks.TaskDecomposer._call_llm", return_value="")
     @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
     def test_full_cli_workflow(self, mock_design_llm, mock_plan_llm, mock_design_key, mock_plan_key, tmp_path):
         """End-to-end CLI: design -> plan from design."""

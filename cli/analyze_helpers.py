@@ -151,7 +151,7 @@ def _run_create_rules(
 ):
     """Run the --create-rules CoworkRulesCreator block."""
     try:
-        from generator.rules_creator import CoworkRulesCreator
+        from generator.rules import CoworkRulesCreator
 
         if verbose:
             click.echo("\n\U0001f3af Cowork Rules Creator...")

@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import List, Set
 
-from generator.tech_registry import PKG_MAP, TECH_README_KEYWORDS
+from generator.tech import PKG_MAP, TECH_README_KEYWORDS
 
 # Alias map for tech name variations
 TECH_ALIASES = {

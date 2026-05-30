@@ -85,7 +85,7 @@ class SkillGenerator(ArtifactGenerator):
     which already embeds the pain-first + why-before-how rules (rules 9-11).
     """
 
-    # Tech name → preferred skill filename (single source of truth: tech_registry.py)
+    # Tech name → preferred skill filename (single source of truth: generator/tech/profiles.py)
     TECH_SKILL_NAMES = _TECH_SKILL_NAMES
 
     # Skills that are irrelevant for a given project type and should be excluded

@@ -233,7 +233,7 @@ def ralph_discover(project_path, provider, api_key, auto_run, verbose):
     # Use TaskDecomposer to extract feature tasks from the README/spec
     features_found = []
     try:
-        from generator.task_decomposer import TaskDecomposer
+        from generator.tasks import TaskDecomposer
 
         dec = TaskDecomposer(provider=_dp_val, api_key=api_key)
         subtasks = dec.decompose(

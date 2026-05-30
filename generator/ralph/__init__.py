@@ -1,7 +1,6 @@
 """generator.ralph — Ralph engine package.
 
-Canonical home of the Ralph feature-loop engine. Import public names from
-``generator.ralph`` directly (e.g. ``from generator.ralph import RalphEngine``).
+Re-exports all public names for convenient imports.
 """
 
 from generator.ralph.engine import RalphEngine

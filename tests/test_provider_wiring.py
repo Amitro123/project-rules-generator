@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from generator.task_decomposer import TaskDecomposer
+from generator.tasks import TaskDecomposer
 
 # ---------------------------------------------------------------------------
 # TaskDecomposer — provider wiring
@@ -44,7 +44,7 @@ class TestTaskDecomposerProvider:
         """_call_llm delegates to create_ai_client, not google.genai directly."""
         mock_client = MagicMock()
         mock_client.generate.return_value = '{"subtasks": []}'
-        with patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="{}") as mock_call:
+        with patch("generator.tasks.TaskDecomposer._call_llm", return_value="{}") as mock_call:
             d = TaskDecomposer(provider="groq", api_key="gsk_test")
             d._call_llm("prompt")
             mock_call.assert_called_once_with("prompt")

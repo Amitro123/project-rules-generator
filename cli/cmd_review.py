@@ -184,7 +184,7 @@ def _generate_tasks_from_review(
     tasks reflect the critique output, not the original reviewed file.
     """
     from generator.planning.task_creator import TaskCreator
-    from generator.task_decomposer import SubTask
+    from generator.tasks import SubTask
 
     if verbose:
         click.echo("Generating executable tasks from review...")

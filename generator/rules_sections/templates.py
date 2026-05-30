@@ -6,7 +6,7 @@ import logging
 import re
 from typing import Any, Dict, List
 
-from generator.rules_creator import append_mandatory_anti_patterns
+from generator.rules import append_mandatory_anti_patterns
 from generator.rules_sections.do_dont import _build_do_rules, _build_dont_rules
 from generator.rules_sections.structure import _build_context_strategy, _build_dep_section, _build_file_structure
 from generator.rules_sections.testing import _build_test_section

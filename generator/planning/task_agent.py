@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 
 from generator.ai.factory import create_ai_client
 from generator.exceptions import SecurityError
-from generator.task_decomposer import SubTask
+from generator.tasks import SubTask
 
 logger = logging.getLogger(__name__)
 

@@ -51,7 +51,7 @@ class CoworkSkillCreator:
     SkillMetadataBuilder, SkillDocLoader, and SkillQualityValidator.
     """
 
-    # Technology → Required Tools mapping (single source of truth: tech_registry.py)
+    # Technology → Required Tools mapping (single source of truth: generator/tech/profiles.py)
     TECH_TOOLS = _TECH_TOOLS
 
     def __init__(self, project_path: Path):

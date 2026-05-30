@@ -115,7 +115,7 @@ class AgentWorkflow:
 
     def _generate_plan(self) -> Path:
         """Generate PLAN.md via TaskDecomposer."""
-        from generator.task_decomposer import TaskDecomposer
+        from generator.tasks import TaskDecomposer
 
         api_key = self.api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
         decomposer = TaskDecomposer(api_key=api_key)
@@ -166,7 +166,7 @@ class AgentWorkflow:
 
     def _parse_plan_subtasks(self, plan_path: Path):
         """Extract SubTask objects from an existing PLAN.md."""
-        from generator.task_decomposer import TaskDecomposer
+        from generator.tasks import TaskDecomposer
 
         content = plan_path.read_text(encoding="utf-8")
         return TaskDecomposer.parse_response(content, self.task_description)

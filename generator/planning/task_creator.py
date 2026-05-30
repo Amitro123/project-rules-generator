@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
-from generator.task_decomposer import SubTask
+from generator.tasks import SubTask
 
 
 def _to_str_list(value: Any) -> List[str]:

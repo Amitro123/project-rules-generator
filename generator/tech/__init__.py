@@ -1,7 +1,6 @@
 """generator.tech — tech registry package.
 
-Re-exports everything from the sub-modules so callers that previously imported
-from generator.tech_registry continue to work via the backward-compat shim.
+Re-exports everything from the sub-modules for convenient imports.
 """
 
 from generator.tech.lookups import (

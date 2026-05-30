@@ -103,7 +103,7 @@ class TestTraceabilityMatrix:
         assert "Req ID" in m.format_table()
 
 
-from generator.rules_creator import Rule, RulesMetadata
+from generator.rules import Rule, RulesMetadata
 
 # ---------------------------------------------------------------------------
 # rules_renderer.py

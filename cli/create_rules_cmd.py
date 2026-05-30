@@ -13,7 +13,7 @@ from pathlib import Path
 
 import click
 
-from generator.rules_creator import CoworkRulesCreator
+from generator.rules import CoworkRulesCreator
 
 
 @click.command("create-rules")

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List
 
 if TYPE_CHECKING:
-    from generator.rules_creator import Rule
+    from generator.rules import Rule
 
 
 class RulesGitMiner:
@@ -41,7 +41,7 @@ class RulesGitMiner:
 
         Returns empty list if git is unavailable.
         """
-        from generator.rules_creator import Rule
+        from generator.rules import Rule
 
         antipatterns: List[Rule] = []
         if not self.available:
@@ -57,7 +57,7 @@ class RulesGitMiner:
 
     def _find_hotspots(self) -> List["Rule"]:
         """Detect frequently-modified files (hot spots)."""
-        from generator.rules_creator import Rule
+        from generator.rules import Rule
 
         result = subprocess.run(
             ["git", "log", "--pretty=format:", "--name-only"],
@@ -92,7 +92,7 @@ class RulesGitMiner:
 
     def _find_large_commits(self) -> List["Rule"]:
         """Detect commits with > 500 insertions."""
-        from generator.rules_creator import Rule
+        from generator.rules import Rule
 
         result = subprocess.run(
             ["git", "log", "--shortstat", "--oneline", "-10"],

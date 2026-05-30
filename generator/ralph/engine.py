@@ -408,7 +408,7 @@ class RalphEngine:
         """
         try:
             from generator.planning.task_agent import TaskImplementationAgent
-            from generator.task_decomposer import SubTask
+            from generator.tasks import SubTask
 
             agent = TaskImplementationAgent(provider=self.provider, api_key=self.api_key)
             subtask = SubTask(

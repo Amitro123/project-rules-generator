@@ -22,7 +22,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from generator.rules_creator import append_mandatory_anti_patterns
+from generator.rules import append_mandatory_anti_patterns
 from generator.utils.readme_bridge import bridge_missing_context, is_readme_sufficient
 
 # ── Strategy Protocol ─────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ class _CoworkStrategy(_RulesStrategy):
         enhanced_context: Optional[Dict[str, Any]] = None,
         **_,
     ) -> Optional[str]:
-        from generator.rules_creator import CoworkRulesCreator
+        from generator.rules import CoworkRulesCreator
 
         creator = CoworkRulesCreator(self.project_path)
         content, _metadata, _quality = creator.create_rules(
@@ -159,7 +159,7 @@ class RulesGenerator:
         Returns:
             (output_path, metadata, quality_report)
         """
-        from generator.rules_creator import CoworkRulesCreator
+        from generator.rules import CoworkRulesCreator
 
         out_dir = output_dir or (self.project_path / ".clinerules")
         readme_content = self._read_readme()

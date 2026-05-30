@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Dict, List, Set
 import yaml
 
 if TYPE_CHECKING:
-    from generator.rules_creator import Rule, RulesMetadata
+    from generator.rules import Rule, RulesMetadata
 
 
 def append_mandatory_anti_patterns(generated_rules: str, framework: str = "") -> str:

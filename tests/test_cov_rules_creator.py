@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from generator.rules_creator import CoworkRulesCreator, Rule, RulesMetadata
+from generator.rules import CoworkRulesCreator, Rule, RulesMetadata
 
 
 def _creator(tmp_path):
     """Build a creator without triggering real LLM or git."""
-    with patch("generator.rules_creator.RulesGitMiner") as MockMiner:
+    with patch("generator.rules.creator.RulesGitMiner") as MockMiner:
         MockMiner.return_value.available = False
         MockMiner.return_value.extract_antipatterns.return_value = []
         c = CoworkRulesCreator(project_path=tmp_path, provider="groq")

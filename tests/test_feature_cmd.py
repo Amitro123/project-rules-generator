@@ -38,7 +38,7 @@ def _invoke_feature(runner, project, task="Add loading states", extra_args=None)
     """Helper to invoke 'prg feature' with mocked TaskDecomposer and subprocess."""
     args = [task, "--project", str(project)] + (extra_args or [])
     with (
-        patch("generator.task_decomposer.TaskDecomposer") as MockDecomp,
+        patch("generator.tasks.TaskDecomposer") as MockDecomp,
         patch("cli.feature_cmd._detect_provider", return_value="groq"),
         patch("cli.feature_cmd._set_api_key"),
         patch("cli.feature_cmd.is_git_repo", return_value=True),
@@ -96,7 +96,7 @@ def test_feature_creates_git_branch(runner, project):
     """prg feature calls git checkout -b with the correct branch name."""
     args = ["Add loading states", "--project", str(project)]
     with (
-        patch("generator.task_decomposer.TaskDecomposer") as MockDecomp,
+        patch("generator.tasks.TaskDecomposer") as MockDecomp,
         patch("cli.feature_cmd._detect_provider", return_value="groq"),
         patch("cli.feature_cmd._set_api_key"),
         patch("cli.feature_cmd.is_git_repo", return_value=True),
@@ -118,7 +118,7 @@ def test_feature_git_fail_does_not_crash(runner, project):
 
     args = ["Add loading states", "--project", str(project)]
     with (
-        patch("generator.task_decomposer.TaskDecomposer") as MockDecomp,
+        patch("generator.tasks.TaskDecomposer") as MockDecomp,
         patch("cli.feature_cmd._detect_provider", return_value="groq"),
         patch("cli.feature_cmd._set_api_key"),
         patch("cli.feature_cmd.is_git_repo", return_value=True),
@@ -136,7 +136,7 @@ def test_feature_plan_generation_failure_handled(runner, project):
     """If TaskDecomposer raises, a placeholder PLAN.md is written and command succeeds."""
     args = ["Add loading states", "--project", str(project)]
     with (
-        patch("generator.task_decomposer.TaskDecomposer", side_effect=Exception("AI down")),
+        patch("generator.tasks.TaskDecomposer", side_effect=Exception("AI down")),
         patch("cli.feature_cmd._detect_provider", return_value=None),
         patch("cli.feature_cmd._set_api_key"),
         patch("cli.feature_cmd.is_git_repo", return_value=True),
@@ -151,7 +151,7 @@ def test_feature_plan_generation_failure_handled(runner, project):
 
 def test_feature_tasks_yaml_populated(runner, project):
     """TASKS.yaml contains one entry per subtask."""
-    from generator.task_decomposer import SubTask
+    from generator.tasks import SubTask
 
     fake_subtasks = [
         SubTask(id=1, title="Step 1", goal="g1", files=[], changes=[], tests=[], dependencies=[], estimated_minutes=5),
@@ -159,7 +159,7 @@ def test_feature_tasks_yaml_populated(runner, project):
     ]
     args = ["Add loading states", "--project", str(project)]
     with (
-        patch("generator.task_decomposer.TaskDecomposer") as MockDecomp,
+        patch("generator.tasks.TaskDecomposer") as MockDecomp,
         patch("cli.feature_cmd._detect_provider", return_value="groq"),
         patch("cli.feature_cmd._set_api_key"),
         patch("cli.feature_cmd.is_git_repo", return_value=True),

@@ -51,7 +51,7 @@ def _create_feature_workspace(
     tasks_total = 0
 
     try:
-        from generator.task_decomposer import TaskDecomposer
+        from generator.tasks import TaskDecomposer
 
         has_key = _has_api_key(provider, api_key)
         if not has_key and verbose:

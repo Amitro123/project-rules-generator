@@ -1,6 +1,6 @@
 """generator.rules — rules generation package.
 
-Re-exports all public names so generator.rules_creator shim continues to work.
+Re-exports all public names for convenient imports.
 """
 
 from generator.rules.creator import CoworkRulesCreator

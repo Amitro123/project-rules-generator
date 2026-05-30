@@ -7,7 +7,7 @@ from click.testing import CliRunner
 from cli.cli import cli
 from generator.planning.task_creator import TaskEntry, TaskManifest
 from generator.planning.workflow import AgentWorkflow
-from generator.task_decomposer import SubTask
+from generator.tasks import SubTask
 
 # ---------------------------------------------------------------------------
 # Fixtures

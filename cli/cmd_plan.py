@@ -159,7 +159,7 @@ def plan(
         if verbose:
             click.echo(f"Context extraction skipped: {exc}")
 
-    from generator.task_decomposer import TaskDecomposer
+    from generator.tasks import TaskDecomposer
 
     decomposer = TaskDecomposer(provider=provider, api_key=api_key)
     if verbose:

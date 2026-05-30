@@ -33,7 +33,7 @@ class CoworkRulesCreator(ArtifactGenerator):
     - Quality validation with conflict detection
     """
 
-    # Technology-Specific Rules mapping (single source of truth: tech_registry.py)
+    # Technology-Specific Rules mapping (single source of truth: generator/tech/profiles.py)
     TECH_RULES = _TECH_RULES
 
     def __init__(self, project_path: Path, provider: str = "groq"):

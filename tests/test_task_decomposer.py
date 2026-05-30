@@ -6,7 +6,7 @@ import pytest
 from click.testing import CliRunner
 
 from cli.cli import cli
-from generator.task_decomposer import SubTask, TaskDecomposer
+from generator.tasks import SubTask, TaskDecomposer
 
 
 class TestSubTaskModel:
@@ -364,7 +364,7 @@ class TestPlanCLI:
         assert "API key" in result.output
 
     @patch("cli.cmd_plan._has_api_key", return_value=True)
-    @patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="")
+    @patch("generator.tasks.TaskDecomposer._call_llm", return_value="")
     def test_plan_generates_file(self, mock_llm, mock_key, tmp_path):
         """Plan command should create a PLAN.md file."""
         (tmp_path / "README.md").write_text("# Test Project\n\nA project.")
@@ -391,7 +391,7 @@ class TestPlanCLI:
         assert "authentication" in content.lower()
 
     @patch("cli.cmd_plan._has_api_key", return_value=True)
-    @patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="")
+    @patch("generator.tasks.TaskDecomposer._call_llm", return_value="")
     def test_plan_custom_output(self, mock_llm, mock_key, tmp_path):
         (tmp_path / "README.md").write_text("# Test\n\nDesc.")
 
@@ -412,7 +412,7 @@ class TestPlanCLI:
         assert (tmp_path / "docs" / "PLAN.md").exists()
 
     @patch("cli.cmd_plan._has_api_key", return_value=True)
-    @patch("generator.task_decomposer.TaskDecomposer._call_llm", return_value="")
+    @patch("generator.tasks.TaskDecomposer._call_llm", return_value="")
     def test_plan_from_design_flag(self, mock_llm, mock_key, tmp_path):
         """Plan from a DESIGN.md file."""
         (tmp_path / "README.md").write_text("# Test\n\nDesc.")
