@@ -187,3 +187,47 @@ class TestEnhancedSkillMatcher:
         assert matcher._normalize_tech_key("click") == "python-cli"
         assert matcher._normalize_tech_key("express") == "node"
         assert matcher._normalize_tech_key("react") == "react"
+
+    @pytest.fixture
+    def argparse_cli_context(self):
+        """A Python CLI project that uses argparse (stdlib) — no click dependency."""
+        return {
+            "dependencies": {
+                "python": [],
+                "node": [],
+                "python_dev": [{"name": "pytest", "version": "7.0.0"}],
+                "node_dev": [],
+            },
+            "structure": {
+                "type": "python-cli",
+                "patterns": ["python-cli"],
+                "entry_points": ["cli.py"],
+            },
+            "test_patterns": {"framework": "pytest", "test_files": 4},
+            "metadata": {
+                "tech_stack": ["python", "pytest"],
+                "project_type": "python-cli",
+                "has_docker": False,
+            },
+        }
+
+    def test_argparse_project_excludes_click_commands(self, matcher, argparse_cli_context):
+        """A cli.py file fires the python-cli bundle, but click-commands must be
+        gated out when click is not actually a dependency (regression: autofix-
+        python-engine got a misleading click-commands skill)."""
+        tech = argparse_cli_context["metadata"]["tech_stack"]
+        selected = matcher.match_skills(tech, argparse_cli_context)
+
+        # Namespace trigger (cli.py) still fires → generic python-cli skills present
+        assert "learned/python-cli/argparse-patterns" in selected
+        assert "learned/python-cli/error-handling" in selected
+
+        # …but the click-specific skill must NOT be selected
+        assert "learned/python-cli/click-commands" not in selected
+
+    def test_click_project_includes_click_commands(self, matcher, python_cli_context):
+        """When click IS a dependency, the click-commands skill is selected."""
+        tech = python_cli_context["metadata"]["tech_stack"]
+        selected = matcher.match_skills(tech, python_cli_context)
+
+        assert "learned/python-cli/click-commands" in selected

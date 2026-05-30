@@ -65,7 +65,21 @@ class EnhancedSkillMatcher:
             triggers = tech_skills.get("triggers", [])
             if self._check_any_trigger(triggers, project_context):
                 logger.debug(f"Trigger fired for tech: {tech} (key: {tech_key})")
+                # Per-skill library requirements: a namespace-level trigger (e.g.
+                # the presence of cli.py) fires for the whole bundle, but a
+                # library-specific skill like click-commands must NOT be selected
+                # unless its library is actually present. Otherwise an argparse-only
+                # project gets a misleading click-commands skill.
+                requires = tech_skills.get("requires", {})
                 for skill_path in tech_skills.get("learned", []):
+                    required_pkg = requires.get(skill_path)
+                    if required_pkg and not self._library_present(project_context, required_pkg):
+                        logger.debug(
+                            "Skipping %s: required library '%s' not present in project",
+                            skill_path,
+                            required_pkg,
+                        )
+                        continue
                     selected.add(f"learned/{skill_path}")
             else:
                 logger.debug(f"No triggers fired for tech: {tech} (key: {tech_key})")
@@ -129,6 +143,15 @@ class EnhancedSkillMatcher:
             "uvicorn": "fastapi",
         }
         return mappings.get(tech.lower(), tech.lower())
+
+    def _library_present(self, context: Dict[str, Any], package: str) -> bool:
+        """True if a library is actually used by the project (dependency or import).
+
+        Used to gate library-specific learned skills so they are only selected
+        when their library is present, not merely because a generic namespace
+        trigger (like ``cli.py``) fired.
+        """
+        return self._has_dependency(context, package) or self._has_import(context, f"import {package}")
 
     def _check_any_trigger(
         self,

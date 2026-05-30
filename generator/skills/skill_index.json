@@ -9,6 +9,9 @@
         "python-cli/error-handling",
         "python-cli/config-management"
       ],
+      "requires": {
+        "python-cli/click-commands": "click"
+      },
       "triggers": [
         {
           "type": "import",
