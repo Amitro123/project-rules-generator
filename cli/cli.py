@@ -132,6 +132,27 @@ cli.add_command(feature)
 cli.add_command(ralph_group, name="ralph")
 
 
+# ── CLI surface curation (CR §4.5) ────────────────────────────────────────────
+# `prg --help` previously listed all 25 commands with no hierarchy, which buries
+# the "start here" path for new users. We keep a small, stable core visible and
+# mark everything else hidden=True — the hidden commands stay fully invocable
+# (e.g. `prg ralph ...` still works), they're just not advertised until they
+# stabilise. Promote a command by adding its name to _STABLE_COMMANDS.
+_STABLE_COMMANDS = {
+    "init",
+    "analyze",
+    "create-rules",
+    "quality",
+    "skills",
+    "plan",
+    "providers",
+    "status",
+}
+for _name, _command in cli.commands.items():
+    if _name not in _STABLE_COMMANDS:
+        _command.hidden = True
+
+
 def _sanitize_env_from_dotenv() -> None:
     """Re-parse .env to handle non-standard syntax that python-dotenv silently skips.
 

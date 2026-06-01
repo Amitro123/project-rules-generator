@@ -182,10 +182,18 @@ class TestDesignCLI:
         assert "DESCRIPTION" in result.output
         assert "--output" in result.output
 
-    def test_design_in_group_help(self):
+    def test_design_hidden_from_group_help_but_registered(self):
+        """`design` is experimental, so it's hidden from `prg --help` (CR §4.5)
+        yet stays registered and fully invocable."""
         runner = CliRunner()
         result = runner.invoke(cli, ["--help"])
-        assert "design" in result.output
+        # Hidden: not advertised in the group listing.
+        commands_section = result.output.split("Commands:", 1)[-1]
+        listed = {line.split()[0] for line in commands_section.splitlines() if line.startswith("  ") and line.strip()}
+        assert "design" not in listed
+        # But still registered and marked hidden, so dispatch keeps working.
+        assert "design" in cli.commands
+        assert cli.commands["design"].hidden is True
 
     def test_design_requires_api_key(self, tmp_path):
         """prg design must exit 1 with a clear error when no API key is set."""

@@ -152,3 +152,39 @@ class TestDefaultGroupRouting:
 
         assert result.exit_code != 0
         assert "No such command" in result.output
+
+
+class TestCLISurfaceCuration:
+    """Lock in the CR §4.5 fix: `prg --help` lists only the stable core; the
+    rest are hidden but still invocable.
+    """
+
+    STABLE = {"init", "analyze", "create-rules", "quality", "skills", "plan", "providers", "status"}
+    EXPERIMENTAL_SAMPLE = ["ralph", "feature", "manager", "gaps", "spec", "agent"]
+
+    def test_help_lists_only_stable_commands(self):
+        """The group --help advertises the 8 stable commands and hides the rest."""
+        result = CliRunner().invoke(cli, ["--help"])
+        assert result.exit_code == 0
+
+        # Parse the actual command names from the Commands: section. Matching the
+        # leading token per line avoids false positives like "spec" inside the
+        # word "Inspect" in another command's description.
+        commands_section = result.output.split("Commands:", 1)[-1]
+        listed = {line.split()[0] for line in commands_section.splitlines() if line.startswith("  ") and line.strip()}
+
+        assert self.STABLE <= listed, f"missing stable commands: {self.STABLE - listed}"
+        leaked = listed & set(self.EXPERIMENTAL_SAMPLE)
+        assert not leaked, f"experimental commands should be hidden: {leaked}"
+
+    def test_hidden_commands_are_still_registered(self):
+        """Hidden commands remain in the registry and are marked hidden."""
+        for name in self.EXPERIMENTAL_SAMPLE:
+            assert name in cli.commands, f"{name!r} must stay registered (just hidden)"
+            assert cli.commands[name].hidden is True
+
+    def test_hidden_command_still_invocable(self):
+        """A hidden command still runs (hidden affects listing only, not dispatch)."""
+        result = CliRunner().invoke(cli, ["ralph", "--help"])
+        assert result.exit_code == 0
+        assert "Usage:" in result.output
