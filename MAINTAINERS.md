@@ -6,6 +6,11 @@ additional maintainers can be added.
 
 ## Current
 
+> **This is currently a single-maintainer project** (bus factor of one). It is
+> usable and actively maintained, but there is no second reviewer yet — I'm
+> actively looking for co-maintainers. If you'd like to help, see
+> [Becoming a maintainer](#becoming-a-maintainer) below.
+
 | Maintainer | Areas | Contact |
 |---|---|---|
 | **Amit Rosen** ([@Amitro123](https://github.com/Amitro123)) | Everything (project lead) | Via GitHub or [SECURITY.md](SECURITY.md) for private disclosure |
