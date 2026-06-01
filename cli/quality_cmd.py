@@ -70,6 +70,14 @@ def quality_cmd(
     project_path = Path(path).resolve()
     output_dir = project_path / output
 
+    # Be forgiving when PATH was pointed straight at the generated output dir
+    # (e.g. `prg quality .clinerules`): the naive project_path/output join would
+    # double to `.clinerules/.clinerules`. If that nested dir is missing but PATH
+    # itself holds generated rules, treat PATH as the output dir directly.
+    if not output_dir.exists() and (project_path / "rules.md").exists():
+        output_dir = project_path
+        project_path = project_path.parent
+
     if not output_dir.exists():
         click.echo(f"❌ Output directory not found: {output_dir}", err=True)
         click.echo("💡 Run 'prg analyze .' first to generate .clinerules files.")

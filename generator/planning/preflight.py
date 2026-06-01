@@ -96,23 +96,32 @@ class PreflightChecker:
         )
 
     def _check_skills(self) -> CheckResult:
-        """Check that at least 3 skill files exist."""
-        skills_dir = self.project_path / ".clinerules" / "skills" / "learned"
-        if not skills_dir.is_dir():
+        """Check that at least 3 skill files exist across all skill layers."""
+        skills_root = self.project_path / ".clinerules" / "skills"
+        if not skills_root.is_dir():
             return CheckResult(
                 name="Skills (3+)",
                 passed=False,
                 fix_command="prg analyze .",
                 detail="No skills directory found.",
             )
-        # Skills can be flat (*.md) or subfolder layout (*/SKILL.md)
-        md_files = list(skills_dir.glob("*.md")) + list(skills_dir.glob("*/SKILL.md"))
+        # Count skills across every layer — builtin / project / learned — not just
+        # learned/. A project that ships only project + builtin skills (empty
+        # learned/) is still Ralph-ready. Each skill is either a folder with
+        # SKILL.md or a flat *.md file; the layer's own index.md is not a skill.
+        md_files: list = []
+        for layer in ("builtin", "project", "learned"):
+            layer_dir = skills_root / layer
+            if not layer_dir.is_dir():
+                continue
+            md_files += list(layer_dir.glob("*/SKILL.md"))
+            md_files += [p for p in layer_dir.glob("*.md") if p.name.lower() != "index.md"]
         count = len(md_files)
         if count >= 3:
             return CheckResult(
                 name="Skills (3+)",
                 passed=True,
-                path=str(skills_dir),
+                path=str(skills_root),
                 detail=f"{count} skill(s) found.",
             )
         return CheckResult(

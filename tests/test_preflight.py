@@ -122,6 +122,43 @@ class TestPreflightChecker:
         failed_names = [c.name for c in report.failed_checks]
         assert "Skills (3+)" in failed_names
 
+    def test_counts_skills_across_all_layers(self, tmp_path):
+        """Regression: a project with skills only under project/ and builtin/
+        (empty learned/) must still pass. The check previously looked only in
+        .clinerules/skills/learned/ and falsely reported 0 skills."""
+        skills_root = tmp_path / ".clinerules" / "skills"
+        (tmp_path / ".clinerules" / "rules.json").parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / ".clinerules" / "rules.json").write_text("{}", encoding="utf-8")
+        for layer, names in {
+            "project": ["docker-deployment", "gemini-api"],
+            "builtin": ["code-review"],
+        }.items():
+            for name in names:
+                d = skills_root / layer / name
+                d.mkdir(parents=True)
+                (d / "SKILL.md").write_text(f"# {name}", encoding="utf-8")
+        # Empty learned/ — the old code would count 0 here.
+        (skills_root / "learned").mkdir(parents=True)
+
+        checker = PreflightChecker(tmp_path, task_description="readiness")
+        skills_check = next(c for c in checker.run_checks().checks if c.name == "Skills (3+)")
+        assert skills_check.passed, skills_check.detail
+        assert "3 skill(s)" in skills_check.detail
+
+    def test_index_md_not_counted_as_skill(self, tmp_path):
+        """index.md sitting in a layer dir must not inflate the skill count."""
+        skills_root = tmp_path / ".clinerules" / "skills"
+        learned = skills_root / "learned"
+        learned.mkdir(parents=True)
+        (learned / "index.md").write_text("# index", encoding="utf-8")
+        (learned / "only-real-skill.md").write_text("# real", encoding="utf-8")
+
+        checker = PreflightChecker(tmp_path)
+        skills_check = next(c for c in checker.run_checks().checks if c.name == "Skills (3+)")
+        # 1 real skill (index.md excluded) → below the 3+ threshold.
+        assert not skills_check.passed
+        assert "Only 1 skill(s)" in skills_check.detail
+
     def test_no_plan(self, tmp_path):
         """PLAN.md is optional — missing plan should not fail pre-Ralph verify."""
         proj = self._make_project(tmp_path, plan=False)
