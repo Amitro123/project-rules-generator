@@ -73,7 +73,7 @@ class TestSkillExists:
 class TestCreateSkillDuplicatePrevention:
     """Tests for the force=False duplicate guard in create_skill."""
 
-    def test_skip_if_already_exists(self, tmp_path, capsys):
+    def test_skip_if_already_exists(self, tmp_path, caplog):
         """create_skill skips creation when skill already exists in learned scope (default, force=False)."""
         discovery = _make_discovery(tmp_path)
         discovery.ensure_global_structure()
@@ -84,15 +84,15 @@ class TestCreateSkillDuplicatePrevention:
         generator = SkillGenerator(discovery)
         result = generator.create_skill("test-skill", force=False)
 
-        captured = capsys.readouterr()
-        assert "already exists" in captured.out
-        assert "skipping" in captured.out
+        # The skip notice is emitted via logging (decoupled from click), not stdout.
+        assert "already exists" in caplog.text
+        assert "skipping" in caplog.text
 
         # Content should NOT have been overwritten
         content = (discovery.global_learned / "test-skill.md").read_text()
         assert content == "# Existing"
 
-    def test_skip_if_already_exists_project_scope(self, tmp_path, capsys):
+    def test_skip_if_already_exists_project_scope(self, tmp_path, caplog):
         """create_skill skips creation when skill already exists in project scope (force=False)."""
         discovery = _make_discovery(tmp_path)
         discovery.ensure_global_structure()
@@ -103,9 +103,9 @@ class TestCreateSkillDuplicatePrevention:
         generator = SkillGenerator(discovery)
         result = generator.create_skill("test-skill", force=False, scope="project")
 
-        captured = capsys.readouterr()
-        assert "already exists" in captured.out
-        assert "skipping" in captured.out
+        # The skip notice is emitted via logging (decoupled from click), not stdout.
+        assert "already exists" in caplog.text
+        assert "skipping" in caplog.text
 
         # Content should NOT have been overwritten
         content = (discovery.project_local_dir / "test-skill.md").read_text()
@@ -136,7 +136,7 @@ class TestCreateSkillDuplicatePrevention:
 
         assert (discovery.global_learned / "brand-new-skill" / "SKILL.md").exists()
 
-    def test_name_normalization_prevents_duplicates(self, tmp_path, capsys):
+    def test_name_normalization_prevents_duplicates(self, tmp_path, caplog):
         """Names like 'My Skill' and 'my-skill' resolve to the same normalized name."""
         discovery = _make_discovery(tmp_path)
         discovery.ensure_global_structure()
@@ -148,8 +148,8 @@ class TestCreateSkillDuplicatePrevention:
         # Try to create with spaces — should normalize to 'my-skill' and skip
         generator.create_skill("My Skill", force=False)
 
-        captured = capsys.readouterr()
-        assert "already exists" in captured.out
+        # The skip notice is emitted via logging (decoupled from click), not stdout.
+        assert "already exists" in caplog.text
 
 
 # ─── CoworkSkillCreator.exists_in_learned() ───────────────────────────────────
@@ -198,7 +198,7 @@ class TestExistsInLearned:
 class TestSkillsManagerDuplicatePrevention:
     """Tests for duplicate prevention through the SkillsManager facade."""
 
-    def test_create_skill_skips_existing(self, tmp_path, capsys):
+    def test_create_skill_skips_existing(self, tmp_path, caplog):
         """SkillsManager.create_skill skips if skill already exists in learned scope (default)."""
         manager = SkillsManager(project_path=tmp_path)
         manager.ensure_global_structure()
@@ -209,8 +209,8 @@ class TestSkillsManagerDuplicatePrevention:
 
         manager.create_skill("existing-skill", force=False)
 
-        captured = capsys.readouterr()
-        assert "already exists" in captured.out
+        # The skip notice is emitted via logging (decoupled from click), not stdout.
+        assert "already exists" in caplog.text
 
     def test_create_skill_force_overwrites(self, tmp_path):
         """SkillsManager.create_skill with force=True overwrites in learned scope (default)."""

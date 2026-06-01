@@ -215,9 +215,7 @@ class SkillGenerator(ArtifactGenerator):
         # ── Duplicate guard ──────────────────────────────────────────────────
         _check_scope = scope if (scope != "project" or self.discovery.project_local_dir) else "learned"
         if self.discovery.skill_exists(safe_name, scope=_check_scope) and not force:
-            import click
-
-            click.echo(f"Skill '{safe_name}' already exists — skipping. (use force=True to overwrite)")
+            logger.warning("Skill '%s' already exists — skipping. (use force=True to overwrite)", safe_name)
             # Return the actual existing path (flat file takes priority over directory)
             flat = target_root / f"{safe_name}.md"
             if flat.exists():
@@ -342,14 +340,10 @@ class SkillGenerator(ArtifactGenerator):
                     if isinstance(strategy_obj, AIStrategy):
                         ai_succeeded = True
                     if ai_requested and not ai_succeeded and isinstance(strategy_obj, StubStrategy):
-                        import click
-
-                        click.secho(
-                            "\n⚠️  AI generation was requested (--ai) but failed. "
+                        logger.warning(
+                            "AI generation was requested (--ai) but failed. "
                             "A placeholder stub was created instead — fill in the SKILL.md manually "
-                            "or re-run once the provider issue is resolved.\n",
-                            fg="yellow",
-                            err=True,
+                            "or re-run once the provider issue is resolved."
                         )
                     return content
             except Exception as exc:  # noqa: BLE001 — strategy chain: one failure falls through to next strategy

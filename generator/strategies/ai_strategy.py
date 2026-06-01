@@ -61,12 +61,8 @@ class AIStrategy:
             generator = LLMSkillGenerator(provider=provider, strategy=strategy)
             return generator.generate_skill(skill_name, context)
         except ImportError as e:
-            import click
-
-            click.secho(f"[!] AI provider not available ({e}). Falling back to next strategy.", fg="red", err=True)
+            logger.warning("AI provider not available (%s). Falling back to next strategy.", e)
             return None
         except Exception as e:  # noqa: BLE001 — AI strategy call; any error must fall back to next strategy
-            import click
-
-            click.secho(f"[!] AI generation failed ({e}). Falling back to next strategy.", fg="red", err=True)
+            logger.warning("AI generation failed (%s). Falling back to next strategy.", e)
             return None

@@ -1,10 +1,11 @@
 # ruff: noqa: E402
 """Interactive README generation."""
 
+import logging
 from pathlib import Path
 from typing import Dict, Optional
 
-import click
+logger = logging.getLogger(__name__)
 
 
 def is_readme_minimal(readme_path: Path) -> bool:
@@ -106,8 +107,7 @@ Generate the complete README now:
         generator = LLMSkillGenerator()
         return generator.generate_content(prompt, max_tokens=3000)
     except Exception as e:  # noqa: BLE001 — LLM call; any provider/network error must fall back gracefully
-        click.echo(f"⚠️  LLM generation failed: {e}", err=True)
-        click.echo("Falling back to template...")
+        logger.warning("LLM generation failed: %s. Falling back to template...", e)
         return generate_readme_template(user_input, context)
 
 
