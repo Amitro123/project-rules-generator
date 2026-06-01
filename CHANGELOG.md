@@ -6,9 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Critical: pending re-release
+## [0.3.1] - 2026-06-01
 
-- **PyPI v0.3.0 is broken** — the published wheel is missing `generator/utils/`, so `prg --help` fails with `ModuleNotFoundError: No module named 'generator.utils'` on a fresh install. The fix is already in the source tree (a locally-built wheel correctly includes `generator/utils/`), but a new release (v0.3.1) needs to be tagged and published to ship the fix to PyPI users. See [`PROJECT-ROADMAP.md`](PROJECT-ROADMAP.md) "Next release" for the release checklist.
+### Fixed
+
+- **Broken PyPI wheel (v0.3.0) re-released** — the v0.3.0 wheel was missing `generator/utils/`, so `prg --help` failed with `ModuleNotFoundError: No module named 'generator.utils'` on a fresh install. v0.3.1 ships the complete package; the built wheel was verified to contain all of `generator/utils/` (`__init__`, `tech_detector`, `quality_checker`, `readme_bridge`, `encoding`, `negation`, `trigger_evaluator`, `cli`) before tagging.
+
+### Changed
+
+- **Quality scoring reconciled — `create-rules` and `prg quality` no longer contradict each other (#13).** The two commands previously reported wildly different `/100` numbers for the same `rules.md` (e.g. 100 vs ~60), because they used unrelated scorers and the document scorer unfairly penalised PRG's own output:
+  - `ContentAnalyzer._heuristic_breakdown` now strips a leading YAML frontmatter block before title detection, so a generated file's H1 still earns the structure title bonus (previously every PRG artifact silently lost it).
+  - The consistency dimension now uses a shared, emoji-tolerant header vocabulary (`_header_has_theme` + `_OVERVIEW_/_GUIDELINE_/_TESTING_HEADERS`), so PRG's own section names (`## 📋 Priority Areas`, `## 💻 Coding Standards`, `## 🚫 Critical Anti-Patterns`) count toward the score instead of leaving it stuck at the 6/20 base.
+  - Document scoring is extracted into `ContentAnalyzer.score_text()` — a pure classmethod needing no AI client — which is now the single source of truth. `prg quality` and `prg create-rules` both call it, so they always show the *same* document-quality number. `create-rules` additionally labels its rule-set figure as "Generation completeness" to distinguish it from the document score.
+  - Net effect on the Cowork-format `rules.md`: the document score rose from 60 → 76 (the residual gap to 100 is now an honest signal — the doc has no fenced code examples — not a scoring bug). 4 regression tests added in `tests/test_content_analyzer.py::TestScorerReconciliation`.
 
 ### Tech-detection grounding (#12 — P0)
 
