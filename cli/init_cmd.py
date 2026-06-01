@@ -69,7 +69,7 @@ def init(project_path, yes, provider, api_key):
     else:
         # Minimal fallback — structure-only
         try:
-            from generator.project_analyzer import ProjectAnalyzer
+            from generator.analyzers.project_analyzer import ProjectAnalyzer
 
             analyzer = ProjectAnalyzer(project_path)
             context = analyzer.analyze()

@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Optional, Set
 
 import click
 
+from generator.analyzers.incremental_analyzer import IncrementalAnalyzer
 from generator.constitution_generator import generate_constitution
-from generator.incremental_analyzer import IncrementalAnalyzer
 from generator.outputs.clinerules_generator import generate_clinerules
 from generator.parsers.enhanced_parser import EnhancedProjectParser
 from generator.rules_generator import generate_rules, rules_to_json

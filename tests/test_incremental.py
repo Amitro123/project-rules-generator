@@ -5,7 +5,7 @@ import json
 from click.testing import CliRunner
 
 from cli.cli import cli as main
-from generator.incremental_analyzer import IncrementalAnalyzer
+from generator.analyzers.incremental_analyzer import IncrementalAnalyzer
 
 
 class TestComputeProjectHash:

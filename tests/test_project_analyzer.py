@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from generator.project_analyzer import ProjectAnalyzer
+from generator.analyzers.project_analyzer import ProjectAnalyzer
 
 
 class TestProjectAnalyzer(unittest.TestCase):

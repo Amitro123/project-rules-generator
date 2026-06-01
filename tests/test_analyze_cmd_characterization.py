@@ -61,7 +61,7 @@ def test_incremental_no_changes_exits_0(tmp_path):
     mock_inc.detect_changes.return_value = set()  # nothing changed
 
     with (
-        patch("generator.incremental_analyzer.IncrementalAnalyzer", return_value=mock_inc),
+        patch("generator.analyzers.incremental_analyzer.IncrementalAnalyzer", return_value=mock_inc),
         patch("cli.analyze_cmd.run_generation_pipeline") as mock_pipeline,
     ):
         result = runner.invoke(analyze, [str(tmp_path), "--incremental", "--no-commit"])

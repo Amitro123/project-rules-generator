@@ -32,8 +32,8 @@ def resolve_readme(
     if not readme_path or (readme_path and is_readme_minimal(readme_path)):
         if interactive:
             try:
+                from generator.analyzers.project_analyzer import ProjectAnalyzer
                 from generator.interactive import create_readme_interactive
-                from generator.project_analyzer import ProjectAnalyzer
                 from generator.readme_generator import generate_readme_template, generate_readme_with_llm
 
                 user_input_data = create_readme_interactive(project_path)
@@ -86,7 +86,7 @@ def resolve_readme(
             project_data["tech_stack"] = merged
     else:
         click.echo("ℹ️  Proceeding with structure-only analysis...")
-        from generator.project_analyzer import ProjectAnalyzer
+        from generator.analyzers.project_analyzer import ProjectAnalyzer
 
         analyzer = ProjectAnalyzer(project_path)
         context = analyzer.analyze()

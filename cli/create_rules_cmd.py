@@ -168,7 +168,7 @@ def create_rules(
         # uses on the rendered file. Showing it here (clearly distinguished from the
         # generation-completeness score above) means the two commands can never
         # appear to contradict each other on the same rules.md.
-        from generator.content_analyzer import ContentAnalyzer
+        from generator.analyzers.content_analyzer import ContentAnalyzer
 
         doc_report = ContentAnalyzer.score_text("rules.md", content)
         click.echo(f"   - Document quality (matches `prg quality`): {doc_report.score}/100")

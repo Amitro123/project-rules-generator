@@ -36,7 +36,7 @@ class TestRunQualityCheck:
         mock_analyzer = MagicMock()
         mock_analyzer.opik = None
 
-        with patch("generator.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
+        with patch("generator.analyzers.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
             with patch("generator.config.AnalyzerConfig"):
                 run_quality_check(output_dir, tmp_path, "groq", None, False, False, False)
 
@@ -50,7 +50,7 @@ class TestRunQualityCheck:
         mock_analyzer.analyze.return_value = mock_report
         mock_analyzer.opik = None
 
-        with patch("generator.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
+        with patch("generator.analyzers.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
             with patch("generator.config.AnalyzerConfig"):
                 with patch("rich.console.Console"):
                     run_quality_check(output_dir, tmp_path, "groq", None, False, False, False)
@@ -66,7 +66,7 @@ class TestRunQualityCheck:
         mock_analyzer.analyze.return_value = mock_report
         mock_analyzer.opik = None
 
-        with patch("generator.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
+        with patch("generator.analyzers.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
             with patch("generator.config.AnalyzerConfig"):
                 with patch("rich.console.Console"):
                     run_quality_check(output_dir, tmp_path, "groq", None, False, False, False)
@@ -84,7 +84,7 @@ class TestRunQualityCheck:
         mock_analyzer.analyze.return_value = mock_report
         mock_analyzer.opik = None
 
-        with patch("generator.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
+        with patch("generator.analyzers.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
             with patch("generator.config.AnalyzerConfig"):
                 with patch("rich.console.Console"):
                     run_quality_check(output_dir, tmp_path, "groq", None, False, False, False)
@@ -98,7 +98,7 @@ class TestRunQualityCheck:
         mock_analyzer.analyze.return_value = mock_report
         mock_analyzer.opik = None
 
-        with patch("generator.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
+        with patch("generator.analyzers.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
             with patch("generator.config.AnalyzerConfig"):
                 with patch("rich.console.Console"):
                     run_quality_check(output_dir, tmp_path, "groq", None, False, False, verbose=True)
@@ -120,7 +120,7 @@ class TestRunQualityCheck:
         mock_analyzer.analyze.return_value = mock_report
         mock_analyzer.opik = None
 
-        with patch("generator.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
+        with patch("generator.analyzers.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
             with patch("generator.config.AnalyzerConfig"):
                 with patch("rich.console.Console"):
                     run_quality_check(output_dir, tmp_path, "groq", None, False, False, verbose=True)
@@ -138,7 +138,7 @@ class TestRunQualityCheck:
         mock_analyzer.analyze.return_value = mock_report
         mock_analyzer.opik = None
 
-        with patch("generator.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
+        with patch("generator.analyzers.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
             with patch("generator.config.AnalyzerConfig"):
                 with patch("rich.console.Console"):
                     run_quality_check(output_dir, tmp_path, "groq", None, False, False, verbose=True)
@@ -153,7 +153,7 @@ class TestRunQualityCheck:
         mock_analyzer.analyze.return_value = mock_report
         mock_analyzer.opik = None
 
-        with patch("generator.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
+        with patch("generator.analyzers.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
             with patch("generator.config.AnalyzerConfig"):
                 with patch("rich.console.Console"):
                     run_quality_check(output_dir, tmp_path, "groq", None, False, auto_fix=True, verbose=True)
@@ -178,7 +178,7 @@ class TestRunQualityCheck:
             def add_row(self, *args, **kwargs):
                 captured_table_rows.extend(args)
 
-        with patch("generator.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
+        with patch("generator.analyzers.content_analyzer.ContentAnalyzer", return_value=mock_analyzer):
             with patch("generator.config.AnalyzerConfig"):
                 with patch("rich.console.Console"):
                     with patch("rich.table.Table", return_value=FakeTable()):

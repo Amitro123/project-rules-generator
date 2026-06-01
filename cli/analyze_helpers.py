@@ -233,7 +233,7 @@ def setup_incremental(incremental: bool, project_path: Path, output_dir: Path) -
     Returns the analyzer instance (or None when --incremental is not set).
     Calls sys.exit(0) when no changes are detected.
     """
-    from generator.incremental_analyzer import IncrementalAnalyzer
+    from generator.analyzers.incremental_analyzer import IncrementalAnalyzer
 
     if not incremental:
         return None

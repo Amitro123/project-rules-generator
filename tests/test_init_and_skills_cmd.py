@@ -48,7 +48,7 @@ class TestInitCommand:
         runner = CliRunner()
         with (
             patch("generator.rules_generator.generate_rules", return_value="# Rules"),
-            patch("generator.project_analyzer.ProjectAnalyzer") as MockPA,
+            patch("generator.analyzers.project_analyzer.ProjectAnalyzer") as MockPA,
         ):
             MockPA.return_value.analyze.return_value = {"tech_stack": {"python": ["python"]}}
             result = runner.invoke(init, [str(tmp_path), "--yes"])

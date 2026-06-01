@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from generator.content_analyzer import ContentAnalyzer, QualityBreakdown, QualityReport
+from generator.analyzers.content_analyzer import ContentAnalyzer, QualityBreakdown, QualityReport
 
 
 class TestQualityBreakdown:
