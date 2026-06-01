@@ -19,6 +19,31 @@ from cli._version import __version__  # noqa: E402
 # but specific command imports are usually fine.
 
 
+def _looks_like_default_target(arg: str) -> bool:
+    """True when a non-command first arg should route to the default command.
+
+    The default command (``analyze``) takes a project *path*, so we only
+    auto-prepend it for things that look like its arguments — an option/flag
+    or a path — never for an arbitrary bare word. Without this guard a mistyped
+    sub-command like ``prg analyse`` silently becomes ``prg analyze analyse``
+    (analysing a file literally named "analyse") instead of erroring loudly.
+    See CR §4.3.
+    """
+    if arg.startswith("-"):
+        return True  # an option/flag meant for the default command
+    if arg in (".", ".."):
+        return True
+    if "/" in arg or "\\" in arg:
+        return True
+    # An existing file/dir on disk is unambiguously a path argument.
+    try:
+        if Path(arg).exists():
+            return True
+    except OSError:
+        pass
+    return False
+
+
 class DefaultGroup(click.Group):
     """Click group that delegates to a default command when none is given."""
 
@@ -27,11 +52,17 @@ class DefaultGroup(click.Group):
         self.default_cmd = default_cmd
 
     def parse_args(self, ctx, args):
-        # Let group-level flags (--help, --version) pass through
-        if args and args[0] not in self.commands and args[0] not in ("--help", "--version", "-h"):
-            args = [self.default_cmd] + list(args)
-        elif not args:
+        if not args:
             args = [self.default_cmd]
+        # Let group-level flags (--help, --version) pass through, and only route
+        # to the default command when the first arg looks like a path/option —
+        # a bare unknown word falls through to Click's "No such command" error.
+        elif (
+            args[0] not in self.commands
+            and args[0] not in ("--help", "--version", "-h")
+            and _looks_like_default_target(args[0])
+        ):
+            args = [self.default_cmd] + list(args)
         return super().parse_args(ctx, args)
 
 

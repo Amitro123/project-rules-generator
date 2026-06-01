@@ -1,5 +1,7 @@
 """Tests for CLI integration."""
 
+from pathlib import Path
+
 from click.testing import CliRunner
 
 from cli.analyze_cmd import load_config
@@ -106,3 +108,47 @@ class TestCLI:
         assert result.exit_code == 0
         assert "analyze" in result.output
         assert "plan" in result.output
+
+
+class TestDefaultGroupRouting:
+    """Lock in the CR §4.3 fix: the default command only swallows path/option
+    first-args, so a mistyped sub-command errors loudly instead of silently
+    becoming `prg analyze <typo>`.
+    """
+
+    def test_helper_routes_paths_and_options(self):
+        """Path-like and option first-args route to the default command."""
+        from cli.cli import _looks_like_default_target
+
+        assert _looks_like_default_target(".") is True
+        assert _looks_like_default_target("..") is True
+        assert _looks_like_default_target("--ide") is True
+        assert _looks_like_default_target("-v") is True
+        assert _looks_like_default_target("some/nested/path") is True
+        assert _looks_like_default_target("some\\win\\path") is True
+
+    def test_helper_rejects_bare_words(self):
+        """A bare unknown word is NOT treated as a default-command argument."""
+        from cli.cli import _looks_like_default_target
+
+        assert _looks_like_default_target("analyse") is False  # typo of `analyze`
+        assert _looks_like_default_target("definitelynotacommand") is False
+
+    def test_helper_accepts_existing_path(self, tmp_path):
+        """An existing file/dir on disk is unambiguously a path argument."""
+        from cli.cli import _looks_like_default_target
+
+        existing = tmp_path / "myproject"
+        existing.mkdir()
+        with CliRunner().isolated_filesystem(temp_dir=tmp_path):
+            # Relative name that exists on disk → path argument.
+            (Path.cwd() / "exists-here").mkdir()
+            assert _looks_like_default_target("exists-here") is True
+
+    def test_typo_subcommand_errors_instead_of_routing(self):
+        """`prg analyse` (typo) errors with 'No such command', not silent routing."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["definitely-not-a-command"])
+
+        assert result.exit_code != 0
+        assert "No such command" in result.output
