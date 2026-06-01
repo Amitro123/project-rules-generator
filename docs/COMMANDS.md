@@ -12,6 +12,8 @@ Here is a comprehensive list of all `prg` commands available categorized by thei
 | `prg analyze . --incremental` | Skip unchanged phases (3-5x faster for large projects) |
 | `prg analyze . --constitution` | Generate a high-level coding principles document |
 | `prg create-rules .` | Run the Cowork-powered rules creator with quality scoring |
+| `prg quality .` | Score generated `.clinerules` files (0–100) for structure, clarity, and grounding |
+| `prg quality . --auto-fix` | Score and auto-improve files below the quality threshold |
 
 ## 🛠️ Skill Management
 

@@ -122,6 +122,43 @@ prg create-rules . --quality-threshold 90 --verbose --export-report
 
 ---
 
+## `prg quality` — Score Generated Rules
+
+```bash
+prg quality [PATH] [OPTIONS]
+```
+
+Scores the generated `.clinerules` files (`rules.md`, `constitution.md`,
+`skills/index.md`) against structure, clarity, project-grounding,
+actionability, and consistency criteria.
+
+`PATH` is the **project root**; the command joins `--output` (default
+`.clinerules`) onto it. Pointing `PATH` straight at the output directory
+(`prg quality .clinerules`) is forgiven — it resolves to that directory
+rather than doubling to `.clinerules/.clinerules`.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `PATH` | `.` | Project root (or the `.clinerules` dir directly) |
+| `--output DIR` | `.clinerules` | Directory containing generated files |
+| `--provider` | auto | `gemini`, `groq`, `anthropic`, or `openai` |
+| `--api-key` | env | API key (overrides env var) |
+| `--eval-opik` | false | Log results to Comet Opik (needs `OPIK_API_KEY`) |
+| `--auto-fix` | false | Attempt to fix low-quality files automatically |
+| `--max-iterations` | `3` | Max improvement iterations for `--auto-fix` |
+| `--verbose / -v` | false | Per-file breakdowns and suggestions |
+
+**Examples:**
+
+```bash
+prg quality .
+prg quality .clinerules --verbose
+prg quality . --auto-fix --max-iterations 5
+prg quality . --verbose --eval-opik
+```
+
+---
+
 ## `prg skills` — Skill Management
 
 ```bash
