@@ -33,6 +33,22 @@ MIN_PROJECT_GROUNDING = 12
 # Score below which a patch/improvement is generated
 PATCH_THRESHOLD = 85
 
+# Section-header vocabulary for the consistency dimension. Recognizes both
+# generic documentation headers AND the section names PRG's own generators
+# emit (rules.md / clinerules), so a well-formed PRG document is not penalized
+# for using domain-appropriate, emoji-prefixed headers such as
+# "## 📋 Priority Areas" or "## 💻 Coding Standards".
+_OVERVIEW_HEADERS = ("overview", "context", "introduction", "priority areas", "project structure")
+_GUIDELINE_HEADERS = (
+    "guidelines",
+    "best practices",
+    "code quality",
+    "coding standards",
+    "rules by category",
+    "conventions",
+)
+_TESTING_HEADERS = ("testing", "tests", "anti-pattern", "anti pattern")
+
 
 @dataclass
 class QualityBreakdown:
@@ -75,7 +91,41 @@ class QualityReport:
 
 
 class ContentAnalyzer:
-    """Analyze .clinerules content for quality."""
+    """Analyze .clinerules content for quality.
+
+    This evaluates a *rendered document* against generic quality heuristics
+    (structure, actionability, project grounding, clarity, consistency) and
+    backs the ``prg quality`` command. It is intentionally distinct from
+    ``RulesQualityValidator`` (used by ``prg create-rules``), which scores
+    *generation completeness* using the structured rule set rather than the
+    final Markdown. The two answer different questions and are not expected to
+    produce identical numbers — but a document this analyzer reads should not
+    be penalized merely for using PRG's own section vocabulary (see
+    ``_OVERVIEW_HEADERS`` / ``_GUIDELINE_HEADERS`` / ``_TESTING_HEADERS``).
+    """
+
+    @staticmethod
+    def _strip_frontmatter(text: str) -> str:
+        """Return *text* with a leading YAML frontmatter block removed, if present.
+
+        Generated artifacts open with a ``--- ... ---`` metadata block; without
+        stripping it the H1 title that follows is invisible to title detection,
+        unfairly costing the structure dimension its title bonus.
+        """
+        body = text.lstrip(chr(0xFEFF))
+        match = re.match("^" + r"\s*---\r?\n.*?\r?\n---[ \t]*\r?\n?", body, flags=re.DOTALL)
+        return body[match.end() :] if match else body
+
+    @staticmethod
+    def _header_has_theme(text: str, keywords: tuple) -> bool:
+        """True if any H2/H3 header contains one of *keywords*.
+
+        Tolerates a leading emoji or symbol between the ``##`` marker and the
+        keyword (e.g. ``## 📋 Priority Areas``), which a strict
+        ``^##\\s+keyword`` pattern would miss.
+        """
+        alternation = "|".join(re.escape(k) for k in keywords)
+        return bool(re.search(rf"(?im)^#{{2,3}}[ \t]+.*(?:{alternation})", text))
 
     def __init__(
         self,
@@ -90,33 +140,48 @@ class ContentAnalyzer:
         self.allowed_base_path = allowed_base_path.resolve() if allowed_base_path else Path.cwd().resolve()
         self.opik = OpikEvaluator() if getattr(self.config, "enable_opik", False) else None
 
-    def analyze(self, filepath: str, content: str, project_path: Optional[Path] = None) -> QualityReport:
-        if not content.strip():
-            raise ValidationError("Content cannot be empty")
+    @classmethod
+    def score_text(cls, filepath: str, content: str) -> QualityReport:
+        """Score a rendered document with pure heuristics — no AI client required.
 
+        This is the *single source of truth* for the document-quality number.
+        Both ``prg quality`` (via :meth:`analyze`) and ``prg create-rules`` call
+        it so the two commands can never report contradictory scores for the
+        same rendered file. ``create-rules`` additionally runs
+        ``RulesQualityValidator`` for *generation completeness*, but the headline
+        document score it shows comes from here.
+        """
         is_skills_index = filepath.endswith("skills/index.md") or filepath.endswith("skills\\index.md")
 
         if is_skills_index:
-            breakdown = self._skills_breakdown(content)
+            breakdown = cls._skills_breakdown(content)
         else:
-            breakdown = self._heuristic_breakdown(filepath, content)
+            breakdown = cls._heuristic_breakdown(filepath, content)
 
         score = min(100, max(0, breakdown.total))
-        suggestions = self._build_suggestions(breakdown, is_skills_index=is_skills_index)
-        patch = self._maybe_generate_patch(score, content)
-
-        if self.opik and getattr(self.opik, "enabled", False):
-            self._track_opik_evaluation(filepath, content, score, breakdown, suggestions)
-
+        suggestions = cls._build_suggestions(breakdown, is_skills_index=is_skills_index)
         return QualityReport(
             filepath=str(filepath),
             score=score,
             breakdown=breakdown,
             suggestions=suggestions,
-            patch=patch,
+            patch=None,
         )
 
-    def _build_suggestions(self, breakdown: QualityBreakdown, *, is_skills_index: bool) -> List[str]:
+    def analyze(self, filepath: str, content: str, project_path: Optional[Path] = None) -> QualityReport:
+        if not content.strip():
+            raise ValidationError("Content cannot be empty")
+
+        report = self.score_text(filepath, content)
+        report.patch = self._maybe_generate_patch(report.score, content)
+
+        if self.opik and getattr(self.opik, "enabled", False):
+            self._track_opik_evaluation(filepath, content, report.score, report.breakdown, report.suggestions)
+
+        return report
+
+    @staticmethod
+    def _build_suggestions(breakdown: QualityBreakdown, *, is_skills_index: bool) -> List[str]:
         """Map sub-scores that fall below their minimum into actionable suggestions.
 
         Order is preserved (structure, actionability, project_grounding, clarity,
@@ -215,7 +280,8 @@ class ContentAnalyzer:
         except Exception as exc:  # noqa: BLE001 — Opik tracing is observability-only; never block analysis
             logger.debug("Opik trace logging skipped: %s", exc)
 
-    def _skills_breakdown(self, content: str) -> QualityBreakdown:
+    @staticmethod
+    def _skills_breakdown(content: str) -> QualityBreakdown:
         text = content if isinstance(content, str) else str(content)
 
         # Structure: Look for Project Context, Core Skills, Agent Skills
@@ -289,9 +355,16 @@ class ContentAnalyzer:
             consistency=consistency_score,
         )
 
-    def _heuristic_breakdown(self, filepath: str, content: str) -> QualityBreakdown:
+    @staticmethod
+    def _heuristic_breakdown(filepath: str, content: str) -> QualityBreakdown:
         is_markdown = filepath.endswith(".md") or filepath.endswith(".markdown")
-        text = content if isinstance(content, str) else str(content)
+        raw = content if isinstance(content, str) else str(content)
+        # Strip a leading YAML frontmatter block so the H1 title that follows it
+        # is visible to title detection and the metadata lines don't masquerade
+        # as document body. Generated artifacts (rules.md / constitution.md) all
+        # open with a `--- ... ---` block; without this the structure dimension
+        # silently loses its title bonus on every PRG-generated file.
+        text = ContentAnalyzer._strip_frontmatter(raw)
 
         # Structure: headers, code fences, sections
         headers = len(re.findall(r"^#{1,3}\s", text, flags=re.MULTILINE))
@@ -325,22 +398,16 @@ class ContentAnalyzer:
         clarity_score = 6 + min(7, words // 150) + min(7, paragraphs // 3)
         clarity_score = max(0, min(20, clarity_score))
 
-        # Consistency: presence of key sections
-        has_overview = bool(
-            re.search(
-                r"^##\s+(overview|context|introduction)",
-                text,
-                flags=re.IGNORECASE | re.MULTILINE,
-            )
-        )
-        has_guidelines = bool(
-            re.search(
-                r"^##\s+(guidelines|best practices|code quality)",
-                text,
-                flags=re.IGNORECASE | re.MULTILINE,
-            )
-        )
-        has_testing = bool(re.search(r"^##\s+(testing|tests)", text, flags=re.IGNORECASE | re.MULTILINE))
+        # Consistency: presence of key sections. Uses the shared, emoji-tolerant
+        # header vocabulary so a document is credited for PRG's own section names
+        # (e.g. "## 📋 Priority Areas", "## 💻 Coding Standards",
+        # "## 🚫 Critical Anti-Patterns") and not only for generic
+        # "Overview/Guidelines/Testing" headers. Without this, every Cowork-format
+        # rules.md was stuck at the 6/20 base — the single biggest driver of the
+        # create-rules-vs-prg-quality score gap.
+        has_overview = ContentAnalyzer._header_has_theme(text, _OVERVIEW_HEADERS)
+        has_guidelines = ContentAnalyzer._header_has_theme(text, _GUIDELINE_HEADERS)
+        has_testing = ContentAnalyzer._header_has_theme(text, _TESTING_HEADERS)
         consistency_score = 6 + (4 if has_overview else 0) + (4 if has_guidelines else 0) + (4 if has_testing else 0)
         consistency_score = max(0, min(20, consistency_score))
 

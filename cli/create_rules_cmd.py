@@ -162,7 +162,16 @@ def create_rules(
         click.echo("\nRules Summary:")
         click.echo(f"   - Tech-specific rules: {sum(1 for t in metadata.tech_stack if t in content.lower())}")
         click.echo(f"   - Priority areas: {len(metadata.priority_areas)}")
-        click.echo(f"   - Quality score: {quality.score:.1f}/100")
+        click.echo(f"   - Generation completeness: {quality.score:.1f}/100")
+
+        # Document-quality score from the SAME heuristic scorer that `prg quality`
+        # uses on the rendered file. Showing it here (clearly distinguished from the
+        # generation-completeness score above) means the two commands can never
+        # appear to contradict each other on the same rules.md.
+        from generator.content_analyzer import ContentAnalyzer
+
+        doc_report = ContentAnalyzer.score_text("rules.md", content)
+        click.echo(f"   - Document quality (matches `prg quality`): {doc_report.score}/100")
 
         # Export report if requested
         if export_report:
@@ -207,8 +216,9 @@ def _display_quality_report(quality, verbose: bool):
         score_color = "red"
 
     click.echo("\nQuality Assessment:")
-    click.echo("   Score: ", nl=False)
+    click.echo("   Generation score: ", nl=False)
     click.secho(f"{quality.score:.1f}/100", fg=score_color, bold=True)
+    click.echo("   (rule-set completeness — see 'Document quality' below for the prg-quality score)")
     click.echo(f"   Completeness: {quality.completeness * 100:.0f}%")
 
     if quality.passed:

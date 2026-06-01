@@ -235,5 +235,74 @@ Write good code.
         assert report.breakdown.project_grounding < 12
 
 
+class TestScorerReconciliation:
+    """Lock in the create-rules vs prg-quality scorer reconciliation.
+
+    Regression guard for the two defects that made `prg quality` score a
+    well-formed Cowork-format rules.md ~40 points below what `prg create-rules`
+    reported on the same file:
+
+      1. A leading YAML frontmatter block hid the H1 title (lost structure bonus).
+      2. The consistency dimension only recognized generic
+         "Overview/Guidelines/Testing" headers, never PRG's own emoji-prefixed
+         section names — so it was stuck at the 6/20 base.
+
+    Both helpers (`_strip_frontmatter`, `_header_has_theme`) existed but were
+    never wired into `_heuristic_breakdown`; these tests fail if that wiring is
+    removed again.
+    """
+
+    # A trimmed Cowork-format document: frontmatter + emoji-prefixed PRG headers.
+    COWORK_DOC = (
+        "---\n"
+        "project: demo\n"
+        "version: 2.0\n"
+        "---\n"
+        "# 🤖 demo - Coding Rules\n\n"
+        "## 📋 Priority Areas\n- rest_api_patterns\n- test_coverage\n\n"
+        "## 💻 Coding Standards\n- Use type hints on all public signatures\n"
+        "- Validate request bodies with Pydantic models\n\n"
+        "## 🚫 Critical Anti-Patterns (NEVER DO THIS)\n- Don't hardcode API keys\n"
+    )
+
+    def test_score_text_needs_no_ai_client(self):
+        """score_text is a pure classmethod — callable without constructing a client.
+
+        create-rules relies on this to surface the shared document score without
+        spinning up an AI provider.
+        """
+        report = ContentAnalyzer.score_text("rules.md", self.COWORK_DOC)
+        assert isinstance(report, QualityReport)
+        assert 0 <= report.score <= 100
+
+    def test_frontmatter_does_not_cost_the_title_bonus(self):
+        """An H1 hidden behind frontmatter must still earn the structure title bonus."""
+        with_fm = ContentAnalyzer.score_text("rules.md", self.COWORK_DOC)
+        without_fm = ContentAnalyzer.score_text("rules.md", self.COWORK_DOC.split("---\n", 2)[-1])
+        # Stripping frontmatter ourselves should not change the structure score —
+        # the analyzer already strips it internally.
+        assert with_fm.breakdown.structure == without_fm.breakdown.structure
+        assert with_fm.breakdown.structure >= 16
+
+    def test_prg_section_vocabulary_credits_consistency(self):
+        """Emoji-prefixed PRG headers must satisfy all three consistency themes."""
+        report = ContentAnalyzer.score_text("rules.md", self.COWORK_DOC)
+        # Priority Areas (overview) + Coding Standards (guideline) + Anti-Patterns
+        # (testing) → full 6 + 4 + 4 + 4.
+        assert report.breakdown.consistency == 18
+
+    def test_analyze_delegates_to_shared_scorer(self):
+        """`prg quality` (analyze) and the shared score_text agree on score/breakdown.
+
+        analyze() only adds patch/Opik on top of score_text(); the headline number
+        must be identical so create-rules and prg quality can never contradict.
+        """
+        analyzer = ContentAnalyzer(client=Mock())
+        shared = ContentAnalyzer.score_text("rules.md", self.COWORK_DOC)
+        via_analyze = analyzer.analyze("rules.md", self.COWORK_DOC)
+        assert via_analyze.score == shared.score
+        assert via_analyze.breakdown.total == shared.breakdown.total
+
+
 class TestScoreExtraction:
     """Test score extraction from AI responses."""
