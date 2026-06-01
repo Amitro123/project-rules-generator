@@ -184,6 +184,9 @@ prg --version
 
 **Alpha** — core analysis, rules generation, and skill management are stable. The planning pipeline (`prg plan`, `prg design`) and autonomous loop (`prg ralph`) are in active development.
 
+> **Evaluating PRG today? Use `init`, `analyze`, `create-rules`, and `skills`.**
+> These four are the stable surface and deliver the whole headline pitch — scan your repo → emit `.clinerules/`. The planning and automation commands (`plan`, `design`, `review`, `ralph`, `feature`) are **architectural scaffolding**: they run, but treat them as a preview and don't build a workflow on them yet.
+
 | Area | Status |
 |------|--------|
 | `prg init` / `prg analyze` / `prg create-rules` | ✅ Stable |

@@ -2,7 +2,7 @@ llm:
   enabled: true
   api_key: "" # Set via env var GROQ_API_KEY
   provider: "groq"
-  model: "llama-3.1-70b-versatile" # Recommended for better reasoning than 8b-instant
+  model: "llama-3.3-70b-versatile" # Recommended for better reasoning than llama-3.1-8b-instant
 
 git:
   auto_commit: true
