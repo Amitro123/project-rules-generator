@@ -12,15 +12,15 @@ before prescribing action, and explain WHY before HOW for each step or rule.
 |------|------|--------|
 | `generator/base_generator.py` | **Base** - `ArtifactGenerator` ABC, strategic-depth contract | ✅ NEW (v1.5) |
 | `generator/rules/creator.py` | **Rules** - `CoworkRulesCreator(ArtifactGenerator)` — orchestrator | ✅ Refactored |
-| `generator/rules_git_miner.py` | **Rules/Git** - Hot-spot + large-commit detection | ✅ NEW |
-| `generator/rules_renderer.py` | **Rules/Render** - rules.md content + anti-pattern appending | ✅ NEW |
+| `generator/rules/rules_git_miner.py` | **Rules/Git** - Hot-spot + large-commit detection | ✅ Moved (v1.6) |
+| `generator/rules/rules_renderer.py` | **Rules/Render** - rules.md content + anti-pattern appending | ✅ Moved (v1.6) |
 | `generator/tasks/decomposer.py` | **Plans** - `TaskDecomposer(ArtifactGenerator)` | ✅ Refactored (v1.5) |
 | `generator/skills/manager.py` | **Facade** - Single entry point for all skill operations | ✅ Active |
 | `generator/skills/skill_generator.py` | **Skills** - `SkillGenerator(ArtifactGenerator)`, Strategy Pattern | ✅ Refactored (v1.5) |
 | `generator/skills/skill_creator.py` | **Cowork Intelligence** - High-quality skill generation — orchestrator | ✅ Refactored |
 | `generator/skills/skill_doc_loader.py` | **Skills/Docs** - Supplementary doc discovery + key-file loading | ✅ NEW |
 | `generator/skills/skill_metadata_builder.py` | **Skills/Metadata** - Triggers, tools, tags, frontmatter rendering | ✅ NEW |
-| `generator/quality_validators.py` | **Quality** - `SkillQualityValidator` + `RulesQualityValidator` | ✅ NEW |
+| `generator/utils/quality_validators.py` | **Quality** - `SkillQualityValidator` + `RulesQualityValidator` | ✅ Moved (v1.6) |
 | `generator/skills/skill_parser.py` | **Parser** - Extracts data from skill files | ✅ Active |
 | `generator/skills/skill_templates.py` | **Templates** - Loads YAML skill templates | ✅ Active |
 | `generator/tech/profiles.py` | **Tech Registry** - Single source for all tech metadata (`TechProfile`) | ✅ Active |
@@ -246,15 +246,45 @@ CoworkSkillCreator.create_skill()
 
 ## Directory Structure
 
+After the v1.6 reorganisation, only seven foundational modules remain at the
+`generator/` root — base classes, config, exceptions, shared data types, and the
+two documented public entry points (`interactive`, `rules_generator`). Everything
+else lives in a semantic subpackage.
+
 ```
 generator/
 ├── base_generator.py       # ArtifactGenerator ABC — strategic-depth contract (v1.5)
-├── quality_validators.py   # SkillQualityValidator + RulesQualityValidator
-├── rules_git_miner.py      # Hot-spot + large-commit detection
-├── rules_renderer.py       # rules.md content + anti-pattern appending
-├── rules/                  # Rules generation package
+├── config.py               # Configuration model + loader
+├── exceptions.py           # Shared exception hierarchy
+├── interactive.py          # Interactive README prompt + generated-files summary
+├── requirements.py         # Requirement model + RequirementsInferrer
+├── rules_generator.py      # RulesGenerator — public create_rules() entry point
+├── types.py                # Shared Pydantic data types (Skill, SkillFile, …)
+├── analyzers/              # Project + content analysis (moved v1.6)
+│   ├── content_analyzer.py     # File-content analysis
+│   ├── incremental_analyzer.py # Change-aware re-analysis
+│   ├── project_analyzer.py     # Top-level project analysis
+│   ├── project_type_detector.py
+│   ├── structure_analyzer.py
+│   ├── readme_parser.py
+│   └── ...                     # needs, triggers, readme_skill_extractor
+├── outputs/               # Artifact writers (moved v1.6)
+│   ├── clinerules_generator.py # .clinerules/ writer
+│   ├── design_generator.py     # DesignGenerator (Stage 1 planning)
+│   └── readme_generator.py     # README generation
+├── rules/                 # Rules generation package
 │   ├── creator.py          # CoworkRulesCreator(ArtifactGenerator)
+│   ├── rules_git_miner.py  # Hot-spot + large-commit detection (moved v1.6)
+│   ├── rules_renderer.py   # rules.md content + anti-pattern appending (moved v1.6)
+│   ├── constitution_generator.py  # (moved v1.6)
+│   ├── tech_detection_loader.py
 │   └── models.py
+├── sources/               # Skill sources + pack import (moved v1.6)
+│   ├── base.py             # SkillSource ABC
+│   ├── builtin.py          # Built-in skill catalogue
+│   ├── learned.py          # Learned-preference source
+│   ├── importers.py        # Pack importers (moved v1.6)
+│   └── pack_manager.py     # Skill-pack management (moved v1.6)
 ├── tasks/                  # Plan / task decomposition package
 │   ├── decomposer.py       # TaskDecomposer(ArtifactGenerator)
 │   ├── subtask_model.py
@@ -263,10 +293,12 @@ generator/
 │   ├── manager.py          # Facade (entry point)
 │   ├── skill_generator.py  # SkillGenerator(ArtifactGenerator) + Strategy Pattern
 │   ├── skill_creator.py    # Cowork intelligence
+│   ├── orchestrator.py     # Source orchestration (moved v1.6)
+│   ├── renderers.py        # Markdown / JSON / YAML skill renderers (moved v1.6)
 │   ├── skill_parser.py     # Parser
 │   ├── skill_templates.py  # Template loader
 │   ├── skill_discovery.py  # File discovery
-│   └── ...                 # matcher, renderer, tracker, selection helpers
+│   └── ...                 # matcher, tracker, selection helpers
 ├── tech/                   # Single source of truth for all tech metadata
 │   ├── profiles.py         # TechProfile definitions (replaces tech_registry)
 │   └── lookups.py          # Derived PKG_MAP / alias tables
@@ -278,9 +310,34 @@ generator/
 │   └── stub_strategy.py
 └── utils/                  # Shared utilities
     ├── __init__.py
-    ├── tech_detector.py    # Tech stack detection
-    ├── quality_checker.py  # Quality validation + _check_strategic_depth()
-    ├── readme_bridge.py    # README sufficiency + project tree
-    ├── encoding.py         # Encoding utilities
-    └── cli.py              # CLI utilities
+    ├── tech_detector.py      # Tech stack detection
+    ├── quality_checker.py    # Quality validation + _check_strategic_depth()
+    ├── quality_validators.py # SkillQualityValidator + RulesQualityValidator (moved v1.6)
+    ├── readme_bridge.py      # README sufficiency + project tree
+    ├── encoding.py           # Encoding utilities
+    └── cli.py                # CLI utilities
 ```
+
+### v1.6 module relocations
+
+The reorg moved 13 top-level modules into semantic subpackages, cutting the
+`generator/` root from 20 modules to 7. All imports are absolute
+(`from generator.<pkg>.<module> import …`), so the moves were mechanical path
+rewrites with no behavioural change.
+
+| Module | From | To |
+|---|---|---|
+| `content_analyzer.py` | `generator/` | `generator/analyzers/` |
+| `incremental_analyzer.py` | `generator/` | `generator/analyzers/` |
+| `project_analyzer.py` | `generator/` | `generator/analyzers/` |
+| `clinerules_generator.py` | `generator/` | `generator/outputs/` |
+| `design_generator.py` | `generator/` | `generator/outputs/` |
+| `readme_generator.py` | `generator/` | `generator/outputs/` |
+| `rules_git_miner.py` | `generator/` | `generator/rules/` |
+| `rules_renderer.py` | `generator/` | `generator/rules/` |
+| `constitution_generator.py` | `generator/` | `generator/rules/` |
+| `orchestrator.py` | `generator/` | `generator/skills/` |
+| `renderers.py` | `generator/` | `generator/skills/` |
+| `importers.py` | `generator/` | `generator/sources/` |
+| `pack_manager.py` | `generator/` | `generator/sources/` |
+| `quality_validators.py` | `generator/` | `generator/utils/` |
