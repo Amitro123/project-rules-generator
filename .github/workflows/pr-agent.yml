@@ -19,6 +19,11 @@ jobs:
         uses: qodo-ai/pr-agent@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional: set GOOGLE_AI_STUDIO in your repo secrets to enable
+          # AI-powered PR analysis via Gemini 2.0 Flash.
+          # Fork contributors: this secret is NOT required. PR Agent will
+          # still run (with reduced AI capabilities) if it is absent.
           GOOGLE_AI_STUDIO: ${{ secrets.GOOGLE_AI_STUDIO }}
           CONFIG.AI_PROVIDER: "google"
           CONFIG.MODEL: "gemini/gemini-2.0-flash"
+
