@@ -168,6 +168,21 @@ class TestDesignGenerator:
         d = gen.generate_design("Add caching", project_context=ctx)
         assert d.title == "Add caching"
 
+    def test_ai_client_wired_when_key_present(self):
+        """Regression (CR §4.1 reorg): with an API key, the AI client must be
+        constructed. After design_generator moved into generator/outputs/, a
+        stale relative import (``from .ai.factory``) resolved to the
+        non-existent ``generator.outputs.ai`` and was swallowed by the init
+        try/except — so ``prg design`` silently degraded to an empty template.
+        The import must resolve to ``generator.ai.factory``. A None client here
+        means the import broke again.
+        """
+        sentinel = object()
+        with patch("generator.ai.factory.create_ai_client", return_value=sentinel) as factory:
+            gen = DesignGenerator(api_key="fake-key", provider="gemini")
+        assert gen.client is sentinel, "AI client not wired — design_generator import path regressed"
+        factory.assert_called_once()
+
 
 from unittest.mock import patch
 
