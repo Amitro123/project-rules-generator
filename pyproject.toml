@@ -84,6 +84,21 @@ generator = ["py.typed", "skills/**/*", "templates/**/*", "rules/tech-detection/
 [tool.setuptools.exclude-package-data]
 "*" = ["__pycache__", "*.pyc", "*.pyo"]
 
+[tool.pytest.ini_options]
+# Consolidated from the former standalone pytest.ini so all tool config lives
+# in pyproject.toml (matches ruff/black/isort/mypy/bandit below).
+testpaths = ["tests"]
+norecursedirs = ["tests/fixtures"]
+# Register custom markers so `--strict-markers` can flag typos instead of
+# silently accepting them. `slow`/`integration` are reserved for selective runs
+# (e.g. `pytest -m "not slow"`); `unit` documents fast, isolated tests.
+addopts = "--strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: end-to-end tests that exercise multiple components",
+    "unit: fast, isolated unit tests",
+]
+
 [tool.ruff]
 line-length = 120
 indent-width = 4

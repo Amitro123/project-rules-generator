@@ -1,0 +1,39 @@
+# Dependabot keeps PRG's dependencies and CI actions patched.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates
+version: 2
+updates:
+  # Python runtime + dev dependencies (pyproject.toml, requirements*.txt).
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Batch routine dev-tooling bumps into one PR to cut review noise.
+      dev-tooling:
+        patterns:
+          - "ruff"
+          - "black"
+          - "isort"
+          - "mypy"
+          - "bandit"
+          - "pytest*"
+
+  # GitHub Actions used by the CI / publish workflows.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "chore(ci)"
