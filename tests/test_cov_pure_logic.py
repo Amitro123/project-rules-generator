@@ -108,7 +108,7 @@ from generator.rules import Rule, RulesMetadata
 # ---------------------------------------------------------------------------
 # rules_renderer.py
 # ---------------------------------------------------------------------------
-from generator.rules_renderer import RulesContentRenderer, append_mandatory_anti_patterns
+from generator.rules.rules_renderer import RulesContentRenderer, append_mandatory_anti_patterns
 
 
 def _metadata(name="MyProject", tech=None, ptype="python-cli", areas=None, signals=None):

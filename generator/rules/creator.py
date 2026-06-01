@@ -10,8 +10,8 @@ from generator.analyzers.project_type_detector import detect_project_type
 from generator.base_generator import ArtifactGenerator
 from generator.quality_validators import RulesQualityValidator
 from generator.rules.models import QualityReport, Rule, RulesMetadata
-from generator.rules_git_miner import RulesGitMiner
-from generator.rules_renderer import RulesContentRenderer
+from generator.rules.rules_git_miner import RulesGitMiner
+from generator.rules.rules_renderer import RulesContentRenderer
 from generator.tech import TECH_RULES as _TECH_RULES
 from generator.utils.readme_bridge import build_project_tree
 from generator.utils.tech_detector import detect_tech_stack as _detect_tech_stack_util

@@ -13,9 +13,9 @@ from typing import Any, Dict, List, Optional, Set
 import click
 
 from generator.analyzers.incremental_analyzer import IncrementalAnalyzer
-from generator.constitution_generator import generate_constitution
 from generator.outputs.clinerules_generator import generate_clinerules
 from generator.parsers.enhanced_parser import EnhancedProjectParser
+from generator.rules.constitution_generator import generate_constitution
 from generator.rules_generator import generate_rules, rules_to_json
 from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
 from generator.storage.skill_paths import SkillPathManager

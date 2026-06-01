@@ -5,7 +5,7 @@ Re-exports all public names for convenient imports.
 
 from generator.rules.creator import CoworkRulesCreator
 from generator.rules.models import QualityReport, Rule, RulesMetadata
-from generator.rules_renderer import append_mandatory_anti_patterns  # noqa: F401 (re-export passthrough)
+from generator.rules.rules_renderer import append_mandatory_anti_patterns  # noqa: F401 (re-export passthrough)
 
 __all__ = [
     "Rule",

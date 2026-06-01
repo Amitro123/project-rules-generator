@@ -9,7 +9,7 @@ import pytest
 # ---------------------------------------------------------------------------
 # RulesGitMiner
 # ---------------------------------------------------------------------------
-from generator.rules_git_miner import RulesGitMiner
+from generator.rules.rules_git_miner import RulesGitMiner
 
 
 def _miner_with_available(tmp_path, available=True):
