@@ -167,7 +167,7 @@ def plan(
 
     if from_design:
         subtasks = decomposer.from_design(Path(from_design), project_context=enhanced_context)
-        from generator.design_generator import Design
+        from generator.outputs.design_generator import Design
 
         design_obj = Design.from_markdown(Path(from_design).read_text(encoding="utf-8"))
         user_task_label = design_obj.title

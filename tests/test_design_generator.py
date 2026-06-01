@@ -5,7 +5,7 @@ from unittest.mock import patch
 from click.testing import CliRunner
 
 from cli.cli import cli
-from generator.design_generator import ArchitectureDecision, Design, DesignGenerator
+from generator.outputs.design_generator import ArchitectureDecision, Design, DesignGenerator
 
 
 class TestDesignModel:
@@ -145,7 +145,7 @@ class TestDesignFromMarkdown:
 class TestDesignGenerator:
     """Test DesignGenerator without AI (no API key)."""
 
-    @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
+    @patch("generator.outputs.design_generator.DesignGenerator._call_llm", return_value="")
     def test_generate_fallback(self, mock_llm):
         gen = DesignGenerator(api_key=None)
         d = gen.generate_design("Add rate limiting")
@@ -154,7 +154,7 @@ class TestDesignGenerator:
         # Stub returns an honest empty design — sections are populated only by AI
         assert "AI provider unavailable" in d.problem_statement
 
-    @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
+    @patch("generator.outputs.design_generator.DesignGenerator._call_llm", return_value="")
     def test_generate_with_context(self, mock_llm):
         ctx = {
             "metadata": {
@@ -223,7 +223,7 @@ class TestDesignCLI:
         assert "API key" in result.output
 
     @patch("cli.cmd_design._has_api_key", return_value=True)
-    @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
+    @patch("generator.outputs.design_generator.DesignGenerator._call_llm", return_value="")
     def test_design_generates_file(self, mock_llm, mock_key, tmp_path):
         (tmp_path / "README.md").write_text("# Test Project\n\nA project.")
 
@@ -248,7 +248,7 @@ class TestDesignCLI:
         assert "# Design:" in content
 
     @patch("cli.cmd_design._has_api_key", return_value=True)
-    @patch("generator.design_generator.DesignGenerator._call_llm", return_value="")
+    @patch("generator.outputs.design_generator.DesignGenerator._call_llm", return_value="")
     def test_design_custom_output(self, mock_llm, mock_key, tmp_path):
         (tmp_path / "README.md").write_text("# Test\n\nDesc.")
 

@@ -66,7 +66,7 @@ def design(description, project_path, output, api_key, provider, verbose):
         if verbose:
             click.echo(f"Context extraction skipped: {exc}")
 
-    from generator.design_generator import DesignGenerator
+    from generator.outputs.design_generator import DesignGenerator
 
     generator = DesignGenerator(provider=provider or "groq")
 

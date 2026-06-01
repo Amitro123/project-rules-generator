@@ -270,7 +270,7 @@ class TestGroundPaths:
 
 class TestDesignSalvage:
     def test_salvage_extracts_success_criteria_when_full_parse_fails(self):
-        from generator.design_generator import DesignGenerator
+        from generator.outputs.design_generator import DesignGenerator
 
         # Malformed body: no 'Design:' title → from_markdown() raises → salvage runs.
         # Pydantic requires problem_statement, so include one (and ensure it's
@@ -290,7 +290,7 @@ class TestDesignSalvage:
         assert any("Response time" in c for c in design.success_criteria)
 
     def test_salvage_returns_none_for_completely_empty_body(self):
-        from generator.design_generator import DesignGenerator
+        from generator.outputs.design_generator import DesignGenerator
 
         result = DesignGenerator._salvage_partial_design("", "cache")
         assert result is None
@@ -308,7 +308,7 @@ class TestFromDesignFallback:
         1-subtask plan. Now we fall back whenever fewer than 3 tasks are
         returned.
         """
-        from generator.design_generator import ArchitectureDecision, Design
+        from generator.outputs.design_generator import ArchitectureDecision, Design
         from generator.tasks.decomposer import TaskDecomposer
 
         design = Design(
@@ -333,7 +333,7 @@ class TestFromDesignFallback:
         assert len(tasks) >= 3
 
     def test_fallback_not_used_when_llm_returns_enough_tasks(self, tmp_path: Path):
-        from generator.design_generator import Design
+        from generator.outputs.design_generator import Design
         from generator.tasks.decomposer import TaskDecomposer
 
         design = Design(title="Build X", problem_statement="Need X")

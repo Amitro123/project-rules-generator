@@ -79,7 +79,7 @@ class TaskDecomposer(ArtifactGenerator):
         the common failure where the LLM returns one task with a paraphrased
         title and never gets replaced by the structural builder.
         """
-        from generator.design_generator import Design
+        from generator.outputs.design_generator import Design
 
         self.llm_used_fallback = False
         text = Path(design_path).read_text(encoding="utf-8")

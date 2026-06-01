@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 if "click" not in sys.modules:
     sys.modules["click"] = MagicMock()
 
-from generator.readme_generator import generate_readme_with_llm, is_readme_minimal
+from generator.outputs.readme_generator import generate_readme_with_llm, is_readme_minimal
 
 
 class TestReadmeGenerator(unittest.TestCase):
@@ -97,7 +97,7 @@ class TestReadmeGenerator(unittest.TestCase):
         self.assertIn("Feature 1", prompt)
         self.assertIn("# Generate Professional README.md", prompt)
 
-    @patch("generator.readme_generator.generate_readme_template")
+    @patch("generator.outputs.readme_generator.generate_readme_template")
     @patch("generator.skills.llm_skill_generator.LLMSkillGenerator")
     def test_generate_readme_with_llm_failure(self, mock_llm_gen_cls, mock_fallback):
         """Test fallback to template on AI failure."""

@@ -209,7 +209,7 @@ class AgentWorkflow:
             logger.info("Auto-fixing: generating design...")
 
         try:
-            from generator.design_generator import DesignGenerator
+            from generator.outputs.design_generator import DesignGenerator
 
             generator = DesignGenerator(
                 api_key=self.api_key,

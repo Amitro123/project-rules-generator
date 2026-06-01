@@ -23,7 +23,7 @@ def resolve_readme(
         (readme_path, project_data, project_name)
         readme_path may be None if no README exists and generation was skipped.
     """
-    from generator.readme_generator import is_readme_minimal
+    from generator.outputs.readme_generator import is_readme_minimal
     from generator.utils.readme_bridge import find_readme
 
     readme_path = find_readme(project_path)
@@ -34,7 +34,7 @@ def resolve_readme(
             try:
                 from generator.analyzers.project_analyzer import ProjectAnalyzer
                 from generator.interactive import create_readme_interactive
-                from generator.readme_generator import generate_readme_template, generate_readme_with_llm
+                from generator.outputs.readme_generator import generate_readme_template, generate_readme_with_llm
 
                 user_input_data = create_readme_interactive(project_path)
                 analyzer = ProjectAnalyzer(project_path)
