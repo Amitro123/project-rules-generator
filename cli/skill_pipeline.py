@@ -15,8 +15,8 @@ from generator.analyzers.project_type_detector import detect_project_type_from_d
 from generator.extractors.code_extractor import CodeExampleExtractor
 from generator.parsers.enhanced_parser import EnhancedProjectParser
 from generator.prompts.skill_generation import build_skill_prompt
-from generator.renderers import get_renderer
 from generator.skills.enhanced_skill_matcher import EnhancedSkillMatcher
+from generator.skills.renderers import get_renderer
 from generator.skills.skill_generator import SkillGenerator
 from generator.sources.learned import LearnedSkillsSource
 from generator.storage.skill_paths import SkillPathManager

@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Type
 
 import yaml
 
-from .types import SkillFile
+from generator.types import SkillFile
 
 
 class SkillRenderer:

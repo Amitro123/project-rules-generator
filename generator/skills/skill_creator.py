@@ -16,7 +16,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
-from generator.quality_validators import SkillQualityValidator
 from generator.skills.skill_content_renderer import SkillContentRenderer
 from generator.skills.skill_discovery import SkillDiscovery
 from generator.skills.skill_doc_loader import SkillDocLoader
@@ -24,6 +23,7 @@ from generator.skills.skill_metadata_builder import SkillMetadataBuilder
 from generator.skills.skill_project_scanner import ProjectContextScanner
 from generator.tech import TECH_TOOLS as _TECH_TOOLS
 from generator.utils.quality_checker import QualityReport
+from generator.utils.quality_validators import SkillQualityValidator
 
 logger = logging.getLogger(__name__)
 

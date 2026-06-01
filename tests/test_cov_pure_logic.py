@@ -221,7 +221,7 @@ class TestRulesContentRenderer:
 # ---------------------------------------------------------------------------
 # quality_validators.py
 # ---------------------------------------------------------------------------
-from generator.quality_validators import RulesQualityValidator, SkillQualityValidator
+from generator.utils.quality_validators import RulesQualityValidator, SkillQualityValidator
 
 
 class TestSkillQualityValidatorAutoFix:
