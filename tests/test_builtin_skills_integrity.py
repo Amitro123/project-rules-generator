@@ -9,6 +9,7 @@ EXPECTED_SKILLS = [
     "subagent-driven-development",
     "systematic-debugging",
     "requesting-code-review",
+    "code-review",
     "test-driven-development",
     "meta/writing-skills",
 ]
