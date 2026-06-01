@@ -19,8 +19,8 @@ from cli.analyze_helpers import (  # noqa: E402
 )
 from cli.analyze_pipeline import run_generation_pipeline
 from cli.analyze_readme import resolve_readme
-from generator.pack_manager import load_external_packs
 from generator.skills.manager import SkillsManager
+from generator.sources.pack_manager import load_external_packs
 from prg_utils.config_schema import validate_config
 from prg_utils.exceptions import InvalidREADMEError, ProjectRulesGeneratorError, READMENotFoundError
 

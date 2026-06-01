@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from generator.orchestrator import SkillOrchestrator
+from generator.skills.orchestrator import SkillOrchestrator
 from generator.sources.base import SkillSource
 from generator.types import Skill, SkillNeed
 

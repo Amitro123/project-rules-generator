@@ -4,7 +4,7 @@ from typing import Optional
 
 import yaml
 
-from .types import Skill, SkillPack
+from generator.types import Skill, SkillPack
 
 MAX_IMPORT_FILE_SIZE = 1024 * 1024  # 1MB limit for safety
 

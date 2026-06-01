@@ -194,7 +194,7 @@ def _run_create_rules(
 
 def setup_orchestrator(config):
     """Initialize and configure SkillOrchestrator."""
-    from generator.orchestrator import SkillOrchestrator
+    from generator.skills.orchestrator import SkillOrchestrator
     from generator.sources.builtin import BuiltinSkillsSource
     from generator.sources.learned import LearnedSkillsSource
 

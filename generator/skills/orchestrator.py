@@ -2,9 +2,8 @@ import logging
 from typing import Any, Dict, List
 
 from generator.analyzers.needs import ProjectNeedsAnalyzer
-
-from .sources.base import SkillSource
-from .types import Skill, SkillNeed
+from generator.sources.base import SkillSource
+from generator.types import Skill, SkillNeed
 
 logger = logging.getLogger("project_rules_generator")
 

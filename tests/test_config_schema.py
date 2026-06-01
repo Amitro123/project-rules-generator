@@ -3,7 +3,7 @@ import logging
 import pytest
 from pydantic import ValidationError
 
-from generator.pack_manager import load_external_packs
+from generator.sources.pack_manager import load_external_packs
 from prg_utils.config_schema import RootConfig, validate_config
 
 
@@ -65,7 +65,7 @@ def test_logger_setup(caplog):
 
 def test_pack_manager_logging(caplog):
     # This tests that pack manager uses the logger we expect
-    with caplog.at_level(logging.INFO, logger="generator.pack_manager"):
+    with caplog.at_level(logging.INFO, logger="generator.sources.pack_manager"):
         load_external_packs(
             [], verbose=True
         )  # Verbose flag is now ignored/redundant for logging config inside, but used in logic?

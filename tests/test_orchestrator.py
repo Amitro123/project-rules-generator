@@ -1,6 +1,6 @@
 import pytest
 
-from generator.orchestrator import SkillOrchestrator
+from generator.skills.orchestrator import SkillOrchestrator
 from generator.sources.builtin import BuiltinSkillsSource
 
 

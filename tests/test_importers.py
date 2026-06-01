@@ -1,6 +1,6 @@
 import pytest
 
-from generator.importers import AgentRulesImporter, VercelSkillsImporter
+from generator.sources.importers import AgentRulesImporter, VercelSkillsImporter
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def test_vercel_skills_importer(vercel_skills_pack):
 
 
 def test_vercel_importer_truncates_large_file(tmp_path):
-    from generator.importers import MAX_IMPORT_FILE_SIZE, VercelSkillsImporter
+    from generator.sources.importers import MAX_IMPORT_FILE_SIZE, VercelSkillsImporter
 
     skill_dir = tmp_path / "large-skill"
     skill_dir.mkdir()
@@ -90,7 +90,7 @@ def test_vercel_importer_truncates_large_file(tmp_path):
 
 
 def test_agent_rules_importer_handles_large_file(tmp_path):
-    from generator.importers import MAX_IMPORT_FILE_SIZE, AgentRulesImporter
+    from generator.sources.importers import MAX_IMPORT_FILE_SIZE, AgentRulesImporter
 
     rule_file = tmp_path / "large-rule.mdc"
 
