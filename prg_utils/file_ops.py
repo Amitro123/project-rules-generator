@@ -60,7 +60,7 @@ def atomic_write_text(
                 # fsync can fail on some virtualised filesystems; not fatal.
                 pass
         os.replace(tmp_path, path)
-    except Exception:
+    except Exception:  # noqa: BLE001 — cleanup-then-reraise: remove the temp file, never swallow the error
         # Clean up the temp file if we failed before rename.
         try:
             tmp_path.unlink()

@@ -11,19 +11,19 @@ before prescribing action, and explain WHY before HOW for each step or rule.
 | File | Role | Status |
 |------|------|--------|
 | `generator/base_generator.py` | **Base** - `ArtifactGenerator` ABC, strategic-depth contract | ✅ NEW (v1.5) |
-| `generator/rules_creator.py` | **Rules** - `CoworkRulesCreator(ArtifactGenerator)` — orchestrator (622 LOC) | ✅ Refactored |
+| `generator/rules/creator.py` | **Rules** - `CoworkRulesCreator(ArtifactGenerator)` — orchestrator | ✅ Refactored |
 | `generator/rules_git_miner.py` | **Rules/Git** - Hot-spot + large-commit detection | ✅ NEW |
 | `generator/rules_renderer.py` | **Rules/Render** - rules.md content + anti-pattern appending | ✅ NEW |
-| `generator/task_decomposer.py` | **Plans** - `TaskDecomposer(ArtifactGenerator)` | ✅ Refactored (v1.5) |
-| `generator/skills_manager.py` | **Facade** - Single entry point for all skill operations | ✅ Active |
-| `generator/skill_generator.py` | **Skills** - `SkillGenerator(ArtifactGenerator)`, Strategy Pattern | ✅ Refactored (v1.5) |
-| `generator/skill_creator.py` | **Cowork Intelligence** - High-quality skill generation — orchestrator (824 LOC) | ✅ Refactored |
-| `generator/skill_doc_loader.py` | **Skills/Docs** - Supplementary doc discovery + key-file loading | ✅ NEW |
-| `generator/skill_metadata_builder.py` | **Skills/Metadata** - Triggers, tools, tags, frontmatter rendering | ✅ NEW |
+| `generator/tasks/decomposer.py` | **Plans** - `TaskDecomposer(ArtifactGenerator)` | ✅ Refactored (v1.5) |
+| `generator/skills/manager.py` | **Facade** - Single entry point for all skill operations | ✅ Active |
+| `generator/skills/skill_generator.py` | **Skills** - `SkillGenerator(ArtifactGenerator)`, Strategy Pattern | ✅ Refactored (v1.5) |
+| `generator/skills/skill_creator.py` | **Cowork Intelligence** - High-quality skill generation — orchestrator | ✅ Refactored |
+| `generator/skills/skill_doc_loader.py` | **Skills/Docs** - Supplementary doc discovery + key-file loading | ✅ NEW |
+| `generator/skills/skill_metadata_builder.py` | **Skills/Metadata** - Triggers, tools, tags, frontmatter rendering | ✅ NEW |
 | `generator/quality_validators.py` | **Quality** - `SkillQualityValidator` + `RulesQualityValidator` | ✅ NEW |
-| `generator/skill_parser.py` | **Parser** - Extracts data from skill files | ✅ Active |
-| `generator/skill_templates.py` | **Templates** - Loads YAML skill templates | ✅ Active |
-| `generator/tech_registry.py` | **Tech Registry** - Single source for all tech metadata | ✅ NEW (v1.4) |
+| `generator/skills/skill_parser.py` | **Parser** - Extracts data from skill files | ✅ Active |
+| `generator/skills/skill_templates.py` | **Templates** - Loads YAML skill templates | ✅ Active |
+| `generator/tech/profiles.py` | **Tech Registry** - Single source for all tech metadata (`TechProfile`) | ✅ Active |
 | `generator/utils/tech_detector.py` | **Tech Detection** - Consolidated tech stack detection | ✅ NEW (v1.1) |
 | `generator/utils/quality_checker.py` | **Quality/Shared** - Strategic-depth + format validation (base checks) | ✅ Refactored (v1.5) |
 
@@ -249,18 +249,29 @@ CoworkSkillCreator.create_skill()
 ```
 generator/
 ├── base_generator.py       # ArtifactGenerator ABC — strategic-depth contract (v1.5)
-├── rules_creator.py        # CoworkRulesCreator(ArtifactGenerator)
-├── task_decomposer.py      # TaskDecomposer(ArtifactGenerator)
-├── skills_manager.py       # Facade (entry point)
-├── skill_generator.py      # SkillGenerator(ArtifactGenerator) + Strategy Pattern
-├── skill_creator.py        # Cowork intelligence
-├── skill_parser.py         # Parser
-├── skill_templates.py      # Template loader
-├── skill_discovery.py      # File discovery
-├── tech_registry.py        # Single source of truth for all tech metadata (v1.4)
+├── quality_validators.py   # SkillQualityValidator + RulesQualityValidator
+├── rules_git_miner.py      # Hot-spot + large-commit detection
+├── rules_renderer.py       # rules.md content + anti-pattern appending
+├── rules/                  # Rules generation package
+│   ├── creator.py          # CoworkRulesCreator(ArtifactGenerator)
+│   └── models.py
+├── tasks/                  # Plan / task decomposition package
+│   ├── decomposer.py       # TaskDecomposer(ArtifactGenerator)
+│   ├── subtask_model.py
+│   └── traceability.py
+├── skills/                 # Skill generation package
+│   ├── manager.py          # Facade (entry point)
+│   ├── skill_generator.py  # SkillGenerator(ArtifactGenerator) + Strategy Pattern
+│   ├── skill_creator.py    # Cowork intelligence
+│   ├── skill_parser.py     # Parser
+│   ├── skill_templates.py  # Template loader
+│   ├── skill_discovery.py  # File discovery
+│   └── ...                 # matcher, renderer, tracker, selection helpers
+├── tech/                   # Single source of truth for all tech metadata
+│   ├── profiles.py         # TechProfile definitions (replaces tech_registry)
+│   └── lookups.py          # Derived PKG_MAP / alias tables
 ├── strategies/             # Strategy implementations
 │   ├── __init__.py
-│   ├── base.py
 │   ├── ai_strategy.py
 │   ├── readme_strategy.py
 │   ├── cowork_strategy.py

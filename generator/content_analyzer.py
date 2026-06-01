@@ -251,6 +251,8 @@ class ContentAnalyzer:
         suggestions: List[str],
     ) -> None:
         """Best-effort Opik observability trace; never blocks or fails analysis."""
+        if self.opik is None:
+            return
         try:
             import dataclasses
 

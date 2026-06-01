@@ -37,11 +37,7 @@ public name is re-exported here):
 from __future__ import annotations
 
 # --- Re-exports: every public name from the submodules ----------------------
-from generator.project_profile.adapter import (
-    _build_tech_entries,
-    _parse_skill_refs,
-    from_enhanced_context,
-)
+from generator.project_profile.adapter import _build_tech_entries, _parse_skill_refs, from_enhanced_context
 from generator.project_profile.constants import (
     EVIDENCE_SOURCES_ALL,
     EVIDENCE_SOURCES_STRONG,
@@ -68,11 +64,7 @@ from generator.project_profile.reconciliation import (
     reconcile_project_type,
 )
 from generator.project_profile.skill_dedup import dedupe_skill_refs
-from generator.project_profile.skill_filter import (
-    FilterTrace,
-    TagResolver,
-    filter_skills_by_tech_overlap,
-)
+from generator.project_profile.skill_filter import FilterTrace, TagResolver, filter_skills_by_tech_overlap
 from generator.project_profile.tech_cleanup import (
     DEFAULT_TECH_CLEANUP_RULES,
     CleanupPredicate,

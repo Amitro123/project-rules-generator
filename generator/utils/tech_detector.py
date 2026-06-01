@@ -146,9 +146,9 @@ def detect_from_dependencies(project_path: Path) -> Set[str]:
             pkg_data = json.loads(package_json.read_text(encoding="utf-8"))
             dep_keys = set(pkg_data.get("dependencies", {})) | set(pkg_data.get("devDependencies", {}))
             for dep_name in dep_keys:
-                tech = PKG_MAP.get(dep_name) or NPM_PKG_ALIASES.get(dep_name)
-                if tech:
-                    detected.add(tech)
+                mapped_tech = PKG_MAP.get(dep_name) or NPM_PKG_ALIASES.get(dep_name)
+                if mapped_tech:
+                    detected.add(mapped_tech)
             # Language grounding: TypeScript when it (or its @types/*) is a real
             # dependency; otherwise plain JavaScript. README prose never decides this.
             if "typescript" in dep_keys or any(k.startswith("@types/") for k in dep_keys):

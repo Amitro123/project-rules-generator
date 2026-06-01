@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
+from generator.skills.manager import SkillsManager
 from generator.skills.skill_discovery import SkillDiscovery
 from generator.skills.skill_generator import SkillGenerator
-from generator.skills.manager import SkillsManager
 
 # ─── SkillDiscovery.skill_exists() ────────────────────────────────────────────
 

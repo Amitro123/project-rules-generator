@@ -12,8 +12,6 @@ pip install project-rules-generator && cd your-project && prg init .
 
 ![Screenshot: `prg analyze` running on a Python project, detecting the tech stack and writing rules.md, clinerules.yaml, and skills/ into .clinerules/](docs/assets/prg-analyze-demo.png)
 
-<!-- TODO(demo): replace the static PNG above with a ~10s asciinema cast of `prg init . && prg analyze .` on a fresh repo. Embed via <a href="https://asciinema.org/a/XXXXX"><img src="https://asciinema.org/a/XXXXX.svg" /></a>. -->
-
 ---
 
 ## The Problem

@@ -9,12 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from generator.skills.skill_selection import (
-    NON_SKILL_TECHS,
-    is_skill_worthy,
-    select_skill_names,
-)
-
+from generator.skills.skill_selection import NON_SKILL_TECHS, is_skill_worthy, select_skill_names
 
 # ---------------------------------------------------------------------------
 # is_skill_worthy

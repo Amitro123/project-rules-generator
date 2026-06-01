@@ -137,9 +137,9 @@ class ProjectAnalyzer:
                 pkg_data = json.loads(pkg_file.read_text(encoding="utf-8", errors="replace"))
                 dep_keys = set(pkg_data.get("dependencies", {})) | set(pkg_data.get("devDependencies", {}))
                 for dep_name in dep_keys:
-                    tech_name = PKG_MAP.get(dep_name) or NPM_PKG_ALIASES.get(dep_name)
-                    if tech_name:
-                        _add_tech(tech_name)
+                    mapped_tech = PKG_MAP.get(dep_name) or NPM_PKG_ALIASES.get(dep_name)
+                    if mapped_tech:
+                        _add_tech(mapped_tech)
             except (OSError, ValueError):
                 pass
 
